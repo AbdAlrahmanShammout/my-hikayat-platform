@@ -1,20 +1,15 @@
 import type { INestApplication } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
 
 import type { Server } from 'node:http';
 import request from 'supertest';
 
-import { AppModule } from '@/app.module';
+import { createTestingApp } from './create-testing-app';
 
 describe('Exception filter (e2e)', () => {
   let app: INestApplication | undefined;
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-    app = moduleFixture.createNestApplication();
-    await app.init();
+    app = await createTestingApp();
   });
 
   afterEach(async () => {

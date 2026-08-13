@@ -35,6 +35,17 @@ describe('normalizeException', () => {
     expect(actualResult.code).toBe('HTTP_EXCEPTION');
   });
 
+  it('maps a payload-too-large parser error to 413', () => {
+    const exception = Object.assign(new Error('request entity too large'), {
+      type: 'entity.too.large',
+      status: HttpStatus.PAYLOAD_TOO_LARGE,
+    });
+    const actualResult = normalizeException(exception);
+    expect(actualResult.statusCode).toBe(HttpStatus.PAYLOAD_TOO_LARGE);
+    expect(actualResult.code).toBe('PAYLOAD_TOO_LARGE');
+    expect(actualResult.userFriendly).toBe(true);
+  });
+
   it('maps TypeError to an internal 500 that is not user-friendly', () => {
     const exception = new TypeError('Cannot read properties of undefined');
     const actualResult = normalizeException(exception);

@@ -2,11 +2,12 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 
 import { AppException } from '@/common/exceptions/app.exception';
 import { ValidationExceptions } from '@/common/exceptions/validation.exception';
+import { mapPayloadTooLargeException } from '@/common/filter/exception_mappers/map-payload-too-large-exception';
 import { mapErrorKindToHttpStatus } from '@/common/filter/exception_return_handler/http_exception.handler';
 import { GeneralTypeException } from '@/common/filter/exception_return_handler/type/general-type.exception';
 
-function tryMapSpecialExceptions(_exception: unknown): GeneralTypeException | null {
-  return null;
+function tryMapSpecialExceptions(exception: unknown): GeneralTypeException | null {
+  return mapPayloadTooLargeException(exception);
 }
 
 function fromAppException(exception: AppException): GeneralTypeException {

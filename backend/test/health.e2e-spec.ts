@@ -1,21 +1,17 @@
 import type { INestApplication } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
 
 import type { Server } from 'node:http';
 import request from 'supertest';
 
-import { AppModule } from '@/app.module';
 import { HEALTH_OK_STATUS } from '@/health/health.service';
+
+import { createTestingApp } from './create-testing-app';
 
 describe('Health (e2e)', () => {
   let app: INestApplication | undefined;
 
   beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-    app = moduleFixture.createNestApplication();
-    await app.init();
+    app = await createTestingApp();
   });
 
   afterEach(async () => {
