@@ -1,0 +1,87 @@
+---
+description: Enforce the repository architecture and engineering conventions defined in ARCHITECTURE.md
+alwaysApply: true
+---
+
+# Architecture Authority
+
+`ARCHITECTURE.md` is the authoritative architecture and engineering specification for this repository.
+
+For all coding, planning, refactoring, debugging, migration, testing, and code-review tasks:
+
+- Read the relevant sections of `ARCHITECTURE.md` before making changes.
+- Follow the dependency boundaries defined in `ARCHITECTURE.md`.
+- Follow its folder and module organization.
+- Follow its naming conventions.
+- Follow its domain/service/repository architecture.
+- Follow its Prisma and transaction rules.
+- Follow its DTO and API conventions.
+- Follow its provider and infrastructure boundaries.
+- Follow its configuration architecture.
+- Follow its authentication and authorization conventions.
+- Follow its error-handling conventions.
+- Follow its testing standards.
+- Follow its feature implementation workflows.
+- Preserve the distinction between persistence payloads, domain entities, and API response DTOs.
+- Do not bypass repository abstractions from business services.
+- Do not introduce forbidden dependency directions.
+- Do not introduce alternative architectural patterns simply because they are common in other NestJS projects.
+
+If existing code conflicts with `ARCHITECTURE.md`:
+
+1. Do not propagate the conflicting pattern into new code.
+2. Flag the inconsistency.
+3. Follow `ARCHITECTURE.md` for new implementation unless explicitly instructed otherwise.
+
+If a user request appears to conflict with `ARCHITECTURE.md`:
+
+1. Identify the conflict clearly.
+2. Explain the architectural consequence.
+3. Ask for or follow an explicit user override when necessary.
+
+Do not modify `ARCHITECTURE.md` unless explicitly requested.
+
+# Required Workflow
+
+Before substantial implementation:
+
+1. Identify which sections of `ARCHITECTURE.md` apply.
+2. Inspect the affected existing implementation.
+3. Plan the change according to those rules.
+
+During implementation:
+
+4. Keep controllers thin.
+5. Keep business logic in services.
+6. Keep persistence and Prisma behavior in repositories.
+7. Keep external SDK/infrastructure concerns in providers.
+8. Keep transport contracts in DTOs.
+9. Respect module and dependency boundaries.
+
+After implementation:
+
+10. Run relevant tests.
+11. Run lint, type checking, and build if configured.
+12. Review all changed files against `ARCHITECTURE.md`.
+13. Fix architecture violations introduced by the change before declaring the task complete.
+
+# Architecture Compliance Check
+
+Before completing a task, explicitly verify:
+
+- correct file placement
+- correct naming
+- correct module ownership
+- correct dependency direction
+- correct service/repository separation
+- no direct Prisma access from business services
+- correct transaction boundary
+- no persistence payload leaking outside repositories
+- no entity returned directly as an API response
+- correct DTO usage
+- correct provider isolation
+- correct configuration access
+- correct exception handling
+- required tests added or updated
+
+The architecture document takes precedence over inferred conventions.

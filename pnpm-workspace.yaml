@@ -1,0 +1,8 @@
+packages:
+  - 'backend'
+
+allowBuilds:
+  '@nestjs/core': true
+  unrs-resolver: false
+
+verifyDepsBeforeRun: false
