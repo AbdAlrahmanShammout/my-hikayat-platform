@@ -1,0 +1,1 @@
+export const HEALTH_READINESS_TIMEOUT_MS = 2_000;

@@ -1,5 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
+
 import { HealthController } from './health.controller';
 import { HEALTH_OK_STATUS, HealthService } from './health.service';
 
@@ -9,7 +11,15 @@ describe('HealthController', () => {
   beforeEach(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
       controllers: [HealthController],
-      providers: [HealthService],
+      providers: [
+        HealthService,
+        {
+          provide: PrismaProviderService,
+          useValue: {
+            $queryRaw: jest.fn().mockResolvedValue([{ '?column?': 1 }]),
+          },
+        },
+      ],
     }).compile();
     healthController = moduleRef.get(HealthController);
   });
