@@ -23,3 +23,13 @@ model User {
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 }
+
+model Category {
+  id             Int      @id @default(autoincrement())
+  name           String
+  slug           String   @unique
+  categoryWeight Decimal  @default(1.0000) @db.Decimal(10, 4)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+}
