@@ -3,6 +3,7 @@ import { BookAssetService } from '@/modules/book-asset/book-asset.service';
 import { BookAssetEntity } from '@/modules/book-asset/entity/book-asset.entity';
 import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
 import { EPUB_OCF } from '@/modules/book-processing/epub-ocf.constant';
+import { BookSourceMetadataEntity } from '@/modules/book-processing/entity/book-source-metadata.entity';
 import { BookProcessingInvalidEpubException } from '@/modules/book-processing/exceptions/book-processing-invalid-epub.exception';
 import { BookProcessingMissingSourceException } from '@/modules/book-processing/exceptions/book-processing-missing-source.exception';
 import { ZipArchive } from '@/modules/book-processing/zip-archive.helper';
@@ -23,8 +24,9 @@ const PACKAGE_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="uid" version="3.0">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
     <dc:identifier id="uid">urn:uuid:test</dc:identifier>
-    <dc:title>Test</dc:title>
+    <dc:title>The Last Lighthouse</dc:title>
     <dc:language>en</dc:language>
+    <dc:creator>Jane Author</dc:creator>
   </metadata>
   <manifest></manifest>
   <spine></spine>
@@ -59,18 +61,46 @@ function createSourceAsset(
   });
 }
 
+function createSourceMetadata(): BookSourceMetadataEntity {
+  return new BookSourceMetadataEntity({
+    id: 3,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    bookId: 8,
+    packagePath: 'OEBPS/content.opf',
+    epubVersion: '3.0',
+    identifier: 'urn:uuid:test',
+    title: 'The Last Lighthouse',
+    language: 'en',
+    creator: 'Jane Author',
+    publisher: null,
+    description: null,
+  });
+}
+
 describe('BookProcessingService', () => {
   let mockBookAssetService: { findLatestBookAsset: jest.Mock };
+  let mockBookSourceMetadataRepository: {
+    create: jest.Mock;
+    update: jest.Mock;
+    findByBookId: jest.Mock;
+  };
   let mockStorageManagerService: { getObject: jest.Mock };
   let mockEncryptionManagerService: { decrypt: jest.Mock };
   let bookProcessingService: BookProcessingService;
 
   beforeEach(() => {
     mockBookAssetService = { findLatestBookAsset: jest.fn() };
+    mockBookSourceMetadataRepository = {
+      create: jest.fn(),
+      update: jest.fn(),
+      findByBookId: jest.fn(),
+    };
     mockStorageManagerService = { getObject: jest.fn() };
     mockEncryptionManagerService = { decrypt: jest.fn() };
     bookProcessingService = new BookProcessingService(
       mockBookAssetService as unknown as BookAssetService,
+      mockBookSourceMetadataRepository,
       mockStorageManagerService as unknown as StorageManagerService,
       mockEncryptionManagerService as unknown as EncryptionManagerService,
     );
@@ -137,6 +167,63 @@ describe('BookProcessingService', () => {
       await expect(bookProcessingService.validateEpubSource(99)).rejects.toBeInstanceOf(
         ResourceNotFoundException,
       );
+    });
+  });
+
+  describe('extractEpubMetadata', () => {
+    it('creates preserved OPF metadata for a new source', async () => {
+      const expectedMetadata = createSourceMetadata();
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(createSourceAsset());
+      mockStorageManagerService.getObject.mockResolvedValue({
+        key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        body: Buffer.from('encrypted-epub'),
+        contentType: 'application/epub+zip',
+        byteSize: 14,
+      });
+      mockEncryptionManagerService.decrypt.mockReturnValue({
+        plaintext: createMinimalEpubBytes(),
+      });
+      mockBookSourceMetadataRepository.findByBookId.mockResolvedValue(null);
+      mockBookSourceMetadataRepository.create.mockResolvedValue(expectedMetadata);
+      const actualMetadata = await bookProcessingService.extractEpubMetadata(8);
+      expect(mockBookSourceMetadataRepository.create).toHaveBeenCalledWith({
+        bookId: 8,
+        packagePath: 'OEBPS/content.opf',
+        epubVersion: '3.0',
+        identifier: 'urn:uuid:test',
+        title: 'The Last Lighthouse',
+        language: 'en',
+        creator: 'Jane Author',
+        publisher: null,
+        description: null,
+      });
+      expect(mockBookSourceMetadataRepository.update).not.toHaveBeenCalled();
+      expect(actualMetadata).toBe(expectedMetadata);
+    });
+
+    it('replaces previously extracted metadata for the same book', async () => {
+      const expectedMetadata = createSourceMetadata();
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(createSourceAsset());
+      mockStorageManagerService.getObject.mockResolvedValue({
+        key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        body: Buffer.from('encrypted-epub'),
+        contentType: 'application/epub+zip',
+        byteSize: 14,
+      });
+      mockEncryptionManagerService.decrypt.mockReturnValue({
+        plaintext: createMinimalEpubBytes(),
+      });
+      mockBookSourceMetadataRepository.findByBookId.mockResolvedValue(createSourceMetadata());
+      mockBookSourceMetadataRepository.update.mockResolvedValue(expectedMetadata);
+      await bookProcessingService.extractEpubMetadata(8);
+      expect(mockBookSourceMetadataRepository.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 3,
+          title: 'The Last Lighthouse',
+          identifier: 'urn:uuid:test',
+        }),
+      );
+      expect(mockBookSourceMetadataRepository.create).not.toHaveBeenCalled();
     });
   });
 });

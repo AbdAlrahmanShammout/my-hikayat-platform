@@ -37,6 +37,12 @@ describe('EpubOcfHelper', () => {
     expect(() => EpubOcfHelper.validate(createMinimalEpubBytes())).not.toThrow();
   });
 
+  it('opens the package document for later metadata extraction', () => {
+    const actualOpened = EpubOcfHelper.open(createMinimalEpubBytes());
+    expect(actualOpened.packagePath).toBe('OEBPS/content.opf');
+    expect(actualOpened.packageXml).toContain('<dc:title>Test</dc:title>');
+  });
+
   it('rejects a PDF payload', () => {
     expect(() => EpubOcfHelper.validate(Buffer.from('%PDF-1.4'))).toThrow(
       BookProcessingInvalidEpubException,

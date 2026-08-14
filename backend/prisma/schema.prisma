@@ -77,6 +77,7 @@ model Book {
   owner             User                  @relation(fields: [ownerId], references: [id])
   categories        Category[]
   assets            BookAsset[]
+  sourceMetadata    BookSourceMetadata?
 
   @@index([publishingStatus])
   @@index([processingStatus])
@@ -110,4 +111,21 @@ model BookAsset {
 
   @@index([bookId])
   @@index([bookId, kind])
+}
+
+model BookSourceMetadata {
+  id          Int       @id @default(autoincrement())
+  bookId      Int       @unique
+  packagePath String
+  epubVersion String
+  identifier  String
+  title       String
+  language    String
+  creator     String?
+  publisher   String?
+  description String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  book        Book      @relation(fields: [bookId], references: [id])
 }

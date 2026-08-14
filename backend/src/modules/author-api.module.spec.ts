@@ -35,6 +35,13 @@ describe('AuthorApiModule', () => {
           count: jest.fn(),
           update: jest.fn(),
         },
+        bookSourceMetadata: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
         bookAsset: {
           create: jest.fn(),
           findFirst: jest.fn(),

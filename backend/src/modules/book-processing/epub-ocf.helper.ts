@@ -7,12 +7,23 @@ const FULL_PATH_PATTERN = /full-path\s*=\s*["']([^"']+)["']/i;
 const MEDIA_TYPE_PATTERN = /media-type\s*=\s*["']([^"']+)["']/i;
 const PACKAGE_ELEMENT_PATTERN = /<package\b/i;
 
+export type EpubOcfOpenedPackage = {
+  readonly archive: ZipArchive;
+  readonly packagePath: string;
+  readonly packageXml: string;
+};
+
 export class EpubOcfHelper {
   static validate(bytes: Buffer): void {
+    EpubOcfHelper.open(bytes);
+  }
+
+  static open(bytes: Buffer): EpubOcfOpenedPackage {
     const archive: ZipArchive = EpubOcfHelper.openArchive(bytes);
     EpubOcfHelper.assertMimetypeEntry(archive);
     const packagePath: string = EpubOcfHelper.readPackagePath(archive);
-    EpubOcfHelper.assertPackageDocument(archive, packagePath);
+    const packageXml: string = EpubOcfHelper.readPackageDocument(archive, packagePath);
+    return { archive, packagePath, packageXml };
   }
 
   private static openArchive(bytes: Buffer): ZipArchive {
@@ -56,7 +67,7 @@ export class EpubOcfHelper {
     return fullPathMatch[1];
   }
 
-  private static assertPackageDocument(archive: ZipArchive, packagePath: string): void {
+  private static readPackageDocument(archive: ZipArchive, packagePath: string): string {
     if (!archive.has(packagePath)) {
       throw new BookProcessingInvalidEpubException('OPF package document is missing');
     }
@@ -64,5 +75,6 @@ export class EpubOcfHelper {
     if (!PACKAGE_ELEMENT_PATTERN.test(packageXml)) {
       throw new BookProcessingInvalidEpubException('OPF package document is malformed');
     }
+    return packageXml;
   }
 }
