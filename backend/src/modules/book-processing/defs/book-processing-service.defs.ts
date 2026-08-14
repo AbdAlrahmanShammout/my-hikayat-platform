@@ -8,3 +8,11 @@ export type ExtractedEpubMetadata = {
   readonly publisher: string | null;
   readonly description: string | null;
 };
+
+export type ExtractedEpubChapter = {
+  readonly spineIndex: number;
+  readonly href: string;
+  readonly manifestId: string;
+  readonly title: string;
+  readonly contentText: string;
+};

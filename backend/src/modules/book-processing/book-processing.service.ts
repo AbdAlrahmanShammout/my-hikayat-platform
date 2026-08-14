@@ -6,13 +6,20 @@ import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import { BookAssetService } from '@/modules/book-asset/book-asset.service';
 import { BookAssetEntity } from '@/modules/book-asset/entity/book-asset.entity';
 import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
-import { ExtractedEpubMetadata } from '@/modules/book-processing/defs/book-processing-service.defs';
+import {
+  ExtractedEpubChapter,
+  ExtractedEpubMetadata,
+} from '@/modules/book-processing/defs/book-processing-service.defs';
+import { BookChapterEntity } from '@/modules/book-processing/entity/book-chapter.entity';
 import { BookSourceMetadataEntity } from '@/modules/book-processing/entity/book-source-metadata.entity';
 import { EpubLayoutHelper } from '@/modules/book-processing/epub-layout.helper';
 import { EpubMetadataHelper } from '@/modules/book-processing/epub-metadata.helper';
 import { EpubOcfHelper, EpubOcfOpenedPackage } from '@/modules/book-processing/epub-ocf.helper';
+import { EpubSpineHelper } from '@/modules/book-processing/epub-spine.helper';
 import { BookProcessingInvalidEpubException } from '@/modules/book-processing/exceptions/book-processing-invalid-epub.exception';
 import { BookProcessingMissingSourceException } from '@/modules/book-processing/exceptions/book-processing-missing-source.exception';
+import { BookProcessingNotReflowableException } from '@/modules/book-processing/exceptions/book-processing-not-reflowable.exception';
+import { BookChapterRepository } from '@/modules/book-processing/repository/book-chapter.repository';
 import { BookSourceMetadataRepository } from '@/modules/book-processing/repository/book-source-metadata.repository';
 import { DecryptBufferResult } from '@/providers/encryption/defs/encryption-manager.defs';
 import { EncryptionManagerService } from '@/providers/encryption/encryption-manager.service';
@@ -26,6 +33,7 @@ export class BookProcessingService {
   constructor(
     private readonly bookAssetService: BookAssetService,
     private readonly bookSourceMetadataRepository: BookSourceMetadataRepository,
+    private readonly bookChapterRepository: BookChapterRepository,
     private readonly bookService: BookService,
     private readonly storageManagerService: StorageManagerService,
     private readonly encryptionManagerService: EncryptionManagerService,
@@ -51,6 +59,17 @@ export class BookProcessingService {
     const opened: EpubOcfOpenedPackage = EpubOcfHelper.open(plaintext);
     const layoutType: BookLayoutType = EpubLayoutHelper.detect(opened.packageXml, opened.archive);
     return this.bookService.updateBook({ id: bookId, layoutType });
+  }
+
+  async extractEpubChapters(bookId: number): Promise<BookChapterEntity[]> {
+    const plaintext: Buffer = await this.loadEpubPlaintext(bookId);
+    const opened: EpubOcfOpenedPackage = EpubOcfHelper.open(plaintext);
+    const layoutType: BookLayoutType = EpubLayoutHelper.detect(opened.packageXml, opened.archive);
+    if (layoutType === BookLayoutType.FIXED_LAYOUT) {
+      throw new BookProcessingNotReflowableException(bookId);
+    }
+    const chapters: ExtractedEpubChapter[] = EpubSpineHelper.extract(opened);
+    return this.bookChapterRepository.replaceByBookId({ bookId, chapters });
   }
 
   private async persistExtractedMetadata(

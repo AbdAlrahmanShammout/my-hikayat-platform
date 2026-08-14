@@ -12,8 +12,10 @@ import { BookAssetEntity } from '@/modules/book-asset/entity/book-asset.entity';
 import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
 import { EPUB_OCF } from '@/modules/book-processing/epub-ocf.constant';
 import { BookSourceMetadataEntity } from '@/modules/book-processing/entity/book-source-metadata.entity';
+import { BookChapterEntity } from '@/modules/book-processing/entity/book-chapter.entity';
 import { BookProcessingInvalidEpubException } from '@/modules/book-processing/exceptions/book-processing-invalid-epub.exception';
 import { BookProcessingMissingSourceException } from '@/modules/book-processing/exceptions/book-processing-missing-source.exception';
+import { BookProcessingNotReflowableException } from '@/modules/book-processing/exceptions/book-processing-not-reflowable.exception';
 import { ZipArchive } from '@/modules/book-processing/zip-archive.helper';
 import { EncryptionManagerService } from '@/providers/encryption/encryption-manager.service';
 import { StorageManagerService } from '@/providers/storage/storage-manager.service';
@@ -98,6 +100,47 @@ function createSampleBook(layoutType: BookLayoutType | null = null): BookEntity 
   });
 }
 
+function createReflowableChapterEpubBytes(): Buffer {
+  const packageXml = `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="uid" version="3.0">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="uid">urn:uuid:test</dc:identifier>
+    <dc:title>The Last Lighthouse</dc:title>
+    <dc:language>en</dc:language>
+  </metadata>
+  <manifest>
+    <item id="c1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine>
+    <itemref idref="c1"/>
+  </spine>
+</package>
+`;
+  return ZipArchive.createStored([
+    { name: EPUB_OCF.mimetypePath, data: Buffer.from(EPUB_OCF.mimetypeValue) },
+    { name: EPUB_OCF.containerPath, data: Buffer.from(CONTAINER_XML) },
+    { name: 'OEBPS/content.opf', data: Buffer.from(packageXml) },
+    {
+      name: 'OEBPS/chapter1.xhtml',
+      data: Buffer.from('<html><body><h1>The Harbor</h1><p>First chapter text.</p></body></html>'),
+    },
+  ]);
+}
+
+function createSampleChapter(): BookChapterEntity {
+  return new BookChapterEntity({
+    id: 11,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    bookId: 8,
+    spineIndex: 0,
+    href: 'OEBPS/chapter1.xhtml',
+    manifestId: 'c1',
+    title: 'The Harbor',
+    contentText: 'The Harbor First chapter text.',
+  });
+}
+
 function createSourceMetadata(): BookSourceMetadataEntity {
   return new BookSourceMetadataEntity({
     id: 3,
@@ -122,6 +165,7 @@ describe('BookProcessingService', () => {
     update: jest.Mock;
     findByBookId: jest.Mock;
   };
+  let mockBookChapterRepository: { replaceByBookId: jest.Mock };
   let mockBookService: { updateBook: jest.Mock };
   let mockStorageManagerService: { getObject: jest.Mock };
   let mockEncryptionManagerService: { decrypt: jest.Mock };
@@ -134,12 +178,14 @@ describe('BookProcessingService', () => {
       update: jest.fn(),
       findByBookId: jest.fn(),
     };
+    mockBookChapterRepository = { replaceByBookId: jest.fn() };
     mockBookService = { updateBook: jest.fn() };
     mockStorageManagerService = { getObject: jest.fn() };
     mockEncryptionManagerService = { decrypt: jest.fn() };
     bookProcessingService = new BookProcessingService(
       mockBookAssetService as unknown as BookAssetService,
       mockBookSourceMetadataRepository,
+      mockBookChapterRepository,
       mockBookService as unknown as BookService,
       mockStorageManagerService as unknown as StorageManagerService,
       mockEncryptionManagerService as unknown as EncryptionManagerService,
@@ -308,6 +354,54 @@ describe('BookProcessingService', () => {
         layoutType: BookLayoutType.FIXED_LAYOUT,
       });
       expect(actualBook.layoutType).toBe(BookLayoutType.FIXED_LAYOUT);
+    });
+  });
+
+  describe('extractEpubChapters', () => {
+    it('replaces persisted spine chapters for a reflowable EPUB', async () => {
+      const expectedChapters = [createSampleChapter()];
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(createSourceAsset());
+      mockStorageManagerService.getObject.mockResolvedValue({
+        key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        body: Buffer.from('encrypted-epub'),
+        contentType: 'application/epub+zip',
+        byteSize: 14,
+      });
+      mockEncryptionManagerService.decrypt.mockReturnValue({
+        plaintext: createReflowableChapterEpubBytes(),
+      });
+      mockBookChapterRepository.replaceByBookId.mockResolvedValue(expectedChapters);
+      const actualChapters = await bookProcessingService.extractEpubChapters(8);
+      expect(mockBookChapterRepository.replaceByBookId).toHaveBeenCalledWith({
+        bookId: 8,
+        chapters: [
+          {
+            spineIndex: 0,
+            href: 'OEBPS/chapter1.xhtml',
+            manifestId: 'c1',
+            title: 'The Harbor',
+            contentText: 'The Harbor First chapter text.',
+          },
+        ],
+      });
+      expect(actualChapters).toBe(expectedChapters);
+    });
+
+    it('rejects a pre-paginated EPUB before replacing chapters', async () => {
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(createSourceAsset());
+      mockStorageManagerService.getObject.mockResolvedValue({
+        key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        body: Buffer.from('encrypted-epub'),
+        contentType: 'application/epub+zip',
+        byteSize: 14,
+      });
+      mockEncryptionManagerService.decrypt.mockReturnValue({
+        plaintext: createFixedLayoutEpubBytes(),
+      });
+      await expect(bookProcessingService.extractEpubChapters(8)).rejects.toBeInstanceOf(
+        BookProcessingNotReflowableException,
+      );
+      expect(mockBookChapterRepository.replaceByBookId).not.toHaveBeenCalled();
     });
   });
 });

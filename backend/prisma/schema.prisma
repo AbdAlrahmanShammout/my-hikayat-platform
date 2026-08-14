@@ -78,6 +78,7 @@ model Book {
   categories        Category[]
   assets            BookAsset[]
   sourceMetadata    BookSourceMetadata?
+  chapters          BookChapter[]
 
   @@index([publishingStatus])
   @@index([processingStatus])
@@ -128,4 +129,21 @@ model BookSourceMetadata {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   book        Book      @relation(fields: [bookId], references: [id])
+}
+
+model BookChapter {
+  id          Int       @id @default(autoincrement())
+  bookId      Int
+  spineIndex  Int
+  href        String
+  manifestId  String
+  title       String
+  contentText String    @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  book        Book      @relation(fields: [bookId], references: [id])
+
+  @@index([bookId])
+  @@index([bookId, spineIndex])
 }
