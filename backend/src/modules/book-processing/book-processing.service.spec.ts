@@ -18,6 +18,7 @@ import { BookPageTextLayerEntity } from '@/modules/book-processing/entity/book-p
 import { BookSpreadEntity } from '@/modules/book-processing/entity/book-spread.entity';
 import { BookPageSpreadRole } from '@/modules/book-processing/enum/general.enum';
 import { BookProcessingInvalidEpubException } from '@/modules/book-processing/exceptions/book-processing-invalid-epub.exception';
+import { BookProcessingInvalidPdfException } from '@/modules/book-processing/exceptions/book-processing-invalid-pdf.exception';
 import { BookProcessingMissingPagesException } from '@/modules/book-processing/exceptions/book-processing-missing-pages.exception';
 import { BookProcessingMissingSourceException } from '@/modules/book-processing/exceptions/book-processing-missing-source.exception';
 import { BookProcessingNotFixedLayoutException } from '@/modules/book-processing/exceptions/book-processing-not-fixed-layout.exception';
@@ -372,6 +373,68 @@ describe('BookProcessingService', () => {
       );
       await expect(bookProcessingService.validateEpubSource(99)).rejects.toBeInstanceOf(
         ResourceNotFoundException,
+      );
+    });
+  });
+
+  describe('ingestPdfSource', () => {
+    it('decrypts the latest source and accepts a PDF header', async () => {
+      const inputCiphertext = Buffer.from('encrypted-pdf');
+      const inputPlaintext = Buffer.from('%PDF-1.4 source');
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(
+        createSourceAsset('application/pdf', 'book.pdf'),
+      );
+      mockStorageManagerService.getObject.mockResolvedValue({
+        key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        body: inputCiphertext,
+        contentType: 'application/pdf',
+        byteSize: inputCiphertext.byteLength,
+      });
+      mockEncryptionManagerService.decrypt.mockReturnValue({ plaintext: inputPlaintext });
+      await bookProcessingService.ingestPdfSource(8);
+      expect(mockBookAssetService.findLatestBookAsset).toHaveBeenCalledWith({
+        bookId: 8,
+        kind: BookAssetKind.SOURCE,
+      });
+      expect(mockEncryptionManagerService.decrypt).toHaveBeenCalledWith({
+        ciphertext: inputCiphertext,
+      });
+      expect(mockBookService.updateBook).not.toHaveBeenCalled();
+      expect(mockBookPageRepository.replaceByBookId).not.toHaveBeenCalled();
+      expect(mockBookChapterRepository.replaceByBookId).not.toHaveBeenCalled();
+    });
+
+    it('rejects a book with no source file', async () => {
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(null);
+      await expect(bookProcessingService.ingestPdfSource(8)).rejects.toBeInstanceOf(
+        BookProcessingMissingSourceException,
+      );
+      expect(mockStorageManagerService.getObject).not.toHaveBeenCalled();
+    });
+
+    it('rejects an EPUB source without decrypting it', async () => {
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(createSourceAsset());
+      await expect(bookProcessingService.ingestPdfSource(8)).rejects.toBeInstanceOf(
+        BookProcessingInvalidPdfException,
+      );
+      expect(mockStorageManagerService.getObject).not.toHaveBeenCalled();
+    });
+
+    it('rejects ciphertext that decrypts to a non-PDF payload', async () => {
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(
+        createSourceAsset('application/pdf', 'book.pdf'),
+      );
+      mockStorageManagerService.getObject.mockResolvedValue({
+        key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        body: Buffer.from('encrypted'),
+        contentType: 'application/pdf',
+        byteSize: 9,
+      });
+      mockEncryptionManagerService.decrypt.mockReturnValue({
+        plaintext: createMinimalEpubBytes(),
+      });
+      await expect(bookProcessingService.ingestPdfSource(8)).rejects.toBeInstanceOf(
+        BookProcessingInvalidPdfException,
       );
     });
   });

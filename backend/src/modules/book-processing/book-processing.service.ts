@@ -25,10 +25,13 @@ import { EpubMetadataHelper } from '@/modules/book-processing/epub-metadata.help
 import { EpubOcfHelper, EpubOcfOpenedPackage } from '@/modules/book-processing/epub-ocf.helper';
 import { EpubSpineHelper } from '@/modules/book-processing/epub-spine.helper';
 import { BookProcessingInvalidEpubException } from '@/modules/book-processing/exceptions/book-processing-invalid-epub.exception';
+import { BookProcessingInvalidPdfException } from '@/modules/book-processing/exceptions/book-processing-invalid-pdf.exception';
 import { BookProcessingMissingPagesException } from '@/modules/book-processing/exceptions/book-processing-missing-pages.exception';
 import { BookProcessingMissingSourceException } from '@/modules/book-processing/exceptions/book-processing-missing-source.exception';
 import { BookProcessingNotFixedLayoutException } from '@/modules/book-processing/exceptions/book-processing-not-fixed-layout.exception';
 import { BookProcessingNotReflowableException } from '@/modules/book-processing/exceptions/book-processing-not-reflowable.exception';
+import { PDF_SOURCE } from '@/modules/book-processing/pdf-source.constant';
+import { PdfSourceHelper } from '@/modules/book-processing/pdf-source.helper';
 import { BookChapterRepository } from '@/modules/book-processing/repository/book-chapter.repository';
 import { BookPageRepository } from '@/modules/book-processing/repository/book-page.repository';
 import { BookPageTextLayerRepository } from '@/modules/book-processing/repository/book-page-text-layer.repository';
@@ -56,6 +59,11 @@ export class BookProcessingService {
   async validateEpubSource(bookId: number): Promise<void> {
     const plaintext: Buffer = await this.loadEpubPlaintext(bookId);
     EpubOcfHelper.validate(plaintext);
+  }
+
+  async ingestPdfSource(bookId: number): Promise<void> {
+    const plaintext: Buffer = await this.loadPdfPlaintext(bookId);
+    PdfSourceHelper.validate(plaintext);
   }
 
   async extractEpubMetadata(bookId: number): Promise<BookSourceMetadataEntity> {
@@ -132,6 +140,22 @@ export class BookProcessingService {
   }
 
   private async loadEpubPlaintext(bookId: number): Promise<Buffer> {
+    const source: BookAssetEntity = await this.findLatestSource(bookId);
+    if (!BookProcessingService.isEpubSource(source)) {
+      throw new BookProcessingInvalidEpubException('source file is not an EPUB');
+    }
+    return this.readSourcePlaintext(source);
+  }
+
+  private async loadPdfPlaintext(bookId: number): Promise<Buffer> {
+    const source: BookAssetEntity = await this.findLatestSource(bookId);
+    if (!BookProcessingService.isPdfSource(source)) {
+      throw new BookProcessingInvalidPdfException('source file is not a PDF');
+    }
+    return this.readSourcePlaintext(source);
+  }
+
+  private async findLatestSource(bookId: number): Promise<BookAssetEntity> {
     const source: BookAssetEntity | null = await this.bookAssetService.findLatestBookAsset({
       bookId,
       kind: BookAssetKind.SOURCE,
@@ -139,9 +163,10 @@ export class BookProcessingService {
     if (source === null) {
       throw new BookProcessingMissingSourceException(bookId);
     }
-    if (!BookProcessingService.isEpubSource(source)) {
-      throw new BookProcessingInvalidEpubException('source file is not an EPUB');
-    }
+    return source;
+  }
+
+  private async readSourcePlaintext(source: BookAssetEntity): Promise<Buffer> {
     const stored: GetStorageObjectResult = await this.storageManagerService.getObject({
       key: source.storageKey,
     });
@@ -169,6 +194,15 @@ export class BookProcessingService {
       contentText: layer.contentText,
       runs: layer.runs,
     };
+  }
+
+  private static isPdfSource(source: BookAssetEntity): boolean {
+    const contentType: string = source.contentType.trim().toLowerCase();
+    if (contentType === PDF_SOURCE.contentType) {
+      return true;
+    }
+    const fileName: string = (source.originalFileName ?? '').trim().toLowerCase();
+    return fileName.endsWith('.pdf');
   }
 
   private static isEpubSource(source: BookAssetEntity): boolean {
