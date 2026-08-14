@@ -68,8 +68,37 @@ model Book {
   deletedAt        DateTime?
   owner            User                 @relation(fields: [ownerId], references: [id])
   categories       Category[]
+  assets           BookAsset[]
 
   @@index([publishingStatus])
   @@index([publishedAt])
   @@index([ownerId])
+}
+
+enum BookAssetKind {
+  source
+  processed
+  preview_image
+  promo_video
+  audio
+}
+
+model BookAsset {
+  id               Int           @id @default(autoincrement())
+  bookId           Int
+  kind             BookAssetKind
+  storageKey       String        @unique
+  contentType      String
+  byteSize         Int
+  checksumSha256   String?
+  originalFileName String?
+  sortOrder        Int           @default(0)
+  isEncrypted      Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  deletedAt        DateTime?
+  book             Book          @relation(fields: [bookId], references: [id])
+
+  @@index([bookId])
+  @@index([bookId, kind])
 }

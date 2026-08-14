@@ -1,0 +1,1 @@
+export const BOOK_ASSET_CHECKSUM_SHA256_LENGTH = 64;
