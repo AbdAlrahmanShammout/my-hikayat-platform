@@ -20,34 +20,53 @@ type ManifestItem = {
 type SpineRef = {
   readonly idref: string;
   readonly isLinear: boolean;
+  readonly properties: string;
+};
+
+export type EpubLinearDocument = {
+  readonly spineIndex: number;
+  readonly href: string;
+  readonly manifestId: string;
+  readonly properties: string;
+  readonly documentXml: string;
 };
 
 export class EpubSpineHelper {
   static extract(opened: EpubOcfOpenedPackage): ExtractedEpubChapter[] {
-    const manifestById: Map<string, ManifestItem> = parseManifest(opened.packageXml);
     const titlesByHref: Map<string, string> = readNavTitles(
       opened.packagePath,
-      manifestById,
+      parseManifest(opened.packageXml),
       opened.archive,
     );
-    const chapters: ExtractedEpubChapter[] = [];
+    const documents: EpubLinearDocument[] = EpubSpineHelper.listLinearDocuments(opened);
+    if (documents.length === 0) {
+      throw new BookProcessingInvalidEpubException('spine has no linear documents');
+    }
+    return documents.map((document) => ({
+      spineIndex: document.spineIndex,
+      href: document.href,
+      manifestId: document.manifestId,
+      title: resolveChapterTitle(document.href, document.documentXml, titlesByHref),
+      contentText: stripMarkup(document.documentXml),
+    }));
+  }
+
+  static listLinearDocuments(opened: EpubOcfOpenedPackage): EpubLinearDocument[] {
+    const manifestById: Map<string, ManifestItem> = parseManifest(opened.packageXml);
+    const documents: EpubLinearDocument[] = [];
     for (const spineRef of parseSpine(opened.packageXml)) {
-      const chapter: ExtractedEpubChapter | null = readLinearChapter({
+      const document: EpubLinearDocument | null = readLinearDocument({
         packagePath: opened.packagePath,
         archive: opened.archive,
         manifestById,
-        titlesByHref,
         spineRef,
-        spineIndex: chapters.length,
+        spineIndex: documents.length,
       });
-      if (chapter !== null) {
-        chapters.push(chapter);
+      if (document !== null) {
+        documents.push(document);
       }
     }
-    if (chapters.length === 0) {
-      throw new BookProcessingInvalidEpubException('spine has no linear documents');
-    }
-    return chapters;
+    return documents;
   }
 }
 
@@ -81,6 +100,7 @@ function parseSpine(packageXml: string): SpineRef[] {
       {
         idref,
         isLinear: linear === null || linear.toLowerCase() === EPUB_SPINE.linearYes,
+        properties: readAttribute(tag, 'properties') ?? '',
       },
     ];
   });
@@ -117,14 +137,13 @@ function readNavTitles(
   return titles;
 }
 
-function readLinearChapter(input: {
+function readLinearDocument(input: {
   readonly packagePath: string;
   readonly archive: ZipArchive;
   readonly manifestById: Map<string, ManifestItem>;
-  readonly titlesByHref: Map<string, string>;
   readonly spineRef: SpineRef;
   readonly spineIndex: number;
-}): ExtractedEpubChapter | null {
+}): EpubLinearDocument | null {
   if (!input.spineRef.isLinear) {
     return null;
   }
@@ -141,13 +160,12 @@ function readLinearChapter(input: {
   if (!input.archive.has(href)) {
     throw new BookProcessingInvalidEpubException(`spine document is missing: ${href}`);
   }
-  const documentXml: string = input.archive.read(href).toString('utf8');
   return {
     spineIndex: input.spineIndex,
     href,
     manifestId: item.id,
-    title: resolveChapterTitle(href, documentXml, input.titlesByHref),
-    contentText: stripMarkup(documentXml),
+    properties: `${item.properties} ${input.spineRef.properties}`.trim(),
+    documentXml: input.archive.read(href).toString('utf8'),
   };
 }
 

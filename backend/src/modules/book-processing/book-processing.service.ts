@@ -8,18 +8,23 @@ import { BookAssetEntity } from '@/modules/book-asset/entity/book-asset.entity';
 import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
 import {
   ExtractedEpubChapter,
+  ExtractedEpubFixedLayout,
   ExtractedEpubMetadata,
 } from '@/modules/book-processing/defs/book-processing-service.defs';
+import { BookFixedLayoutStructure } from '@/modules/book-processing/defs/book-page-repository.defs';
 import { BookChapterEntity } from '@/modules/book-processing/entity/book-chapter.entity';
 import { BookSourceMetadataEntity } from '@/modules/book-processing/entity/book-source-metadata.entity';
+import { EpubFixedLayoutHelper } from '@/modules/book-processing/epub-fixed-layout.helper';
 import { EpubLayoutHelper } from '@/modules/book-processing/epub-layout.helper';
 import { EpubMetadataHelper } from '@/modules/book-processing/epub-metadata.helper';
 import { EpubOcfHelper, EpubOcfOpenedPackage } from '@/modules/book-processing/epub-ocf.helper';
 import { EpubSpineHelper } from '@/modules/book-processing/epub-spine.helper';
 import { BookProcessingInvalidEpubException } from '@/modules/book-processing/exceptions/book-processing-invalid-epub.exception';
 import { BookProcessingMissingSourceException } from '@/modules/book-processing/exceptions/book-processing-missing-source.exception';
+import { BookProcessingNotFixedLayoutException } from '@/modules/book-processing/exceptions/book-processing-not-fixed-layout.exception';
 import { BookProcessingNotReflowableException } from '@/modules/book-processing/exceptions/book-processing-not-reflowable.exception';
 import { BookChapterRepository } from '@/modules/book-processing/repository/book-chapter.repository';
+import { BookPageRepository } from '@/modules/book-processing/repository/book-page.repository';
 import { BookSourceMetadataRepository } from '@/modules/book-processing/repository/book-source-metadata.repository';
 import { DecryptBufferResult } from '@/providers/encryption/defs/encryption-manager.defs';
 import { EncryptionManagerService } from '@/providers/encryption/encryption-manager.service';
@@ -34,6 +39,7 @@ export class BookProcessingService {
     private readonly bookAssetService: BookAssetService,
     private readonly bookSourceMetadataRepository: BookSourceMetadataRepository,
     private readonly bookChapterRepository: BookChapterRepository,
+    private readonly bookPageRepository: BookPageRepository,
     private readonly bookService: BookService,
     private readonly storageManagerService: StorageManagerService,
     private readonly encryptionManagerService: EncryptionManagerService,
@@ -70,6 +76,21 @@ export class BookProcessingService {
     }
     const chapters: ExtractedEpubChapter[] = EpubSpineHelper.extract(opened);
     return this.bookChapterRepository.replaceByBookId({ bookId, chapters });
+  }
+
+  async extractEpubFixedLayout(bookId: number): Promise<BookFixedLayoutStructure> {
+    const plaintext: Buffer = await this.loadEpubPlaintext(bookId);
+    const opened: EpubOcfOpenedPackage = EpubOcfHelper.open(plaintext);
+    const layoutType: BookLayoutType = EpubLayoutHelper.detect(opened.packageXml, opened.archive);
+    if (layoutType !== BookLayoutType.FIXED_LAYOUT) {
+      throw new BookProcessingNotFixedLayoutException(bookId);
+    }
+    const extracted: ExtractedEpubFixedLayout = EpubFixedLayoutHelper.extract(opened);
+    return this.bookPageRepository.replaceByBookId({
+      bookId,
+      pages: extracted.pages,
+      spreads: extracted.spreads,
+    });
   }
 
   private async persistExtractedMetadata(

@@ -9,6 +9,10 @@ import { StorageProviderModule } from '@/providers/storage/storage-provider.modu
 import { BookProcessingService } from './book-processing.service';
 import { BookChapterPrismaRepository } from './repository/book-chapter-prisma.repository';
 import { BookChapterRepository } from './repository/book-chapter.repository';
+import { BookPagePrismaRepository } from './repository/book-page-prisma.repository';
+import { BookPageRepository } from './repository/book-page.repository';
+import { BookSpreadPrismaRepository } from './repository/book-spread-prisma.repository';
+import { BookSpreadRepository } from './repository/book-spread.repository';
 import { BookSourceMetadataPrismaRepository } from './repository/book-source-metadata-prisma.repository';
 import { BookSourceMetadataRepository } from './repository/book-source-metadata.repository';
 
@@ -24,6 +28,8 @@ import { BookSourceMetadataRepository } from './repository/book-source-metadata.
     BookProcessingService,
     { provide: BookSourceMetadataRepository, useClass: BookSourceMetadataPrismaRepository },
     { provide: BookChapterRepository, useClass: BookChapterPrismaRepository },
+    { provide: BookPageRepository, useClass: BookPagePrismaRepository },
+    { provide: BookSpreadRepository, useClass: BookSpreadPrismaRepository },
   ],
   exports: [BookProcessingService],
 })

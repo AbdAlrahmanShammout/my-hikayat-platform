@@ -13,8 +13,12 @@ import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
 import { EPUB_OCF } from '@/modules/book-processing/epub-ocf.constant';
 import { BookSourceMetadataEntity } from '@/modules/book-processing/entity/book-source-metadata.entity';
 import { BookChapterEntity } from '@/modules/book-processing/entity/book-chapter.entity';
+import { BookPageEntity } from '@/modules/book-processing/entity/book-page.entity';
+import { BookSpreadEntity } from '@/modules/book-processing/entity/book-spread.entity';
+import { BookPageSpreadRole } from '@/modules/book-processing/enum/general.enum';
 import { BookProcessingInvalidEpubException } from '@/modules/book-processing/exceptions/book-processing-invalid-epub.exception';
 import { BookProcessingMissingSourceException } from '@/modules/book-processing/exceptions/book-processing-missing-source.exception';
+import { BookProcessingNotFixedLayoutException } from '@/modules/book-processing/exceptions/book-processing-not-fixed-layout.exception';
 import { BookProcessingNotReflowableException } from '@/modules/book-processing/exceptions/book-processing-not-reflowable.exception';
 import { ZipArchive } from '@/modules/book-processing/zip-archive.helper';
 import { EncryptionManagerService } from '@/providers/encryption/encryption-manager.service';
@@ -141,6 +145,73 @@ function createSampleChapter(): BookChapterEntity {
   });
 }
 
+function createFixedLayoutPagesEpubBytes(): Buffer {
+  const packageXml = `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="uid" version="3.0">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="uid">urn:uuid:test</dc:identifier>
+    <dc:title>Picture Book</dc:title>
+    <dc:language>en</dc:language>
+    <meta property="rendition:layout">pre-paginated</meta>
+  </metadata>
+  <manifest>
+    <item id="p1" href="page1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p2" href="page2.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine>
+    <itemref idref="p1" properties="page-spread-left"/>
+    <itemref idref="p2" properties="page-spread-right"/>
+  </spine>
+</package>
+`;
+  return ZipArchive.createStored([
+    { name: EPUB_OCF.mimetypePath, data: Buffer.from(EPUB_OCF.mimetypeValue) },
+    { name: EPUB_OCF.containerPath, data: Buffer.from(CONTAINER_XML) },
+    { name: 'OEBPS/content.opf', data: Buffer.from(packageXml) },
+    {
+      name: 'OEBPS/page1.xhtml',
+      data: Buffer.from(
+        '<html><head><meta name="viewport" content="width=1200, height=1600"/></head><body><h1>Left Page</h1></body></html>',
+      ),
+    },
+    {
+      name: 'OEBPS/page2.xhtml',
+      data: Buffer.from(
+        '<html><head><meta name="viewport" content="width=1200, height=1600"/></head><body><h1>Right Page</h1></body></html>',
+      ),
+    },
+  ]);
+}
+
+function createSamplePage(): BookPageEntity {
+  return new BookPageEntity({
+    id: 21,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    bookId: 8,
+    spineIndex: 0,
+    href: 'OEBPS/page1.xhtml',
+    manifestId: 'p1',
+    title: 'Left Page',
+    width: 1200,
+    height: 1600,
+    spreadRole: BookPageSpreadRole.LEFT,
+  });
+}
+
+function createSampleSpread(): BookSpreadEntity {
+  return new BookSpreadEntity({
+    id: 31,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    bookId: 8,
+    spreadIndex: 0,
+    leftPageId: 21,
+    rightPageId: 22,
+    centerPageId: null,
+  });
+}
+
 function createSourceMetadata(): BookSourceMetadataEntity {
   return new BookSourceMetadataEntity({
     id: 3,
@@ -166,6 +237,7 @@ describe('BookProcessingService', () => {
     findByBookId: jest.Mock;
   };
   let mockBookChapterRepository: { replaceByBookId: jest.Mock };
+  let mockBookPageRepository: { replaceByBookId: jest.Mock };
   let mockBookService: { updateBook: jest.Mock };
   let mockStorageManagerService: { getObject: jest.Mock };
   let mockEncryptionManagerService: { decrypt: jest.Mock };
@@ -179,6 +251,7 @@ describe('BookProcessingService', () => {
       findByBookId: jest.fn(),
     };
     mockBookChapterRepository = { replaceByBookId: jest.fn() };
+    mockBookPageRepository = { replaceByBookId: jest.fn() };
     mockBookService = { updateBook: jest.fn() };
     mockStorageManagerService = { getObject: jest.fn() };
     mockEncryptionManagerService = { decrypt: jest.fn() };
@@ -186,6 +259,7 @@ describe('BookProcessingService', () => {
       mockBookAssetService as unknown as BookAssetService,
       mockBookSourceMetadataRepository,
       mockBookChapterRepository,
+      mockBookPageRepository,
       mockBookService as unknown as BookService,
       mockStorageManagerService as unknown as StorageManagerService,
       mockEncryptionManagerService as unknown as EncryptionManagerService,
@@ -402,6 +476,73 @@ describe('BookProcessingService', () => {
         BookProcessingNotReflowableException,
       );
       expect(mockBookChapterRepository.replaceByBookId).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('extractEpubFixedLayout', () => {
+    it('replaces persisted pages and spreads for a pre-paginated EPUB', async () => {
+      const expectedStructure = { pages: [createSamplePage()], spreads: [createSampleSpread()] };
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(createSourceAsset());
+      mockStorageManagerService.getObject.mockResolvedValue({
+        key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        body: Buffer.from('encrypted-epub'),
+        contentType: 'application/epub+zip',
+        byteSize: 14,
+      });
+      mockEncryptionManagerService.decrypt.mockReturnValue({
+        plaintext: createFixedLayoutPagesEpubBytes(),
+      });
+      mockBookPageRepository.replaceByBookId.mockResolvedValue(expectedStructure);
+      const actualStructure = await bookProcessingService.extractEpubFixedLayout(8);
+      expect(mockBookPageRepository.replaceByBookId).toHaveBeenCalledWith({
+        bookId: 8,
+        pages: [
+          {
+            spineIndex: 0,
+            href: 'OEBPS/page1.xhtml',
+            manifestId: 'p1',
+            title: 'Left Page',
+            width: 1200,
+            height: 1600,
+            spreadRole: BookPageSpreadRole.LEFT,
+          },
+          {
+            spineIndex: 1,
+            href: 'OEBPS/page2.xhtml',
+            manifestId: 'p2',
+            title: 'Right Page',
+            width: 1200,
+            height: 1600,
+            spreadRole: BookPageSpreadRole.RIGHT,
+          },
+        ],
+        spreads: [
+          {
+            spreadIndex: 0,
+            leftSpineIndex: 0,
+            rightSpineIndex: 1,
+            centerSpineIndex: null,
+          },
+        ],
+      });
+      expect(actualStructure).toBe(expectedStructure);
+    });
+
+    it('rejects a reflowable EPUB before replacing pages', async () => {
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(createSourceAsset());
+      mockStorageManagerService.getObject.mockResolvedValue({
+        key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        body: Buffer.from('encrypted-epub'),
+        contentType: 'application/epub+zip',
+        byteSize: 14,
+      });
+      mockEncryptionManagerService.decrypt.mockReturnValue({
+        plaintext: createReflowableChapterEpubBytes(),
+      });
+      await expect(bookProcessingService.extractEpubFixedLayout(8)).rejects.toBeInstanceOf(
+        BookProcessingNotFixedLayoutException,
+      );
+      expect(mockBookPageRepository.replaceByBookId).not.toHaveBeenCalled();
     });
   });
 });

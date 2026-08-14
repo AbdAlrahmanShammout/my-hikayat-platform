@@ -5,6 +5,8 @@ import { BookService } from '@/modules/book/book.service';
 import { BookAssetRepository } from '@/modules/book-asset/repository/book-asset.repository';
 import { BookSourceMetadataRepository } from '@/modules/book-processing/repository/book-source-metadata.repository';
 import { BookChapterRepository } from '@/modules/book-processing/repository/book-chapter.repository';
+import { BookPageRepository } from '@/modules/book-processing/repository/book-page.repository';
+import { BookSpreadRepository } from '@/modules/book-processing/repository/book-spread.repository';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { BookProcessingModule } from './book-processing.module';
@@ -28,6 +30,22 @@ describe('BookProcessingModule', () => {
           update: jest.fn(),
         },
         bookChapter: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+          deleteMany: jest.fn(),
+        },
+        bookPage: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+          deleteMany: jest.fn(),
+        },
+        bookSpread: {
           create: jest.fn(),
           findFirst: jest.fn(),
           findMany: jest.fn(),
@@ -63,6 +81,8 @@ describe('BookProcessingModule', () => {
     expect(moduleRef.get(BookService)).toBeDefined();
     expect(moduleRef.get(BookSourceMetadataRepository)).toBeDefined();
     expect(moduleRef.get(BookChapterRepository)).toBeDefined();
+    expect(moduleRef.get(BookPageRepository)).toBeDefined();
+    expect(moduleRef.get(BookSpreadRepository)).toBeDefined();
     expect(moduleRef.get(BookAssetRepository)).toBeDefined();
     await moduleRef.close();
   });

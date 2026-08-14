@@ -79,6 +79,8 @@ model Book {
   assets            BookAsset[]
   sourceMetadata    BookSourceMetadata?
   chapters          BookChapter[]
+  pages             BookPage[]
+  spreads           BookSpread[]
 
   @@index([publishingStatus])
   @@index([processingStatus])
@@ -146,4 +148,52 @@ model BookChapter {
 
   @@index([bookId])
   @@index([bookId, spineIndex])
+}
+
+enum BookPageSpreadRole {
+  left
+  right
+  center
+  single
+}
+
+model BookPage {
+  id            Int                 @id @default(autoincrement())
+  bookId        Int
+  spineIndex    Int
+  href          String
+  manifestId    String
+  title         String
+  width         Int
+  height        Int
+  spreadRole    BookPageSpreadRole
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  deletedAt     DateTime?
+  book          Book                @relation(fields: [bookId], references: [id])
+  leftSpreads   BookSpread[]        @relation("BookSpreadLeftPage")
+  rightSpreads  BookSpread[]        @relation("BookSpreadRightPage")
+  centerSpreads BookSpread[]        @relation("BookSpreadCenterPage")
+
+  @@index([bookId])
+  @@index([bookId, spineIndex])
+}
+
+model BookSpread {
+  id           Int       @id @default(autoincrement())
+  bookId       Int
+  spreadIndex  Int
+  leftPageId   Int?
+  rightPageId  Int?
+  centerPageId Int?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+  book         Book      @relation(fields: [bookId], references: [id])
+  leftPage     BookPage? @relation("BookSpreadLeftPage", fields: [leftPageId], references: [id])
+  rightPage    BookPage? @relation("BookSpreadRightPage", fields: [rightPageId], references: [id])
+  centerPage   BookPage? @relation("BookSpreadCenterPage", fields: [centerPageId], references: [id])
+
+  @@index([bookId])
+  @@index([bookId, spreadIndex])
 }

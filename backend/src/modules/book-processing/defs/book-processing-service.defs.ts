@@ -1,3 +1,5 @@
+import { BookPageSpreadRole } from '@/modules/book-processing/enum/general.enum';
+
 export type ExtractedEpubMetadata = {
   readonly packagePath: string;
   readonly epubVersion: string;
@@ -15,4 +17,26 @@ export type ExtractedEpubChapter = {
   readonly manifestId: string;
   readonly title: string;
   readonly contentText: string;
+};
+
+export type ExtractedEpubPage = {
+  readonly spineIndex: number;
+  readonly href: string;
+  readonly manifestId: string;
+  readonly title: string;
+  readonly width: number;
+  readonly height: number;
+  readonly spreadRole: BookPageSpreadRole;
+};
+
+export type ExtractedEpubSpread = {
+  readonly spreadIndex: number;
+  readonly leftSpineIndex: number | null;
+  readonly rightSpineIndex: number | null;
+  readonly centerSpineIndex: number | null;
+};
+
+export type ExtractedEpubFixedLayout = {
+  readonly pages: readonly ExtractedEpubPage[];
+  readonly spreads: readonly ExtractedEpubSpread[];
 };

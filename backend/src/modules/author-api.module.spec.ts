@@ -50,6 +50,22 @@ describe('AuthorApiModule', () => {
           update: jest.fn(),
           deleteMany: jest.fn(),
         },
+        bookPage: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+          deleteMany: jest.fn(),
+        },
+        bookSpread: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+          deleteMany: jest.fn(),
+        },
         bookAsset: {
           create: jest.fn(),
           findFirst: jest.fn(),
