@@ -1,0 +1,22 @@
+import { BookEntity } from '@/modules/book/entity/book.entity';
+import { BookLayoutType, BookPublishingStatus, BookType } from '@/modules/book/enum/general.enum';
+import { BookDetailsType } from '@/modules/book/types/book-details-schema.type';
+import { CategoryMapper } from '@/modules/category/mapper/category.mapper';
+
+export class BookMapper {
+  static toEntity(schema: BookDetailsType): BookEntity {
+    return new BookEntity({
+      id: schema.id,
+      createdAt: schema.createdAt,
+      updatedAt: schema.updatedAt,
+      deletedAt: schema.deletedAt,
+      title: schema.title,
+      description: schema.description,
+      layoutType: (schema.layoutType as BookLayoutType | null) ?? null,
+      bookType: schema.bookType as BookType,
+      publishingStatus: schema.publishingStatus as BookPublishingStatus,
+      publishedAt: schema.publishedAt,
+      categories: schema.categories?.map((category) => CategoryMapper.toEntity(category)),
+    });
+  }
+}

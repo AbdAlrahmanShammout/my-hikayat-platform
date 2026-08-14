@@ -1,0 +1,39 @@
+import { Test, TestingModule } from '@nestjs/testing';
+
+import { BookRepository } from '@/modules/book/repository/book.repository';
+import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
+
+import { BookModule } from './book.module';
+import { BookService } from './book.service';
+
+describe('BookModule', () => {
+  it('binds the abstract repository and exports the service', async () => {
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [BookModule],
+    })
+      .overrideProvider(PrismaProviderService)
+      .useValue({
+        $connect: jest.fn(),
+        $disconnect: jest.fn(),
+        $transaction: jest.fn(),
+        book: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
+        category: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
+      })
+      .compile();
+    expect(moduleRef.get(BookService)).toBeDefined();
+    expect(moduleRef.get(BookRepository)).toBeDefined();
+    await moduleRef.close();
+  });
+});
