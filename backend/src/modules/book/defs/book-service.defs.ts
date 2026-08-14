@@ -37,3 +37,8 @@ export type TransitionBookProcessingStatusInput = {
   readonly bookId: number;
   readonly to: BookProcessingStatus;
 };
+
+export type TransitionBookPublishingStatusInput = {
+  readonly bookId: number;
+  readonly to: BookPublishingStatus;
+};

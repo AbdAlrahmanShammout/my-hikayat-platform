@@ -4,6 +4,7 @@ import { BookRepository } from '@/modules/book/repository/book.repository';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { BookProcessingStatusService } from './book-processing-status.service';
+import { BookPublishingStatusService } from './book-publishing-status.service';
 import { BookModule } from './book.module';
 import { BookService } from './book.service';
 
@@ -36,6 +37,7 @@ describe('BookModule', () => {
       .compile();
     expect(moduleRef.get(BookService)).toBeDefined();
     expect(moduleRef.get(BookProcessingStatusService)).toBeDefined();
+    expect(moduleRef.get(BookPublishingStatusService)).toBeDefined();
     expect(moduleRef.get(BookRepository)).toBeDefined();
     await moduleRef.close();
   });

@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { ConfigsModule } from '@/config/configs.module';
+import { BookProcessingStatusService } from '@/modules/book/book-processing-status.service';
+import { BookPublishingStatusService } from '@/modules/book/book-publishing-status.service';
 import { BookService } from '@/modules/book/book.service';
 import { BookAssetRepository } from '@/modules/book-asset/repository/book-asset.repository';
 import { BookSourceMetadataRepository } from '@/modules/book-processing/repository/book-source-metadata.repository';
@@ -101,6 +103,8 @@ describe('BookProcessingModule', () => {
     expect(moduleRef.get(BookProcessingOrchestrationService)).toBeDefined();
     expect(moduleRef.get(JobManagerService)).toBeDefined();
     expect(moduleRef.get(BookService)).toBeDefined();
+    expect(moduleRef.get(BookProcessingStatusService)).toBeDefined();
+    expect(moduleRef.get(BookPublishingStatusService)).toBeDefined();
     expect(moduleRef.get(BookSourceMetadataRepository)).toBeDefined();
     expect(moduleRef.get(BookChapterRepository)).toBeDefined();
     expect(moduleRef.get(BookPageRepository)).toBeDefined();

@@ -1,4 +1,5 @@
 import { BookPageSpreadRole } from '@/modules/book-processing/enum/general.enum';
+import { UserRole } from '@/modules/user/enum/general.enum';
 
 export type ExtractedEpubMetadata = {
   readonly packagePath: string;
@@ -55,4 +56,10 @@ export type ExtractedEpubPageTextLayer = {
   readonly href: string;
   readonly contentText: string;
   readonly runs: readonly ExtractedEpubTextRun[];
+};
+
+export type SubmitBookForReviewServiceInput = {
+  readonly bookId: number;
+  readonly actorId: number;
+  readonly actorRole: UserRole;
 };
