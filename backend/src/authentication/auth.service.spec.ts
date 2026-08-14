@@ -134,4 +134,30 @@ describe('AuthService', () => {
       ).rejects.toBeInstanceOf(AuthenticationFailedException);
     });
   });
+
+  describe('verifyCredentials', () => {
+    it('returns the user when email and password match', async () => {
+      const expectedUser = createSampleUser();
+      mockUserService.findUserByEmail.mockResolvedValue(expectedUser);
+      mockCompareHashString.mockResolvedValue(true);
+      const actualUser = await authService.verifyCredentials({
+        email: 'reader@example.com',
+        password: 'correct-horse-battery',
+      });
+      expect(actualUser).toBe(expectedUser);
+    });
+  });
+
+  describe('createSession', () => {
+    it('signs an access token for the given principal', () => {
+      mockJwtTokenService.createToken.mockReturnValue('signed.jwt');
+      const actualSession = authService.createSession(createSampleUser());
+      expect(mockJwtTokenService.createToken).toHaveBeenCalledWith({
+        payload: { principalId: 1, role: UserRole.READER },
+        purpose: JwtTokenPurpose.ACCESS,
+      });
+      expect(actualSession.accessToken).toBe('signed.jwt');
+      expect(actualSession.expiresIn).toBe('15m');
+    });
+  });
 });

@@ -29,10 +29,15 @@ export class AuthService {
       email: input.email,
       passwordHash,
     });
-    return this.buildSession(user);
+    return this.createSession(user);
   }
 
   async login(input: LoginUserServiceInput): Promise<AuthSession> {
+    const user: UserEntity = await this.verifyCredentials(input);
+    return this.createSession(user);
+  }
+
+  async verifyCredentials(input: LoginUserServiceInput): Promise<UserEntity> {
     const user: UserEntity | null = await this.userService.findUserByEmail(input.email);
     if (user === null) {
       throw new AuthenticationFailedException();
@@ -41,10 +46,10 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new AuthenticationFailedException();
     }
-    return this.buildSession(user);
+    return user;
   }
 
-  private buildSession(user: UserEntity): AuthSession {
+  createSession(user: UserEntity): AuthSession {
     const payload: JwtAuthTokenPayload = {
       principalId: user.id,
       role: user.role,
