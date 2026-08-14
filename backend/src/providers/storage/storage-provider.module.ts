@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 
-import { MemoryStorageProviderModule } from '@/providers/storage/memory/memory-storage-provider.module';
+import { S3StorageProviderModule } from '@/providers/storage/s3/s3-storage-provider.module';
 
 @Module({
-  imports: [MemoryStorageProviderModule],
-  exports: [MemoryStorageProviderModule],
+  imports: [S3StorageProviderModule],
+  exports: [S3StorageProviderModule],
 })
 export class StorageProviderModule {}

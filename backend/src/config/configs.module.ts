@@ -11,6 +11,9 @@ import databaseConfigs from './database/database-configs';
 import { jwtConfigSchema } from './jwt/jwt-config.schema';
 import { JwtConfigService } from './jwt/jwt-config.service';
 import jwtConfigs from './jwt/jwt-configs';
+import { storageConfigSchema } from './storage/storage-config.schema';
+import { StorageConfigService } from './storage/storage-config.service';
+import storageConfigs from './storage/storage-configs';
 
 @Global()
 @Module({
@@ -19,11 +22,12 @@ import jwtConfigs from './jwt/jwt-configs';
       isGlobal: true,
       cache: true,
       envFilePath: ['.env'],
-      load: [...appConfigs, ...databaseConfigs, ...jwtConfigs],
+      load: [...appConfigs, ...databaseConfigs, ...jwtConfigs, ...storageConfigs],
       validationSchema: Joi.object({
         ...appConfigSchema,
         ...databaseConfigSchema,
         ...jwtConfigSchema,
+        ...storageConfigSchema,
       }),
       // OS and tool environment keys (PATH, npm_*, etc.) are always present.
       // Declared application variables are still validated by the merged schema.
@@ -33,7 +37,7 @@ import jwtConfigs from './jwt/jwt-configs';
       },
     }),
   ],
-  providers: [AppConfigService, DatabaseConfigService, JwtConfigService],
-  exports: [AppConfigService, DatabaseConfigService, JwtConfigService],
+  providers: [AppConfigService, DatabaseConfigService, JwtConfigService, StorageConfigService],
+  exports: [AppConfigService, DatabaseConfigService, JwtConfigService, StorageConfigService],
 })
 export class ConfigsModule {}

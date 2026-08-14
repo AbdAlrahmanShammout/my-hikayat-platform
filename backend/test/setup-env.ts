@@ -12,3 +12,9 @@ process.env.JWT_ACCESS_SECRET =
   process.env.JWT_ACCESS_SECRET ?? 'test-jwt-access-secret-not-for-production';
 process.env.JWT_RECOVERY_SECRET =
   process.env.JWT_RECOVERY_SECRET ?? 'test-jwt-recovery-secret-not-for-production';
+process.env.STORAGE_BUCKET = process.env.STORAGE_BUCKET ?? 'lib-app-test';
+process.env.STORAGE_REGION = process.env.STORAGE_REGION ?? 'us-east-1';
+process.env.STORAGE_ACCESS_KEY_ID =
+  process.env.STORAGE_ACCESS_KEY_ID ?? 'test-storage-access-key-not-for-production';
+process.env.STORAGE_SECRET_ACCESS_KEY =
+  process.env.STORAGE_SECRET_ACCESS_KEY ?? 'test-storage-secret-key-not-for-production';
