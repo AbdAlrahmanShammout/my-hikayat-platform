@@ -32,4 +32,40 @@ model Category {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   deletedAt      DateTime?
+  books          Book[]
+}
+
+enum BookLayoutType {
+  reflowable
+  fixed_layout
+}
+
+enum BookType {
+  standard_chapter
+  picture_book
+  illustrated_chapter
+}
+
+enum BookPublishingStatus {
+  pending
+  in_review
+  approved
+  rejected
+}
+
+model Book {
+  id                Int                   @id @default(autoincrement())
+  title             String
+  description       String                @db.Text
+  layoutType        BookLayoutType?
+  bookType          BookType
+  publishingStatus  BookPublishingStatus  @default(pending)
+  publishedAt       DateTime?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  deletedAt         DateTime?
+  categories        Category[]
+
+  @@index([publishingStatus])
+  @@index([publishedAt])
 }
