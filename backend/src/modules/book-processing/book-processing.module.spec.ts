@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { ConfigsModule } from '@/config/configs.module';
+import { BookService } from '@/modules/book/book.service';
 import { BookAssetRepository } from '@/modules/book-asset/repository/book-asset.repository';
 import { BookSourceMetadataRepository } from '@/modules/book-processing/repository/book-source-metadata.repository';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
@@ -50,6 +51,7 @@ describe('BookProcessingModule', () => {
       })
       .compile();
     expect(moduleRef.get(BookProcessingService)).toBeDefined();
+    expect(moduleRef.get(BookService)).toBeDefined();
     expect(moduleRef.get(BookSourceMetadataRepository)).toBeDefined();
     expect(moduleRef.get(BookAssetRepository)).toBeDefined();
     await moduleRef.close();

@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 
+import { BookService } from '@/modules/book/book.service';
+import { BookEntity } from '@/modules/book/entity/book.entity';
+import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import { BookAssetService } from '@/modules/book-asset/book-asset.service';
 import { BookAssetEntity } from '@/modules/book-asset/entity/book-asset.entity';
 import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
 import { ExtractedEpubMetadata } from '@/modules/book-processing/defs/book-processing-service.defs';
 import { BookSourceMetadataEntity } from '@/modules/book-processing/entity/book-source-metadata.entity';
+import { EpubLayoutHelper } from '@/modules/book-processing/epub-layout.helper';
 import { EpubMetadataHelper } from '@/modules/book-processing/epub-metadata.helper';
 import { EpubOcfHelper, EpubOcfOpenedPackage } from '@/modules/book-processing/epub-ocf.helper';
 import { BookProcessingInvalidEpubException } from '@/modules/book-processing/exceptions/book-processing-invalid-epub.exception';
@@ -22,6 +26,7 @@ export class BookProcessingService {
   constructor(
     private readonly bookAssetService: BookAssetService,
     private readonly bookSourceMetadataRepository: BookSourceMetadataRepository,
+    private readonly bookService: BookService,
     private readonly storageManagerService: StorageManagerService,
     private readonly encryptionManagerService: EncryptionManagerService,
   ) {}
@@ -39,6 +44,13 @@ export class BookProcessingService {
       opened.packagePath,
     );
     return this.persistExtractedMetadata(bookId, extracted);
+  }
+
+  async detectEpubLayout(bookId: number): Promise<BookEntity> {
+    const plaintext: Buffer = await this.loadEpubPlaintext(bookId);
+    const opened: EpubOcfOpenedPackage = EpubOcfHelper.open(plaintext);
+    const layoutType: BookLayoutType = EpubLayoutHelper.detect(opened.packageXml, opened.archive);
+    return this.bookService.updateBook({ id: bookId, layoutType });
   }
 
   private async persistExtractedMetadata(

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { BookModule } from '@/modules/book/book.module';
 import { BookAssetModule } from '@/modules/book-asset/book-asset.module';
 import { DatabaseProviderModule } from '@/providers/database/database-provider.module';
 import { EncryptionProviderModule } from '@/providers/encryption/encryption-provider.module';
@@ -12,6 +13,7 @@ import { BookSourceMetadataRepository } from './repository/book-source-metadata.
 @Module({
   imports: [
     DatabaseProviderModule,
+    BookModule,
     BookAssetModule,
     StorageProviderModule,
     EncryptionProviderModule,

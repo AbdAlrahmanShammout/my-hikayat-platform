@@ -1,4 +1,12 @@
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
+import { BookService } from '@/modules/book/book.service';
+import { BookEntity } from '@/modules/book/entity/book.entity';
+import {
+  BookLayoutType,
+  BookProcessingStatus,
+  BookPublishingStatus,
+  BookType,
+} from '@/modules/book/enum/general.enum';
 import { BookAssetService } from '@/modules/book-asset/book-asset.service';
 import { BookAssetEntity } from '@/modules/book-asset/entity/book-asset.entity';
 import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
@@ -61,6 +69,35 @@ function createSourceAsset(
   });
 }
 
+function createFixedLayoutEpubBytes(): Buffer {
+  const packageXml = PACKAGE_XML.replace(
+    '</metadata>',
+    '<meta property="rendition:layout">pre-paginated</meta>\n  </metadata>',
+  );
+  return ZipArchive.createStored([
+    { name: EPUB_OCF.mimetypePath, data: Buffer.from(EPUB_OCF.mimetypeValue) },
+    { name: EPUB_OCF.containerPath, data: Buffer.from(CONTAINER_XML) },
+    { name: 'OEBPS/content.opf', data: Buffer.from(packageXml) },
+  ]);
+}
+
+function createSampleBook(layoutType: BookLayoutType | null = null): BookEntity {
+  return new BookEntity({
+    id: 8,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    title: 'The Last Lighthouse',
+    description: 'A reflowable chapter book.',
+    layoutType,
+    bookType: BookType.STANDARD_CHAPTER,
+    publishingStatus: BookPublishingStatus.PENDING,
+    processingStatus: BookProcessingStatus.NOT_STARTED,
+    publishedAt: null,
+    ownerId: 4,
+    categories: [],
+  });
+}
+
 function createSourceMetadata(): BookSourceMetadataEntity {
   return new BookSourceMetadataEntity({
     id: 3,
@@ -85,6 +122,7 @@ describe('BookProcessingService', () => {
     update: jest.Mock;
     findByBookId: jest.Mock;
   };
+  let mockBookService: { updateBook: jest.Mock };
   let mockStorageManagerService: { getObject: jest.Mock };
   let mockEncryptionManagerService: { decrypt: jest.Mock };
   let bookProcessingService: BookProcessingService;
@@ -96,11 +134,13 @@ describe('BookProcessingService', () => {
       update: jest.fn(),
       findByBookId: jest.fn(),
     };
+    mockBookService = { updateBook: jest.fn() };
     mockStorageManagerService = { getObject: jest.fn() };
     mockEncryptionManagerService = { decrypt: jest.fn() };
     bookProcessingService = new BookProcessingService(
       mockBookAssetService as unknown as BookAssetService,
       mockBookSourceMetadataRepository,
+      mockBookService as unknown as BookService,
       mockStorageManagerService as unknown as StorageManagerService,
       mockEncryptionManagerService as unknown as EncryptionManagerService,
     );
@@ -224,6 +264,50 @@ describe('BookProcessingService', () => {
         }),
       );
       expect(mockBookSourceMetadataRepository.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('detectEpubLayout', () => {
+    it('persists reflowable when the OPF omits rendition layout', async () => {
+      const expectedBook = createSampleBook(BookLayoutType.REFLOWABLE);
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(createSourceAsset());
+      mockStorageManagerService.getObject.mockResolvedValue({
+        key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        body: Buffer.from('encrypted-epub'),
+        contentType: 'application/epub+zip',
+        byteSize: 14,
+      });
+      mockEncryptionManagerService.decrypt.mockReturnValue({
+        plaintext: createMinimalEpubBytes(),
+      });
+      mockBookService.updateBook.mockResolvedValue(expectedBook);
+      const actualBook = await bookProcessingService.detectEpubLayout(8);
+      expect(mockBookService.updateBook).toHaveBeenCalledWith({
+        id: 8,
+        layoutType: BookLayoutType.REFLOWABLE,
+      });
+      expect(actualBook).toBe(expectedBook);
+    });
+
+    it('persists fixed-layout for a pre-paginated rendition', async () => {
+      const expectedBook = createSampleBook(BookLayoutType.FIXED_LAYOUT);
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(createSourceAsset());
+      mockStorageManagerService.getObject.mockResolvedValue({
+        key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        body: Buffer.from('encrypted-epub'),
+        contentType: 'application/epub+zip',
+        byteSize: 14,
+      });
+      mockEncryptionManagerService.decrypt.mockReturnValue({
+        plaintext: createFixedLayoutEpubBytes(),
+      });
+      mockBookService.updateBook.mockResolvedValue(expectedBook);
+      const actualBook = await bookProcessingService.detectEpubLayout(8);
+      expect(mockBookService.updateBook).toHaveBeenCalledWith({
+        id: 8,
+        layoutType: BookLayoutType.FIXED_LAYOUT,
+      });
+      expect(actualBook.layoutType).toBe(BookLayoutType.FIXED_LAYOUT);
     });
   });
 });
