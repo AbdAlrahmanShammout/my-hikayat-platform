@@ -4,16 +4,14 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ConfigsModule } from '@/config/configs.module';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
-import { AdminApiModule } from './admin-api.module';
+import { AuthController } from './auth.controller';
+import { AuthModule } from './auth.module';
+import { AuthService } from './auth.service';
 
-describe('AdminApiModule', () => {
-  it('compiles with the authentication concern', async () => {
+describe('AuthModule', () => {
+  it('provides the auth service and controller', async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigsModule,
-        ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
-        AdminApiModule,
-      ],
+      imports: [ConfigsModule, ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]), AuthModule],
     })
       .overrideProvider(PrismaProviderService)
       .useValue({
@@ -22,8 +20,8 @@ describe('AdminApiModule', () => {
         user: { create: jest.fn(), findFirst: jest.fn() },
       })
       .compile();
-    const actualModule: AdminApiModule = moduleRef.get(AdminApiModule);
-    expect(actualModule).toBeDefined();
+    expect(moduleRef.get(AuthService)).toBeDefined();
+    expect(moduleRef.get(AuthController)).toBeDefined();
     await moduleRef.close();
   });
 });

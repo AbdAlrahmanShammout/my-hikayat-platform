@@ -1,3 +1,4 @@
+import { AuthModule } from '@/authentication/auth.module';
 import { AdminApiModule } from '@/modules/admin-api.module';
 import { AuthorApiModule } from '@/modules/author-api.module';
 import { ReaderApiModule } from '@/modules/reader-api.module';
@@ -11,9 +12,9 @@ describe('SWAGGER_DOCUMENT_DEFINITIONS', () => {
       'author',
       'admin',
     ]);
-    expect(SWAGGER_DOCUMENT_DEFINITIONS[0].include).toEqual([ReaderApiModule]);
-    expect(SWAGGER_DOCUMENT_DEFINITIONS[1].include).toEqual([AuthorApiModule]);
-    expect(SWAGGER_DOCUMENT_DEFINITIONS[2].include).toEqual([AdminApiModule]);
+    expect(SWAGGER_DOCUMENT_DEFINITIONS[0].include).toEqual([ReaderApiModule, AuthModule]);
+    expect(SWAGGER_DOCUMENT_DEFINITIONS[1].include).toEqual([AuthorApiModule, AuthModule]);
+    expect(SWAGGER_DOCUMENT_DEFINITIONS[2].include).toEqual([AdminApiModule, AuthModule]);
     expect(SWAGGER_DOCUMENT_DEFINITIONS.every((definition) => definition.hasBearerAuth)).toBe(true);
   });
 });

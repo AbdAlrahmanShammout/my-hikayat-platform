@@ -1,4 +1,8 @@
 import { Module } from '@nestjs/common';
 
-@Module({})
+import { AuthModule } from '@/authentication/auth.module';
+
+@Module({
+  imports: [AuthModule],
+})
 export class ReaderApiModule {}
