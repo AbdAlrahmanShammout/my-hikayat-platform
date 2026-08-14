@@ -11,20 +11,25 @@ import {
 } from '@/modules/book/defs/book-service.defs';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookPublishingStatus } from '@/modules/book/enum/general.enum';
+import { BookOwnerNotPublisherException } from '@/modules/book/exceptions/book-owner-not-publisher.exception';
 import { BookRepository } from '@/modules/book/repository/book.repository';
 import { CategoryService } from '@/modules/category/category.service';
+import { UserEntity } from '@/modules/user/entity/user.entity';
+import { UserService } from '@/modules/user/user.service';
 
 @Injectable()
 export class BookService {
   constructor(
     private readonly bookRepository: BookRepository,
     private readonly categoryService: CategoryService,
+    private readonly userService: UserService,
   ) {}
 
   async createBook(input: CreateBookServiceInput): Promise<BookEntity> {
     const title: string = BookService.normalizeTitle(input.title);
     const description: string = BookService.normalizeDescription(input.description);
     BookService.assertValidTitle(title);
+    const owner: UserEntity = await this.assertOwnerCanOwnBook(input.ownerId);
     const categoryIds: number[] = BookService.uniqueIds(input.categoryIds ?? []);
     await this.assertCategoriesExist(categoryIds);
     return this.bookRepository.create({
@@ -33,6 +38,7 @@ export class BookService {
       layoutType: input.layoutType ?? null,
       bookType: input.bookType,
       publishingStatus: BookPublishingStatus.PENDING,
+      ownerId: owner.id,
       categoryIds,
     });
   }
@@ -70,6 +76,7 @@ export class BookService {
       limit: input.limit ?? DEFAULT_PAGE_SIZE,
       offset: input.offset ?? DEFAULT_PAGE_OFFSET,
       publishingStatus: input.publishingStatus,
+      ownerId: input.ownerId,
     });
   }
 
@@ -83,6 +90,14 @@ export class BookService {
       throw new ResourceNotFoundException('Book', id);
     }
     return book;
+  }
+
+  private async assertOwnerCanOwnBook(ownerId: number): Promise<UserEntity> {
+    const owner: UserEntity = await this.userService.getUserById(ownerId);
+    if (!owner.isPublisher) {
+      throw new BookOwnerNotPublisherException(owner.id);
+    }
+    return owner;
   }
 
   private async assertCategoriesExist(categoryIds: readonly number[]): Promise<void> {

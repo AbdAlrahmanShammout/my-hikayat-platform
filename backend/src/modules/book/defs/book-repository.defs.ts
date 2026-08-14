@@ -7,6 +7,7 @@ export type CreateBookRepoInput = {
   readonly layoutType: BookLayoutType | null;
   readonly bookType: BookType;
   readonly publishingStatus: BookPublishingStatus;
+  readonly ownerId: number;
   readonly categoryIds: readonly number[];
 };
 
@@ -25,6 +26,7 @@ export type ListBooksRepoInput = {
   readonly limit: number;
   readonly offset: number;
   readonly publishingStatus?: BookPublishingStatus;
+  readonly ownerId?: number;
 };
 
 export type BookPage = {

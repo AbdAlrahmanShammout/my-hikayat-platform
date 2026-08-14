@@ -22,6 +22,7 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
+  books        Book[]
 }
 
 model Category {
@@ -54,18 +55,21 @@ enum BookPublishingStatus {
 }
 
 model Book {
-  id                Int                   @id @default(autoincrement())
-  title             String
-  description       String                @db.Text
-  layoutType        BookLayoutType?
-  bookType          BookType
-  publishingStatus  BookPublishingStatus  @default(pending)
-  publishedAt       DateTime?
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
-  deletedAt         DateTime?
-  categories        Category[]
+  id               Int                  @id @default(autoincrement())
+  title            String
+  description      String               @db.Text
+  layoutType       BookLayoutType?
+  bookType         BookType
+  publishingStatus BookPublishingStatus @default(pending)
+  publishedAt      DateTime?
+  ownerId          Int
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  deletedAt        DateTime?
+  owner            User                 @relation(fields: [ownerId], references: [id])
+  categories       Category[]
 
   @@index([publishingStatus])
   @@index([publishedAt])
+  @@index([ownerId])
 }

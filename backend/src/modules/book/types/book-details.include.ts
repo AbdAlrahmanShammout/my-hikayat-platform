@@ -2,4 +2,5 @@ import type { Prisma } from '@prisma/client';
 
 export const bookDetailsInclude = {
   categories: true,
+  owner: true,
 } satisfies Prisma.BookInclude;

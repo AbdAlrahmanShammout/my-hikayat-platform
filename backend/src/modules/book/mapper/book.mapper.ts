@@ -2,6 +2,7 @@ import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookLayoutType, BookPublishingStatus, BookType } from '@/modules/book/enum/general.enum';
 import { BookDetailsType } from '@/modules/book/types/book-details-schema.type';
 import { CategoryMapper } from '@/modules/category/mapper/category.mapper';
+import { UserMapper } from '@/modules/user/mapper/user.mapper';
 
 export class BookMapper {
   static toEntity(schema: BookDetailsType): BookEntity {
@@ -16,6 +17,8 @@ export class BookMapper {
       bookType: schema.bookType as BookType,
       publishingStatus: schema.publishingStatus as BookPublishingStatus,
       publishedAt: schema.publishedAt,
+      ownerId: schema.ownerId,
+      owner: schema.owner === undefined ? undefined : UserMapper.toEntity(schema.owner),
       categories: schema.categories?.map((category) => CategoryMapper.toEntity(category)),
     });
   }

@@ -5,6 +5,7 @@ export type CreateBookServiceInput = {
   readonly description: string;
   readonly layoutType?: BookLayoutType | null;
   readonly bookType: BookType;
+  readonly ownerId: number;
   readonly categoryIds?: readonly number[];
 };
 
@@ -23,4 +24,5 @@ export type ListBooksServiceInput = {
   readonly limit?: number;
   readonly offset?: number;
   readonly publishingStatus?: BookPublishingStatus;
+  readonly ownerId?: number;
 };

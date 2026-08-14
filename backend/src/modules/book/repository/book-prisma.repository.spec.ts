@@ -19,6 +19,17 @@ describe('BookPrismaRepository', () => {
     bookType: 'standard_chapter',
     publishingStatus: 'pending',
     publishedAt: null,
+    ownerId: 4,
+    owner: {
+      id: 4,
+      createdAt,
+      updatedAt,
+      deletedAt: null,
+      email: 'author@example.com',
+      passwordHash: 'hashed-password',
+      role: 'author',
+      isPublisher: true,
+    },
     categories: [],
   };
   let mockPrismaProviderService: {
@@ -49,7 +60,7 @@ describe('BookPrismaRepository', () => {
     );
   });
 
-  it('creates a book with categories and maps the persistence payload', async () => {
+  it('creates a book with an owner and categories and maps the persistence payload', async () => {
     mockPrismaProviderService.book.create.mockResolvedValue(persistenceRow);
     const actualEntity = await bookPrismaRepository.create({
       title: 'The Last Lighthouse',
@@ -57,6 +68,7 @@ describe('BookPrismaRepository', () => {
       layoutType: BookLayoutType.REFLOWABLE,
       bookType: BookType.STANDARD_CHAPTER,
       publishingStatus: BookPublishingStatus.PENDING,
+      ownerId: 4,
       categoryIds: [2],
     });
     expect(mockPrismaProviderService.book.create).toHaveBeenCalledWith(
@@ -66,6 +78,7 @@ describe('BookPrismaRepository', () => {
           title: 'The Last Lighthouse',
           bookType: BookType.STANDARD_CHAPTER,
           publishingStatus: BookPublishingStatus.PENDING,
+          owner: { connect: { id: 4 } },
           categories: { connect: [{ id: 2 }] },
         }),
       }),
@@ -85,9 +98,15 @@ describe('BookPrismaRepository', () => {
     );
   });
 
-  it('lists books with a real total', async () => {
+  it('lists books with a real total and optional owner filter', async () => {
     mockPrismaProviderService.$transaction.mockResolvedValue([[persistenceRow], 1]);
-    const actualPage = await bookPrismaRepository.list({ limit: 20, offset: 0 });
+    const actualPage = await bookPrismaRepository.list({ limit: 20, offset: 0, ownerId: 4 });
+    expect(mockPrismaProviderService.book.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { deletedAt: null, ownerId: 4 },
+        include: bookDetailsInclude,
+      }),
+    );
     expect(actualPage.total).toBe(1);
     expect(actualPage.entities).toEqual([BookMapper.toEntity(persistenceRow)]);
   });

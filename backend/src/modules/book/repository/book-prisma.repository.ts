@@ -28,6 +28,7 @@ export class BookPrismaRepository implements BookRepository {
         layoutType: input.layoutType,
         bookType: input.bookType,
         publishingStatus: input.publishingStatus,
+        owner: { connect: { id: input.ownerId } },
         categories: BookPrismaRepository.buildCategoryConnect(input.categoryIds),
       },
       include: bookDetailsInclude,
@@ -84,6 +85,9 @@ export class BookPrismaRepository implements BookRepository {
     const where: Prisma.BookWhereInput = { deletedAt: null };
     if (input.publishingStatus !== undefined) {
       where.publishingStatus = input.publishingStatus;
+    }
+    if (input.ownerId !== undefined) {
+      where.ownerId = input.ownerId;
     }
     const [rows, total] = await this.prismaProviderService.$transaction([
       this.prismaProviderService.book.findMany({

@@ -30,6 +30,7 @@ describe('BookModule', () => {
           count: jest.fn(),
           update: jest.fn(),
         },
+        user: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
       })
       .compile();
     expect(moduleRef.get(BookService)).toBeDefined();

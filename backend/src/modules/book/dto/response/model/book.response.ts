@@ -4,6 +4,7 @@ import { BaseModelResponseDto } from '@/common/base/base-model.response.dto';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookLayoutType, BookPublishingStatus, BookType } from '@/modules/book/enum/general.enum';
 import { CategoryResponse } from '@/modules/category/dto/response/model/category.response';
+import { UserResponse } from '@/modules/user/dto/response/model/user.response';
 
 export class BookResponse extends BaseModelResponseDto {
   @ApiProperty({ description: 'Book title', example: 'The Last Lighthouse' })
@@ -41,6 +42,12 @@ export class BookResponse extends BaseModelResponseDto {
   })
   publishedAt: Date | null;
 
+  @ApiProperty({ description: 'Owning publisher user id', example: 4 })
+  ownerId: number;
+
+  @ApiPropertyOptional({ type: () => UserResponse })
+  owner?: UserResponse;
+
   @ApiProperty({ type: () => [CategoryResponse] })
   categories: CategoryResponse[];
 
@@ -52,6 +59,8 @@ export class BookResponse extends BaseModelResponseDto {
     this.bookType = entity.bookType;
     this.publishingStatus = entity.publishingStatus;
     this.publishedAt = entity.publishedAt;
+    this.ownerId = entity.ownerId;
+    this.owner = entity.owner === undefined ? undefined : new UserResponse(entity.owner);
     this.categories = (entity.categories ?? []).map((category) => new CategoryResponse(category));
   }
 }

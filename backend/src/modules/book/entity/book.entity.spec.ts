@@ -14,9 +14,11 @@ describe('BookEntity', () => {
       bookType: BookType.STANDARD_CHAPTER,
       publishingStatus: BookPublishingStatus.PENDING,
       publishedAt: null,
+      ownerId: 4,
     });
     expect(actualEntity.id).toBe(8);
     expect(actualEntity.title).toBe('The Last Lighthouse');
+    expect(actualEntity.ownerId).toBe(4);
     expect(actualEntity.layoutType).toBe(BookLayoutType.REFLOWABLE);
     expect(actualEntity.bookType).toBe(BookType.STANDARD_CHAPTER);
     expect(actualEntity.publishingStatus).toBe(BookPublishingStatus.PENDING);
