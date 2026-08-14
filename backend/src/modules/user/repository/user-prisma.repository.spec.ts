@@ -21,6 +21,7 @@ describe('UserPrismaRepository', () => {
     user: {
       create: jest.Mock;
       findFirst: jest.Mock;
+      update: jest.Mock;
     };
   };
   let userPrismaRepository: UserPrismaRepository;
@@ -30,6 +31,7 @@ describe('UserPrismaRepository', () => {
       user: {
         create: jest.fn(),
         findFirst: jest.fn(),
+        update: jest.fn(),
       },
     };
     userPrismaRepository = new UserPrismaRepository(
@@ -58,5 +60,27 @@ describe('UserPrismaRepository', () => {
         where: { id: 3, deletedAt: null },
       }),
     );
+  });
+
+  it('updates publisher capability and maps the persistence payload', async () => {
+    const updatedRow = {
+      ...persistenceRow,
+      role: 'author',
+      isPublisher: true,
+    };
+    mockPrismaProviderService.user.update.mockResolvedValue(updatedRow);
+    const actualEntity = await userPrismaRepository.updatePublisherCapability({
+      id: 3,
+      role: UserRole.AUTHOR,
+      isPublisher: true,
+    });
+    expect(mockPrismaProviderService.user.update).toHaveBeenCalledWith({
+      where: { id: 3 },
+      data: {
+        role: UserRole.AUTHOR,
+        isPublisher: true,
+      },
+    });
+    expect(actualEntity).toEqual(UserMapper.toEntity(updatedRow));
   });
 });

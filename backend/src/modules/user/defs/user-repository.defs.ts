@@ -6,3 +6,9 @@ export type CreateUserRepoInput = {
   readonly role: UserRole;
   readonly isPublisher: boolean;
 };
+
+export type UpdatePublisherCapabilityRepoInput = {
+  readonly id: number;
+  readonly role: UserRole;
+  readonly isPublisher: boolean;
+};

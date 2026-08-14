@@ -22,6 +22,7 @@ describe('UserService', () => {
     create: jest.Mock;
     findById: jest.Mock;
     findByEmail: jest.Mock;
+    updatePublisherCapability: jest.Mock;
   };
   let userService: UserService;
 
@@ -30,6 +31,7 @@ describe('UserService', () => {
       create: jest.fn(),
       findById: jest.fn(),
       findByEmail: jest.fn(),
+      updatePublisherCapability: jest.fn(),
     };
     userService = new UserService(mockUserRepository);
   });
@@ -62,6 +64,65 @@ describe('UserService', () => {
         }),
       ).rejects.toBeInstanceOf(UserEmailConflictException);
       expect(mockUserRepository.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('enablePublisherCapability', () => {
+    it('promotes a reader to an author publisher', async () => {
+      const reader = createSampleUser();
+      const expectedUser = new UserEntity({
+        ...reader,
+        role: UserRole.AUTHOR,
+        isPublisher: true,
+      });
+      mockUserRepository.findById.mockResolvedValue(reader);
+      mockUserRepository.updatePublisherCapability.mockResolvedValue(expectedUser);
+      const actualUser = await userService.enablePublisherCapability({ userId: 1 });
+      expect(mockUserRepository.updatePublisherCapability).toHaveBeenCalledWith({
+        id: 1,
+        role: UserRole.AUTHOR,
+        isPublisher: true,
+      });
+      expect(actualUser).toBe(expectedUser);
+    });
+
+    it('keeps a privileged role and only sets the publisher flag', async () => {
+      const admin = new UserEntity({
+        ...createSampleUser(),
+        role: UserRole.ADMIN,
+      });
+      const expectedUser = new UserEntity({
+        ...admin,
+        isPublisher: true,
+      });
+      mockUserRepository.findById.mockResolvedValue(admin);
+      mockUserRepository.updatePublisherCapability.mockResolvedValue(expectedUser);
+      const actualUser = await userService.enablePublisherCapability({ userId: 1 });
+      expect(mockUserRepository.updatePublisherCapability).toHaveBeenCalledWith({
+        id: 1,
+        role: UserRole.ADMIN,
+        isPublisher: true,
+      });
+      expect(actualUser).toBe(expectedUser);
+    });
+
+    it('does not write when the user is already an author publisher', async () => {
+      const publisher = new UserEntity({
+        ...createSampleUser(),
+        role: UserRole.AUTHOR,
+        isPublisher: true,
+      });
+      mockUserRepository.findById.mockResolvedValue(publisher);
+      const actualUser = await userService.enablePublisherCapability({ userId: 1 });
+      expect(mockUserRepository.updatePublisherCapability).not.toHaveBeenCalled();
+      expect(actualUser).toBe(publisher);
+    });
+
+    it('throws when the user is missing', async () => {
+      mockUserRepository.findById.mockResolvedValue(null);
+      await expect(userService.enablePublisherCapability({ userId: 99 })).rejects.toBeInstanceOf(
+        ResourceNotFoundException,
+      );
     });
   });
 

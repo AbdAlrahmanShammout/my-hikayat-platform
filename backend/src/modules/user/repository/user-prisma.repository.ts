@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
 import { TransactionContext } from '@/common/base/transaction-context';
-import { CreateUserRepoInput } from '@/modules/user/defs/user-repository.defs';
+import {
+  CreateUserRepoInput,
+  UpdatePublisherCapabilityRepoInput,
+} from '@/modules/user/defs/user-repository.defs';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserMapper } from '@/modules/user/mapper/user.mapper';
 import { UserRepository } from '@/modules/user/repository/user.repository';
@@ -42,6 +45,21 @@ export class UserPrismaRepository implements UserRepository {
     if (result === null) {
       return null;
     }
+    return UserMapper.toEntity(result);
+  }
+
+  async updatePublisherCapability(
+    input: UpdatePublisherCapabilityRepoInput,
+    context?: TransactionContext,
+  ): Promise<UserEntity> {
+    const client = resolvePrismaTransactionClient(this.prismaProviderService, context);
+    const result = await client.user.update({
+      where: { id: input.id },
+      data: {
+        role: input.role,
+        isPublisher: input.isPublisher,
+      },
+    });
     return UserMapper.toEntity(result);
   }
 }

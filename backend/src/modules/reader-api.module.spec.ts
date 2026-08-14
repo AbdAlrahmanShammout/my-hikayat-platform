@@ -7,7 +7,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 import { ReaderApiModule } from './reader-api.module';
 
 describe('ReaderApiModule', () => {
-  it('compiles with the authentication concern', async () => {
+  it('compiles with authentication and the user reader API', async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigsModule,
@@ -19,7 +19,7 @@ describe('ReaderApiModule', () => {
       .useValue({
         $connect: jest.fn(),
         $disconnect: jest.fn(),
-        user: { create: jest.fn(), findFirst: jest.fn() },
+        user: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
       })
       .compile();
     const actualModule: ReaderApiModule = moduleRef.get(ReaderApiModule);

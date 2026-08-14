@@ -21,7 +21,7 @@ describe('FeatureBundleModule', () => {
       .useValue({
         $connect: jest.fn(),
         $disconnect: jest.fn(),
-        user: { create: jest.fn(), findFirst: jest.fn() },
+        user: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
       })
       .compile();
     const actualBundle: FeatureBundleModule = moduleRef.get(FeatureBundleModule);

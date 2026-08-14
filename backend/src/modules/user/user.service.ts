@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
-import { CreateUserServiceInput } from '@/modules/user/defs/user-service.defs';
+import {
+  CreateUserServiceInput,
+  EnablePublisherCapabilityServiceInput,
+} from '@/modules/user/defs/user-service.defs';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
 import { UserEmailConflictException } from '@/modules/user/exceptions/user-email-conflict.exception';
@@ -22,6 +25,21 @@ export class UserService {
       passwordHash: input.passwordHash,
       role: UserRole.READER,
       isPublisher: false,
+    });
+  }
+
+  async enablePublisherCapability(
+    input: EnablePublisherCapabilityServiceInput,
+  ): Promise<UserEntity> {
+    const user: UserEntity = await this.getUserById(input.userId);
+    const nextRole: UserRole = user.role === UserRole.READER ? UserRole.AUTHOR : user.role;
+    if (user.isPublisher && user.role === nextRole) {
+      return user;
+    }
+    return this.userRepository.updatePublisherCapability({
+      id: user.id,
+      role: nextRole,
+      isPublisher: true,
     });
   }
 
