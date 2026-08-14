@@ -3,6 +3,8 @@ description: Enforce the repository architecture and engineering conventions def
 alwaysApply: true
 ---
 
+Before writing or modifying code, you MUST consult ARCHITECTURE.md and identify the sections relevant to the current task.
+
 # Architecture Authority
 
 `ARCHITECTURE.md` is the authoritative architecture and engineering specification for this repository.
@@ -85,3 +87,5 @@ Before completing a task, explicitly verify:
 - required tests added or updated
 
 The architecture document takes precedence over inferred conventions.
+
+Do not mark a task complete until the changed code has been checked against the applicable ARCHITECTURE.md rules.
