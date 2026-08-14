@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { BookAssetCatalogMediaService } from '@/modules/book-asset/book-asset-catalog-media.service';
 import { BookAssetSourceService } from '@/modules/book-asset/book-asset-source.service';
 import { UploadedSourceFile } from '@/modules/book-asset/defs/book-asset-service.defs';
 import { BookAssetEntity } from '@/modules/book-asset/entity/book-asset.entity';
@@ -44,14 +45,23 @@ function createSampleAsset(): BookAssetEntity {
 describe('BookAssetAuthorController', () => {
   let bookAssetAuthorController: BookAssetAuthorController;
   let mockBookAssetSourceService: { uploadSourceFile: jest.Mock };
+  let mockBookAssetCatalogMediaService: {
+    uploadPreviewImage: jest.Mock;
+    uploadPromoVideo: jest.Mock;
+  };
 
   beforeEach(async () => {
     mockBookAssetSourceService = { uploadSourceFile: jest.fn() };
+    mockBookAssetCatalogMediaService = {
+      uploadPreviewImage: jest.fn(),
+      uploadPromoVideo: jest.fn(),
+    };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       controllers: [BookAssetAuthorController],
       providers: [
         { provide: BookAssetSourceService, useValue: mockBookAssetSourceService },
+        { provide: BookAssetCatalogMediaService, useValue: mockBookAssetCatalogMediaService },
         JwtAuthGuard,
         RolesGuard,
       ],
@@ -96,6 +106,74 @@ describe('BookAssetAuthorController', () => {
           contentType: '',
         }),
       );
+    });
+  });
+
+  describe('uploadPreviewImage', () => {
+    it('maps the uploaded image and principal into the catalog media service', async () => {
+      const inputBuffer = Buffer.from('jpeg-bytes');
+      const expectedAsset = new BookAssetEntity({
+        ...createSampleAsset(),
+        kind: BookAssetKind.PREVIEW_IMAGE,
+        storageKey: 'books/8/preview/uuid',
+        contentType: 'image/jpeg',
+        originalFileName: 'cover.jpg',
+        isEncrypted: false,
+      });
+      mockBookAssetCatalogMediaService.uploadPreviewImage.mockResolvedValue(expectedAsset);
+      const actualResponse = await bookAssetAuthorController.uploadPreviewImage(
+        8,
+        {
+          buffer: inputBuffer,
+          mimetype: 'image/jpeg',
+          originalname: 'cover.jpg',
+        } satisfies UploadedSourceFile,
+        createSampleAuthor(),
+      );
+      expect(mockBookAssetCatalogMediaService.uploadPreviewImage).toHaveBeenCalledWith({
+        bookId: 8,
+        actorId: 4,
+        actorRole: UserRole.AUTHOR,
+        body: inputBuffer,
+        contentType: 'image/jpeg',
+        originalFileName: 'cover.jpg',
+      });
+      expect(actualResponse.kind).toBe(BookAssetKind.PREVIEW_IMAGE);
+      expect(actualResponse.isEncrypted).toBe(false);
+    });
+  });
+
+  describe('uploadPromoVideo', () => {
+    it('maps the uploaded video and principal into the catalog media service', async () => {
+      const inputBuffer = Buffer.from('mp4-bytes');
+      const expectedAsset = new BookAssetEntity({
+        ...createSampleAsset(),
+        kind: BookAssetKind.PROMO_VIDEO,
+        storageKey: 'books/8/promo/uuid',
+        contentType: 'video/mp4',
+        originalFileName: 'trailer.mp4',
+        isEncrypted: false,
+      });
+      mockBookAssetCatalogMediaService.uploadPromoVideo.mockResolvedValue(expectedAsset);
+      const actualResponse = await bookAssetAuthorController.uploadPromoVideo(
+        8,
+        {
+          buffer: inputBuffer,
+          mimetype: 'video/mp4',
+          originalname: 'trailer.mp4',
+        } satisfies UploadedSourceFile,
+        createSampleAuthor(),
+      );
+      expect(mockBookAssetCatalogMediaService.uploadPromoVideo).toHaveBeenCalledWith({
+        bookId: 8,
+        actorId: 4,
+        actorRole: UserRole.AUTHOR,
+        body: inputBuffer,
+        contentType: 'video/mp4',
+        originalFileName: 'trailer.mp4',
+      });
+      expect(actualResponse.kind).toBe(BookAssetKind.PROMO_VIDEO);
+      expect(actualResponse.isEncrypted).toBe(false);
     });
   });
 });

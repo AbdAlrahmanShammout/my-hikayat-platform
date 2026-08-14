@@ -4,6 +4,7 @@ import { ConfigsModule } from '@/config/configs.module';
 import { BookAssetRepository } from '@/modules/book-asset/repository/book-asset.repository';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
+import { BookAssetCatalogMediaService } from './book-asset-catalog-media.service';
 import { BookAssetSourceService } from './book-asset-source.service';
 import { BookAssetModule } from './book-asset.module';
 import { BookAssetService } from './book-asset.service';
@@ -44,6 +45,7 @@ describe('BookAssetModule', () => {
       .compile();
     expect(moduleRef.get(BookAssetService)).toBeDefined();
     expect(moduleRef.get(BookAssetSourceService)).toBeDefined();
+    expect(moduleRef.get(BookAssetCatalogMediaService)).toBeDefined();
     expect(moduleRef.get(BookAssetRepository)).toBeDefined();
     await moduleRef.close();
   });

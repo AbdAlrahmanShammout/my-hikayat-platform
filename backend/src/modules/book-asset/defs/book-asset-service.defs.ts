@@ -45,3 +45,12 @@ export type UploadedSourceFile = {
   readonly mimetype: string;
   readonly originalname: string;
 };
+
+export type UploadBookCatalogMediaServiceInput = {
+  readonly bookId: number;
+  readonly actorId: number;
+  readonly actorRole: UserRole;
+  readonly body: Buffer;
+  readonly contentType: string;
+  readonly originalFileName?: string | null;
+};
