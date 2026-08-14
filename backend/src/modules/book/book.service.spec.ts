@@ -2,7 +2,12 @@ import { InvalidStateException } from '@/common/exceptions/invalid-state.excepti
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagination.constant';
 import { BookEntity } from '@/modules/book/entity/book.entity';
-import { BookLayoutType, BookPublishingStatus, BookType } from '@/modules/book/enum/general.enum';
+import {
+  BookLayoutType,
+  BookProcessingStatus,
+  BookPublishingStatus,
+  BookType,
+} from '@/modules/book/enum/general.enum';
 import { BookOwnerNotPublisherException } from '@/modules/book/exceptions/book-owner-not-publisher.exception';
 import { CategoryService } from '@/modules/category/category.service';
 import { CategoryEntity } from '@/modules/category/entity/category.entity';
@@ -46,6 +51,7 @@ function createSampleBook(): BookEntity {
     layoutType: null,
     bookType: BookType.STANDARD_CHAPTER,
     publishingStatus: BookPublishingStatus.PENDING,
+    processingStatus: BookProcessingStatus.NOT_STARTED,
     publishedAt: null,
     ownerId: 4,
     categories: [],
@@ -111,6 +117,7 @@ describe('BookService', () => {
         layoutType: null,
         bookType: BookType.STANDARD_CHAPTER,
         publishingStatus: BookPublishingStatus.PENDING,
+        processingStatus: BookProcessingStatus.NOT_STARTED,
         ownerId: 4,
         categoryIds: [2],
       });
@@ -242,6 +249,7 @@ describe('BookService', () => {
         offset: DEFAULT_PAGE_OFFSET,
         publishingStatus: undefined,
         ownerId: undefined,
+        processingStatus: undefined,
       });
       expect(actualPage.total).toBe(1);
     });
@@ -254,6 +262,19 @@ describe('BookService', () => {
         offset: DEFAULT_PAGE_OFFSET,
         publishingStatus: undefined,
         ownerId: 4,
+        processingStatus: undefined,
+      });
+    });
+
+    it('filters by processing status', async () => {
+      mockBookRepository.list.mockResolvedValue({ entities: [createSampleBook()], total: 1 });
+      await bookService.listBooks({ processingStatus: BookProcessingStatus.READY });
+      expect(mockBookRepository.list).toHaveBeenCalledWith({
+        limit: DEFAULT_PAGE_SIZE,
+        offset: DEFAULT_PAGE_OFFSET,
+        publishingStatus: undefined,
+        ownerId: undefined,
+        processingStatus: BookProcessingStatus.READY,
       });
     });
   });

@@ -4,7 +4,11 @@ import { InvalidStateException } from '@/common/exceptions/invalid-state.excepti
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { BookService } from '@/modules/book/book.service';
 import { BookEntity } from '@/modules/book/entity/book.entity';
-import { BookPublishingStatus, BookType } from '@/modules/book/enum/general.enum';
+import {
+  BookPublishingStatus,
+  BookProcessingStatus,
+  BookType,
+} from '@/modules/book/enum/general.enum';
 import { BookAssetService } from '@/modules/book-asset/book-asset.service';
 import { BookAssetEntity } from '@/modules/book-asset/entity/book-asset.entity';
 import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
@@ -25,6 +29,7 @@ function createSampleBook(ownerId = 4): BookEntity {
     layoutType: null,
     bookType: BookType.STANDARD_CHAPTER,
     publishingStatus: BookPublishingStatus.PENDING,
+    processingStatus: BookProcessingStatus.NOT_STARTED,
     publishedAt: null,
     ownerId,
   });

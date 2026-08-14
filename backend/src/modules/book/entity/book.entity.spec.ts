@@ -1,4 +1,9 @@
-import { BookLayoutType, BookPublishingStatus, BookType } from '@/modules/book/enum/general.enum';
+import {
+  BookLayoutType,
+  BookProcessingStatus,
+  BookPublishingStatus,
+  BookType,
+} from '@/modules/book/enum/general.enum';
 
 import { BookEntity } from './book.entity';
 
@@ -13,6 +18,7 @@ describe('BookEntity', () => {
       layoutType: BookLayoutType.REFLOWABLE,
       bookType: BookType.STANDARD_CHAPTER,
       publishingStatus: BookPublishingStatus.PENDING,
+      processingStatus: BookProcessingStatus.NOT_STARTED,
       publishedAt: null,
       ownerId: 4,
     });
@@ -22,6 +28,7 @@ describe('BookEntity', () => {
     expect(actualEntity.layoutType).toBe(BookLayoutType.REFLOWABLE);
     expect(actualEntity.bookType).toBe(BookType.STANDARD_CHAPTER);
     expect(actualEntity.publishingStatus).toBe(BookPublishingStatus.PENDING);
+    expect(actualEntity.processingStatus).toBe(BookProcessingStatus.NOT_STARTED);
     expect(actualEntity.publishedAt).toBeNull();
   });
 });

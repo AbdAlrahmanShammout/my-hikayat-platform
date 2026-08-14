@@ -1,4 +1,9 @@
-import { BookLayoutType, BookPublishingStatus, BookType } from '@/modules/book/enum/general.enum';
+import {
+  BookLayoutType,
+  BookProcessingStatus,
+  BookPublishingStatus,
+  BookType,
+} from '@/modules/book/enum/general.enum';
 import { BookMapper } from '@/modules/book/mapper/book.mapper';
 import { bookDetailsInclude } from '@/modules/book/types/book-details.include';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
@@ -18,6 +23,7 @@ describe('BookPrismaRepository', () => {
     layoutType: 'reflowable',
     bookType: 'standard_chapter',
     publishingStatus: 'pending',
+    processingStatus: 'not_started',
     publishedAt: null,
     ownerId: 4,
     owner: {
@@ -68,6 +74,7 @@ describe('BookPrismaRepository', () => {
       layoutType: BookLayoutType.REFLOWABLE,
       bookType: BookType.STANDARD_CHAPTER,
       publishingStatus: BookPublishingStatus.PENDING,
+      processingStatus: BookProcessingStatus.NOT_STARTED,
       ownerId: 4,
       categoryIds: [2],
     });
@@ -78,6 +85,7 @@ describe('BookPrismaRepository', () => {
           title: 'The Last Lighthouse',
           bookType: BookType.STANDARD_CHAPTER,
           publishingStatus: BookPublishingStatus.PENDING,
+          processingStatus: BookProcessingStatus.NOT_STARTED,
           owner: { connect: { id: 4 } },
           categories: { connect: [{ id: 2 }] },
         }),
@@ -109,5 +117,20 @@ describe('BookPrismaRepository', () => {
     );
     expect(actualPage.total).toBe(1);
     expect(actualPage.entities).toEqual([BookMapper.toEntity(persistenceRow)]);
+  });
+
+  it('lists books filtered by processing status', async () => {
+    mockPrismaProviderService.$transaction.mockResolvedValue([[persistenceRow], 1]);
+    await bookPrismaRepository.list({
+      limit: 20,
+      offset: 0,
+      processingStatus: BookProcessingStatus.READY,
+    });
+    expect(mockPrismaProviderService.book.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { deletedAt: null, processingStatus: BookProcessingStatus.READY },
+        include: bookDetailsInclude,
+      }),
+    );
   });
 });

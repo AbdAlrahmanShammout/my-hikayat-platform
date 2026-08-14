@@ -10,7 +10,7 @@ import {
   UpdateBookServiceInput,
 } from '@/modules/book/defs/book-service.defs';
 import { BookEntity } from '@/modules/book/entity/book.entity';
-import { BookPublishingStatus } from '@/modules/book/enum/general.enum';
+import { BookProcessingStatus, BookPublishingStatus } from '@/modules/book/enum/general.enum';
 import { BookOwnerNotPublisherException } from '@/modules/book/exceptions/book-owner-not-publisher.exception';
 import { BookRepository } from '@/modules/book/repository/book.repository';
 import { CategoryService } from '@/modules/category/category.service';
@@ -38,6 +38,7 @@ export class BookService {
       layoutType: input.layoutType ?? null,
       bookType: input.bookType,
       publishingStatus: BookPublishingStatus.PENDING,
+      processingStatus: BookProcessingStatus.NOT_STARTED,
       ownerId: owner.id,
       categoryIds,
     });
@@ -77,6 +78,7 @@ export class BookService {
       offset: input.offset ?? DEFAULT_PAGE_OFFSET,
       publishingStatus: input.publishingStatus,
       ownerId: input.ownerId,
+      processingStatus: input.processingStatus,
     });
   }
 

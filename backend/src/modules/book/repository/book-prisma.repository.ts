@@ -28,6 +28,7 @@ export class BookPrismaRepository implements BookRepository {
         layoutType: input.layoutType,
         bookType: input.bookType,
         publishingStatus: input.publishingStatus,
+        processingStatus: input.processingStatus,
         owner: { connect: { id: input.ownerId } },
         categories: BookPrismaRepository.buildCategoryConnect(input.categoryIds),
       },
@@ -53,6 +54,9 @@ export class BookPrismaRepository implements BookRepository {
     }
     if (input.publishingStatus !== undefined) {
       data.publishingStatus = input.publishingStatus;
+    }
+    if (input.processingStatus !== undefined) {
+      data.processingStatus = input.processingStatus;
     }
     if (input.publishedAt !== undefined) {
       data.publishedAt = input.publishedAt;
@@ -85,6 +89,9 @@ export class BookPrismaRepository implements BookRepository {
     const where: Prisma.BookWhereInput = { deletedAt: null };
     if (input.publishingStatus !== undefined) {
       where.publishingStatus = input.publishingStatus;
+    }
+    if (input.processingStatus !== undefined) {
+      where.processingStatus = input.processingStatus;
     }
     if (input.ownerId !== undefined) {
       where.ownerId = input.ownerId;

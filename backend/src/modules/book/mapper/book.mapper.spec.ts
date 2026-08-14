@@ -1,6 +1,11 @@
 import { Prisma } from '@prisma/client';
 
-import { BookLayoutType, BookPublishingStatus, BookType } from '@/modules/book/enum/general.enum';
+import {
+  BookLayoutType,
+  BookProcessingStatus,
+  BookPublishingStatus,
+  BookType,
+} from '@/modules/book/enum/general.enum';
 import { BookDetailsType } from '@/modules/book/types/book-details-schema.type';
 import { UserRole } from '@/modules/user/enum/general.enum';
 
@@ -20,6 +25,7 @@ describe('BookMapper', () => {
       layoutType: 'reflowable',
       bookType: 'standard_chapter',
       publishingStatus: 'pending',
+      processingStatus: 'not_started',
       publishedAt: null,
       ownerId: 4,
       owner: {
@@ -49,6 +55,7 @@ describe('BookMapper', () => {
     expect(actualEntity.layoutType).toBe(BookLayoutType.REFLOWABLE);
     expect(actualEntity.bookType).toBe(BookType.STANDARD_CHAPTER);
     expect(actualEntity.publishingStatus).toBe(BookPublishingStatus.PENDING);
+    expect(actualEntity.processingStatus).toBe(BookProcessingStatus.NOT_STARTED);
     expect(actualEntity.ownerId).toBe(4);
     expect(actualEntity.owner?.email).toBe('author@example.com');
     expect(actualEntity.owner?.role).toBe(UserRole.AUTHOR);

@@ -2,9 +2,14 @@ import { createHash } from 'node:crypto';
 
 import { InvalidStateException } from '@/common/exceptions/invalid-state.exception';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
+import { BookProcessingStatusService } from '@/modules/book/book-processing-status.service';
 import { BookService } from '@/modules/book/book.service';
 import { BookEntity } from '@/modules/book/entity/book.entity';
-import { BookPublishingStatus, BookType } from '@/modules/book/enum/general.enum';
+import {
+  BookProcessingStatus,
+  BookPublishingStatus,
+  BookType,
+} from '@/modules/book/enum/general.enum';
 import { BookAssetService } from '@/modules/book-asset/book-asset.service';
 import { BookAssetEntity } from '@/modules/book-asset/entity/book-asset.entity';
 import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
@@ -28,6 +33,7 @@ function createSampleBook(ownerId = 4): BookEntity {
     layoutType: null,
     bookType: BookType.STANDARD_CHAPTER,
     publishingStatus: BookPublishingStatus.PENDING,
+    processingStatus: BookProcessingStatus.NOT_STARTED,
     publishedAt: null,
     ownerId,
   });
@@ -53,6 +59,7 @@ function createSampleAsset(): BookAssetEntity {
 describe('BookAssetSourceService', () => {
   let mockBookService: { getBookById: jest.Mock };
   let mockBookAssetService: { createBookAsset: jest.Mock };
+  let mockBookProcessingStatusService: { resetProcessingStatus: jest.Mock };
   let mockStorageManagerService: { putObject: jest.Mock };
   let mockEncryptionManagerService: { encrypt: jest.Mock };
   let bookAssetSourceService: BookAssetSourceService;
@@ -60,11 +67,13 @@ describe('BookAssetSourceService', () => {
   beforeEach(() => {
     mockBookService = { getBookById: jest.fn() };
     mockBookAssetService = { createBookAsset: jest.fn() };
+    mockBookProcessingStatusService = { resetProcessingStatus: jest.fn() };
     mockStorageManagerService = { putObject: jest.fn() };
     mockEncryptionManagerService = { encrypt: jest.fn() };
     bookAssetSourceService = new BookAssetSourceService(
       mockBookService as unknown as BookService,
       mockBookAssetService as unknown as BookAssetService,
+      mockBookProcessingStatusService as unknown as BookProcessingStatusService,
       mockStorageManagerService as unknown as StorageManagerService,
       mockEncryptionManagerService as unknown as EncryptionManagerService,
     );
@@ -110,6 +119,7 @@ describe('BookAssetSourceService', () => {
         originalFileName: 'the-last-lighthouse.pdf',
         isEncrypted: true,
       });
+      expect(mockBookProcessingStatusService.resetProcessingStatus).toHaveBeenCalledWith(8);
       expect(actualAsset).toBe(expectedAsset);
     });
 
@@ -194,6 +204,7 @@ describe('BookAssetSourceService', () => {
         }),
       ).rejects.toBeInstanceOf(ResourceNotFoundException);
       expect(mockEncryptionManagerService.encrypt).not.toHaveBeenCalled();
+      expect(mockBookProcessingStatusService.resetProcessingStatus).not.toHaveBeenCalled();
     });
 
     it('rejects an empty source file', async () => {
@@ -210,6 +221,7 @@ describe('BookAssetSourceService', () => {
       ).rejects.toMatchObject({
         code: 'BOOK_ASSET_EMPTY_SOURCE',
       } satisfies Partial<InvalidStateException>);
+      expect(mockBookProcessingStatusService.resetProcessingStatus).not.toHaveBeenCalled();
     });
 
     it('rejects a source file over the configured size', async () => {
@@ -227,6 +239,7 @@ describe('BookAssetSourceService', () => {
       ).rejects.toMatchObject({
         code: 'BOOK_ASSET_SOURCE_TOO_LARGE',
       } satisfies Partial<InvalidStateException>);
+      expect(mockBookProcessingStatusService.resetProcessingStatus).not.toHaveBeenCalled();
     });
 
     it('rejects an unsupported source type', async () => {
@@ -241,6 +254,7 @@ describe('BookAssetSourceService', () => {
           originalFileName: 'notes.txt',
         }),
       ).rejects.toBeInstanceOf(BookAssetInvalidSourceTypeException);
+      expect(mockBookProcessingStatusService.resetProcessingStatus).not.toHaveBeenCalled();
     });
   });
 });

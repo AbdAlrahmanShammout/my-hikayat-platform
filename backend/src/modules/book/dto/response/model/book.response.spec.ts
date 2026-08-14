@@ -1,5 +1,10 @@
 import { BookEntity } from '@/modules/book/entity/book.entity';
-import { BookLayoutType, BookPublishingStatus, BookType } from '@/modules/book/enum/general.enum';
+import {
+  BookLayoutType,
+  BookProcessingStatus,
+  BookPublishingStatus,
+  BookType,
+} from '@/modules/book/enum/general.enum';
 import { CategoryEntity } from '@/modules/category/entity/category.entity';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
@@ -17,6 +22,7 @@ describe('BookResponse', () => {
       layoutType: BookLayoutType.REFLOWABLE,
       bookType: BookType.STANDARD_CHAPTER,
       publishingStatus: BookPublishingStatus.PENDING,
+      processingStatus: BookProcessingStatus.NOT_STARTED,
       publishedAt: null,
       ownerId: 4,
       owner: new UserEntity({
@@ -44,6 +50,7 @@ describe('BookResponse', () => {
     expect(actualResponse.layoutType).toBe(BookLayoutType.REFLOWABLE);
     expect(actualResponse.bookType).toBe(BookType.STANDARD_CHAPTER);
     expect(actualResponse.publishingStatus).toBe(BookPublishingStatus.PENDING);
+    expect(actualResponse.processingStatus).toBe(BookProcessingStatus.NOT_STARTED);
     expect(actualResponse.ownerId).toBe(4);
     expect(actualResponse.owner?.email).toBe('author@example.com');
     expect(actualResponse.owner?.isPublisher).toBe(true);

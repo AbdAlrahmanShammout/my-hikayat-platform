@@ -15,3 +15,10 @@ export enum BookPublishingStatus {
   APPROVED = 'approved',
   REJECTED = 'rejected',
 }
+
+export enum BookProcessingStatus {
+  NOT_STARTED = 'not_started',
+  PROCESSING = 'processing',
+  READY = 'ready',
+  FAILED = 'failed',
+}

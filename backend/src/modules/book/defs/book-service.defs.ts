@@ -1,4 +1,9 @@
-import { BookLayoutType, BookPublishingStatus, BookType } from '@/modules/book/enum/general.enum';
+import {
+  BookLayoutType,
+  BookProcessingStatus,
+  BookPublishingStatus,
+  BookType,
+} from '@/modules/book/enum/general.enum';
 
 export type CreateBookServiceInput = {
   readonly title: string;
@@ -24,5 +29,11 @@ export type ListBooksServiceInput = {
   readonly limit?: number;
   readonly offset?: number;
   readonly publishingStatus?: BookPublishingStatus;
+  readonly processingStatus?: BookProcessingStatus;
   readonly ownerId?: number;
+};
+
+export type TransitionBookProcessingStatusInput = {
+  readonly bookId: number;
+  readonly to: BookProcessingStatus;
 };

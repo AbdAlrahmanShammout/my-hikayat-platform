@@ -2,7 +2,12 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { BaseModelResponseDto } from '@/common/base/base-model.response.dto';
 import { BookEntity } from '@/modules/book/entity/book.entity';
-import { BookLayoutType, BookPublishingStatus, BookType } from '@/modules/book/enum/general.enum';
+import {
+  BookLayoutType,
+  BookProcessingStatus,
+  BookPublishingStatus,
+  BookType,
+} from '@/modules/book/enum/general.enum';
 import { CategoryResponse } from '@/modules/category/dto/response/model/category.response';
 import { UserResponse } from '@/modules/user/dto/response/model/user.response';
 
@@ -35,6 +40,13 @@ export class BookResponse extends BaseModelResponseDto {
   })
   publishingStatus: BookPublishingStatus;
 
+  @ApiProperty({
+    description: 'Source ingest processing status',
+    enum: BookProcessingStatus,
+    example: BookProcessingStatus.NOT_STARTED,
+  })
+  processingStatus: BookProcessingStatus;
+
   @ApiPropertyOptional({
     description: 'When the book became available to readers',
     example: '2026-03-01T00:00:00.000Z',
@@ -58,6 +70,7 @@ export class BookResponse extends BaseModelResponseDto {
     this.layoutType = entity.layoutType;
     this.bookType = entity.bookType;
     this.publishingStatus = entity.publishingStatus;
+    this.processingStatus = entity.processingStatus;
     this.publishedAt = entity.publishedAt;
     this.ownerId = entity.ownerId;
     this.owner = entity.owner === undefined ? undefined : new UserResponse(entity.owner);

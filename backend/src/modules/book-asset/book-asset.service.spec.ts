@@ -3,7 +3,11 @@ import { ResourceNotFoundException } from '@/common/exceptions/resource-not-foun
 import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagination.constant';
 import { BookService } from '@/modules/book/book.service';
 import { BookEntity } from '@/modules/book/entity/book.entity';
-import { BookPublishingStatus, BookType } from '@/modules/book/enum/general.enum';
+import {
+  BookPublishingStatus,
+  BookProcessingStatus,
+  BookType,
+} from '@/modules/book/enum/general.enum';
 import { BookAssetEntity } from '@/modules/book-asset/entity/book-asset.entity';
 import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
 
@@ -21,6 +25,7 @@ function createSampleBook(): BookEntity {
     layoutType: null,
     bookType: BookType.STANDARD_CHAPTER,
     publishingStatus: BookPublishingStatus.PENDING,
+    processingStatus: BookProcessingStatus.NOT_STARTED,
     publishedAt: null,
     ownerId: 4,
   });

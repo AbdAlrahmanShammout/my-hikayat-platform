@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 
 import { InvalidStateException } from '@/common/exceptions/invalid-state.exception';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
+import { BookProcessingStatusService } from '@/modules/book/book-processing-status.service';
 import { BookService } from '@/modules/book/book.service';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookAssetService } from '@/modules/book-asset/book-asset.service';
@@ -23,6 +24,7 @@ export class BookAssetSourceService {
   constructor(
     private readonly bookService: BookService,
     private readonly bookAssetService: BookAssetService,
+    private readonly bookProcessingStatusService: BookProcessingStatusService,
     private readonly storageManagerService: StorageManagerService,
     private readonly encryptionManagerService: EncryptionManagerService,
   ) {}
@@ -48,7 +50,7 @@ export class BookAssetSourceService {
       contentType,
     });
     const checksumSha256: string = createHash('sha256').update(encrypted.ciphertext).digest('hex');
-    return this.bookAssetService.createBookAsset({
+    const asset: BookAssetEntity = await this.bookAssetService.createBookAsset({
       bookId: book.id,
       kind: BookAssetKind.SOURCE,
       storageKey: stored.key,
@@ -58,6 +60,8 @@ export class BookAssetSourceService {
       originalFileName,
       isEncrypted: true,
     });
+    await this.bookProcessingStatusService.resetProcessingStatus(book.id);
+    return asset;
   }
 
   private static assertCanManageSource(
