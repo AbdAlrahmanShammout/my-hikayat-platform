@@ -10,12 +10,14 @@ import { GlobalExceptionFilter } from '@/common/filter/global-exception.filter';
 import { ValidationExceptionFilter } from '@/common/filter/validation-exception.filter';
 import { ConfigsModule } from '@/config/configs.module';
 import { HealthModule } from '@/health/health.module';
+import { FeatureBundleModule } from '@/modules/feature-bundle.module';
 import { ProviderModule } from '@/providers/provider.module';
 
 @Module({
   imports: [
     ConfigsModule,
     ProviderModule,
+    FeatureBundleModule,
     HealthModule,
     ThrottlerModule.forRoot([{ ttl: DEFAULT_THROTTLE_TTL_MS, limit: DEFAULT_THROTTLE_LIMIT }]),
   ],
