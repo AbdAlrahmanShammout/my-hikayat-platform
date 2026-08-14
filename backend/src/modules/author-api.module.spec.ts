@@ -66,6 +66,22 @@ describe('AuthorApiModule', () => {
           update: jest.fn(),
           deleteMany: jest.fn(),
         },
+        bookPageTextLayer: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+          deleteMany: jest.fn(),
+        },
+        bookPageTextRun: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+          deleteMany: jest.fn(),
+        },
         bookAsset: {
           create: jest.fn(),
           findFirst: jest.fn(),

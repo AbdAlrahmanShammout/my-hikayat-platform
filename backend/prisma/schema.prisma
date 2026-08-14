@@ -81,6 +81,7 @@ model Book {
   chapters          BookChapter[]
   pages             BookPage[]
   spreads           BookSpread[]
+  pageTextLayers    BookPageTextLayer[]
 
   @@index([publishingStatus])
   @@index([processingStatus])
@@ -174,6 +175,7 @@ model BookPage {
   leftSpreads   BookSpread[]        @relation("BookSpreadLeftPage")
   rightSpreads  BookSpread[]        @relation("BookSpreadRightPage")
   centerSpreads BookSpread[]        @relation("BookSpreadCenterPage")
+  textLayer     BookPageTextLayer?
 
   @@index([bookId])
   @@index([bookId, spineIndex])
@@ -196,4 +198,37 @@ model BookSpread {
 
   @@index([bookId])
   @@index([bookId, spreadIndex])
+}
+
+model BookPageTextLayer {
+  id          Int                 @id @default(autoincrement())
+  pageId      Int                 @unique
+  bookId      Int
+  contentText String              @db.Text
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  deletedAt   DateTime?
+  page        BookPage            @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  book        Book                @relation(fields: [bookId], references: [id])
+  runs        BookPageTextRun[]
+
+  @@index([bookId])
+}
+
+model BookPageTextRun {
+  id          Int               @id @default(autoincrement())
+  textLayerId Int
+  sortOrder   Int
+  text        String
+  x           Float
+  y           Float
+  width       Float?
+  height      Float?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  deletedAt   DateTime?
+  textLayer   BookPageTextLayer @relation(fields: [textLayerId], references: [id], onDelete: Cascade)
+
+  @@index([textLayerId])
+  @@index([textLayerId, sortOrder])
 }

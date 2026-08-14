@@ -40,3 +40,19 @@ export type ExtractedEpubFixedLayout = {
   readonly pages: readonly ExtractedEpubPage[];
   readonly spreads: readonly ExtractedEpubSpread[];
 };
+
+export type ExtractedEpubTextRun = {
+  readonly sortOrder: number;
+  readonly text: string;
+  readonly x: number;
+  readonly y: number;
+  readonly width: number | null;
+  readonly height: number | null;
+};
+
+export type ExtractedEpubPageTextLayer = {
+  readonly spineIndex: number;
+  readonly href: string;
+  readonly contentText: string;
+  readonly runs: readonly ExtractedEpubTextRun[];
+};

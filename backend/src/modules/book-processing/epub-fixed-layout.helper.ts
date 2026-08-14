@@ -51,6 +51,10 @@ export class EpubFixedLayoutHelper {
     );
     return assignSpreads(pages, documents, spreadNone);
   }
+
+  static readViewport(xml: string): { readonly width: number; readonly height: number } | null {
+    return readViewport(xml);
+  }
 }
 
 function toExtractedPage(

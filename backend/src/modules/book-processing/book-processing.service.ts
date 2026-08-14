@@ -6,25 +6,32 @@ import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import { BookAssetService } from '@/modules/book-asset/book-asset.service';
 import { BookAssetEntity } from '@/modules/book-asset/entity/book-asset.entity';
 import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
+import { BookFixedLayoutStructure } from '@/modules/book-processing/defs/book-page-repository.defs';
+import { CreateBookPageTextLayerRepoInput } from '@/modules/book-processing/defs/book-page-text-layer-repository.defs';
 import {
   ExtractedEpubChapter,
   ExtractedEpubFixedLayout,
   ExtractedEpubMetadata,
+  ExtractedEpubPageTextLayer,
 } from '@/modules/book-processing/defs/book-processing-service.defs';
-import { BookFixedLayoutStructure } from '@/modules/book-processing/defs/book-page-repository.defs';
 import { BookChapterEntity } from '@/modules/book-processing/entity/book-chapter.entity';
+import { BookPageEntity } from '@/modules/book-processing/entity/book-page.entity';
+import { BookPageTextLayerEntity } from '@/modules/book-processing/entity/book-page-text-layer.entity';
 import { BookSourceMetadataEntity } from '@/modules/book-processing/entity/book-source-metadata.entity';
+import { EpubFixedLayoutTextHelper } from '@/modules/book-processing/epub-fixed-layout-text.helper';
 import { EpubFixedLayoutHelper } from '@/modules/book-processing/epub-fixed-layout.helper';
 import { EpubLayoutHelper } from '@/modules/book-processing/epub-layout.helper';
 import { EpubMetadataHelper } from '@/modules/book-processing/epub-metadata.helper';
 import { EpubOcfHelper, EpubOcfOpenedPackage } from '@/modules/book-processing/epub-ocf.helper';
 import { EpubSpineHelper } from '@/modules/book-processing/epub-spine.helper';
 import { BookProcessingInvalidEpubException } from '@/modules/book-processing/exceptions/book-processing-invalid-epub.exception';
+import { BookProcessingMissingPagesException } from '@/modules/book-processing/exceptions/book-processing-missing-pages.exception';
 import { BookProcessingMissingSourceException } from '@/modules/book-processing/exceptions/book-processing-missing-source.exception';
 import { BookProcessingNotFixedLayoutException } from '@/modules/book-processing/exceptions/book-processing-not-fixed-layout.exception';
 import { BookProcessingNotReflowableException } from '@/modules/book-processing/exceptions/book-processing-not-reflowable.exception';
 import { BookChapterRepository } from '@/modules/book-processing/repository/book-chapter.repository';
 import { BookPageRepository } from '@/modules/book-processing/repository/book-page.repository';
+import { BookPageTextLayerRepository } from '@/modules/book-processing/repository/book-page-text-layer.repository';
 import { BookSourceMetadataRepository } from '@/modules/book-processing/repository/book-source-metadata.repository';
 import { DecryptBufferResult } from '@/providers/encryption/defs/encryption-manager.defs';
 import { EncryptionManagerService } from '@/providers/encryption/encryption-manager.service';
@@ -40,6 +47,7 @@ export class BookProcessingService {
     private readonly bookSourceMetadataRepository: BookSourceMetadataRepository,
     private readonly bookChapterRepository: BookChapterRepository,
     private readonly bookPageRepository: BookPageRepository,
+    private readonly bookPageTextLayerRepository: BookPageTextLayerRepository,
     private readonly bookService: BookService,
     private readonly storageManagerService: StorageManagerService,
     private readonly encryptionManagerService: EncryptionManagerService,
@@ -93,6 +101,24 @@ export class BookProcessingService {
     });
   }
 
+  async extractEpubFixedLayoutText(bookId: number): Promise<BookPageTextLayerEntity[]> {
+    const plaintext: Buffer = await this.loadEpubPlaintext(bookId);
+    const opened: EpubOcfOpenedPackage = EpubOcfHelper.open(plaintext);
+    const layoutType: BookLayoutType = EpubLayoutHelper.detect(opened.packageXml, opened.archive);
+    if (layoutType !== BookLayoutType.FIXED_LAYOUT) {
+      throw new BookProcessingNotFixedLayoutException(bookId);
+    }
+    const pages: BookPageEntity[] = await this.bookPageRepository.listByBookId(bookId);
+    if (pages.length === 0) {
+      throw new BookProcessingMissingPagesException(bookId);
+    }
+    const extracted: ExtractedEpubPageTextLayer[] = EpubFixedLayoutTextHelper.extract(opened);
+    return this.bookPageTextLayerRepository.replaceByBookId({
+      bookId,
+      layers: extracted.map((layer) => BookProcessingService.toTextLayerInput(layer, pages)),
+    });
+  }
+
   private async persistExtractedMetadata(
     bookId: number,
     extracted: ExtractedEpubMetadata,
@@ -124,6 +150,25 @@ export class BookProcessingService {
       source.isEncrypted,
       this.encryptionManagerService,
     );
+  }
+
+  private static toTextLayerInput(
+    layer: ExtractedEpubPageTextLayer,
+    pages: readonly BookPageEntity[],
+  ): CreateBookPageTextLayerRepoInput {
+    const matchedPage: BookPageEntity | undefined =
+      pages.find((page) => page.href === layer.href) ??
+      pages.find((page) => page.spineIndex === layer.spineIndex);
+    if (matchedPage === undefined) {
+      throw new BookProcessingInvalidEpubException(
+        `text layer has no matching page: ${layer.href}`,
+      );
+    }
+    return {
+      pageId: matchedPage.id,
+      contentText: layer.contentText,
+      runs: layer.runs,
+    };
   }
 
   private static isEpubSource(source: BookAssetEntity): boolean {
