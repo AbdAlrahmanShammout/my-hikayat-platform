@@ -31,6 +31,11 @@ export type ListBookAssetsRepoInput = {
   readonly kind?: BookAssetKind;
 };
 
+export type FindLatestBookAssetRepoInput = {
+  readonly bookId: number;
+  readonly kind: BookAssetKind;
+};
+
 export type BookAssetPage = {
   readonly entities: BookAssetEntity[];
   readonly total: number;

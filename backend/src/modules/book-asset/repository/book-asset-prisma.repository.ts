@@ -5,6 +5,7 @@ import { TransactionContext } from '@/common/base/transaction-context';
 import {
   BookAssetPage,
   CreateBookAssetRepoInput,
+  FindLatestBookAssetRepoInput,
   ListBookAssetsRepoInput,
   UpdateBookAssetRepoInput,
 } from '@/modules/book-asset/defs/book-asset-repository.defs';
@@ -76,6 +77,19 @@ export class BookAssetPrismaRepository implements BookAssetRepository {
   async findById(id: number): Promise<BookAssetEntity | null> {
     const result = await this.prismaProviderService.bookAsset.findFirst({
       where: { id, deletedAt: null },
+    });
+    if (result === null) {
+      return null;
+    }
+    return BookAssetMapper.toEntity(result);
+  }
+
+  async findLatestByBookIdAndKind(
+    input: FindLatestBookAssetRepoInput,
+  ): Promise<BookAssetEntity | null> {
+    const result = await this.prismaProviderService.bookAsset.findFirst({
+      where: { bookId: input.bookId, kind: input.kind, deletedAt: null },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
     if (result === null) {
       return null;

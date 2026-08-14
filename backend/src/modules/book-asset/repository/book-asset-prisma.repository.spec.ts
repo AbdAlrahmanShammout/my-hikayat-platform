@@ -103,4 +103,17 @@ describe('BookAssetPrismaRepository', () => {
     expect(actualPage.total).toBe(1);
     expect(actualPage.entities).toEqual([BookAssetMapper.toEntity(persistenceRow)]);
   });
+
+  it('returns the newest operational asset for a book and kind', async () => {
+    mockPrismaProviderService.bookAsset.findFirst.mockResolvedValue(persistenceRow);
+    const actualEntity = await bookAssetPrismaRepository.findLatestByBookIdAndKind({
+      bookId: 8,
+      kind: BookAssetKind.SOURCE,
+    });
+    expect(mockPrismaProviderService.bookAsset.findFirst).toHaveBeenCalledWith({
+      where: { bookId: 8, kind: BookAssetKind.SOURCE, deletedAt: null },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+    expect(actualEntity).toEqual(BookAssetMapper.toEntity(persistenceRow));
+  });
 });

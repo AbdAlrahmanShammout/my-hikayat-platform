@@ -2,6 +2,7 @@ import { TransactionContext } from '@/common/base/transaction-context';
 import {
   BookAssetPage,
   CreateBookAssetRepoInput,
+  FindLatestBookAssetRepoInput,
   ListBookAssetsRepoInput,
   UpdateBookAssetRepoInput,
 } from '@/modules/book-asset/defs/book-asset-repository.defs';
@@ -17,5 +18,8 @@ export abstract class BookAssetRepository {
     context?: TransactionContext,
   ): Promise<BookAssetEntity>;
   abstract findById(id: number): Promise<BookAssetEntity | null>;
+  abstract findLatestByBookIdAndKind(
+    input: FindLatestBookAssetRepoInput,
+  ): Promise<BookAssetEntity | null>;
   abstract list(input: ListBookAssetsRepoInput): Promise<BookAssetPage>;
 }

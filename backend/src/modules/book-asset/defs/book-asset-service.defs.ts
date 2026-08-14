@@ -31,6 +31,11 @@ export type ListBookAssetsServiceInput = {
   readonly kind?: BookAssetKind;
 };
 
+export type FindLatestBookAssetServiceInput = {
+  readonly bookId: number;
+  readonly kind: BookAssetKind;
+};
+
 export type UploadBookSourceServiceInput = {
   readonly bookId: number;
   readonly actorId: number;

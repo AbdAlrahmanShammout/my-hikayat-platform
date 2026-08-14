@@ -6,9 +6,10 @@ import { LocalAuthGuard } from '@/common/guards/local-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { BookAssetModule } from '@/modules/book-asset/book-asset.module';
 import { BookAssetAuthorController } from '@/modules/book-asset/book-asset.author.controller';
+import { BookProcessingModule } from '@/modules/book-processing/book-processing.module';
 
 @Module({
-  imports: [AuthModule, BookAssetModule],
+  imports: [AuthModule, BookAssetModule, BookProcessingModule],
   controllers: [BookAssetAuthorController],
   providers: [JwtAuthGuard, LocalAuthGuard, RolesGuard],
 })

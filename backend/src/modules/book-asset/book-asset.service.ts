@@ -8,6 +8,7 @@ import { BOOK_ASSET_CHECKSUM_SHA256_LENGTH } from '@/modules/book-asset/consts';
 import { BookAssetPage } from '@/modules/book-asset/defs/book-asset-repository.defs';
 import {
   CreateBookAssetServiceInput,
+  FindLatestBookAssetServiceInput,
   ListBookAssetsServiceInput,
   UpdateBookAssetServiceInput,
 } from '@/modules/book-asset/defs/book-asset-service.defs';
@@ -99,6 +100,16 @@ export class BookAssetService {
       bookId: input.bookId,
       limit: input.limit ?? DEFAULT_PAGE_SIZE,
       offset: input.offset ?? DEFAULT_PAGE_OFFSET,
+      kind: input.kind,
+    });
+  }
+
+  async findLatestBookAsset(
+    input: FindLatestBookAssetServiceInput,
+  ): Promise<BookAssetEntity | null> {
+    await this.bookService.getBookById(input.bookId);
+    return this.bookAssetRepository.findLatestByBookIdAndKind({
+      bookId: input.bookId,
       kind: input.kind,
     });
   }

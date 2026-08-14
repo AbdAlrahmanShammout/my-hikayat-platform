@@ -53,6 +53,7 @@ describe('BookAssetService', () => {
     create: jest.Mock;
     update: jest.Mock;
     findById: jest.Mock;
+    findLatestByBookIdAndKind: jest.Mock;
     list: jest.Mock;
   };
   let mockBookService: { getBookById: jest.Mock };
@@ -63,6 +64,7 @@ describe('BookAssetService', () => {
       create: jest.fn(),
       update: jest.fn(),
       findById: jest.fn(),
+      findLatestByBookIdAndKind: jest.fn(),
       list: jest.fn(),
     };
     mockBookService = { getBookById: jest.fn() };
@@ -244,6 +246,24 @@ describe('BookAssetService', () => {
         kind: undefined,
       });
       expect(actualPage.total).toBe(1);
+    });
+  });
+
+  describe('findLatestBookAsset', () => {
+    it('returns the newest matching asset after verifying the book', async () => {
+      const expectedAsset = createSampleAsset();
+      mockBookService.getBookById.mockResolvedValue(createSampleBook());
+      mockBookAssetRepository.findLatestByBookIdAndKind.mockResolvedValue(expectedAsset);
+      const actualAsset = await bookAssetService.findLatestBookAsset({
+        bookId: 8,
+        kind: BookAssetKind.SOURCE,
+      });
+      expect(mockBookService.getBookById).toHaveBeenCalledWith(8);
+      expect(mockBookAssetRepository.findLatestByBookIdAndKind).toHaveBeenCalledWith({
+        bookId: 8,
+        kind: BookAssetKind.SOURCE,
+      });
+      expect(actualAsset).toBe(expectedAsset);
     });
   });
 
