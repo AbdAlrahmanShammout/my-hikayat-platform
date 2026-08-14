@@ -19,6 +19,7 @@ import { BookSpreadEntity } from '@/modules/book-processing/entity/book-spread.e
 import { BookPageSpreadRole } from '@/modules/book-processing/enum/general.enum';
 import { BookProcessingInvalidEpubException } from '@/modules/book-processing/exceptions/book-processing-invalid-epub.exception';
 import { BookProcessingInvalidPdfException } from '@/modules/book-processing/exceptions/book-processing-invalid-pdf.exception';
+import { BookProcessingInvalidSourceException } from '@/modules/book-processing/exceptions/book-processing-invalid-source.exception';
 import { BookProcessingMissingPagesException } from '@/modules/book-processing/exceptions/book-processing-missing-pages.exception';
 import { BookProcessingMissingSourceException } from '@/modules/book-processing/exceptions/book-processing-missing-source.exception';
 import { BookProcessingNotFixedLayoutException } from '@/modules/book-processing/exceptions/book-processing-not-fixed-layout.exception';
@@ -751,6 +752,84 @@ describe('BookProcessingService', () => {
         BookProcessingInvalidEpubException,
       );
       expect(mockBookPageTextLayerRepository.replaceByBookId).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('processSource', () => {
+    it('ingests a PDF source without extracting EPUB structure', async () => {
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(
+        createSourceAsset('application/pdf', 'book.pdf'),
+      );
+      mockStorageManagerService.getObject.mockResolvedValue({
+        key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        body: Buffer.from('encrypted-pdf'),
+        contentType: 'application/pdf',
+        byteSize: 13,
+      });
+      mockEncryptionManagerService.decrypt.mockReturnValue({
+        plaintext: Buffer.from('%PDF-1.4 source'),
+      });
+      await bookProcessingService.processSource(8);
+      expect(mockBookChapterRepository.replaceByBookId).not.toHaveBeenCalled();
+      expect(mockBookPageRepository.replaceByBookId).not.toHaveBeenCalled();
+      expect(mockBookService.updateBook).not.toHaveBeenCalled();
+    });
+
+    it('extracts reflowable chapters for an EPUB source', async () => {
+      const expectedChapters = [createSampleChapter()];
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(createSourceAsset());
+      mockStorageManagerService.getObject.mockResolvedValue({
+        key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        body: Buffer.from('encrypted-epub'),
+        contentType: 'application/epub+zip',
+        byteSize: 14,
+      });
+      mockEncryptionManagerService.decrypt.mockReturnValue({
+        plaintext: createReflowableChapterEpubBytes(),
+      });
+      mockBookSourceMetadataRepository.findByBookId.mockResolvedValue(null);
+      mockBookSourceMetadataRepository.create.mockResolvedValue(createSourceMetadata());
+      mockBookService.updateBook.mockResolvedValue(createSampleBook(BookLayoutType.REFLOWABLE));
+      mockBookChapterRepository.replaceByBookId.mockResolvedValue(expectedChapters);
+      await bookProcessingService.processSource(8);
+      expect(mockBookChapterRepository.replaceByBookId).toHaveBeenCalled();
+      expect(mockBookPageRepository.replaceByBookId).not.toHaveBeenCalled();
+    });
+
+    it('extracts fixed-layout pages and text for a pre-paginated EPUB', async () => {
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(createSourceAsset());
+      mockStorageManagerService.getObject.mockResolvedValue({
+        key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+        body: Buffer.from('encrypted-epub'),
+        contentType: 'application/epub+zip',
+        byteSize: 14,
+      });
+      mockEncryptionManagerService.decrypt.mockReturnValue({
+        plaintext: createFixedLayoutTextEpubBytes(),
+      });
+      mockBookSourceMetadataRepository.findByBookId.mockResolvedValue(null);
+      mockBookSourceMetadataRepository.create.mockResolvedValue(createSourceMetadata());
+      mockBookService.updateBook.mockResolvedValue(createSampleBook(BookLayoutType.FIXED_LAYOUT));
+      mockBookPageRepository.replaceByBookId.mockResolvedValue({
+        pages: [createSamplePage()],
+        spreads: [createSampleSpread()],
+      });
+      mockBookPageRepository.listByBookId.mockResolvedValue([createSamplePage()]);
+      mockBookPageTextLayerRepository.replaceByBookId.mockResolvedValue([createSampleTextLayer()]);
+      await bookProcessingService.processSource(8);
+      expect(mockBookPageRepository.replaceByBookId).toHaveBeenCalled();
+      expect(mockBookPageTextLayerRepository.replaceByBookId).toHaveBeenCalled();
+      expect(mockBookChapterRepository.replaceByBookId).not.toHaveBeenCalled();
+    });
+
+    it('rejects a source that is neither EPUB nor PDF', async () => {
+      mockBookAssetService.findLatestBookAsset.mockResolvedValue(
+        createSourceAsset('application/octet-stream', 'book.bin'),
+      );
+      await expect(bookProcessingService.processSource(8)).rejects.toBeInstanceOf(
+        BookProcessingInvalidSourceException,
+      );
+      expect(mockStorageManagerService.getObject).not.toHaveBeenCalled();
     });
   });
 });

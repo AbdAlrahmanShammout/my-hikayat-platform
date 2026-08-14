@@ -4,9 +4,12 @@ import { BookModule } from '@/modules/book/book.module';
 import { BookAssetModule } from '@/modules/book-asset/book-asset.module';
 import { DatabaseProviderModule } from '@/providers/database/database-provider.module';
 import { EncryptionProviderModule } from '@/providers/encryption/encryption-provider.module';
+import { JobProviderModule } from '@/providers/job/job-provider.module';
 import { StorageProviderModule } from '@/providers/storage/storage-provider.module';
 
+import { BookProcessingOrchestrationService } from './book-processing-orchestration.service';
 import { BookProcessingService } from './book-processing.service';
+import { JobEventHandlersImplementsService } from './job-event-handlers-implements.service';
 import { BookChapterPrismaRepository } from './repository/book-chapter-prisma.repository';
 import { BookChapterRepository } from './repository/book-chapter.repository';
 import { BookPagePrismaRepository } from './repository/book-page-prisma.repository';
@@ -27,9 +30,12 @@ import { BookSourceMetadataRepository } from './repository/book-source-metadata.
     BookAssetModule,
     StorageProviderModule,
     EncryptionProviderModule,
+    JobProviderModule,
   ],
   providers: [
     BookProcessingService,
+    BookProcessingOrchestrationService,
+    JobEventHandlersImplementsService,
     { provide: BookSourceMetadataRepository, useClass: BookSourceMetadataPrismaRepository },
     { provide: BookChapterRepository, useClass: BookChapterPrismaRepository },
     { provide: BookPageRepository, useClass: BookPagePrismaRepository },
@@ -37,6 +43,6 @@ import { BookSourceMetadataRepository } from './repository/book-source-metadata.
     { provide: BookPageTextLayerRepository, useClass: BookPageTextLayerPrismaRepository },
     { provide: BookPageTextRunRepository, useClass: BookPageTextRunPrismaRepository },
   ],
-  exports: [BookProcessingService],
+  exports: [BookProcessingService, BookProcessingOrchestrationService],
 })
 export class BookProcessingModule {}

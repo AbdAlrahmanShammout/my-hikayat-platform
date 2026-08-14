@@ -26,6 +26,7 @@ import { EpubOcfHelper, EpubOcfOpenedPackage } from '@/modules/book-processing/e
 import { EpubSpineHelper } from '@/modules/book-processing/epub-spine.helper';
 import { BookProcessingInvalidEpubException } from '@/modules/book-processing/exceptions/book-processing-invalid-epub.exception';
 import { BookProcessingInvalidPdfException } from '@/modules/book-processing/exceptions/book-processing-invalid-pdf.exception';
+import { BookProcessingInvalidSourceException } from '@/modules/book-processing/exceptions/book-processing-invalid-source.exception';
 import { BookProcessingMissingPagesException } from '@/modules/book-processing/exceptions/book-processing-missing-pages.exception';
 import { BookProcessingMissingSourceException } from '@/modules/book-processing/exceptions/book-processing-missing-source.exception';
 import { BookProcessingNotFixedLayoutException } from '@/modules/book-processing/exceptions/book-processing-not-fixed-layout.exception';
@@ -64,6 +65,26 @@ export class BookProcessingService {
   async ingestPdfSource(bookId: number): Promise<void> {
     const plaintext: Buffer = await this.loadPdfPlaintext(bookId);
     PdfSourceHelper.validate(plaintext);
+  }
+
+  async processSource(bookId: number): Promise<void> {
+    const source: BookAssetEntity = await this.findLatestSource(bookId);
+    if (BookProcessingService.isPdfSource(source)) {
+      await this.ingestPdfSource(bookId);
+      return;
+    }
+    if (!BookProcessingService.isEpubSource(source)) {
+      throw new BookProcessingInvalidSourceException('source file is not an EPUB or PDF');
+    }
+    await this.validateEpubSource(bookId);
+    await this.extractEpubMetadata(bookId);
+    const book: BookEntity = await this.detectEpubLayout(bookId);
+    if (book.layoutType === BookLayoutType.FIXED_LAYOUT) {
+      await this.extractEpubFixedLayout(bookId);
+      await this.extractEpubFixedLayoutText(bookId);
+      return;
+    }
+    await this.extractEpubChapters(bookId);
   }
 
   async extractEpubMetadata(bookId: number): Promise<BookSourceMetadataEntity> {

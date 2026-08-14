@@ -10,7 +10,9 @@ import { BookPageTextLayerRepository } from '@/modules/book-processing/repositor
 import { BookPageTextRunRepository } from '@/modules/book-processing/repository/book-page-text-run.repository';
 import { BookSpreadRepository } from '@/modules/book-processing/repository/book-spread.repository';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
+import { JobManagerService } from '@/providers/job/job-manager.service';
 
+import { BookProcessingOrchestrationService } from './book-processing-orchestration.service';
 import { BookProcessingModule } from './book-processing.module';
 import { BookProcessingService } from './book-processing.service';
 
@@ -96,6 +98,8 @@ describe('BookProcessingModule', () => {
       })
       .compile();
     expect(moduleRef.get(BookProcessingService)).toBeDefined();
+    expect(moduleRef.get(BookProcessingOrchestrationService)).toBeDefined();
+    expect(moduleRef.get(JobManagerService)).toBeDefined();
     expect(moduleRef.get(BookService)).toBeDefined();
     expect(moduleRef.get(BookSourceMetadataRepository)).toBeDefined();
     expect(moduleRef.get(BookChapterRepository)).toBeDefined();
