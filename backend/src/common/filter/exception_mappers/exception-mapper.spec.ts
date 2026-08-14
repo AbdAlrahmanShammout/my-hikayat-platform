@@ -46,6 +46,17 @@ describe('normalizeException', () => {
     expect(actualResult.userFriendly).toBe(true);
   });
 
+  it('maps a multer file-size limit to 413', () => {
+    const exception = Object.assign(new Error('File too large'), {
+      name: 'MulterError',
+      code: 'LIMIT_FILE_SIZE',
+    });
+    const actualResult = normalizeException(exception);
+    expect(actualResult.statusCode).toBe(HttpStatus.PAYLOAD_TOO_LARGE);
+    expect(actualResult.code).toBe('PAYLOAD_TOO_LARGE');
+    expect(actualResult.userFriendly).toBe(true);
+  });
+
   it('maps TypeError to an internal 500 that is not user-friendly', () => {
     const exception = new TypeError('Cannot read properties of undefined');
     const actualResult = normalizeException(exception);

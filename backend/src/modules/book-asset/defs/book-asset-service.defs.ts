@@ -1,4 +1,5 @@
 import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
+import { UserRole } from '@/modules/user/enum/general.enum';
 
 export type CreateBookAssetServiceInput = {
   readonly bookId: number;
@@ -28,4 +29,19 @@ export type ListBookAssetsServiceInput = {
   readonly limit?: number;
   readonly offset?: number;
   readonly kind?: BookAssetKind;
+};
+
+export type UploadBookSourceServiceInput = {
+  readonly bookId: number;
+  readonly actorId: number;
+  readonly actorRole: UserRole;
+  readonly body: Buffer;
+  readonly contentType: string;
+  readonly originalFileName?: string | null;
+};
+
+export type UploadedSourceFile = {
+  readonly buffer: Buffer;
+  readonly mimetype: string;
+  readonly originalname: string;
 };

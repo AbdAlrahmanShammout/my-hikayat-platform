@@ -4,9 +4,23 @@ import { GeneralTypeException } from '@/common/filter/exception_return_handler/t
 
 const PAYLOAD_TOO_LARGE_STATUS = Number(HttpStatus.PAYLOAD_TOO_LARGE);
 
+function isMulterFileTooLarge(exception: unknown): boolean {
+  return (
+    typeof exception === 'object' &&
+    exception !== null &&
+    'name' in exception &&
+    exception.name === 'MulterError' &&
+    'code' in exception &&
+    exception.code === 'LIMIT_FILE_SIZE'
+  );
+}
+
 function isPayloadTooLargeError(exception: unknown): boolean {
   if (typeof exception !== 'object' || exception === null) {
     return false;
+  }
+  if (isMulterFileTooLarge(exception)) {
+    return true;
   }
   if ('type' in exception && exception.type === 'entity.too.large') {
     return true;

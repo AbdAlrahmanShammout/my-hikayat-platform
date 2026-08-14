@@ -8,6 +8,9 @@ import appConfigs from './app/app-configs';
 import { databaseConfigSchema } from './database/database-config.schema';
 import { DatabaseConfigService } from './database/database-config.service';
 import databaseConfigs from './database/database-configs';
+import { encryptionConfigSchema } from './encryption/encryption-config.schema';
+import { EncryptionConfigService } from './encryption/encryption-config.service';
+import encryptionConfigs from './encryption/encryption-configs';
 import { jwtConfigSchema } from './jwt/jwt-config.schema';
 import { JwtConfigService } from './jwt/jwt-config.service';
 import jwtConfigs from './jwt/jwt-configs';
@@ -22,12 +25,19 @@ import storageConfigs from './storage/storage-configs';
       isGlobal: true,
       cache: true,
       envFilePath: ['.env'],
-      load: [...appConfigs, ...databaseConfigs, ...jwtConfigs, ...storageConfigs],
+      load: [
+        ...appConfigs,
+        ...databaseConfigs,
+        ...jwtConfigs,
+        ...storageConfigs,
+        ...encryptionConfigs,
+      ],
       validationSchema: Joi.object({
         ...appConfigSchema,
         ...databaseConfigSchema,
         ...jwtConfigSchema,
         ...storageConfigSchema,
+        ...encryptionConfigSchema,
       }),
       // OS and tool environment keys (PATH, npm_*, etc.) are always present.
       // Declared application variables are still validated by the merged schema.
@@ -37,7 +47,19 @@ import storageConfigs from './storage/storage-configs';
       },
     }),
   ],
-  providers: [AppConfigService, DatabaseConfigService, JwtConfigService, StorageConfigService],
-  exports: [AppConfigService, DatabaseConfigService, JwtConfigService, StorageConfigService],
+  providers: [
+    AppConfigService,
+    DatabaseConfigService,
+    JwtConfigService,
+    StorageConfigService,
+    EncryptionConfigService,
+  ],
+  exports: [
+    AppConfigService,
+    DatabaseConfigService,
+    JwtConfigService,
+    StorageConfigService,
+    EncryptionConfigService,
+  ],
 })
 export class ConfigsModule {}

@@ -1,15 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { ConfigsModule } from '@/config/configs.module';
 import { BookAssetRepository } from '@/modules/book-asset/repository/book-asset.repository';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
+import { BookAssetSourceService } from './book-asset-source.service';
 import { BookAssetModule } from './book-asset.module';
 import { BookAssetService } from './book-asset.service';
 
 describe('BookAssetModule', () => {
-  it('binds the abstract repository and exports the service', async () => {
+  it('binds the abstract repository and exports the services', async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [BookAssetModule],
+      imports: [ConfigsModule, BookAssetModule],
     })
       .overrideProvider(PrismaProviderService)
       .useValue({
@@ -41,6 +43,7 @@ describe('BookAssetModule', () => {
       })
       .compile();
     expect(moduleRef.get(BookAssetService)).toBeDefined();
+    expect(moduleRef.get(BookAssetSourceService)).toBeDefined();
     expect(moduleRef.get(BookAssetRepository)).toBeDefined();
     await moduleRef.close();
   });

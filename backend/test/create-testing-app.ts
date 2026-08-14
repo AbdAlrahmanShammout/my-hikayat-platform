@@ -5,6 +5,8 @@ import { AppModule } from '@/app.module';
 import { configureHttpSurface } from '@/common/helpers/configure-http-surface.helper';
 import { AppConfigService } from '@/config/app/app-config.service';
 import type { Environment } from '@/config/environment';
+import { MemoryStorageManagerService } from '@/providers/storage/memory/memory-storage-manager.service';
+import { StorageManagerService } from '@/providers/storage/storage-manager.service';
 import { SWAGGER_UI_PATH } from '@/providers/swagger/consts';
 import { SwaggerProvider } from '@/providers/swagger/swagger.provider';
 
@@ -19,7 +21,9 @@ export async function createTestingApp(
   const testingModuleBuilder = Test.createTestingModule({
     imports: [AppModule],
     controllers: input.controllers ?? [],
-  });
+  })
+    .overrideProvider(StorageManagerService)
+    .useClass(MemoryStorageManagerService);
   if (input.env !== undefined) {
     testingModuleBuilder.overrideProvider(AppConfigService).useValue({
       env: input.env,

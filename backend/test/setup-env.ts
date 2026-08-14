@@ -18,3 +18,4 @@ process.env.STORAGE_ACCESS_KEY_ID =
   process.env.STORAGE_ACCESS_KEY_ID ?? 'test-storage-access-key-not-for-production';
 process.env.STORAGE_SECRET_ACCESS_KEY =
   process.env.STORAGE_SECRET_ACCESS_KEY ?? 'test-storage-secret-key-not-for-production';
+process.env.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ?? 'ab'.repeat(32);
