@@ -102,6 +102,30 @@ describe('BookEngagementPrismaRepository', () => {
     });
   });
 
+  it('summarizes engagement totals for every owner in a period', async () => {
+    mockPrismaProviderService.bookEngagement.aggregate.mockResolvedValue({
+      _sum: {
+        activeReadingMs: 120000,
+        activeSpreadMs: 180000,
+        visualSceneTimeMs: 90000,
+        weightedEngagement: 7,
+      },
+    });
+    const actualSummary = await bookEngagementPrismaRepository.summarizeByOwner({
+      revenuePeriodId: 4,
+    });
+    expect(mockPrismaProviderService.bookEngagement.aggregate).toHaveBeenCalledWith({
+      where: { revenuePeriodId: 4, deletedAt: null },
+      _sum: {
+        activeReadingMs: true,
+        activeSpreadMs: true,
+        visualSceneTimeMs: true,
+        weightedEngagement: true,
+      },
+    });
+    expect(actualSummary.totalWeightedEngagement).toBe(7);
+  });
+
   it('lists book engagements ordered by weighted engagement descending', async () => {
     mockPrismaProviderService.$transaction.mockResolvedValue([[persistenceRow], 1]);
     const actualPage = await bookEngagementPrismaRepository.list({

@@ -8,11 +8,12 @@ import { BookAdminController } from '@/modules/book/book.admin.controller';
 import { BookModule } from '@/modules/book/book.module';
 import { CollectionAdminController } from '@/modules/collection/collection.admin.controller';
 import { CollectionModule } from '@/modules/collection/collection.module';
+import { MonetizationAdminController } from '@/modules/monetization/monetization.admin.controller';
 import { MonetizationModule } from '@/modules/monetization/monetization.module';
 
 @Module({
   imports: [AuthModule, BookModule, CollectionModule, MonetizationModule],
-  controllers: [BookAdminController, CollectionAdminController],
+  controllers: [BookAdminController, CollectionAdminController, MonetizationAdminController],
   providers: [JwtAuthGuard, LocalAuthGuard, RolesGuard],
 })
 export class AdminApiModule {}

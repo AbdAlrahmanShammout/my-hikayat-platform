@@ -6,6 +6,7 @@ import { BookRevenueRepository } from '@/modules/monetization/repository/book-re
 import { RevenuePeriodRepository } from '@/modules/monetization/repository/revenue-period.repository';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
+import { AdminAnalyticsService } from './admin-analytics.service';
 import { AuthorAnalyticsService } from './author-analytics.service';
 import { BookEngagementService } from './book-engagement.service';
 import { BookRevenueService } from './book-revenue.service';
@@ -110,6 +111,7 @@ describe('MonetizationModule', () => {
     expect(moduleRef.get(BookEngagementService)).toBeDefined();
     expect(moduleRef.get(BookRevenueService)).toBeDefined();
     expect(moduleRef.get(AuthorAnalyticsService)).toBeDefined();
+    expect(moduleRef.get(AdminAnalyticsService)).toBeDefined();
     expect(moduleRef.get(RevenuePeriodRepository)).toBeDefined();
     expect(moduleRef.get(BookEngagementRepository)).toBeDefined();
     expect(moduleRef.get(BookRevenueRepository)).toBeDefined();

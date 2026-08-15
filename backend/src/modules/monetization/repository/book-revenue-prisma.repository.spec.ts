@@ -76,4 +76,18 @@ describe('BookRevenuePrismaRepository', () => {
     });
     expect(actualTotal).toBe(2500);
   });
+
+  it('sums author cents for every owner in a period', async () => {
+    mockPrismaProviderService.bookRevenue.aggregate.mockResolvedValue({
+      _sum: { authorCents: 7000 },
+    });
+    const actualTotal = await bookRevenuePrismaRepository.sumAuthorCents({
+      revenuePeriodId: 4,
+    });
+    expect(mockPrismaProviderService.bookRevenue.aggregate).toHaveBeenCalledWith({
+      where: { revenuePeriodId: 4, deletedAt: null },
+      _sum: { authorCents: true },
+    });
+    expect(actualTotal).toBe(7000);
+  });
 });

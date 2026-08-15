@@ -24,7 +24,7 @@ export type ListBookRevenuesRepoInput = {
 
 export type SumAuthorCentsRepoInput = {
   readonly revenuePeriodId: number;
-  readonly ownerId: number;
+  readonly ownerId?: number;
 };
 
 export type BookRevenuePage = {
