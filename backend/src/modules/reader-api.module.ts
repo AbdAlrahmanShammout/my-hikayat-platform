@@ -8,12 +8,18 @@ import { ReadingIntelligenceModule } from '@/modules/reading-intelligence/readin
 import { ReadingIntelligenceReaderController } from '@/modules/reading-intelligence/reading-intelligence.reader.controller';
 import { ReadingModule } from '@/modules/reading/reading.module';
 import { ReadingReaderController } from '@/modules/reading/reading.reader.controller';
+import { ReadingSyncReaderController } from '@/modules/reading/reading-sync.reader.controller';
 import { UserModule } from '@/modules/user/user.module';
 import { UserReaderController } from '@/modules/user/user.reader.controller';
 
 @Module({
   imports: [AuthModule, ReadingIntelligenceModule, ReadingModule, UserModule],
-  controllers: [ReadingIntelligenceReaderController, ReadingReaderController, UserReaderController],
+  controllers: [
+    ReadingIntelligenceReaderController,
+    ReadingSyncReaderController,
+    ReadingReaderController,
+    UserReaderController,
+  ],
   providers: [JwtAuthGuard, LocalAuthGuard, RolesGuard],
 })
 export class ReaderApiModule {}

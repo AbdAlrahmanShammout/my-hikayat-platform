@@ -4,6 +4,8 @@ import { Prisma } from '@prisma/client';
 import { TransactionContext } from '@/common/base/transaction-context';
 import {
   CreateReadingProgressRepoInput,
+  ListReadingProgressesRepoInput,
+  ReadingProgressPage,
   UpdateReadingProgressRepoInput,
 } from '@/modules/reading/defs/reading-progress-repository.defs';
 import { ReadingProgressEntity } from '@/modules/reading/entity/reading-progress.entity';
@@ -65,6 +67,35 @@ export class ReadingProgressPrismaRepository implements ReadingProgressRepositor
       data,
     });
     return ReadingProgressMapper.toEntity(result);
+  }
+
+  async list(input: ListReadingProgressesRepoInput): Promise<ReadingProgressPage> {
+    const where: Prisma.ReadingProgressWhereInput = {
+      userId: input.userId,
+      deletedAt: null,
+    };
+    if (input.bookId !== undefined) {
+      where.bookId = input.bookId;
+    }
+    if (input.updatedSince !== undefined) {
+      where.updatedAt = { gte: input.updatedSince };
+    }
+    const findMany: Prisma.ReadingProgressFindManyArgs = {
+      where,
+      orderBy: [{ lastSessionAt: 'desc' }, { bookId: 'asc' }],
+      skip: input.offset ?? 0,
+    };
+    if (input.limit !== undefined) {
+      findMany.take = input.limit;
+    }
+    const [rows, total] = await this.prismaProviderService.$transaction([
+      this.prismaProviderService.readingProgress.findMany(findMany),
+      this.prismaProviderService.readingProgress.count({ where }),
+    ]);
+    return {
+      entities: rows.map((row) => ReadingProgressMapper.toEntity(row)),
+      total,
+    };
   }
 
   async findById(id: number): Promise<ReadingProgressEntity | null> {

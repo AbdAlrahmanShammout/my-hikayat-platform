@@ -50,6 +50,7 @@ describe('ReadingProgressService', () => {
   let mockReadingProgressRepository: {
     create: jest.Mock;
     update: jest.Mock;
+    list: jest.Mock;
     findById: jest.Mock;
     findByUserIdAndBookId: jest.Mock;
   };
@@ -61,6 +62,7 @@ describe('ReadingProgressService', () => {
     mockReadingProgressRepository = {
       create: jest.fn(),
       update: jest.fn(),
+      list: jest.fn(),
       findById: jest.fn(),
       findByUserIdAndBookId: jest.fn(),
     };
@@ -195,6 +197,23 @@ describe('ReadingProgressService', () => {
         readingProgressService.getReadingProgressByUserAndBook({ userId: 7, bookId: 8 }),
       ).rejects.toBeInstanceOf(ResourceNotFoundException);
       expect(mockReadingProgressRepository.findByUserIdAndBookId).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('listReadingProgresses', () => {
+    it('lists the caller progress rows without pagination defaults', async () => {
+      const expectedPage = { entities: [createSampleProgress()], total: 1 };
+      mockReadingProgressRepository.list.mockResolvedValue(expectedPage);
+      const actualPage = await readingProgressService.listReadingProgresses({
+        userId: 7,
+        updatedSince: new Date('2026-08-15T00:00:00.000Z'),
+      });
+      expect(mockReadingProgressRepository.list).toHaveBeenCalledWith({
+        userId: 7,
+        bookId: undefined,
+        updatedSince: new Date('2026-08-15T00:00:00.000Z'),
+      });
+      expect(actualPage).toBe(expectedPage);
     });
   });
 });

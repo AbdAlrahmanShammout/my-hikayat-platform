@@ -39,16 +39,24 @@ export class ReadingBookmarkPrismaRepository implements ReadingBookmarkRepositor
   async list(input: ListReadingBookmarksRepoInput): Promise<ReadingBookmarkPage> {
     const where: Prisma.ReadingBookmarkWhereInput = {
       userId: input.userId,
-      bookId: input.bookId,
       deletedAt: null,
     };
+    if (input.bookId !== undefined) {
+      where.bookId = input.bookId;
+    }
+    if (input.updatedSince !== undefined) {
+      where.updatedAt = { gte: input.updatedSince };
+    }
+    const findMany: Prisma.ReadingBookmarkFindManyArgs = {
+      where,
+      orderBy: [{ bookId: 'asc' }, { createdAt: 'asc' }],
+      skip: input.offset ?? 0,
+    };
+    if (input.limit !== undefined) {
+      findMany.take = input.limit;
+    }
     const [rows, total] = await this.prismaProviderService.$transaction([
-      this.prismaProviderService.readingBookmark.findMany({
-        where,
-        orderBy: { createdAt: 'asc' },
-        take: input.limit,
-        skip: input.offset,
-      }),
+      this.prismaProviderService.readingBookmark.findMany(findMany),
       this.prismaProviderService.readingBookmark.count({ where }),
     ]);
     return {

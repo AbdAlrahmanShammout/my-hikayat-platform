@@ -23,9 +23,12 @@ describe('ReadingProgressPrismaRepository', () => {
     lastSessionAt,
   };
   let mockPrismaProviderService: {
+    $transaction: jest.Mock;
     readingProgress: {
       create: jest.Mock;
       findFirst: jest.Mock;
+      findMany: jest.Mock;
+      count: jest.Mock;
       update: jest.Mock;
     };
   };
@@ -33,9 +36,12 @@ describe('ReadingProgressPrismaRepository', () => {
 
   beforeEach(() => {
     mockPrismaProviderService = {
+      $transaction: jest.fn(),
       readingProgress: {
         create: jest.fn(),
         findFirst: jest.fn(),
+        findMany: jest.fn(),
+        count: jest.fn(),
         update: jest.fn(),
       },
     };
@@ -69,5 +75,15 @@ describe('ReadingProgressPrismaRepository', () => {
         where: { userId: 4, bookId: 8, deletedAt: null },
       }),
     );
+  });
+
+  it('returns a page with a real total', async () => {
+    mockPrismaProviderService.$transaction.mockResolvedValue([[persistenceRow], 2]);
+    const actualPage = await readingProgressPrismaRepository.list({
+      userId: 4,
+    });
+    expect(actualPage.total).toBe(2);
+    expect(actualPage.entities).toHaveLength(1);
+    expect(actualPage.entities[0].id).toBe(3);
   });
 });

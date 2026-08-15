@@ -38,6 +38,8 @@ describe('ReaderApiModule', () => {
         readingProgress: {
           create: jest.fn(),
           findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
           update: jest.fn(),
         },
         readingBookmark: {

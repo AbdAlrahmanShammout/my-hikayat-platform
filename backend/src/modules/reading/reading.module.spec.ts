@@ -8,6 +8,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 import { ReadingBookmarkService } from './reading-bookmark.service';
 import { ReadingProgressService } from './reading-progress.service';
 import { ReadingSessionService } from './reading-session.service';
+import { ReadingSyncService } from './reading-sync.service';
 import { ReadingModule } from './reading.module';
 
 describe('ReadingModule', () => {
@@ -23,6 +24,8 @@ describe('ReadingModule', () => {
         readingProgress: {
           create: jest.fn(),
           findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
           update: jest.fn(),
         },
         readingBookmark: {
@@ -57,6 +60,7 @@ describe('ReadingModule', () => {
     expect(moduleRef.get(ReadingBookmarkService)).toBeDefined();
     expect(moduleRef.get(ReadingProgressService)).toBeDefined();
     expect(moduleRef.get(ReadingSessionService)).toBeDefined();
+    expect(moduleRef.get(ReadingSyncService)).toBeDefined();
     expect(moduleRef.get(ReadingBookmarkRepository)).toBeDefined();
     expect(moduleRef.get(ReadingProgressRepository)).toBeDefined();
     expect(moduleRef.get(ReadingSessionRepository)).toBeDefined();

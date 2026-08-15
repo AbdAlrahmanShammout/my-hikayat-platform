@@ -9,6 +9,7 @@ import { ReadingBookmarkPage } from '@/modules/reading/defs/reading-bookmark-rep
 import {
   CreateReadingBookmarkServiceInput,
   DeleteReadingBookmarkServiceInput,
+  ListReadingBookmarksForSyncServiceInput,
   ListReadingBookmarksServiceInput,
 } from '@/modules/reading/defs/reading-bookmark-service.defs';
 import { ReadingBookmarkEntity } from '@/modules/reading/entity/reading-bookmark.entity';
@@ -59,6 +60,16 @@ export class ReadingBookmarkService {
       bookId: input.bookId,
       limit: input.limit ?? DEFAULT_PAGE_SIZE,
       offset: input.offset ?? DEFAULT_PAGE_OFFSET,
+    });
+  }
+
+  async listReadingBookmarksForSync(
+    input: ListReadingBookmarksForSyncServiceInput,
+  ): Promise<ReadingBookmarkPage> {
+    return this.readingBookmarkRepository.list({
+      userId: input.userId,
+      bookId: input.bookId,
+      updatedSince: input.updatedSince,
     });
   }
 

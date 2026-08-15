@@ -144,6 +144,22 @@ describe('ReadingBookmarkService', () => {
     });
   });
 
+  describe('listReadingBookmarksForSync', () => {
+    it('lists bookmarks without applying HTTP pagination defaults', async () => {
+      const expectedPage = { entities: [createSampleBookmark()], total: 1 };
+      mockReadingBookmarkRepository.list.mockResolvedValue(expectedPage);
+      const actualPage = await readingBookmarkService.listReadingBookmarksForSync({
+        userId: 7,
+      });
+      expect(mockReadingBookmarkRepository.list).toHaveBeenCalledWith({
+        userId: 7,
+        bookId: undefined,
+        updatedSince: undefined,
+      });
+      expect(actualPage).toBe(expectedPage);
+    });
+  });
+
   describe('deleteReadingBookmark', () => {
     it('soft-deletes a bookmark owned by the caller for the book', async () => {
       const existing = createSampleBookmark();

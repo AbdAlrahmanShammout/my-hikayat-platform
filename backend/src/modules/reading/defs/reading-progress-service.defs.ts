@@ -12,3 +12,9 @@ export type FindReadingProgressServiceInput = {
   readonly userId: number;
   readonly bookId: number;
 };
+
+export type ListReadingProgressesServiceInput = {
+  readonly userId: number;
+  readonly bookId?: number;
+  readonly updatedSince?: Date;
+};

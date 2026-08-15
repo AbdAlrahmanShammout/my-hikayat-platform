@@ -6,8 +6,10 @@ import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import {
   FindReadingProgressServiceInput,
+  ListReadingProgressesServiceInput,
   SaveReadingProgressServiceInput,
 } from '@/modules/reading/defs/reading-progress-service.defs';
+import { ReadingProgressPage } from '@/modules/reading/defs/reading-progress-repository.defs';
 import { ReadingProgressEntity } from '@/modules/reading/entity/reading-progress.entity';
 import { ReadingProgressBookLayoutUnknownException } from '@/modules/reading/exceptions/reading-progress-book-layout-unknown.exception';
 import { ReadingProgressInvalidPositionException } from '@/modules/reading/exceptions/reading-progress-invalid-position.exception';
@@ -56,6 +58,16 @@ export class ReadingProgressService {
       layoutType,
       lastSessionAt,
       ...position,
+    });
+  }
+
+  async listReadingProgresses(
+    input: ListReadingProgressesServiceInput,
+  ): Promise<ReadingProgressPage> {
+    return this.readingProgressRepository.list({
+      userId: input.userId,
+      bookId: input.bookId,
+      updatedSince: input.updatedSince,
     });
   }
 

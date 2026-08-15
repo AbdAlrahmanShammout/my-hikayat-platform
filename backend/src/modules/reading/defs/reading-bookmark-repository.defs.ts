@@ -13,9 +13,10 @@ export type CreateReadingBookmarkRepoInput = {
 
 export type ListReadingBookmarksRepoInput = {
   readonly userId: number;
-  readonly bookId: number;
-  readonly limit: number;
-  readonly offset: number;
+  readonly bookId?: number;
+  readonly updatedSince?: Date;
+  readonly limit?: number;
+  readonly offset?: number;
 };
 
 export type ReadingBookmarkPage = {

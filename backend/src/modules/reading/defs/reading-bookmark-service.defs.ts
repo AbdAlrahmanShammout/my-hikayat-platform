@@ -14,6 +14,12 @@ export type ListReadingBookmarksServiceInput = {
   readonly offset?: number;
 };
 
+export type ListReadingBookmarksForSyncServiceInput = {
+  readonly userId: number;
+  readonly bookId?: number;
+  readonly updatedSince?: Date;
+};
+
 export type DeleteReadingBookmarkServiceInput = {
   readonly id: number;
   readonly userId: number;
