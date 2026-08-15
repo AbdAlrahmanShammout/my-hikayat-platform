@@ -6,20 +6,24 @@ import {
   FindCurrentReadingIntelligenceSessionServiceInput,
   IngestReadingActivityServiceInput,
   IngestReadingVisualEngagementServiceInput,
+  ListBookEngagementSignalsServiceInput,
   ListReadingIntelligenceVisualEngagementsServiceInput,
   StartReadingIntelligenceSessionServiceInput,
+  BookEngagementSignal,
 } from '@/modules/reading-intelligence/defs/reading-intelligence-service.defs';
 import { ReadingVisualEngagementPage } from '@/modules/reading-intelligence/defs/reading-visual-engagement-repository.defs';
 import { ReadingVisualEngagementEntity } from '@/modules/reading-intelligence/entity/reading-visual-engagement.entity';
 import { ReadingVisualEngagementNotFixedLayoutException } from '@/modules/reading-intelligence/exceptions/reading-visual-engagement-not-fixed-layout.exception';
 import { ReadingVisualEngagementService } from '@/modules/reading-intelligence/reading-visual-engagement.service';
 import { ReadingSessionEntity } from '@/modules/reading/entity/reading-session.entity';
+import { ReadingSessionTotalsService } from '@/modules/reading/reading-session-totals.service';
 import { ReadingSessionService } from '@/modules/reading/reading-session.service';
 
 @Injectable()
 export class ReadingIntelligenceService {
   constructor(
     private readonly readingSessionService: ReadingSessionService,
+    private readonly readingSessionTotalsService: ReadingSessionTotalsService,
     private readonly readingVisualEngagementService: ReadingVisualEngagementService,
   ) {}
 
@@ -114,6 +118,38 @@ export class ReadingIntelligenceService {
       limit: input.limit,
       offset: input.offset,
     });
+  }
+
+  async listBookEngagementSignalsInRange(
+    input: ListBookEngagementSignalsServiceInput,
+  ): Promise<BookEngagementSignal[]> {
+    const reflowableTotals = await this.readingSessionTotalsService.sumActiveDurationByBookInRange({
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+      layoutType: BookLayoutType.REFLOWABLE,
+    });
+    const visualTotals = await this.readingVisualEngagementService.sumDurationsByBookInRange({
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+    });
+    return [
+      ...reflowableTotals
+        .filter((total) => total.activeDurationMs > 0)
+        .map((total) => ({
+          bookId: total.bookId,
+          layoutType: BookLayoutType.REFLOWABLE,
+          activeDurationMs: total.activeDurationMs,
+          visualSceneTimeMs: 0,
+        })),
+      ...visualTotals
+        .filter((total) => total.activeDurationMs > 0 || total.visualSceneTimeMs > 0)
+        .map((total) => ({
+          bookId: total.bookId,
+          layoutType: BookLayoutType.FIXED_LAYOUT,
+          activeDurationMs: total.activeDurationMs,
+          visualSceneTimeMs: total.visualSceneTimeMs,
+        })),
+    ];
   }
 
   private static assertFixedLayout(session: ReadingSessionEntity): void {

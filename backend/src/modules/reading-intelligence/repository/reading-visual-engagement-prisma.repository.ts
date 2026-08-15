@@ -2,10 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { TransactionContext } from '@/common/base/transaction-context';
+import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import {
   AddReadingVisualEngagementDurationsRepoInput,
+  BookVisualDurationTotal,
   ListReadingVisualEngagementsRepoInput,
   ReadingVisualEngagementPage,
+  SumReadingVisualEngagementDurationsRepoInput,
 } from '@/modules/reading-intelligence/defs/reading-visual-engagement-repository.defs';
 import { ReadingVisualEngagementEntity } from '@/modules/reading-intelligence/entity/reading-visual-engagement.entity';
 import { ReadingVisualEngagementMapper } from '@/modules/reading-intelligence/mapper/reading-visual-engagement.mapper';
@@ -78,5 +81,28 @@ export class ReadingVisualEngagementPrismaRepository implements ReadingVisualEng
       return null;
     }
     return ReadingVisualEngagementMapper.toEntity(result);
+  }
+
+  async sumDurationsByBookInRange(
+    input: SumReadingVisualEngagementDurationsRepoInput,
+  ): Promise<BookVisualDurationTotal[]> {
+    const rows = await this.prismaProviderService.readingVisualEngagement.groupBy({
+      by: ['bookId'],
+      where: {
+        deletedAt: null,
+        layoutType: BookLayoutType.FIXED_LAYOUT,
+        session: {
+          deletedAt: null,
+          startedAt: { gte: input.startsAt, lt: input.endsAt },
+        },
+      },
+      _sum: { activeDurationMs: true, visualSceneTimeMs: true },
+      orderBy: { bookId: 'asc' },
+    });
+    return rows.map((row) => ({
+      bookId: row.bookId,
+      activeDurationMs: row._sum.activeDurationMs ?? 0,
+      visualSceneTimeMs: row._sum.visualSceneTimeMs ?? 0,
+    }));
   }
 }

@@ -92,6 +92,7 @@ model Book {
   readingSessions          ReadingSession[]
   readingVisualEngagements ReadingVisualEngagement[]
   collectionBooks          CollectionBook[]
+  bookEngagements          BookEngagement[]
 
   @@index([publishingStatus])
   @@index([processingStatus])
@@ -424,8 +425,31 @@ model RevenuePeriod {
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
   deletedAt            DateTime?
+  bookEngagements      BookEngagement[]
 
   @@unique([startsAt])
   @@index([status])
+  @@index([deletedAt])
+}
+
+model BookEngagement {
+  id                   Int             @id @default(autoincrement())
+  revenuePeriodId      Int
+  bookId               Int
+  layoutType           BookLayoutType
+  activeReadingMs      Int             @default(0)
+  activeSpreadMs       Int             @default(0)
+  visualSceneTimeMs    Int             @default(0)
+  categoryWeight       Decimal         @db.Decimal(10, 4)
+  weightedEngagement   Decimal         @db.Decimal(20, 8)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  deletedAt            DateTime?
+  revenuePeriod        RevenuePeriod   @relation(fields: [revenuePeriodId], references: [id])
+  book                 Book            @relation(fields: [bookId], references: [id])
+
+  @@unique([revenuePeriodId, bookId])
+  @@index([revenuePeriodId])
+  @@index([bookId])
   @@index([deletedAt])
 }

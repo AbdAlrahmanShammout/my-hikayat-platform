@@ -1,0 +1,1 @@
+export const ENGAGEMENT_MS_PER_MINUTE = 60 * 1000;

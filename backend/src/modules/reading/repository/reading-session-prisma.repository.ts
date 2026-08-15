@@ -3,7 +3,9 @@ import { Prisma } from '@prisma/client';
 
 import { TransactionContext } from '@/common/base/transaction-context';
 import {
+  BookActiveDurationTotal,
   CreateReadingSessionRepoInput,
+  SumReadingSessionActiveDurationRepoInput,
   UpdateReadingSessionRepoInput,
 } from '@/modules/reading/defs/reading-session-repository.defs';
 import { ReadingSessionEntity } from '@/modules/reading/entity/reading-session.entity';
@@ -94,5 +96,24 @@ export class ReadingSessionPrismaRepository implements ReadingSessionRepository 
       return null;
     }
     return ReadingSessionMapper.toEntity(result);
+  }
+
+  async sumActiveDurationByBookInRange(
+    input: SumReadingSessionActiveDurationRepoInput,
+  ): Promise<BookActiveDurationTotal[]> {
+    const rows = await this.prismaProviderService.readingSession.groupBy({
+      by: ['bookId'],
+      where: {
+        deletedAt: null,
+        layoutType: input.layoutType,
+        startedAt: { gte: input.startsAt, lt: input.endsAt },
+      },
+      _sum: { activeDurationMs: true },
+      orderBy: { bookId: 'asc' },
+    });
+    return rows.map((row) => ({
+      bookId: row.bookId,
+      activeDurationMs: row._sum.activeDurationMs ?? 0,
+    }));
   }
 }

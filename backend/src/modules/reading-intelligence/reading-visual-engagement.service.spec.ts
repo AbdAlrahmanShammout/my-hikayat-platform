@@ -28,6 +28,7 @@ describe('ReadingVisualEngagementService', () => {
     addDurations: jest.Mock;
     list: jest.Mock;
     findById: jest.Mock;
+    sumDurationsByBookInRange: jest.Mock;
   };
   let readingVisualEngagementService: ReadingVisualEngagementService;
 
@@ -36,6 +37,7 @@ describe('ReadingVisualEngagementService', () => {
       addDurations: jest.fn(),
       list: jest.fn(),
       findById: jest.fn(),
+      sumDurationsByBookInRange: jest.fn(),
     };
     readingVisualEngagementService = new ReadingVisualEngagementService(
       mockReadingVisualEngagementRepository,
@@ -116,6 +118,25 @@ describe('ReadingVisualEngagementService', () => {
         offset: DEFAULT_PAGE_OFFSET,
       });
       expect(actualPage).toBe(expectedPage);
+    });
+  });
+
+  describe('sumDurationsByBookInRange', () => {
+    it('delegates visual duration totals for a range', async () => {
+      const expectedTotals = [{ bookId: 8, activeDurationMs: 180000, visualSceneTimeMs: 90000 }];
+      mockReadingVisualEngagementRepository.sumDurationsByBookInRange.mockResolvedValue(
+        expectedTotals,
+      );
+      const inputRange = {
+        startsAt: new Date('2026-08-01T00:00:00.000Z'),
+        endsAt: new Date('2026-09-01T00:00:00.000Z'),
+      };
+      const actualTotals =
+        await readingVisualEngagementService.sumDurationsByBookInRange(inputRange);
+      expect(mockReadingVisualEngagementRepository.sumDurationsByBookInRange).toHaveBeenCalledWith(
+        inputRange,
+      );
+      expect(actualTotals).toBe(expectedTotals);
     });
   });
 

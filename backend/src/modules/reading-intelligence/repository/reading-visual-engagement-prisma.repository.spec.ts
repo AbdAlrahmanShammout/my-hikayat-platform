@@ -28,6 +28,7 @@ describe('ReadingVisualEngagementPrismaRepository', () => {
       findFirst: jest.Mock;
       findMany: jest.Mock;
       count: jest.Mock;
+      groupBy: jest.Mock;
     };
   };
   let readingVisualEngagementPrismaRepository: ReadingVisualEngagementPrismaRepository;
@@ -40,6 +41,7 @@ describe('ReadingVisualEngagementPrismaRepository', () => {
         findFirst: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
+        groupBy: jest.fn(),
       },
     };
     readingVisualEngagementPrismaRepository = new ReadingVisualEngagementPrismaRepository(
@@ -100,5 +102,33 @@ describe('ReadingVisualEngagementPrismaRepository', () => {
         where: { id: 11, deletedAt: null },
       }),
     );
+  });
+
+  it('sums spread and visual scene time by book for sessions in range', async () => {
+    mockPrismaProviderService.readingVisualEngagement.groupBy.mockResolvedValue([
+      { bookId: 8, _sum: { activeDurationMs: 180000, visualSceneTimeMs: 90000 } },
+    ]);
+    const inputStartsAt = new Date('2026-08-01T00:00:00.000Z');
+    const inputEndsAt = new Date('2026-09-01T00:00:00.000Z');
+    const actualTotals = await readingVisualEngagementPrismaRepository.sumDurationsByBookInRange({
+      startsAt: inputStartsAt,
+      endsAt: inputEndsAt,
+    });
+    expect(mockPrismaProviderService.readingVisualEngagement.groupBy).toHaveBeenCalledWith({
+      by: ['bookId'],
+      where: {
+        deletedAt: null,
+        layoutType: BookLayoutType.FIXED_LAYOUT,
+        session: {
+          deletedAt: null,
+          startedAt: { gte: inputStartsAt, lt: inputEndsAt },
+        },
+      },
+      _sum: { activeDurationMs: true, visualSceneTimeMs: true },
+      orderBy: { bookId: 'asc' },
+    });
+    expect(actualTotals).toEqual([
+      { bookId: 8, activeDurationMs: 180000, visualSceneTimeMs: 90000 },
+    ]);
   });
 });

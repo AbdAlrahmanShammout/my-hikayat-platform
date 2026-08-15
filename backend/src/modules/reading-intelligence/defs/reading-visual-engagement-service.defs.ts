@@ -15,3 +15,8 @@ export type ListReadingVisualEngagementsServiceInput = {
   readonly limit?: number;
   readonly offset?: number;
 };
+
+export type SumReadingVisualEngagementDurationsServiceInput = {
+  readonly startsAt: Date;
+  readonly endsAt: Date;
+};

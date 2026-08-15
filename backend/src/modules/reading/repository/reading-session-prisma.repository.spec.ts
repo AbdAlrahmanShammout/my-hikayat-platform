@@ -28,6 +28,7 @@ describe('ReadingSessionPrismaRepository', () => {
       create: jest.Mock;
       findFirst: jest.Mock;
       update: jest.Mock;
+      groupBy: jest.Mock;
     };
   };
   let readingSessionPrismaRepository: ReadingSessionPrismaRepository;
@@ -38,6 +39,7 @@ describe('ReadingSessionPrismaRepository', () => {
         create: jest.fn(),
         findFirst: jest.fn(),
         update: jest.fn(),
+        groupBy: jest.fn(),
       },
     };
     readingSessionPrismaRepository = new ReadingSessionPrismaRepository(
@@ -73,5 +75,29 @@ describe('ReadingSessionPrismaRepository', () => {
         where: { userId: 4, bookId: 8, endedAt: null, deletedAt: null },
       }),
     );
+  });
+
+  it('sums active duration by book for a layout and exclusive end range', async () => {
+    mockPrismaProviderService.readingSession.groupBy.mockResolvedValue([
+      { bookId: 8, _sum: { activeDurationMs: 120000 } },
+    ]);
+    const inputStartsAt = new Date('2026-08-01T00:00:00.000Z');
+    const inputEndsAt = new Date('2026-09-01T00:00:00.000Z');
+    const actualTotals = await readingSessionPrismaRepository.sumActiveDurationByBookInRange({
+      startsAt: inputStartsAt,
+      endsAt: inputEndsAt,
+      layoutType: BookLayoutType.REFLOWABLE,
+    });
+    expect(mockPrismaProviderService.readingSession.groupBy).toHaveBeenCalledWith({
+      by: ['bookId'],
+      where: {
+        deletedAt: null,
+        layoutType: BookLayoutType.REFLOWABLE,
+        startedAt: { gte: inputStartsAt, lt: inputEndsAt },
+      },
+      _sum: { activeDurationMs: true },
+      orderBy: { bookId: 'asc' },
+    });
+    expect(actualTotals).toEqual([{ bookId: 8, activeDurationMs: 120000 }]);
   });
 });

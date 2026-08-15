@@ -3,10 +3,14 @@ import { Injectable } from '@nestjs/common';
 import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagination.constant';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
-import { ReadingVisualEngagementPage } from '@/modules/reading-intelligence/defs/reading-visual-engagement-repository.defs';
+import {
+  BookVisualDurationTotal,
+  ReadingVisualEngagementPage,
+} from '@/modules/reading-intelligence/defs/reading-visual-engagement-repository.defs';
 import {
   ListReadingVisualEngagementsServiceInput,
   RecordReadingVisualEngagementServiceInput,
+  SumReadingVisualEngagementDurationsServiceInput,
 } from '@/modules/reading-intelligence/defs/reading-visual-engagement-service.defs';
 import { ReadingVisualEngagementEntity } from '@/modules/reading-intelligence/entity/reading-visual-engagement.entity';
 import { ReadingVisualEngagementInvalidDurationException } from '@/modules/reading-intelligence/exceptions/reading-visual-engagement-invalid-duration.exception';
@@ -51,6 +55,12 @@ export class ReadingVisualEngagementService {
 
   async findReadingVisualEngagementById(id: number): Promise<ReadingVisualEngagementEntity | null> {
     return this.readingVisualEngagementRepository.findById(id);
+  }
+
+  async sumDurationsByBookInRange(
+    input: SumReadingVisualEngagementDurationsServiceInput,
+  ): Promise<BookVisualDurationTotal[]> {
+    return this.readingVisualEngagementRepository.sumDurationsByBookInRange(input);
   }
 
   async getReadingVisualEngagementById(id: number): Promise<ReadingVisualEngagementEntity> {

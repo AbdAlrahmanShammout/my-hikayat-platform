@@ -3,6 +3,7 @@ import { ReadingVisualEngagementEntity } from '@/modules/reading-intelligence/en
 import { ReadingVisualEngagementNotFixedLayoutException } from '@/modules/reading-intelligence/exceptions/reading-visual-engagement-not-fixed-layout.exception';
 import { ReadingVisualEngagementService } from '@/modules/reading-intelligence/reading-visual-engagement.service';
 import { ReadingSessionEntity } from '@/modules/reading/entity/reading-session.entity';
+import { ReadingSessionTotalsService } from '@/modules/reading/reading-session-totals.service';
 import { ReadingSessionService } from '@/modules/reading/reading-session.service';
 
 import { ReadingIntelligenceService } from './reading-intelligence.service';
@@ -54,6 +55,10 @@ describe('ReadingIntelligenceService', () => {
   let mockReadingVisualEngagementService: {
     recordReadingVisualEngagement: jest.Mock;
     listReadingVisualEngagements: jest.Mock;
+    sumDurationsByBookInRange: jest.Mock;
+  };
+  let mockReadingSessionTotalsService: {
+    sumActiveDurationByBookInRange: jest.Mock;
   };
   let readingIntelligenceService: ReadingIntelligenceService;
 
@@ -69,9 +74,14 @@ describe('ReadingIntelligenceService', () => {
     mockReadingVisualEngagementService = {
       recordReadingVisualEngagement: jest.fn(),
       listReadingVisualEngagements: jest.fn(),
+      sumDurationsByBookInRange: jest.fn(),
+    };
+    mockReadingSessionTotalsService = {
+      sumActiveDurationByBookInRange: jest.fn(),
     };
     readingIntelligenceService = new ReadingIntelligenceService(
       mockReadingSessionService as unknown as ReadingSessionService,
+      mockReadingSessionTotalsService as unknown as ReadingSessionTotalsService,
       mockReadingVisualEngagementService as unknown as ReadingVisualEngagementService,
     );
   });
@@ -167,5 +177,39 @@ describe('ReadingIntelligenceService', () => {
       }),
     ).rejects.toBeInstanceOf(ReadingVisualEngagementNotFixedLayoutException);
     expect(mockReadingVisualEngagementService.recordReadingVisualEngagement).not.toHaveBeenCalled();
+  });
+
+  it('lists reflowable and fixed-layout engagement signals for a range', async () => {
+    const inputRange = {
+      startsAt: new Date('2026-08-01T00:00:00.000Z'),
+      endsAt: new Date('2026-09-01T00:00:00.000Z'),
+    };
+    mockReadingSessionTotalsService.sumActiveDurationByBookInRange.mockResolvedValue([
+      { bookId: 8, activeDurationMs: 120000 },
+      { bookId: 9, activeDurationMs: 0 },
+    ]);
+    mockReadingVisualEngagementService.sumDurationsByBookInRange.mockResolvedValue([
+      { bookId: 10, activeDurationMs: 180000, visualSceneTimeMs: 90000 },
+    ]);
+    const actualSignals =
+      await readingIntelligenceService.listBookEngagementSignalsInRange(inputRange);
+    expect(mockReadingSessionTotalsService.sumActiveDurationByBookInRange).toHaveBeenCalledWith({
+      ...inputRange,
+      layoutType: BookLayoutType.REFLOWABLE,
+    });
+    expect(actualSignals).toEqual([
+      {
+        bookId: 8,
+        layoutType: BookLayoutType.REFLOWABLE,
+        activeDurationMs: 120000,
+        visualSceneTimeMs: 0,
+      },
+      {
+        bookId: 10,
+        layoutType: BookLayoutType.FIXED_LAYOUT,
+        activeDurationMs: 180000,
+        visualSceneTimeMs: 90000,
+      },
+    ]);
   });
 });

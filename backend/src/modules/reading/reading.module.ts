@@ -7,6 +7,7 @@ import { DatabaseProviderModule } from '@/providers/database/database-provider.m
 
 import { ReadingBookmarkService } from './reading-bookmark.service';
 import { ReadingProgressService } from './reading-progress.service';
+import { ReadingSessionTotalsService } from './reading-session-totals.service';
 import { ReadingSessionService } from './reading-session.service';
 import { ReadingSyncService } from './reading-sync.service';
 import { ReadingBookmarkPrismaRepository } from './repository/reading-bookmark-prisma.repository';
@@ -22,6 +23,7 @@ import { ReadingSessionRepository } from './repository/reading-session.repositor
     ReadingBookmarkService,
     ReadingProgressService,
     ReadingSessionService,
+    ReadingSessionTotalsService,
     ReadingSyncService,
     { provide: ReadingBookmarkRepository, useClass: ReadingBookmarkPrismaRepository },
     { provide: ReadingProgressRepository, useClass: ReadingProgressPrismaRepository },
@@ -31,6 +33,7 @@ import { ReadingSessionRepository } from './repository/reading-session.repositor
     ReadingBookmarkService,
     ReadingProgressService,
     ReadingSessionService,
+    ReadingSessionTotalsService,
     ReadingSyncService,
   ],
 })

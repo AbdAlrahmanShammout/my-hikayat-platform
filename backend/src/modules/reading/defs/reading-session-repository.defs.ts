@@ -24,3 +24,14 @@ export type UpdateReadingSessionRepoInput = {
   readonly spreadIndex?: number | null;
   readonly pageNumber?: number | null;
 };
+
+export type SumReadingSessionActiveDurationRepoInput = {
+  readonly startsAt: Date;
+  readonly endsAt: Date;
+  readonly layoutType: BookLayoutType;
+};
+
+export type BookActiveDurationTotal = {
+  readonly bookId: number;
+  readonly activeDurationMs: number;
+};

@@ -1,3 +1,5 @@
+import { BookLayoutType } from '@/modules/book/enum/general.enum';
+
 export type StartReadingIntelligenceSessionServiceInput = {
   readonly userId: number;
   readonly bookId: number;
@@ -52,4 +54,16 @@ export type ListReadingIntelligenceVisualEngagementsServiceInput = {
   readonly sessionId: number;
   readonly limit?: number;
   readonly offset?: number;
+};
+
+export type ListBookEngagementSignalsServiceInput = {
+  readonly startsAt: Date;
+  readonly endsAt: Date;
+};
+
+export type BookEngagementSignal = {
+  readonly bookId: number;
+  readonly layoutType: BookLayoutType;
+  readonly activeDurationMs: number;
+  readonly visualSceneTimeMs: number;
 };

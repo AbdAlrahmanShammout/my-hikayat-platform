@@ -24,3 +24,14 @@ export type ReadingVisualEngagementPage = {
   readonly entities: ReadingVisualEngagementEntity[];
   readonly total: number;
 };
+
+export type SumReadingVisualEngagementDurationsRepoInput = {
+  readonly startsAt: Date;
+  readonly endsAt: Date;
+};
+
+export type BookVisualDurationTotal = {
+  readonly bookId: number;
+  readonly activeDurationMs: number;
+  readonly visualSceneTimeMs: number;
+};
