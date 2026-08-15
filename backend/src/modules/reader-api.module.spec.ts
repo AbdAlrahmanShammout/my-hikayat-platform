@@ -52,6 +52,12 @@ describe('ReaderApiModule', () => {
           findFirst: jest.fn(),
           update: jest.fn(),
         },
+        readingVisualEngagement: {
+          upsert: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+        },
       })
       .compile();
     const actualModule: ReaderApiModule = moduleRef.get(ReaderApiModule);

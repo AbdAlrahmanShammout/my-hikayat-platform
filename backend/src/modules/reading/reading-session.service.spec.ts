@@ -269,4 +269,45 @@ describe('ReadingSessionService', () => {
       expect(actualSession).toBe(expectedSession);
     });
   });
+
+  describe('getOwnedReadingSession', () => {
+    it('returns the session when the caller owns it for the book', async () => {
+      const expectedSession = createOpenSession();
+      mockReadingSessionRepository.findById.mockResolvedValue(expectedSession);
+      const actualSession = await readingSessionService.getOwnedReadingSession({
+        id: 9,
+        userId: 7,
+        bookId: 8,
+      });
+      expect(actualSession).toBe(expectedSession);
+    });
+
+    it('hides another user session as not found', async () => {
+      mockReadingSessionRepository.findById.mockResolvedValue(createOpenSession());
+      await expect(
+        readingSessionService.getOwnedReadingSession({
+          id: 9,
+          userId: 99,
+          bookId: 8,
+        }),
+      ).rejects.toBeInstanceOf(ResourceNotFoundException);
+    });
+  });
+
+  describe('getOwnedOpenReadingSession', () => {
+    it('rejects an owned session that has already ended', async () => {
+      const endedSession = new ReadingSessionEntity({
+        ...createOpenSession(),
+        endedAt: new Date('2026-01-01T01:20:00.000Z'),
+      });
+      mockReadingSessionRepository.findById.mockResolvedValue(endedSession);
+      await expect(
+        readingSessionService.getOwnedOpenReadingSession({
+          id: 9,
+          userId: 7,
+          bookId: 8,
+        }),
+      ).rejects.toBeInstanceOf(ReadingSessionAlreadyEndedException);
+    });
+  });
 });

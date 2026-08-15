@@ -33,6 +33,12 @@ describe('ReadingIntelligenceModule', () => {
           findFirst: jest.fn(),
           update: jest.fn(),
         },
+        readingVisualEngagement: {
+          upsert: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+        },
         book: {
           create: jest.fn(),
           findFirst: jest.fn(),

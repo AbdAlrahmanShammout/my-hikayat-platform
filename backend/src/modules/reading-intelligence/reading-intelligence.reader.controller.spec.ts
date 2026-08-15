@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
+import { ReadingVisualEngagementEntity } from '@/modules/reading-intelligence/entity/reading-visual-engagement.entity';
 import { ReadingSessionEntity } from '@/modules/reading/entity/reading-session.entity';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
@@ -49,6 +50,8 @@ describe('ReadingIntelligenceReaderController', () => {
     ingestReadingActivity: jest.Mock;
     endReadingSession: jest.Mock;
     getCurrentReadingSession: jest.Mock;
+    ingestVisualEngagement: jest.Mock;
+    listVisualEngagements: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -57,6 +60,8 @@ describe('ReadingIntelligenceReaderController', () => {
       ingestReadingActivity: jest.fn(),
       endReadingSession: jest.fn(),
       getCurrentReadingSession: jest.fn(),
+      ingestVisualEngagement: jest.fn(),
+      listVisualEngagements: jest.fn(),
     };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
@@ -94,6 +99,48 @@ describe('ReadingIntelligenceReaderController', () => {
       expect(actualResponse.id).toBe(9);
       expect(actualResponse.activeDurationMs).toBe(15000);
       expect(actualResponse.idleDurationMs).toBe(3000);
+    });
+  });
+
+  describe('ingestVisualEngagement', () => {
+    it('maps book id, session id, principal, and visual interval fields into the service', async () => {
+      const expectedEngagement = new ReadingVisualEngagementEntity({
+        id: 11,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        userId: 7,
+        bookId: 8,
+        sessionId: 9,
+        layoutType: BookLayoutType.FIXED_LAYOUT,
+        spreadIndex: 1,
+        pageNumber: 3,
+        activeDurationMs: 15000,
+        visualSceneTimeMs: 12000,
+      });
+      mockReadingIntelligenceService.ingestVisualEngagement.mockResolvedValue(expectedEngagement);
+      const actualResponse = await readingIntelligenceReaderController.ingestVisualEngagement(
+        8,
+        9,
+        {
+          spreadIndex: 1,
+          pageNumber: 3,
+          activeDurationMs: 15000,
+          visualSceneTimeMs: 12000,
+        },
+        createSampleReader(),
+      );
+      expect(mockReadingIntelligenceService.ingestVisualEngagement).toHaveBeenCalledWith({
+        userId: 7,
+        bookId: 8,
+        sessionId: 9,
+        spreadIndex: 1,
+        pageNumber: 3,
+        activeDurationMs: 15000,
+        visualSceneTimeMs: 12000,
+      });
+      expect(actualResponse.id).toBe(11);
+      expect(actualResponse.activeDurationMs).toBe(15000);
+      expect(actualResponse.visualSceneTimeMs).toBe(12000);
     });
   });
 });

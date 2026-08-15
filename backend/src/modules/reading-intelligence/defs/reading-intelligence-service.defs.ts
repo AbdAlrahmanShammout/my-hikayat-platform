@@ -35,3 +35,21 @@ export type FindCurrentReadingIntelligenceSessionServiceInput = {
   readonly userId: number;
   readonly bookId: number;
 };
+
+export type IngestReadingVisualEngagementServiceInput = {
+  readonly userId: number;
+  readonly bookId: number;
+  readonly sessionId: number;
+  readonly spreadIndex: number;
+  readonly pageNumber: number;
+  readonly activeDurationMs: number;
+  readonly visualSceneTimeMs: number;
+};
+
+export type ListReadingIntelligenceVisualEngagementsServiceInput = {
+  readonly userId: number;
+  readonly bookId: number;
+  readonly sessionId: number;
+  readonly limit?: number;
+  readonly offset?: number;
+};

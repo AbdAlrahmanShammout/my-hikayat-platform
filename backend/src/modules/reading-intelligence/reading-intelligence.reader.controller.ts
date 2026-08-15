@@ -7,6 +7,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -21,9 +22,15 @@ import {
 import { LoggedInUser } from '@/common/decorators/requests/logged-in-user.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { ReadingVisualEngagementPage } from '@/modules/reading-intelligence/defs/reading-visual-engagement-repository.defs';
 import { EndReadingSessionRequestDto } from '@/modules/reading-intelligence/dto/request/end-reading-session-request.dto';
 import { IngestReadingActivityRequestDto } from '@/modules/reading-intelligence/dto/request/ingest-reading-activity-request.dto';
+import { IngestReadingVisualEngagementRequestDto } from '@/modules/reading-intelligence/dto/request/ingest-reading-visual-engagement-request.dto';
+import { ListReadingVisualEngagementsRequestDto } from '@/modules/reading-intelligence/dto/request/list-reading-visual-engagements-request.dto';
 import { StartReadingSessionRequestDto } from '@/modules/reading-intelligence/dto/request/start-reading-session-request.dto';
+import { GetReadingVisualEngagementsResponseDto } from '@/modules/reading-intelligence/dto/response/get-reading-visual-engagements-response.dto';
+import { ReadingVisualEngagementResponse } from '@/modules/reading-intelligence/dto/response/model/reading-visual-engagement.response';
+import { ReadingVisualEngagementEntity } from '@/modules/reading-intelligence/entity/reading-visual-engagement.entity';
 import { ReadingIntelligenceService } from '@/modules/reading-intelligence/reading-intelligence.service';
 import { ReadingSessionResponse } from '@/modules/reading/dto/response/model/reading-session.response';
 import { ReadingSessionEntity } from '@/modules/reading/entity/reading-session.entity';
@@ -99,6 +106,58 @@ export class ReadingIntelligenceReaderController {
         pageNumber: body.pageNumber,
       });
     return new ReadingSessionResponse(entity);
+  }
+
+  @Post(':id/sessions/:sessionId/visual-engagement')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Ingest fixed-layout spread time and visual scene time for an open session',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiParam({ name: 'sessionId', type: Number })
+  @ApiBody({ type: IngestReadingVisualEngagementRequestDto })
+  @ApiResponse({ status: 200, type: ReadingVisualEngagementResponse })
+  async ingestVisualEngagement(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @Body() body: IngestReadingVisualEngagementRequestDto,
+    @LoggedInUser() currentUser: UserEntity,
+  ): Promise<ReadingVisualEngagementResponse> {
+    const entity: ReadingVisualEngagementEntity =
+      await this.readingIntelligenceService.ingestVisualEngagement({
+        userId: currentUser.id,
+        bookId: id,
+        sessionId,
+        spreadIndex: body.spreadIndex,
+        pageNumber: body.pageNumber,
+        activeDurationMs: body.activeDurationMs,
+        visualSceneTimeMs: body.visualSceneTimeMs,
+      });
+    return new ReadingVisualEngagementResponse(entity);
+  }
+
+  @Get(':id/sessions/:sessionId/visual-engagement')
+  @ApiOperation({
+    summary: 'List fixed-layout visual engagement rows for an authenticated reader session',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiParam({ name: 'sessionId', type: Number })
+  @ApiResponse({ status: 200, type: GetReadingVisualEngagementsResponseDto })
+  async listVisualEngagements(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('sessionId', ParseIntPipe) sessionId: number,
+    @Query() query: ListReadingVisualEngagementsRequestDto,
+    @LoggedInUser() currentUser: UserEntity,
+  ): Promise<GetReadingVisualEngagementsResponseDto> {
+    const page: ReadingVisualEngagementPage =
+      await this.readingIntelligenceService.listVisualEngagements({
+        userId: currentUser.id,
+        bookId: id,
+        sessionId,
+        limit: query.limit,
+        offset: query.offset,
+      });
+    return new GetReadingVisualEngagementsResponseDto(page);
   }
 
   @Post(':id/sessions/:sessionId/end')

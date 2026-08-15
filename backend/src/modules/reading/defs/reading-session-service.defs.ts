@@ -37,3 +37,9 @@ export type FindOpenReadingSessionServiceInput = {
   readonly userId: number;
   readonly bookId: number;
 };
+
+export type FindOwnedReadingSessionServiceInput = {
+  readonly id: number;
+  readonly userId: number;
+  readonly bookId: number;
+};

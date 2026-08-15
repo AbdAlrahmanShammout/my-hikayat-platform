@@ -14,18 +14,19 @@ enum UserRole {
 }
 
 model User {
-  id                Int               @id @default(autoincrement())
-  email             String            @unique
-  passwordHash      String
-  role              UserRole          @default(reader)
-  isPublisher       Boolean           @default(false)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  deletedAt         DateTime?
-  books             Book[]
-  readingProgresses ReadingProgress[]
-  readingBookmarks  ReadingBookmark[]
-  readingSessions   ReadingSession[]
+  id                       Int                       @id @default(autoincrement())
+  email                    String                    @unique
+  passwordHash             String
+  role                     UserRole                  @default(reader)
+  isPublisher              Boolean                   @default(false)
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  deletedAt                DateTime?
+  books                    Book[]
+  readingProgresses        ReadingProgress[]
+  readingBookmarks         ReadingBookmark[]
+  readingSessions          ReadingSession[]
+  readingVisualEngagements ReadingVisualEngagement[]
 }
 
 model Category {
@@ -85,9 +86,10 @@ model Book {
   pages             BookPage[]
   spreads           BookSpread[]
   pageTextLayers    BookPageTextLayer[]
-  readingProgresses ReadingProgress[]
-  readingBookmarks  ReadingBookmark[]
-  readingSessions   ReadingSession[]
+  readingProgresses        ReadingProgress[]
+  readingBookmarks         ReadingBookmark[]
+  readingSessions          ReadingSession[]
+  readingVisualEngagements ReadingVisualEngagement[]
 
   @@index([publishingStatus])
   @@index([processingStatus])
@@ -296,10 +298,34 @@ model ReadingSession {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   deletedAt         DateTime?
-  user              User            @relation(fields: [userId], references: [id])
-  book              Book            @relation(fields: [bookId], references: [id])
+  user              User                      @relation(fields: [userId], references: [id])
+  book              Book                      @relation(fields: [bookId], references: [id])
+  visualEngagements ReadingVisualEngagement[]
 
   @@index([userId])
   @@index([bookId])
   @@index([userId, bookId])
+}
+
+model ReadingVisualEngagement {
+  id                 Int             @id @default(autoincrement())
+  userId             Int
+  bookId             Int
+  sessionId          Int
+  layoutType         BookLayoutType
+  spreadIndex        Int
+  pageNumber         Int
+  activeDurationMs   Int             @default(0)
+  visualSceneTimeMs  Int             @default(0)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  deletedAt          DateTime?
+  user               User            @relation(fields: [userId], references: [id])
+  book               Book            @relation(fields: [bookId], references: [id])
+  session            ReadingSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, spreadIndex, pageNumber])
+  @@index([sessionId])
+  @@index([userId, bookId])
+  @@index([bookId])
 }

@@ -7,6 +7,7 @@ import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import {
   EndReadingSessionServiceInput,
   FindOpenReadingSessionServiceInput,
+  FindOwnedReadingSessionServiceInput,
   RecordReadingSessionActivityServiceInput,
   StartReadingSessionServiceInput,
 } from '@/modules/reading/defs/reading-session-service.defs';
@@ -69,11 +70,11 @@ export class ReadingSessionService {
   async recordReadingSessionActivity(
     input: RecordReadingSessionActivityServiceInput,
   ): Promise<ReadingSessionEntity> {
-    const session: ReadingSessionEntity = await this.getOwnedOpenSession(
-      input.id,
-      input.userId,
-      input.bookId,
-    );
+    const session: ReadingSessionEntity = await this.getOwnedOpenReadingSession({
+      id: input.id,
+      userId: input.userId,
+      bookId: input.bookId,
+    });
     ReadingSessionService.assertNonNegativeDuration(session.id, input.activeDurationMs);
     ReadingSessionService.assertNonNegativeDuration(session.id, input.idleDurationMs);
     const position: Partial<NormalizedReadingPosition> = ReadingSessionService.optionalPosition(
@@ -89,11 +90,11 @@ export class ReadingSessionService {
   }
 
   async endReadingSession(input: EndReadingSessionServiceInput): Promise<ReadingSessionEntity> {
-    const session: ReadingSessionEntity = await this.getOwnedOpenSession(
-      input.id,
-      input.userId,
-      input.bookId,
-    );
+    const session: ReadingSessionEntity = await this.getOwnedOpenReadingSession({
+      id: input.id,
+      userId: input.userId,
+      bookId: input.bookId,
+    });
     const endedAt: Date = input.endedAt ?? new Date();
     ReadingSessionService.assertValidEndTime(session.id, session.startedAt, endedAt);
     if (input.activeDurationMs !== undefined) {
@@ -151,17 +152,22 @@ export class ReadingSessionService {
     return session;
   }
 
-  private async getOwnedOpenSession(
-    id: number,
-    userId: number,
-    bookId: number,
+  async getOwnedReadingSession(
+    input: FindOwnedReadingSessionServiceInput,
   ): Promise<ReadingSessionEntity> {
-    const session: ReadingSessionEntity = await this.getReadingSessionById(id);
-    if (session.userId !== userId || session.bookId !== bookId) {
-      throw new ResourceNotFoundException('ReadingSession', id);
+    const session: ReadingSessionEntity = await this.getReadingSessionById(input.id);
+    if (session.userId !== input.userId || session.bookId !== input.bookId) {
+      throw new ResourceNotFoundException('ReadingSession', input.id);
     }
+    return session;
+  }
+
+  async getOwnedOpenReadingSession(
+    input: FindOwnedReadingSessionServiceInput,
+  ): Promise<ReadingSessionEntity> {
+    const session: ReadingSessionEntity = await this.getOwnedReadingSession(input);
     if (session.endedAt !== null) {
-      throw new ReadingSessionAlreadyEndedException(id);
+      throw new ReadingSessionAlreadyEndedException(session.id);
     }
     return session;
   }
