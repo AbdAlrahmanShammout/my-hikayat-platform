@@ -90,6 +90,7 @@ model Book {
   readingBookmarks         ReadingBookmark[]
   readingSessions          ReadingSession[]
   readingVisualEngagements ReadingVisualEngagement[]
+  collectionBooks          CollectionBook[]
 
   @@index([publishingStatus])
   @@index([processingStatus])
@@ -328,4 +329,31 @@ model ReadingVisualEngagement {
   @@index([sessionId])
   @@index([userId, bookId])
   @@index([bookId])
+}
+
+model Collection {
+  id        Int              @id @default(autoincrement())
+  title     String
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  deletedAt DateTime?
+  items     CollectionBook[]
+
+  @@index([deletedAt])
+}
+
+model CollectionBook {
+  id           Int        @id @default(autoincrement())
+  collectionId Int
+  bookId       Int
+  displayOrder Int
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  collection   Collection @relation(fields: [collectionId], references: [id])
+  book         Book       @relation(fields: [bookId], references: [id])
+
+  @@unique([collectionId, bookId])
+  @@index([collectionId])
+  @@index([bookId])
+  @@index([collectionId, displayOrder])
 }
