@@ -41,4 +41,5 @@ export type TransitionBookProcessingStatusInput = {
 export type TransitionBookPublishingStatusInput = {
   readonly bookId: number;
   readonly to: BookPublishingStatus;
+  readonly publishedAt?: Date | null;
 };
