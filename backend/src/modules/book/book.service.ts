@@ -7,9 +7,11 @@ import { BookPage } from '@/modules/book/defs/book-repository.defs';
 import {
   CreateBookServiceInput,
   ListBooksServiceInput,
+  ListCatalogBooksServiceInput,
   UpdateBookServiceInput,
 } from '@/modules/book/defs/book-service.defs';
 import { BookEntity } from '@/modules/book/entity/book.entity';
+import { CatalogSort } from '@/modules/book/enum/catalog-sort.enum';
 import { BookProcessingStatus, BookPublishingStatus } from '@/modules/book/enum/general.enum';
 import { BookOwnerNotPublisherException } from '@/modules/book/exceptions/book-owner-not-publisher.exception';
 import { BookRepository } from '@/modules/book/repository/book.repository';
@@ -82,6 +84,18 @@ export class BookService {
     });
   }
 
+  async listCatalogBooks(input: ListCatalogBooksServiceInput = {}): Promise<BookPage> {
+    if (input.categoryId !== undefined) {
+      await this.categoryService.getCategoryById(input.categoryId);
+    }
+    return this.bookRepository.listCatalog({
+      limit: input.limit ?? DEFAULT_PAGE_SIZE,
+      offset: input.offset ?? DEFAULT_PAGE_OFFSET,
+      categoryId: input.categoryId,
+      sort: input.sort ?? CatalogSort.NEWEST,
+    });
+  }
+
   async findBookById(id: number): Promise<BookEntity | null> {
     return this.bookRepository.findById(id);
   }
@@ -89,6 +103,14 @@ export class BookService {
   async getBookById(id: number): Promise<BookEntity> {
     const book: BookEntity | null = await this.findBookById(id);
     if (book === null) {
+      throw new ResourceNotFoundException('Book', id);
+    }
+    return book;
+  }
+
+  async getCatalogBookById(id: number): Promise<BookEntity> {
+    const book: BookEntity = await this.getBookById(id);
+    if (!BookService.isCatalogVisible(book)) {
       throw new ResourceNotFoundException('Book', id);
     }
     return book;
@@ -127,5 +149,13 @@ export class BookService {
         code: 'BOOK_INVALID_TITLE',
       });
     }
+  }
+
+  private static isCatalogVisible(book: BookEntity): boolean {
+    return (
+      book.publishingStatus === BookPublishingStatus.APPROVED &&
+      book.processingStatus === BookProcessingStatus.READY &&
+      book.publishedAt !== null
+    );
   }
 }

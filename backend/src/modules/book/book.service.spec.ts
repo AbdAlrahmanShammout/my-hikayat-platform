@@ -2,6 +2,7 @@ import { InvalidStateException } from '@/common/exceptions/invalid-state.excepti
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagination.constant';
 import { BookEntity } from '@/modules/book/entity/book.entity';
+import { CatalogSort } from '@/modules/book/enum/catalog-sort.enum';
 import {
   BookLayoutType,
   BookProcessingStatus,
@@ -75,6 +76,7 @@ describe('BookService', () => {
     update: jest.Mock;
     findById: jest.Mock;
     list: jest.Mock;
+    listCatalog: jest.Mock;
   };
   let mockCategoryService: { getCategoryById: jest.Mock };
   let mockUserService: { getUserById: jest.Mock };
@@ -86,6 +88,7 @@ describe('BookService', () => {
       update: jest.fn(),
       findById: jest.fn(),
       list: jest.fn(),
+      listCatalog: jest.fn(),
     };
     mockCategoryService = { getCategoryById: jest.fn() };
     mockUserService = { getUserById: jest.fn() };
@@ -276,6 +279,60 @@ describe('BookService', () => {
         ownerId: undefined,
         processingStatus: BookProcessingStatus.READY,
       });
+    });
+  });
+
+  describe('listCatalogBooks', () => {
+    it('lists published catalog books with newest as the default sort', async () => {
+      mockBookRepository.listCatalog.mockResolvedValue({
+        entities: [createSampleBook()],
+        total: 1,
+      });
+      const actualPage = await bookService.listCatalogBooks();
+      expect(mockBookRepository.listCatalog).toHaveBeenCalledWith({
+        limit: DEFAULT_PAGE_SIZE,
+        offset: DEFAULT_PAGE_OFFSET,
+        categoryId: undefined,
+        sort: CatalogSort.NEWEST,
+      });
+      expect(actualPage.total).toBe(1);
+    });
+
+    it('verifies the category exists before filtering', async () => {
+      mockCategoryService.getCategoryById.mockResolvedValue(createSampleCategory());
+      mockBookRepository.listCatalog.mockResolvedValue({ entities: [], total: 0 });
+      await bookService.listCatalogBooks({
+        categoryId: 2,
+        sort: CatalogSort.POPULARITY,
+      });
+      expect(mockCategoryService.getCategoryById).toHaveBeenCalledWith(2);
+      expect(mockBookRepository.listCatalog).toHaveBeenCalledWith({
+        limit: DEFAULT_PAGE_SIZE,
+        offset: DEFAULT_PAGE_OFFSET,
+        categoryId: 2,
+        sort: CatalogSort.POPULARITY,
+      });
+    });
+  });
+
+  describe('getCatalogBookById', () => {
+    it('returns an approved ready published book', async () => {
+      const expectedBook = new BookEntity({
+        ...createSampleBook(),
+        publishingStatus: BookPublishingStatus.APPROVED,
+        processingStatus: BookProcessingStatus.READY,
+        publishedAt: new Date('2026-08-15T00:00:00.000Z'),
+      });
+      mockBookRepository.findById.mockResolvedValue(expectedBook);
+      const actualBook = await bookService.getCatalogBookById(8);
+      expect(actualBook).toBe(expectedBook);
+    });
+
+    it('hides a pending book as not found', async () => {
+      mockBookRepository.findById.mockResolvedValue(createSampleBook());
+      await expect(bookService.getCatalogBookById(8)).rejects.toBeInstanceOf(
+        ResourceNotFoundException,
+      );
     });
   });
 

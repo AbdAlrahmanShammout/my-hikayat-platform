@@ -6,9 +6,12 @@ import {
   BookPage,
   CreateBookRepoInput,
   ListBooksRepoInput,
+  ListCatalogBooksRepoInput,
   UpdateBookRepoInput,
 } from '@/modules/book/defs/book-repository.defs';
 import { BookEntity } from '@/modules/book/entity/book.entity';
+import { CatalogSort } from '@/modules/book/enum/catalog-sort.enum';
+import { BookProcessingStatus, BookPublishingStatus } from '@/modules/book/enum/general.enum';
 import { BookMapper } from '@/modules/book/mapper/book.mapper';
 import { BookRepository } from '@/modules/book/repository/book.repository';
 import { bookDetailsInclude } from '@/modules/book/types/book-details.include';
@@ -110,6 +113,39 @@ export class BookPrismaRepository implements BookRepository {
       entities: rows.map((row) => BookMapper.toEntity(row)),
       total,
     };
+  }
+
+  async listCatalog(input: ListCatalogBooksRepoInput): Promise<BookPage> {
+    const where: Prisma.BookWhereInput = {
+      deletedAt: null,
+      publishingStatus: BookPublishingStatus.APPROVED,
+      processingStatus: BookProcessingStatus.READY,
+      publishedAt: { not: null },
+    };
+    if (input.categoryId !== undefined) {
+      where.categories = { some: { id: input.categoryId, deletedAt: null } };
+    }
+    const [rows, total] = await this.prismaProviderService.$transaction([
+      this.prismaProviderService.book.findMany({
+        where,
+        include: bookDetailsInclude,
+        orderBy: BookPrismaRepository.buildCatalogOrderBy(input.sort),
+        take: input.limit,
+        skip: input.offset,
+      }),
+      this.prismaProviderService.book.count({ where }),
+    ]);
+    return {
+      entities: rows.map((row) => BookMapper.toEntity(row)),
+      total,
+    };
+  }
+
+  private static buildCatalogOrderBy(sort: CatalogSort): Prisma.BookOrderByWithRelationInput[] {
+    if (sort === CatalogSort.POPULARITY) {
+      return [{ readingProgresses: { _count: 'desc' } }, { publishedAt: 'desc' }, { id: 'desc' }];
+    }
+    return [{ publishedAt: 'desc' }, { id: 'desc' }];
   }
 
   private static buildCategoryConnect(

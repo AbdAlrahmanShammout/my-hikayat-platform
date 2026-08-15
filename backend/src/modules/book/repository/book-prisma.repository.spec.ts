@@ -1,3 +1,4 @@
+import { CatalogSort } from '@/modules/book/enum/catalog-sort.enum';
 import {
   BookLayoutType,
   BookProcessingStatus,
@@ -130,6 +131,54 @@ describe('BookPrismaRepository', () => {
       expect.objectContaining({
         where: { deletedAt: null, processingStatus: BookProcessingStatus.READY },
         include: bookDetailsInclude,
+      }),
+    );
+  });
+
+  it('lists catalog books as approved ready published rows ordered by newest', async () => {
+    mockPrismaProviderService.$transaction.mockResolvedValue([[persistenceRow], 1]);
+    const actualPage = await bookPrismaRepository.listCatalog({
+      limit: 20,
+      offset: 0,
+      sort: CatalogSort.NEWEST,
+    });
+    expect(mockPrismaProviderService.book.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          deletedAt: null,
+          publishingStatus: BookPublishingStatus.APPROVED,
+          processingStatus: BookProcessingStatus.READY,
+          publishedAt: { not: null },
+        },
+        orderBy: [{ publishedAt: 'desc' }, { id: 'desc' }],
+        include: bookDetailsInclude,
+      }),
+    );
+    expect(actualPage.total).toBe(1);
+  });
+
+  it('lists catalog books filtered by category and ordered by popularity', async () => {
+    mockPrismaProviderService.$transaction.mockResolvedValue([[persistenceRow], 1]);
+    await bookPrismaRepository.listCatalog({
+      limit: 20,
+      offset: 0,
+      categoryId: 2,
+      sort: CatalogSort.POPULARITY,
+    });
+    expect(mockPrismaProviderService.book.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          deletedAt: null,
+          publishingStatus: BookPublishingStatus.APPROVED,
+          processingStatus: BookProcessingStatus.READY,
+          publishedAt: { not: null },
+          categories: { some: { id: 2, deletedAt: null } },
+        },
+        orderBy: [
+          { readingProgresses: { _count: 'desc' } },
+          { publishedAt: 'desc' },
+          { id: 'desc' },
+        ],
       }),
     );
   });

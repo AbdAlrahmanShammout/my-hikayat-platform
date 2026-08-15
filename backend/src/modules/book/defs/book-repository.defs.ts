@@ -1,4 +1,5 @@
 import { BookEntity } from '@/modules/book/entity/book.entity';
+import { CatalogSort } from '@/modules/book/enum/catalog-sort.enum';
 import {
   BookLayoutType,
   BookProcessingStatus,
@@ -35,6 +36,13 @@ export type ListBooksRepoInput = {
   readonly publishingStatus?: BookPublishingStatus;
   readonly processingStatus?: BookProcessingStatus;
   readonly ownerId?: number;
+};
+
+export type ListCatalogBooksRepoInput = {
+  readonly limit: number;
+  readonly offset: number;
+  readonly categoryId?: number;
+  readonly sort: CatalogSort;
 };
 
 export type BookPage = {
