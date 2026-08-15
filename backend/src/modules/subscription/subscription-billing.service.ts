@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 
+import { TransactionContext } from '@/common/base/transaction-context';
+import { TransactionRunner } from '@/common/base/transaction-runner';
 import { AppConfigService } from '@/config/app/app-config.service';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { PLAN_SLUG } from '@/modules/subscription/consts/plan-slug.constant';
 import { REFUND_WINDOW } from '@/modules/subscription/consts/refund-window.constant';
 import {
+  CancelManagedSubscriptionServiceInput,
   ReceiveWebhookServiceInput,
   StartCheckoutResult,
   StartCheckoutServiceInput,
@@ -37,6 +42,8 @@ export class SubscriptionBillingService {
     private readonly userService: UserService,
     private readonly stripeManagerService: StripeManagerService,
     private readonly appConfigService: AppConfigService,
+    private readonly auditLogService: AuditLogService,
+    private readonly transactionRunner: TransactionRunner,
   ) {}
 
   async startCheckout(input: StartCheckoutServiceInput): Promise<StartCheckoutResult> {
@@ -81,6 +88,44 @@ export class SubscriptionBillingService {
       stripeSubscriptionId: subscription.stripeSubscriptionId,
     });
     return this.subscriptionService.cancelSubscription(subscription.id);
+  }
+
+  async cancelManagedSubscription(
+    input: CancelManagedSubscriptionServiceInput,
+  ): Promise<SubscriptionEntity> {
+    const subscription: SubscriptionEntity = await this.subscriptionService.getSubscriptionById(
+      input.subscriptionId,
+    );
+    if (subscription.status === SubscriptionStatus.CANCELED) {
+      return subscription;
+    }
+    if (subscription.stripeSubscriptionId !== null) {
+      await this.stripeManagerService.cancelPaidSubscription({
+        stripeSubscriptionId: subscription.stripeSubscriptionId,
+      });
+    }
+    return this.transactionRunner.run(async (context: TransactionContext) => {
+      const canceled: SubscriptionEntity = await this.subscriptionService.cancelSubscription(
+        subscription.id,
+        context,
+      );
+      await this.auditLogService.append(
+        {
+          actorUserId: input.actorUserId,
+          action: AuditAction.SUBSCRIPTION_CANCELED,
+          subjectType: AuditSubjectType.SUBSCRIPTION,
+          subjectId: canceled.id,
+          metadata: {
+            userId: canceled.userId,
+            fromStatus: subscription.status,
+            toStatus: canceled.status,
+            hadStripeSubscription: subscription.stripeSubscriptionId !== null,
+          },
+        },
+        context,
+      );
+      return canceled;
+    });
   }
 
   async applyCheckoutCompleted(input: HandleCheckoutCompletedInput): Promise<void> {

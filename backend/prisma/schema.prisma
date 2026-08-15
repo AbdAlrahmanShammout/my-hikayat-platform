@@ -489,11 +489,13 @@ enum AuditAction {
   publisher_disabled
   user_role_changed
   user_deleted
+  subscription_canceled
 }
 
 enum AuditSubjectType {
   book
   user
+  subscription
 }
 
 model AuditLog {

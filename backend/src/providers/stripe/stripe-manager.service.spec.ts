@@ -227,4 +227,20 @@ describe('StripeManagerService', () => {
       ).rejects.toBeInstanceOf(StripeFailureException);
     });
   });
+
+  describe('cancelPaidSubscription', () => {
+    it('cancels the Stripe subscription without issuing a refund', async () => {
+      mockStripe.subscriptions.cancel.mockResolvedValue({ id: 'sub_test_1' });
+      await stripeManagerService.cancelPaidSubscription({ stripeSubscriptionId: 'sub_test_1' });
+      expect(mockStripe.subscriptions.cancel).toHaveBeenCalledWith('sub_test_1');
+      expect(mockStripe.refunds.create).not.toHaveBeenCalled();
+    });
+
+    it('wraps a Stripe cancel failure', async () => {
+      mockStripe.subscriptions.cancel.mockRejectedValue(new Error('stripe down'));
+      await expect(
+        stripeManagerService.cancelPaidSubscription({ stripeSubscriptionId: 'sub_test_1' }),
+      ).rejects.toBeInstanceOf(StripeFailureException);
+    });
+  });
 });

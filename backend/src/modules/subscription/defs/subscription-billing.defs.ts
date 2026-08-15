@@ -12,3 +12,8 @@ export type ReceiveWebhookServiceInput = {
   readonly payload: Buffer | undefined;
   readonly signature: string | undefined;
 };
+
+export type CancelManagedSubscriptionServiceInput = {
+  readonly subscriptionId: number;
+  readonly actorUserId: number;
+};

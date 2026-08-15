@@ -1,4 +1,6 @@
 import { AppConfigService } from '@/config/app/app-config.service';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { PLAN_SLUG } from '@/modules/subscription/consts/plan-slug.constant';
 import { REFUND_WINDOW } from '@/modules/subscription/consts/refund-window.constant';
 import { PlanEntity } from '@/modules/subscription/entity/plan.entity';
@@ -74,6 +76,7 @@ describe('SubscriptionBillingService', () => {
   let mockSubscriptionService: {
     findSubscriptionByUserId: jest.Mock;
     getSubscriptionByUserId: jest.Mock;
+    getSubscriptionById: jest.Mock;
     ensureFreeSubscription: jest.Mock;
     updateSubscription: jest.Mock;
     cancelSubscription: jest.Mock;
@@ -89,14 +92,18 @@ describe('SubscriptionBillingService', () => {
     createCheckoutSession: jest.Mock;
     processWebhook: jest.Mock;
     refundPaidSubscription: jest.Mock;
+    cancelPaidSubscription: jest.Mock;
   };
   let mockAppConfigService: { allowedOrigins: string[] };
+  let mockAuditLogService: { append: jest.Mock };
+  let mockTransactionRunner: { run: jest.Mock };
   let subscriptionBillingService: SubscriptionBillingService;
 
   beforeEach(() => {
     mockSubscriptionService = {
       findSubscriptionByUserId: jest.fn(),
       getSubscriptionByUserId: jest.fn(),
+      getSubscriptionById: jest.fn(),
       ensureFreeSubscription: jest.fn(),
       updateSubscription: jest.fn(),
       cancelSubscription: jest.fn(),
@@ -112,8 +119,13 @@ describe('SubscriptionBillingService', () => {
       createCheckoutSession: jest.fn(),
       processWebhook: jest.fn(),
       refundPaidSubscription: jest.fn(),
+      cancelPaidSubscription: jest.fn(),
     };
     mockAppConfigService = { allowedOrigins: ['http://localhost:3000'] };
+    mockAuditLogService = { append: jest.fn() };
+    mockTransactionRunner = {
+      run: jest.fn(async (work: (context: undefined) => Promise<unknown>) => work(undefined)),
+    };
     subscriptionBillingService = new SubscriptionBillingService(
       mockSubscriptionService as unknown as SubscriptionService,
       mockSubscriptionRepository as unknown as SubscriptionRepository,
@@ -121,6 +133,8 @@ describe('SubscriptionBillingService', () => {
       mockUserService as unknown as UserService,
       mockStripeManagerService as unknown as StripeManagerService,
       mockAppConfigService as unknown as AppConfigService,
+      mockAuditLogService as unknown as AuditLogService,
+      mockTransactionRunner,
     );
   });
 
@@ -302,6 +316,68 @@ describe('SubscriptionBillingService', () => {
       await expect(subscriptionBillingService.requestRefund(5)).rejects.toBeInstanceOf(
         RefundWindowExpiredException,
       );
+    });
+  });
+
+  describe('cancelManagedSubscription', () => {
+    it('cancels Stripe then records an admin audit entry', async () => {
+      const paidSubscription = createSampleSubscription(PlanKind.MONTHLY_PAID);
+      paidSubscription.stripeSubscriptionId = 'sub_1';
+      const canceled = createSampleSubscription(PlanKind.MONTHLY_PAID, SubscriptionStatus.CANCELED);
+      mockSubscriptionService.getSubscriptionById.mockResolvedValue(paidSubscription);
+      mockStripeManagerService.cancelPaidSubscription.mockResolvedValue(undefined);
+      mockSubscriptionService.cancelSubscription.mockResolvedValue(canceled);
+      const actualSubscription = await subscriptionBillingService.cancelManagedSubscription({
+        subscriptionId: 7,
+        actorUserId: 9,
+      });
+      expect(mockStripeManagerService.cancelPaidSubscription).toHaveBeenCalledWith({
+        stripeSubscriptionId: 'sub_1',
+      });
+      expect(mockSubscriptionService.cancelSubscription).toHaveBeenCalledWith(7, undefined);
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        {
+          actorUserId: 9,
+          action: AuditAction.SUBSCRIPTION_CANCELED,
+          subjectType: AuditSubjectType.SUBSCRIPTION,
+          subjectId: 7,
+          metadata: {
+            userId: 5,
+            fromStatus: SubscriptionStatus.ACTIVE,
+            toStatus: SubscriptionStatus.CANCELED,
+            hadStripeSubscription: true,
+          },
+        },
+        undefined,
+      );
+      expect(actualSubscription).toBe(canceled);
+    });
+
+    it('skips Stripe when the subscription has no Stripe id', async () => {
+      mockSubscriptionService.getSubscriptionById.mockResolvedValue(createSampleSubscription());
+      mockSubscriptionService.cancelSubscription.mockResolvedValue(
+        createSampleSubscription(PlanKind.FREE, SubscriptionStatus.CANCELED),
+      );
+      await subscriptionBillingService.cancelManagedSubscription({
+        subscriptionId: 7,
+        actorUserId: 9,
+      });
+      expect(mockStripeManagerService.cancelPaidSubscription).not.toHaveBeenCalled();
+      expect(mockSubscriptionService.cancelSubscription).toHaveBeenCalledWith(7, undefined);
+    });
+
+    it('does not write when the subscription is already canceled', async () => {
+      const canceled = createSampleSubscription(PlanKind.MONTHLY_PAID, SubscriptionStatus.CANCELED);
+      canceled.stripeSubscriptionId = 'sub_1';
+      mockSubscriptionService.getSubscriptionById.mockResolvedValue(canceled);
+      const actualSubscription = await subscriptionBillingService.cancelManagedSubscription({
+        subscriptionId: 7,
+        actorUserId: 9,
+      });
+      expect(mockStripeManagerService.cancelPaidSubscription).not.toHaveBeenCalled();
+      expect(mockSubscriptionService.cancelSubscription).not.toHaveBeenCalled();
+      expect(mockAuditLogService.append).not.toHaveBeenCalled();
+      expect(actualSubscription).toBe(canceled);
     });
   });
 });

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { TransactionContext } from '@/common/base/transaction-context';
 import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagination.constant';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { UserService } from '@/modules/user/user.service';
@@ -69,16 +70,19 @@ export class SubscriptionService {
     });
   }
 
-  async cancelSubscription(id: number): Promise<SubscriptionEntity> {
+  async cancelSubscription(id: number, context?: TransactionContext): Promise<SubscriptionEntity> {
     const current: SubscriptionEntity = await this.getSubscriptionById(id);
     if (current.status === SubscriptionStatus.CANCELED) {
       return current;
     }
-    return this.subscriptionRepository.update({
-      id: current.id,
-      status: SubscriptionStatus.CANCELED,
-      canceledAt: new Date(),
-    });
+    return this.subscriptionRepository.update(
+      {
+        id: current.id,
+        status: SubscriptionStatus.CANCELED,
+        canceledAt: new Date(),
+      },
+      context,
+    );
   }
 
   async listSubscriptions(input: ListSubscriptionsServiceInput = {}): Promise<SubscriptionPage> {

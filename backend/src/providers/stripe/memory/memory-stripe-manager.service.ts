@@ -5,6 +5,7 @@ import {
   CreateStripeCheckoutSessionInput,
   CreateStripeCustomerInput,
   RefundPaidSubscriptionInput,
+  CancelPaidSubscriptionInput,
   StripeCheckoutSession,
   StripeCustomer,
   StripeRefund,
@@ -64,6 +65,10 @@ export class MemoryStripeManagerService {
 
   refundPaidSubscription(input: RefundPaidSubscriptionInput): Promise<StripeRefund> {
     return Promise.resolve({ refundId: `re_memory_${input.stripeSubscriptionId}` });
+  }
+
+  cancelPaidSubscription(_input: CancelPaidSubscriptionInput): Promise<void> {
+    return Promise.resolve();
   }
 
   private static parsePayload(payload: string | Buffer): unknown {

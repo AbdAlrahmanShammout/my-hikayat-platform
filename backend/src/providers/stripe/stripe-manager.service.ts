@@ -8,6 +8,7 @@ import {
   CreateStripeCheckoutSessionInput,
   CreateStripeCustomerInput,
   RefundPaidSubscriptionInput,
+  CancelPaidSubscriptionInput,
   StripeCheckoutSession,
   StripeCustomer,
   StripeRefund,
@@ -107,6 +108,14 @@ export class StripeManagerService {
       const refund = await this.stripe.refunds.create({ payment_intent: paymentIntentId });
       await this.stripe.subscriptions.cancel(input.stripeSubscriptionId);
       return { refundId: refund.id };
+    } catch (err: unknown) {
+      throw StripeManagerService.translateRequestError(err);
+    }
+  }
+
+  async cancelPaidSubscription(input: CancelPaidSubscriptionInput): Promise<void> {
+    try {
+      await this.stripe.subscriptions.cancel(input.stripeSubscriptionId);
     } catch (err: unknown) {
       throw StripeManagerService.translateRequestError(err);
     }

@@ -9,7 +9,9 @@ describe('audit enums', () => {
     expect(AuditAction.PUBLISHER_DISABLED).toBe('publisher_disabled');
     expect(AuditAction.USER_ROLE_CHANGED).toBe('user_role_changed');
     expect(AuditAction.USER_DELETED).toBe('user_deleted');
+    expect(AuditAction.SUBSCRIPTION_CANCELED).toBe('subscription_canceled');
     expect(AuditSubjectType.BOOK).toBe('book');
     expect(AuditSubjectType.USER).toBe('user');
+    expect(AuditSubjectType.SUBSCRIPTION).toBe('subscription');
   });
 });

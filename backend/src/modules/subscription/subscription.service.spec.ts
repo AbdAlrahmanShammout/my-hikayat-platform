@@ -150,11 +150,14 @@ describe('SubscriptionService', () => {
       mockSubscriptionRepository.findById.mockResolvedValue(createSampleSubscription());
       mockSubscriptionRepository.update.mockResolvedValue(createSampleSubscription());
       await subscriptionService.cancelSubscription(7);
-      expect(mockSubscriptionRepository.update).toHaveBeenCalledWith({
-        id: 7,
-        status: SubscriptionStatus.CANCELED,
-        canceledAt: expect.any(Date),
-      });
+      expect(mockSubscriptionRepository.update).toHaveBeenCalledWith(
+        {
+          id: 7,
+          status: SubscriptionStatus.CANCELED,
+          canceledAt: expect.any(Date),
+        },
+        undefined,
+      );
     });
   });
 

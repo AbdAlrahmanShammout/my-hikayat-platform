@@ -68,6 +68,10 @@ export type RefundPaidSubscriptionInput = {
   readonly stripeSubscriptionId: string;
 };
 
+export type CancelPaidSubscriptionInput = {
+  readonly stripeSubscriptionId: string;
+};
+
 export type StripeRefund = {
   readonly refundId: string;
 };

@@ -104,4 +104,10 @@ describe('MemoryStripeManagerService', () => {
     });
     expect(actualRefund).toEqual({ refundId: 're_memory_sub_memory_7' });
   });
+
+  it('cancels a paid Stripe subscription without a refund identifier', async () => {
+    await expect(
+      memoryStripeManagerService.cancelPaidSubscription({ stripeSubscriptionId: 'sub_memory_7' }),
+    ).resolves.toBeUndefined();
+  });
 });
