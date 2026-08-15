@@ -48,6 +48,18 @@ describe('BookEngagementPrismaRepository', () => {
     );
   });
 
+  it('lists every engagement row for a period without pagination', async () => {
+    mockPrismaProviderService.bookEngagement.findMany.mockResolvedValue([persistenceRow]);
+    const actualEntities = await bookEngagementPrismaRepository.listAllByPeriod({
+      revenuePeriodId: 4,
+    });
+    expect(mockPrismaProviderService.bookEngagement.findMany).toHaveBeenCalledWith({
+      where: { revenuePeriodId: 4, deletedAt: null },
+      orderBy: [{ weightedEngagement: 'desc' }, { bookId: 'asc' }],
+    });
+    expect(actualEntities).toEqual([BookEngagementMapper.toEntity(persistenceRow)]);
+  });
+
   it('lists book engagements ordered by weighted engagement descending', async () => {
     mockPrismaProviderService.$transaction.mockResolvedValue([[persistenceRow], 1]);
     const actualPage = await bookEngagementPrismaRepository.list({

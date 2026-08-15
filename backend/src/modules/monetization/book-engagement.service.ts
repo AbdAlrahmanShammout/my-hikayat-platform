@@ -62,6 +62,11 @@ export class BookEngagementService {
     });
   }
 
+  async listAllBookEngagementsForPeriod(revenuePeriodId: number): Promise<BookEngagementEntity[]> {
+    await this.revenuePeriodService.getRevenuePeriodById(revenuePeriodId);
+    return this.bookEngagementRepository.listAllByPeriod({ revenuePeriodId });
+  }
+
   async findBookEngagementById(id: number): Promise<BookEngagementEntity | null> {
     return this.bookEngagementRepository.findById(id);
   }

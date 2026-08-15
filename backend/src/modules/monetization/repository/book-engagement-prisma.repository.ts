@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { TransactionContext } from '@/common/base/transaction-context';
 import {
   BookEngagementPage,
+  ListAllBookEngagementsRepoInput,
   ListBookEngagementsRepoInput,
   ReplaceBookEngagementsForPeriodRepoInput,
   UpsertBookEngagementRepoInput,
@@ -48,6 +49,14 @@ export class BookEngagementPrismaRepository implements BookEngagementRepository 
       entities: rows.map((row) => BookEngagementMapper.toEntity(row)),
       total,
     };
+  }
+
+  async listAllByPeriod(input: ListAllBookEngagementsRepoInput): Promise<BookEngagementEntity[]> {
+    const rows = await this.prismaProviderService.bookEngagement.findMany({
+      where: { revenuePeriodId: input.revenuePeriodId, deletedAt: null },
+      orderBy: [{ weightedEngagement: 'desc' }, { bookId: 'asc' }],
+    });
+    return rows.map((row) => BookEngagementMapper.toEntity(row));
   }
 
   async findById(id: number): Promise<BookEngagementEntity | null> {

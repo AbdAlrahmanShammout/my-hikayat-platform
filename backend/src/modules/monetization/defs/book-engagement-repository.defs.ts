@@ -27,3 +27,7 @@ export type BookEngagementPage = {
   readonly entities: BookEngagementEntity[];
   readonly total: number;
 };
+
+export type ListAllBookEngagementsRepoInput = {
+  readonly revenuePeriodId: number;
+};

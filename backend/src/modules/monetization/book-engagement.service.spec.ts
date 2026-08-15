@@ -80,6 +80,7 @@ describe('BookEngagementService', () => {
   let mockBookEngagementRepository: {
     replaceForPeriod: jest.Mock;
     list: jest.Mock;
+    listAllByPeriod: jest.Mock;
     findById: jest.Mock;
     findByPeriodAndBook: jest.Mock;
   };
@@ -92,6 +93,7 @@ describe('BookEngagementService', () => {
     mockBookEngagementRepository = {
       replaceForPeriod: jest.fn(),
       list: jest.fn(),
+      listAllByPeriod: jest.fn(),
       findById: jest.fn(),
       findByPeriodAndBook: jest.fn(),
     };
@@ -208,6 +210,18 @@ describe('BookEngagementService', () => {
         revenuePeriodId: 4,
         rows: [],
       });
+    });
+  });
+
+  describe('listAllBookEngagementsForPeriod', () => {
+    it('returns every engagement row after confirming the period exists', async () => {
+      mockRevenuePeriodService.getRevenuePeriodById.mockResolvedValue(createSamplePeriod());
+      mockBookEngagementRepository.listAllByPeriod.mockResolvedValue([createSampleEngagement()]);
+      const actualEntities = await bookEngagementService.listAllBookEngagementsForPeriod(4);
+      expect(mockBookEngagementRepository.listAllByPeriod).toHaveBeenCalledWith({
+        revenuePeriodId: 4,
+      });
+      expect(actualEntities).toEqual([createSampleEngagement()]);
     });
   });
 
