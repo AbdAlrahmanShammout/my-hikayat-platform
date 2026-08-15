@@ -33,10 +33,10 @@ function createCatalogBook(): BookEntity {
 
 describe('SearchReaderController', () => {
   let searchReaderController: SearchReaderController;
-  let mockSearchService: { searchCatalogBooks: jest.Mock };
+  let mockSearchService: { searchCatalogBooks: jest.Mock; searchInBook: jest.Mock };
 
   beforeEach(async () => {
-    mockSearchService = { searchCatalogBooks: jest.fn() };
+    mockSearchService = { searchCatalogBooks: jest.fn(), searchInBook: jest.fn() };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       controllers: [SearchReaderController],
@@ -73,6 +73,40 @@ describe('SearchReaderController', () => {
       expect(actualResponse.total).toBe(1);
       expect(actualResponse.books[0].id).toBe(8);
       expect(actualResponse.books[0].title).toBe('The Last Lighthouse');
+    });
+  });
+
+  describe('searchInBook', () => {
+    it('maps the book id and query into the service', async () => {
+      mockSearchService.searchInBook.mockResolvedValue({
+        hits: [
+          {
+            layoutType: BookLayoutType.REFLOWABLE,
+            spineIndex: 0,
+            pageNumber: null,
+            spreadIndex: null,
+            title: 'Dawn Watch',
+            excerpt: 'The Harbor lights',
+            matchOffset: 4,
+            highlights: [],
+          },
+        ],
+        total: 1,
+      });
+      const actualResponse = await searchReaderController.searchInBook(8, {
+        q: 'Harbor',
+        limit: 10,
+        offset: 0,
+      });
+      expect(mockSearchService.searchInBook).toHaveBeenCalledWith({
+        bookId: 8,
+        query: 'Harbor',
+        limit: 10,
+        offset: 0,
+      });
+      expect(actualResponse.total).toBe(1);
+      expect(actualResponse.hits[0].spineIndex).toBe(0);
+      expect(actualResponse.hits[0].excerpt).toBe('The Harbor lights');
     });
   });
 });

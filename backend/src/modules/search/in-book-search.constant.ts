@@ -1,0 +1,1 @@
+export const IN_BOOK_SEARCH_EXCERPT_RADIUS = 80;
