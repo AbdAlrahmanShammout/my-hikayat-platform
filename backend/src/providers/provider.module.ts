@@ -5,6 +5,7 @@ import { EncryptionProviderModule } from '@/providers/encryption/encryption-prov
 import { JobProviderModule } from '@/providers/job/job-provider.module';
 import { JwtProviderModule } from '@/providers/jwt/jwt-provider.module';
 import { StorageProviderModule } from '@/providers/storage/storage-provider.module';
+import { StripeProviderModule } from '@/providers/stripe/stripe-provider.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { StorageProviderModule } from '@/providers/storage/storage-provider.modu
     StorageProviderModule,
     EncryptionProviderModule,
     JobProviderModule,
+    StripeProviderModule,
   ],
   exports: [
     DatabaseProviderModule,
@@ -20,6 +22,7 @@ import { StorageProviderModule } from '@/providers/storage/storage-provider.modu
     StorageProviderModule,
     EncryptionProviderModule,
     JobProviderModule,
+    StripeProviderModule,
   ],
 })
 export class ProviderModule {}

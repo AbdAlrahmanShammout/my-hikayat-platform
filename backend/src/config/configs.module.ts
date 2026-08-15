@@ -17,6 +17,9 @@ import jwtConfigs from './jwt/jwt-configs';
 import { storageConfigSchema } from './storage/storage-config.schema';
 import { StorageConfigService } from './storage/storage-config.service';
 import storageConfigs from './storage/storage-configs';
+import { stripeConfigSchema } from './stripe/stripe-config.schema';
+import { StripeConfigService } from './stripe/stripe-config.service';
+import stripeConfigs from './stripe/stripe-configs';
 
 @Global()
 @Module({
@@ -31,6 +34,7 @@ import storageConfigs from './storage/storage-configs';
         ...jwtConfigs,
         ...storageConfigs,
         ...encryptionConfigs,
+        ...stripeConfigs,
       ],
       validationSchema: Joi.object({
         ...appConfigSchema,
@@ -38,6 +42,7 @@ import storageConfigs from './storage/storage-configs';
         ...jwtConfigSchema,
         ...storageConfigSchema,
         ...encryptionConfigSchema,
+        ...stripeConfigSchema,
       }),
       // OS and tool environment keys (PATH, npm_*, etc.) are always present.
       // Declared application variables are still validated by the merged schema.
@@ -53,6 +58,7 @@ import storageConfigs from './storage/storage-configs';
     JwtConfigService,
     StorageConfigService,
     EncryptionConfigService,
+    StripeConfigService,
   ],
   exports: [
     AppConfigService,
@@ -60,6 +66,7 @@ import storageConfigs from './storage/storage-configs';
     JwtConfigService,
     StorageConfigService,
     EncryptionConfigService,
+    StripeConfigService,
   ],
 })
 export class ConfigsModule {}

@@ -19,3 +19,7 @@ process.env.STORAGE_ACCESS_KEY_ID =
 process.env.STORAGE_SECRET_ACCESS_KEY =
   process.env.STORAGE_SECRET_ACCESS_KEY ?? 'test-storage-secret-key-not-for-production';
 process.env.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ?? 'ab'.repeat(32);
+process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? 'sk_test_not_for_production';
+process.env.STRIPE_WEBHOOK_SECRET =
+  process.env.STRIPE_WEBHOOK_SECRET ?? 'whsec_test_not_for_production';
+process.env.STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID ?? 'price_test_not_for_production';
