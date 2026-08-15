@@ -59,3 +59,20 @@ export type UploadBookCatalogMediaServiceInput = {
   readonly contentType: string;
   readonly originalFileName?: string | null;
 };
+
+export type CreateBookAssetDeliveryGrantServiceInput = {
+  readonly bookId: number;
+  readonly userId: number;
+};
+
+export type BookAssetDeliveryGrant = {
+  readonly bookId: number;
+  readonly bookAssetId: number;
+  readonly kind: BookAssetKind;
+  readonly url: string;
+  readonly expiresAt: Date;
+  readonly contentType: string;
+  readonly byteSize: number;
+  readonly checksumSha256: string | null;
+  readonly isEncrypted: boolean;
+};

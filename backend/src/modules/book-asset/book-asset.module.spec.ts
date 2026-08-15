@@ -5,6 +5,7 @@ import { BookAssetRepository } from '@/modules/book-asset/repository/book-asset.
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { BookAssetCatalogMediaService } from './book-asset-catalog-media.service';
+import { BookAssetDeliveryService } from './book-asset-delivery.service';
 import { BookAssetSourceService } from './book-asset-source.service';
 import { BookAssetModule } from './book-asset.module';
 import { BookAssetService } from './book-asset.service';
@@ -41,11 +42,25 @@ describe('BookAssetModule', () => {
           update: jest.fn(),
         },
         user: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+        plan: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+        },
+        subscription: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
       })
       .compile();
     expect(moduleRef.get(BookAssetService)).toBeDefined();
     expect(moduleRef.get(BookAssetSourceService)).toBeDefined();
     expect(moduleRef.get(BookAssetCatalogMediaService)).toBeDefined();
+    expect(moduleRef.get(BookAssetDeliveryService)).toBeDefined();
     expect(moduleRef.get(BookAssetRepository)).toBeDefined();
     await moduleRef.close();
   });
