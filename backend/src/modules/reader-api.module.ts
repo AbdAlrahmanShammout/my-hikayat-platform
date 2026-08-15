@@ -15,6 +15,7 @@ import { ReadingReaderController } from '@/modules/reading/reading.reader.contro
 import { ReadingSyncReaderController } from '@/modules/reading/reading-sync.reader.controller';
 import { SearchModule } from '@/modules/search/search.module';
 import { SearchReaderController } from '@/modules/search/search.reader.controller';
+import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { UserModule } from '@/modules/user/user.module';
 import { UserReaderController } from '@/modules/user/user.reader.controller';
 
@@ -26,6 +27,7 @@ import { UserReaderController } from '@/modules/user/user.reader.controller';
     ReadingIntelligenceModule,
     ReadingModule,
     SearchModule,
+    SubscriptionModule,
     UserModule,
   ],
   controllers: [
