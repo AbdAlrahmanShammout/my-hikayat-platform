@@ -1,6 +1,7 @@
 import { StripeConfigService } from '@/config/stripe/stripe-config.service';
 import { StripeFailureException } from '@/providers/stripe/exceptions/stripe-failure.exception';
 import { StripeInvalidWebhookException } from '@/providers/stripe/exceptions/stripe-invalid-webhook.exception';
+import { StripeNotInitializedException } from '@/providers/stripe/exceptions/stripe-not-initialized.exception';
 
 import { StripeManagerService } from './stripe-manager.service';
 
@@ -12,6 +13,7 @@ describe('StripeManagerService', () => {
   let mockStripe: {
     customers: { create: jest.Mock };
     checkout: { sessions: { create: jest.Mock } };
+    subscriptions: { retrieve: jest.Mock };
     webhooks: { constructEvent: jest.Mock };
   };
   let stripeManagerService: StripeManagerService;
@@ -20,6 +22,7 @@ describe('StripeManagerService', () => {
     mockStripe = {
       customers: { create: jest.fn() },
       checkout: { sessions: { create: jest.fn() } },
+      subscriptions: { retrieve: jest.fn() },
       webhooks: { constructEvent: jest.fn() },
     };
     stripeManagerService = new StripeManagerService(
@@ -97,7 +100,14 @@ describe('StripeManagerService', () => {
       mockStripe.webhooks.constructEvent.mockReturnValue({
         id: 'evt_test_1',
         type: 'checkout.session.completed',
-        data: { object: { id: 'cs_test_1' } },
+        data: {
+          object: {
+            id: 'cs_test_1',
+            customer: 'cus_test_1',
+            subscription: 'sub_test_1',
+            client_reference_id: '7',
+          },
+        },
       });
       const actualEvent = stripeManagerService.constructWebhookEvent({
         payload: '{"id":"evt_test_1"}',
@@ -112,6 +122,12 @@ describe('StripeManagerService', () => {
         id: 'evt_test_1',
         type: 'checkout.session.completed',
         objectId: 'cs_test_1',
+        customerId: 'cus_test_1',
+        subscriptionId: 'sub_test_1',
+        clientReferenceId: '7',
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        status: null,
       });
     });
 
@@ -125,6 +141,58 @@ describe('StripeManagerService', () => {
           signature: 'bad',
         }),
       ).toThrow(StripeInvalidWebhookException);
+    });
+  });
+
+  describe('processWebhook', () => {
+    it('rejects processing before handlers are registered', async () => {
+      await expect(
+        stripeManagerService.processWebhook({
+          payload: '{"id":"evt_test_1"}',
+          signature: 't=1,v1=sig',
+        }),
+      ).rejects.toBeInstanceOf(StripeNotInitializedException);
+    });
+
+    it('retrieves missing checkout periods then dispatches completion', async () => {
+      const mockHandleCheckoutCompleted: jest.Mock = jest.fn().mockResolvedValue(undefined);
+      const mockEventHandlers = {
+        handleCheckoutCompleted: mockHandleCheckoutCompleted,
+        handleSubscriptionRenewed: jest.fn().mockResolvedValue(undefined),
+        handleSubscriptionCanceled: jest.fn().mockResolvedValue(undefined),
+      };
+      mockStripe.webhooks.constructEvent.mockReturnValue({
+        id: 'evt_test_1',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test_1',
+            customer: 'cus_test_1',
+            subscription: 'sub_test_1',
+            client_reference_id: '7',
+          },
+        },
+      });
+      mockStripe.subscriptions.retrieve.mockResolvedValue({
+        id: 'sub_test_1',
+        customer: 'cus_test_1',
+        status: 'active',
+        current_period_start: 1_700_000_000,
+        current_period_end: 1_702_592_000,
+      });
+      await stripeManagerService.initialize(mockEventHandlers);
+      await stripeManagerService.processWebhook({
+        payload: '{"id":"evt_test_1"}',
+        signature: 't=1,v1=sig',
+      });
+      expect(mockStripe.subscriptions.retrieve).toHaveBeenCalledWith('sub_test_1');
+      expect(mockHandleCheckoutCompleted).toHaveBeenCalledWith({
+        customerId: 'cus_test_1',
+        subscriptionId: 'sub_test_1',
+        clientReferenceId: '7',
+        currentPeriodStart: new Date(1_700_000_000 * 1000),
+        currentPeriodEnd: new Date(1_702_592_000 * 1000),
+      });
     });
   });
 });

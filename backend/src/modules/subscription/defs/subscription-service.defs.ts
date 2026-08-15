@@ -10,8 +10,12 @@ export type CreateSubscriptionServiceInput = {
 export type UpdateSubscriptionServiceInput = {
   readonly id: number;
   readonly planId?: number;
+  readonly status?: SubscriptionStatus;
   readonly currentPeriodStart?: Date | null;
   readonly currentPeriodEnd?: Date | null;
+  readonly canceledAt?: Date | null;
+  readonly stripeCustomerId?: string | null;
+  readonly stripeSubscriptionId?: string | null;
 };
 
 export type ListSubscriptionsServiceInput = {

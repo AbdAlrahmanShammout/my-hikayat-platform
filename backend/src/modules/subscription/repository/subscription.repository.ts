@@ -18,5 +18,9 @@ export abstract class SubscriptionRepository {
   ): Promise<SubscriptionEntity>;
   abstract findById(id: number): Promise<SubscriptionEntity | null>;
   abstract findByUserId(userId: number): Promise<SubscriptionEntity | null>;
+  abstract findByStripeCustomerId(stripeCustomerId: string): Promise<SubscriptionEntity | null>;
+  abstract findByStripeSubscriptionId(
+    stripeSubscriptionId: string,
+  ): Promise<SubscriptionEntity | null>;
   abstract list(input: ListSubscriptionsRepoInput): Promise<SubscriptionPage>;
 }

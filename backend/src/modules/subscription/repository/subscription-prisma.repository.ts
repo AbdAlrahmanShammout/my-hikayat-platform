@@ -32,6 +32,8 @@ export class SubscriptionPrismaRepository implements SubscriptionRepository {
         startedAt: input.startedAt,
         currentPeriodStart: input.currentPeriodStart,
         currentPeriodEnd: input.currentPeriodEnd,
+        stripeCustomerId: input.stripeCustomerId ?? null,
+        stripeSubscriptionId: input.stripeSubscriptionId ?? null,
       },
       include: subscriptionDetailsInclude,
     });
@@ -59,6 +61,12 @@ export class SubscriptionPrismaRepository implements SubscriptionRepository {
     if (input.canceledAt !== undefined) {
       data.canceledAt = input.canceledAt;
     }
+    if (input.stripeCustomerId !== undefined) {
+      data.stripeCustomerId = input.stripeCustomerId;
+    }
+    if (input.stripeSubscriptionId !== undefined) {
+      data.stripeSubscriptionId = input.stripeSubscriptionId;
+    }
     const result = await client.subscription.update({
       where: { id: input.id },
       data,
@@ -81,6 +89,30 @@ export class SubscriptionPrismaRepository implements SubscriptionRepository {
   async findByUserId(userId: number): Promise<SubscriptionEntity | null> {
     const result = await this.prismaProviderService.subscription.findFirst({
       where: { userId, deletedAt: null },
+      include: subscriptionDetailsInclude,
+    });
+    if (result === null) {
+      return null;
+    }
+    return SubscriptionMapper.toEntity(result);
+  }
+
+  async findByStripeCustomerId(stripeCustomerId: string): Promise<SubscriptionEntity | null> {
+    const result = await this.prismaProviderService.subscription.findFirst({
+      where: { stripeCustomerId, deletedAt: null },
+      include: subscriptionDetailsInclude,
+    });
+    if (result === null) {
+      return null;
+    }
+    return SubscriptionMapper.toEntity(result);
+  }
+
+  async findByStripeSubscriptionId(
+    stripeSubscriptionId: string,
+  ): Promise<SubscriptionEntity | null> {
+    const result = await this.prismaProviderService.subscription.findFirst({
+      where: { stripeSubscriptionId, deletedAt: null },
       include: subscriptionDetailsInclude,
     });
     if (result === null) {

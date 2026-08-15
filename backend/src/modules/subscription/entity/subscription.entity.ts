@@ -11,6 +11,8 @@ export class SubscriptionEntity extends BaseEntity {
   currentPeriodStart!: Date | null;
   currentPeriodEnd!: Date | null;
   canceledAt!: Date | null;
+  stripeCustomerId!: string | null;
+  stripeSubscriptionId!: string | null;
   plan?: PlanEntity;
 
   constructor(data: SubscriptionZodType) {

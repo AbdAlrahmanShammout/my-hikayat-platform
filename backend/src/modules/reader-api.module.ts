@@ -17,6 +17,8 @@ import { ReadingSyncReaderController } from '@/modules/reading/reading-sync.read
 import { SearchModule } from '@/modules/search/search.module';
 import { SearchReaderController } from '@/modules/search/search.reader.controller';
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
+import { SubscriptionReaderController } from '@/modules/subscription/subscription.reader.controller';
+import { SubscriptionWebhookController } from '@/modules/subscription/subscription.webhook.controller';
 import { UserModule } from '@/modules/user/user.module';
 import { UserReaderController } from '@/modules/user/user.reader.controller';
 
@@ -39,6 +41,8 @@ import { UserReaderController } from '@/modules/user/user.reader.controller';
     ReadingSyncReaderController,
     ReadingReaderController,
     SearchReaderController,
+    SubscriptionReaderController,
+    SubscriptionWebhookController,
     UserReaderController,
   ],
   providers: [JwtAuthGuard, LocalAuthGuard, RolesGuard],

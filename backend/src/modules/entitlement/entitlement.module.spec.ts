@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { ConfigsModule } from '@/config/configs.module';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { EntitlementModule } from './entitlement.module';
@@ -8,7 +9,7 @@ import { EntitlementService } from './entitlement.service';
 describe('EntitlementModule', () => {
   it('exports the entitlement service', async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [EntitlementModule],
+      imports: [ConfigsModule, EntitlementModule],
     })
       .overrideProvider(PrismaProviderService)
       .useValue({

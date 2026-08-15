@@ -51,6 +51,8 @@ function createSampleSubscription(): SubscriptionEntity {
     currentPeriodStart: null,
     currentPeriodEnd: null,
     canceledAt: null,
+    stripeCustomerId: null,
+    stripeSubscriptionId: null,
     plan: createSamplePlan(),
   });
 }

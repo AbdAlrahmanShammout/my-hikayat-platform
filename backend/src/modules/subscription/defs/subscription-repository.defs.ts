@@ -8,6 +8,8 @@ export type CreateSubscriptionRepoInput = {
   readonly startedAt: Date;
   readonly currentPeriodStart: Date | null;
   readonly currentPeriodEnd: Date | null;
+  readonly stripeCustomerId?: string | null;
+  readonly stripeSubscriptionId?: string | null;
 };
 
 export type UpdateSubscriptionRepoInput = {
@@ -17,6 +19,8 @@ export type UpdateSubscriptionRepoInput = {
   readonly currentPeriodStart?: Date | null;
   readonly currentPeriodEnd?: Date | null;
   readonly canceledAt?: Date | null;
+  readonly stripeCustomerId?: string | null;
+  readonly stripeSubscriptionId?: string | null;
 };
 
 export type ListSubscriptionsRepoInput = {

@@ -64,6 +64,8 @@ function createSampleSubscription(
     currentPeriodStart: null,
     currentPeriodEnd: null,
     canceledAt: status === SubscriptionStatus.CANCELED ? new Date() : null,
+    stripeCustomerId: null,
+    stripeSubscriptionId: null,
     plan,
   });
 }

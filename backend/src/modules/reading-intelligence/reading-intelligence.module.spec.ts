@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { ConfigsModule } from '@/config/configs.module';
 import { ReadingSessionService } from '@/modules/reading/reading-session.service';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
@@ -9,7 +10,7 @@ import { ReadingIntelligenceModule } from './reading-intelligence.module';
 describe('ReadingIntelligenceModule', () => {
   it('exports the intelligence service over the reading session service', async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [ReadingIntelligenceModule],
+      imports: [ConfigsModule, ReadingIntelligenceModule],
     })
       .overrideProvider(PrismaProviderService)
       .useValue({

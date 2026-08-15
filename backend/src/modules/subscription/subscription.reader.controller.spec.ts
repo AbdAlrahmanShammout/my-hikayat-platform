@@ -1,0 +1,94 @@
+import { PassportModule } from '@nestjs/passport';
+import { Test, TestingModule } from '@nestjs/testing';
+
+import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
+import { RolesGuard } from '@/common/guards/roles.guard';
+import { StartCheckoutResponseDto } from '@/modules/subscription/dto/response/start-checkout-response.dto';
+import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.entity';
+import { SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
+import { SubscriptionBillingService } from '@/modules/subscription/subscription-billing.service';
+import { UserEntity } from '@/modules/user/entity/user.entity';
+import { UserRole } from '@/modules/user/enum/general.enum';
+
+import { SubscriptionReaderController } from './subscription.reader.controller';
+
+function createSampleUser(): UserEntity {
+  return new UserEntity({
+    id: 5,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    email: 'reader@example.com',
+    passwordHash: 'hashed-password',
+    role: UserRole.READER,
+    isPublisher: false,
+  });
+}
+
+describe('SubscriptionReaderController', () => {
+  let subscriptionReaderController: SubscriptionReaderController;
+  let mockSubscriptionBillingService: {
+    startCheckout: jest.Mock;
+    getCurrentSubscription: jest.Mock;
+  };
+
+  beforeEach(async () => {
+    mockSubscriptionBillingService = {
+      startCheckout: jest.fn(),
+      getCurrentSubscription: jest.fn(),
+    };
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
+      controllers: [SubscriptionReaderController],
+      providers: [
+        { provide: SubscriptionBillingService, useValue: mockSubscriptionBillingService },
+        JwtAuthGuard,
+        RolesGuard,
+      ],
+    }).compile();
+    subscriptionReaderController = moduleRef.get(SubscriptionReaderController);
+  });
+
+  it('starts checkout from the authenticated user and return URLs', async () => {
+    mockSubscriptionBillingService.startCheckout.mockResolvedValue({
+      url: 'https://checkout.stripe.test/cs_1',
+    });
+    const actualResponse: StartCheckoutResponseDto =
+      await subscriptionReaderController.startCheckout(
+        {
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+        },
+        createSampleUser(),
+      );
+    expect(mockSubscriptionBillingService.startCheckout).toHaveBeenCalledWith({
+      userId: 5,
+      successUrl: 'http://localhost:3000/success',
+      cancelUrl: 'http://localhost:3000/cancel',
+    });
+    expect(actualResponse.url).toBe('https://checkout.stripe.test/cs_1');
+  });
+
+  it('returns the current subscription projection', async () => {
+    const entity = new SubscriptionEntity({
+      id: 7,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      userId: 5,
+      planId: 1,
+      status: SubscriptionStatus.ACTIVE,
+      startedAt: new Date('2026-01-01T00:00:00.000Z'),
+      currentPeriodStart: null,
+      currentPeriodEnd: null,
+      canceledAt: null,
+      stripeCustomerId: 'cus_secret',
+      stripeSubscriptionId: null,
+      plan: undefined,
+    });
+    mockSubscriptionBillingService.getCurrentSubscription.mockResolvedValue(entity);
+    const actualResponse =
+      await subscriptionReaderController.getCurrentSubscription(createSampleUser());
+    expect(actualResponse.userId).toBe(5);
+    expect(actualResponse.status).toBe(SubscriptionStatus.ACTIVE);
+    expect(actualResponse).not.toHaveProperty('stripeCustomerId');
+  });
+});

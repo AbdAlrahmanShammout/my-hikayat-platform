@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { BaseZodSchema, ZodDate, ZodDateNullable, ZodNumber } from '@/common/base/base.zod';
+import {
+  BaseZodSchema,
+  ZodDate,
+  ZodDateNullable,
+  ZodNumber,
+  ZodStringNullable,
+} from '@/common/base/base.zod';
 import { SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
 import { PlanZodType } from '@/modules/subscription/zod/plan.zod';
 
@@ -14,5 +20,7 @@ export const SubscriptionZodSchema = BaseZodSchema.extend({
   currentPeriodStart: ZodDateNullable,
   currentPeriodEnd: ZodDateNullable,
   canceledAt: ZodDateNullable,
+  stripeCustomerId: ZodStringNullable,
+  stripeSubscriptionId: ZodStringNullable,
   plan: (z.any().nullish() as z.ZodType<PlanZodType | null | undefined>).optional(),
 });

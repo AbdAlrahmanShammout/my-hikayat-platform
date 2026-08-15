@@ -17,6 +17,8 @@ describe('SubscriptionMapper', () => {
       currentPeriodStart: null,
       currentPeriodEnd: null,
       canceledAt: null,
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
       plan: {
         id: 1,
         createdAt,

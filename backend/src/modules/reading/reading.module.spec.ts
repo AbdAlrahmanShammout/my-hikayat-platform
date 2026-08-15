@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { ConfigsModule } from '@/config/configs.module';
 import { ReadingBookmarkRepository } from '@/modules/reading/repository/reading-bookmark.repository';
 import { ReadingProgressRepository } from '@/modules/reading/repository/reading-progress.repository';
 import { ReadingSessionRepository } from '@/modules/reading/repository/reading-session.repository';
@@ -14,7 +15,7 @@ import { ReadingModule } from './reading.module';
 describe('ReadingModule', () => {
   it('binds the abstract repositories and exports the reading services', async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [ReadingModule],
+      imports: [ConfigsModule, ReadingModule],
     })
       .overrideProvider(PrismaProviderService)
       .useValue({

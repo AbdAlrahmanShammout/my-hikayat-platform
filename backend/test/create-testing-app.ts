@@ -7,6 +7,8 @@ import { AppConfigService } from '@/config/app/app-config.service';
 import type { Environment } from '@/config/environment';
 import { MemoryStorageManagerService } from '@/providers/storage/memory/memory-storage-manager.service';
 import { StorageManagerService } from '@/providers/storage/storage-manager.service';
+import { MemoryStripeManagerService } from '@/providers/stripe/memory/memory-stripe-manager.service';
+import { StripeManagerService } from '@/providers/stripe/stripe-manager.service';
 import { SWAGGER_UI_PATH } from '@/providers/swagger/consts';
 import { SwaggerProvider } from '@/providers/swagger/swagger.provider';
 
@@ -23,7 +25,9 @@ export async function createTestingApp(
     controllers: input.controllers ?? [],
   })
     .overrideProvider(StorageManagerService)
-    .useClass(MemoryStorageManagerService);
+    .useClass(MemoryStorageManagerService)
+    .overrideProvider(StripeManagerService)
+    .useClass(MemoryStripeManagerService);
   if (input.env !== undefined) {
     testingModuleBuilder.overrideProvider(AppConfigService).useValue({
       env: input.env,

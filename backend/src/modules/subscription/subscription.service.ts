@@ -59,8 +59,12 @@ export class SubscriptionService {
     return this.subscriptionRepository.update({
       id: current.id,
       planId: input.planId,
+      status: input.status,
       currentPeriodStart: input.currentPeriodStart,
       currentPeriodEnd: input.currentPeriodEnd,
+      canceledAt: input.canceledAt,
+      stripeCustomerId: input.stripeCustomerId,
+      stripeSubscriptionId: input.stripeSubscriptionId,
     });
   }
 

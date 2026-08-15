@@ -17,6 +17,8 @@ export class SubscriptionMapper {
       currentPeriodStart: schema.currentPeriodStart,
       currentPeriodEnd: schema.currentPeriodEnd,
       canceledAt: schema.canceledAt,
+      stripeCustomerId: schema.stripeCustomerId,
+      stripeSubscriptionId: schema.stripeSubscriptionId,
       plan: schema.plan === undefined ? undefined : PlanMapper.toEntity(schema.plan),
     });
   }

@@ -21,6 +21,8 @@ describe('SubscriptionPrismaRepository', () => {
     currentPeriodStart: null,
     currentPeriodEnd: null,
     canceledAt: null,
+    stripeCustomerId: null,
+    stripeSubscriptionId: null,
     plan: {
       id: 1,
       createdAt,
@@ -78,6 +80,8 @@ describe('SubscriptionPrismaRepository', () => {
         startedAt,
         currentPeriodStart: null,
         currentPeriodEnd: null,
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
       },
       include: subscriptionDetailsInclude,
     });
@@ -100,5 +104,19 @@ describe('SubscriptionPrismaRepository', () => {
       }),
     );
     expect(actualPage.total).toBe(1);
+  });
+
+  it('finds a subscription by Stripe subscription id', async () => {
+    mockPrismaProviderService.subscription.findFirst.mockResolvedValue({
+      ...persistenceRow,
+      stripeCustomerId: 'cus_1',
+      stripeSubscriptionId: 'sub_1',
+    });
+    const actualEntity = await subscriptionPrismaRepository.findByStripeSubscriptionId('sub_1');
+    expect(mockPrismaProviderService.subscription.findFirst).toHaveBeenCalledWith({
+      where: { stripeSubscriptionId: 'sub_1', deletedAt: null },
+      include: subscriptionDetailsInclude,
+    });
+    expect(actualEntity?.stripeSubscriptionId).toBe('sub_1');
   });
 });

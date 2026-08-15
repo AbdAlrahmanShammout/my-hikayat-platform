@@ -1,0 +1,203 @@
+import { Injectable } from '@nestjs/common';
+
+import { AppConfigService } from '@/config/app/app-config.service';
+import { PLAN_SLUG } from '@/modules/subscription/consts/plan-slug.constant';
+import {
+  ReceiveWebhookServiceInput,
+  StartCheckoutResult,
+  StartCheckoutServiceInput,
+} from '@/modules/subscription/defs/subscription-billing.defs';
+import { PlanEntity } from '@/modules/subscription/entity/plan.entity';
+import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.entity';
+import { PlanKind, SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
+import { CheckoutReturnUrlInvalidException } from '@/modules/subscription/exceptions/checkout-return-url-invalid.exception';
+import { SubscriptionAlreadyPaidException } from '@/modules/subscription/exceptions/subscription-already-paid.exception';
+import { PlanService } from '@/modules/subscription/plan.service';
+import { SubscriptionRepository } from '@/modules/subscription/repository/subscription.repository';
+import { SubscriptionService } from '@/modules/subscription/subscription.service';
+import { UserEntity } from '@/modules/user/entity/user.entity';
+import { UserService } from '@/modules/user/user.service';
+import {
+  HandleCheckoutCompletedInput,
+  HandleSubscriptionCanceledInput,
+  HandleSubscriptionRenewedInput,
+} from '@/providers/stripe/defs/stripe-manager.defs';
+import { StripeInvalidWebhookException } from '@/providers/stripe/exceptions/stripe-invalid-webhook.exception';
+import { StripeManagerService } from '@/providers/stripe/stripe-manager.service';
+
+@Injectable()
+export class SubscriptionBillingService {
+  constructor(
+    private readonly subscriptionService: SubscriptionService,
+    private readonly subscriptionRepository: SubscriptionRepository,
+    private readonly planService: PlanService,
+    private readonly userService: UserService,
+    private readonly stripeManagerService: StripeManagerService,
+    private readonly appConfigService: AppConfigService,
+  ) {}
+
+  async startCheckout(input: StartCheckoutServiceInput): Promise<StartCheckoutResult> {
+    const user: UserEntity = await this.userService.getUserById(input.userId);
+    this.assertCheckoutReturnUrl(input.successUrl);
+    this.assertCheckoutReturnUrl(input.cancelUrl);
+    const subscription: SubscriptionEntity = await this.resolveCheckoutSubscription(user.id);
+    if (SubscriptionBillingService.isPaidMonthly(subscription)) {
+      throw new SubscriptionAlreadyPaidException();
+    }
+    const customerId: string = await this.resolveStripeCustomerId(user, subscription);
+    const session = await this.stripeManagerService.createCheckoutSession({
+      customerId,
+      successUrl: input.successUrl,
+      cancelUrl: input.cancelUrl,
+      clientReferenceId: String(user.id),
+    });
+    return { url: session.url };
+  }
+
+  async getCurrentSubscription(userId: number): Promise<SubscriptionEntity> {
+    return this.subscriptionService.getSubscriptionByUserId(userId);
+  }
+
+  async applyCheckoutCompleted(input: HandleCheckoutCompletedInput): Promise<void> {
+    const userId: number | null = SubscriptionBillingService.parseUserId(input.clientReferenceId);
+    if (userId === null) {
+      return;
+    }
+    const user: UserEntity | null = await this.userService.findUserById(userId);
+    if (user === null) {
+      return;
+    }
+    const subscription: SubscriptionEntity | null =
+      await this.subscriptionService.findSubscriptionByUserId(userId);
+    if (subscription === null) {
+      return;
+    }
+    const monthlyPlan: PlanEntity = await this.planService.getPlanBySlug(PLAN_SLUG.MONTHLY);
+    await this.subscriptionService.updateSubscription({
+      id: subscription.id,
+      planId: monthlyPlan.id,
+      status: SubscriptionStatus.ACTIVE,
+      stripeCustomerId: input.customerId,
+      stripeSubscriptionId: input.subscriptionId,
+      currentPeriodStart: input.currentPeriodStart,
+      currentPeriodEnd: input.currentPeriodEnd,
+      canceledAt: null,
+    });
+  }
+
+  async applySubscriptionRenewed(input: HandleSubscriptionRenewedInput): Promise<void> {
+    const subscription: SubscriptionEntity | null = await this.findSubscriptionByStripeIds({
+      subscriptionId: input.subscriptionId,
+      customerId: input.customerId,
+    });
+    if (subscription === null) {
+      return;
+    }
+    const monthlyPlan: PlanEntity = await this.planService.getPlanBySlug(PLAN_SLUG.MONTHLY);
+    await this.subscriptionService.updateSubscription({
+      id: subscription.id,
+      planId: monthlyPlan.id,
+      status: SubscriptionStatus.ACTIVE,
+      currentPeriodStart: input.currentPeriodStart,
+      currentPeriodEnd: input.currentPeriodEnd,
+      canceledAt: null,
+    });
+  }
+
+  async applySubscriptionCanceled(input: HandleSubscriptionCanceledInput): Promise<void> {
+    const subscription: SubscriptionEntity | null = await this.findSubscriptionByStripeIds({
+      subscriptionId: input.subscriptionId,
+      customerId: input.customerId,
+    });
+    if (subscription === null) {
+      return;
+    }
+    await this.subscriptionService.cancelSubscription(subscription.id);
+    if (input.currentPeriodEnd === null) {
+      return;
+    }
+    await this.subscriptionService.updateSubscription({
+      id: subscription.id,
+      currentPeriodEnd: input.currentPeriodEnd,
+    });
+  }
+
+  async receiveWebhook(input: ReceiveWebhookServiceInput): Promise<void> {
+    if (input.signature === undefined || input.signature === '' || input.payload === undefined) {
+      throw new StripeInvalidWebhookException();
+    }
+    await this.stripeManagerService.processWebhook({
+      payload: input.payload,
+      signature: input.signature,
+    });
+  }
+
+  private async resolveCheckoutSubscription(userId: number): Promise<SubscriptionEntity> {
+    const existing: SubscriptionEntity | null =
+      await this.subscriptionService.findSubscriptionByUserId(userId);
+    if (existing !== null) {
+      return existing;
+    }
+    return this.subscriptionService.ensureFreeSubscription(userId);
+  }
+
+  private async resolveStripeCustomerId(
+    user: UserEntity,
+    subscription: SubscriptionEntity,
+  ): Promise<string> {
+    if (subscription.stripeCustomerId !== null) {
+      return subscription.stripeCustomerId;
+    }
+    const customer = await this.stripeManagerService.createCustomer({
+      email: user.email,
+      clientReferenceId: String(user.id),
+    });
+    await this.subscriptionService.updateSubscription({
+      id: subscription.id,
+      stripeCustomerId: customer.customerId,
+    });
+    return customer.customerId;
+  }
+
+  private async findSubscriptionByStripeIds(input: {
+    readonly subscriptionId: string;
+    readonly customerId: string | null;
+  }): Promise<SubscriptionEntity | null> {
+    const bySubscription: SubscriptionEntity | null =
+      await this.subscriptionRepository.findByStripeSubscriptionId(input.subscriptionId);
+    if (bySubscription !== null) {
+      return bySubscription;
+    }
+    if (input.customerId === null) {
+      return null;
+    }
+    return this.subscriptionRepository.findByStripeCustomerId(input.customerId);
+  }
+
+  private assertCheckoutReturnUrl(urlValue: string): void {
+    try {
+      const parsed: URL = new URL(urlValue);
+      if (this.appConfigService.allowedOrigins.includes(parsed.origin)) {
+        return;
+      }
+    } catch {
+      throw new CheckoutReturnUrlInvalidException();
+    }
+    throw new CheckoutReturnUrlInvalidException();
+  }
+
+  private static isPaidMonthly(subscription: SubscriptionEntity): boolean {
+    return (
+      subscription.status === SubscriptionStatus.ACTIVE &&
+      subscription.plan?.kind === PlanKind.MONTHLY_PAID
+    );
+  }
+
+  private static parseUserId(clientReferenceId: string): number | null {
+    const userId: number = Number.parseInt(clientReferenceId, 10);
+    if (!Number.isInteger(userId) || userId <= 0 || String(userId) !== clientReferenceId) {
+      return null;
+    }
+    return userId;
+  }
+}

@@ -53,7 +53,14 @@ export function configureHttpSurface(
   input: ConfigureHttpSurfaceInput = {},
 ): void {
   applySecurityHeaders(app, input.documentationUiPath);
-  app.use(json({ limit: REQUEST_JSON_BODY_LIMIT }));
+  app.use(
+    json({
+      limit: REQUEST_JSON_BODY_LIMIT,
+      verify: (req: Request, _res: Response, buf: Buffer): void => {
+        (req as Request & { rawBody?: Buffer }).rawBody = buf;
+      },
+    }),
+  );
   app.use(urlencoded({ extended: true, limit: REQUEST_JSON_BODY_LIMIT }));
   app.enableCors({
     origin: appConfigService.allowedOrigins,
