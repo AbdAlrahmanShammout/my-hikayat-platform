@@ -8,9 +8,10 @@ import { BookAdminController } from '@/modules/book/book.admin.controller';
 import { BookModule } from '@/modules/book/book.module';
 import { CollectionAdminController } from '@/modules/collection/collection.admin.controller';
 import { CollectionModule } from '@/modules/collection/collection.module';
+import { MonetizationModule } from '@/modules/monetization/monetization.module';
 
 @Module({
-  imports: [AuthModule, BookModule, CollectionModule],
+  imports: [AuthModule, BookModule, CollectionModule, MonetizationModule],
   controllers: [BookAdminController, CollectionAdminController],
   providers: [JwtAuthGuard, LocalAuthGuard, RolesGuard],
 })

@@ -23,3 +23,4 @@ process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? 'sk_test_not_fo
 process.env.STRIPE_WEBHOOK_SECRET =
   process.env.STRIPE_WEBHOOK_SECRET ?? 'whsec_test_not_for_production';
 process.env.STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID ?? 'price_test_not_for_production';
+process.env.PLATFORM_CUT_PERCENT = process.env.PLATFORM_CUT_PERCENT ?? '30';

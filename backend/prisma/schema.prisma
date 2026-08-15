@@ -408,3 +408,24 @@ model Subscription {
   @@index([planId])
   @@index([status])
 }
+
+enum RevenuePeriodStatus {
+  open
+  closed
+}
+
+model RevenuePeriod {
+  id                   Int                  @id @default(autoincrement())
+  startsAt             DateTime
+  endsAt               DateTime
+  status               RevenuePeriodStatus  @default(open)
+  platformCutPercent   Decimal              @db.Decimal(5, 2)
+  poolAmountCents      Int?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  deletedAt            DateTime?
+
+  @@unique([startsAt])
+  @@index([status])
+  @@index([deletedAt])
+}
