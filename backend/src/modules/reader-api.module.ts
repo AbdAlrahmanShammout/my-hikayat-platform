@@ -4,11 +4,12 @@ import { AuthModule } from '@/authentication/auth.module';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { LocalAuthGuard } from '@/common/guards/local-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { ReadingModule } from '@/modules/reading/reading.module';
 import { UserModule } from '@/modules/user/user.module';
 import { UserReaderController } from '@/modules/user/user.reader.controller';
 
 @Module({
-  imports: [AuthModule, UserModule],
+  imports: [AuthModule, ReadingModule, UserModule],
   controllers: [UserReaderController],
   providers: [JwtAuthGuard, LocalAuthGuard, RolesGuard],
 })

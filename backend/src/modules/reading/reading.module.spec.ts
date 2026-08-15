@@ -1,26 +1,26 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ThrottlerModule } from '@nestjs/throttler';
 
-import { ConfigsModule } from '@/config/configs.module';
+import { ReadingProgressRepository } from '@/modules/reading/repository/reading-progress.repository';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
-import { ReaderApiModule } from './reader-api.module';
+import { ReadingProgressService } from './reading-progress.service';
+import { ReadingModule } from './reading.module';
 
-describe('ReaderApiModule', () => {
-  it('compiles with authentication and the user reader API', async () => {
+describe('ReadingModule', () => {
+  it('binds the abstract repository and exports the progress service', async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigsModule,
-        ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
-        ReaderApiModule,
-      ],
+      imports: [ReadingModule],
     })
       .overrideProvider(PrismaProviderService)
       .useValue({
         $connect: jest.fn(),
         $disconnect: jest.fn(),
         $transaction: jest.fn(),
-        user: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+        readingProgress: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          update: jest.fn(),
+        },
         book: {
           create: jest.fn(),
           findFirst: jest.fn(),
@@ -35,15 +35,11 @@ describe('ReaderApiModule', () => {
           count: jest.fn(),
           update: jest.fn(),
         },
-        readingProgress: {
-          create: jest.fn(),
-          findFirst: jest.fn(),
-          update: jest.fn(),
-        },
+        user: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
       })
       .compile();
-    const actualModule: ReaderApiModule = moduleRef.get(ReaderApiModule);
-    expect(actualModule).toBeDefined();
+    expect(moduleRef.get(ReadingProgressService)).toBeDefined();
+    expect(moduleRef.get(ReadingProgressRepository)).toBeDefined();
     await moduleRef.close();
   });
 });
