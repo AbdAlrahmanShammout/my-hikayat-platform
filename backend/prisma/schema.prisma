@@ -25,6 +25,7 @@ model User {
   books             Book[]
   readingProgresses ReadingProgress[]
   readingBookmarks  ReadingBookmark[]
+  readingSessions   ReadingSession[]
 }
 
 model Category {
@@ -86,6 +87,7 @@ model Book {
   pageTextLayers    BookPageTextLayer[]
   readingProgresses ReadingProgress[]
   readingBookmarks  ReadingBookmark[]
+  readingSessions   ReadingSession[]
 
   @@index([publishingStatus])
   @@index([processingStatus])
@@ -272,6 +274,30 @@ model ReadingBookmark {
   deletedAt    DateTime?
   user         User            @relation(fields: [userId], references: [id])
   book         Book            @relation(fields: [bookId], references: [id])
+
+  @@index([userId])
+  @@index([bookId])
+  @@index([userId, bookId])
+}
+
+model ReadingSession {
+  id                Int             @id @default(autoincrement())
+  userId            Int
+  bookId            Int
+  layoutType        BookLayoutType
+  startedAt         DateTime
+  endedAt           DateTime?
+  activeDurationMs  Int             @default(0)
+  idleDurationMs    Int             @default(0)
+  spineIndex        Int?
+  scrollOffset      Int?
+  spreadIndex       Int?
+  pageNumber        Int?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?
+  user              User            @relation(fields: [userId], references: [id])
+  book              Book            @relation(fields: [bookId], references: [id])
 
   @@index([userId])
   @@index([bookId])

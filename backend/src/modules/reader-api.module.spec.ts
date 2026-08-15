@@ -47,6 +47,11 @@ describe('ReaderApiModule', () => {
           count: jest.fn(),
           update: jest.fn(),
         },
+        readingSession: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          update: jest.fn(),
+        },
       })
       .compile();
     const actualModule: ReaderApiModule = moduleRef.get(ReaderApiModule);

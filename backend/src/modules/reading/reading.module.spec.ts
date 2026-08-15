@@ -2,10 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { ReadingBookmarkRepository } from '@/modules/reading/repository/reading-bookmark.repository';
 import { ReadingProgressRepository } from '@/modules/reading/repository/reading-progress.repository';
+import { ReadingSessionRepository } from '@/modules/reading/repository/reading-session.repository';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { ReadingBookmarkService } from './reading-bookmark.service';
 import { ReadingProgressService } from './reading-progress.service';
+import { ReadingSessionService } from './reading-session.service';
 import { ReadingModule } from './reading.module';
 
 describe('ReadingModule', () => {
@@ -30,6 +32,11 @@ describe('ReadingModule', () => {
           count: jest.fn(),
           update: jest.fn(),
         },
+        readingSession: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          update: jest.fn(),
+        },
         book: {
           create: jest.fn(),
           findFirst: jest.fn(),
@@ -49,8 +56,10 @@ describe('ReadingModule', () => {
       .compile();
     expect(moduleRef.get(ReadingBookmarkService)).toBeDefined();
     expect(moduleRef.get(ReadingProgressService)).toBeDefined();
+    expect(moduleRef.get(ReadingSessionService)).toBeDefined();
     expect(moduleRef.get(ReadingBookmarkRepository)).toBeDefined();
     expect(moduleRef.get(ReadingProgressRepository)).toBeDefined();
+    expect(moduleRef.get(ReadingSessionRepository)).toBeDefined();
     await moduleRef.close();
   });
 });
