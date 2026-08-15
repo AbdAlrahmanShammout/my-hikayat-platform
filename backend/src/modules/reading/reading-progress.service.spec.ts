@@ -171,19 +171,30 @@ describe('ReadingProgressService', () => {
   describe('getReadingProgressByUserAndBook', () => {
     it('returns stored progress for the user and book', async () => {
       const expectedProgress = createSampleProgress();
+      mockBookService.getBookById.mockResolvedValue(createSampleBook(BookLayoutType.REFLOWABLE));
       mockReadingProgressRepository.findByUserIdAndBookId.mockResolvedValue(expectedProgress);
       const actualProgress = await readingProgressService.getReadingProgressByUserAndBook({
         userId: 7,
         bookId: 8,
       });
+      expect(mockBookService.getBookById).toHaveBeenCalledWith(8);
       expect(actualProgress).toBe(expectedProgress);
     });
 
     it('throws when progress is missing', async () => {
+      mockBookService.getBookById.mockResolvedValue(createSampleBook(BookLayoutType.REFLOWABLE));
       mockReadingProgressRepository.findByUserIdAndBookId.mockResolvedValue(null);
       await expect(
         readingProgressService.getReadingProgressByUserAndBook({ userId: 7, bookId: 8 }),
       ).rejects.toBeInstanceOf(ResourceNotFoundException);
+    });
+
+    it('throws when the book is missing', async () => {
+      mockBookService.getBookById.mockRejectedValue(new ResourceNotFoundException('Book', 8));
+      await expect(
+        readingProgressService.getReadingProgressByUserAndBook({ userId: 7, bookId: 8 }),
+      ).rejects.toBeInstanceOf(ResourceNotFoundException);
+      expect(mockReadingProgressRepository.findByUserIdAndBookId).not.toHaveBeenCalled();
     });
   });
 });

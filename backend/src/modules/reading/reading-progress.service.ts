@@ -80,6 +80,7 @@ export class ReadingProgressService {
   async getReadingProgressByUserAndBook(
     input: FindReadingProgressServiceInput,
   ): Promise<ReadingProgressEntity> {
+    await this.bookService.getBookById(input.bookId);
     const progress: ReadingProgressEntity | null =
       await this.findReadingProgressByUserAndBook(input);
     if (progress === null) {
