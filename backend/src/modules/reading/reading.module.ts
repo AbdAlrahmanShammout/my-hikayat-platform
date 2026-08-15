@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { BookModule } from '@/modules/book/book.module';
+import { EntitlementModule } from '@/modules/entitlement/entitlement.module';
 import { UserModule } from '@/modules/user/user.module';
 import { DatabaseProviderModule } from '@/providers/database/database-provider.module';
 
@@ -16,7 +17,7 @@ import { ReadingSessionPrismaRepository } from './repository/reading-session-pri
 import { ReadingSessionRepository } from './repository/reading-session.repository';
 
 @Module({
-  imports: [DatabaseProviderModule, BookModule, UserModule],
+  imports: [DatabaseProviderModule, BookModule, EntitlementModule, UserModule],
   providers: [
     ReadingBookmarkService,
     ReadingProgressService,

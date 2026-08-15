@@ -10,9 +10,23 @@ import {
   BookPublishingStatus,
   BookType,
 } from '@/modules/book/enum/general.enum';
+import { UserEntity } from '@/modules/user/entity/user.entity';
+import { UserRole } from '@/modules/user/enum/general.enum';
 
 import { SearchReaderController } from './search.reader.controller';
 import { SearchService } from './search.service';
+
+function createSampleReader(): UserEntity {
+  return new UserEntity({
+    id: 7,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    email: 'reader@example.com',
+    passwordHash: 'hashed-password',
+    role: UserRole.READER,
+    isPublisher: false,
+  });
+}
 
 function createCatalogBook(): BookEntity {
   return new BookEntity({
@@ -93,12 +107,17 @@ describe('SearchReaderController', () => {
         ],
         total: 1,
       });
-      const actualResponse = await searchReaderController.searchInBook(8, {
-        q: 'Harbor',
-        limit: 10,
-        offset: 0,
-      });
+      const actualResponse = await searchReaderController.searchInBook(
+        8,
+        {
+          q: 'Harbor',
+          limit: 10,
+          offset: 0,
+        },
+        createSampleReader(),
+      );
       expect(mockSearchService.searchInBook).toHaveBeenCalledWith({
+        userId: 7,
         bookId: 8,
         query: 'Harbor',
         limit: 10,

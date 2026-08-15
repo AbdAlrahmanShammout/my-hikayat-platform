@@ -4,6 +4,7 @@ import { ResourceNotFoundException } from '@/common/exceptions/resource-not-foun
 import { BookService } from '@/modules/book/book.service';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
+import { EntitlementService } from '@/modules/entitlement/entitlement.service';
 import {
   FindReadingProgressServiceInput,
   ListReadingProgressesServiceInput,
@@ -29,6 +30,7 @@ export class ReadingProgressService {
     private readonly readingProgressRepository: ReadingProgressRepository,
     private readonly bookService: BookService,
     private readonly userService: UserService,
+    private readonly entitlementService: EntitlementService,
   ) {}
 
   async saveReadingProgress(
@@ -36,6 +38,10 @@ export class ReadingProgressService {
   ): Promise<ReadingProgressEntity> {
     await this.userService.getUserById(input.userId);
     const book: BookEntity = await this.bookService.getBookById(input.bookId);
+    await this.entitlementService.assertCanAccessFullBook({
+      userId: input.userId,
+      bookId: input.bookId,
+    });
     const layoutType: BookLayoutType = ReadingProgressService.requireLayoutType(book);
     const position: NormalizedReadingPosition = ReadingProgressService.normalizePosition(
       layoutType,
@@ -93,6 +99,10 @@ export class ReadingProgressService {
     input: FindReadingProgressServiceInput,
   ): Promise<ReadingProgressEntity> {
     await this.bookService.getBookById(input.bookId);
+    await this.entitlementService.assertCanAccessFullBook({
+      userId: input.userId,
+      bookId: input.bookId,
+    });
     const progress: ReadingProgressEntity | null =
       await this.findReadingProgressByUserAndBook(input);
     if (progress === null) {

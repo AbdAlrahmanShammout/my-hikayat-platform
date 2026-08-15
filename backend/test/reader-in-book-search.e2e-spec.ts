@@ -18,6 +18,7 @@ import { BookPageSpreadRole } from '@/modules/book-processing/enum/general.enum'
 import { CategoryService } from '@/modules/category/category.service';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
+import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
 
 describe('Reader in-book search (e2e)', () => {
@@ -58,6 +59,9 @@ describe('Reader in-book search (e2e)', () => {
     });
     await prismaProviderService.category.deleteMany({
       where: { slug: `in-book-${slugSuffix}` },
+    });
+    await prismaProviderService.subscription.deleteMany({
+      where: { user: { email: { in: emails } } },
     });
     await prismaProviderService.user.deleteMany({ where: { email: { in: emails } } });
     await app.close();
@@ -107,6 +111,7 @@ describe('Reader in-book search (e2e)', () => {
       email,
       password,
     });
+    await assignMonthlySubscription(getRunningApp(), registerResponse.body.user.id as number);
     return registerResponse.body.accessToken as string;
   }
 

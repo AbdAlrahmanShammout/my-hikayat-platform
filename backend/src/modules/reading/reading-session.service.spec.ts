@@ -13,6 +13,7 @@ import { ReadingSessionAlreadyOpenException } from '@/modules/reading/exceptions
 import { ReadingSessionBookLayoutUnknownException } from '@/modules/reading/exceptions/reading-session-book-layout-unknown.exception';
 import { ReadingSessionInvalidPositionException } from '@/modules/reading/exceptions/reading-session-invalid-position.exception';
 import { ReadingSessionInvalidTimingException } from '@/modules/reading/exceptions/reading-session-invalid-timing.exception';
+import { EntitlementService } from '@/modules/entitlement/entitlement.service';
 import { UserService } from '@/modules/user/user.service';
 
 import { ReadingSessionService } from './reading-session.service';
@@ -61,6 +62,7 @@ describe('ReadingSessionService', () => {
   };
   let mockBookService: { getBookById: jest.Mock };
   let mockUserService: { getUserById: jest.Mock };
+  let mockEntitlementService: { assertCanAccessFullBook: jest.Mock };
   let readingSessionService: ReadingSessionService;
 
   beforeEach(() => {
@@ -72,10 +74,12 @@ describe('ReadingSessionService', () => {
     };
     mockBookService = { getBookById: jest.fn() };
     mockUserService = { getUserById: jest.fn() };
+    mockEntitlementService = { assertCanAccessFullBook: jest.fn().mockResolvedValue(undefined) };
     readingSessionService = new ReadingSessionService(
       mockReadingSessionRepository,
       mockBookService as unknown as BookService,
       mockUserService as unknown as UserService,
+      mockEntitlementService as unknown as EntitlementService,
     );
   });
 

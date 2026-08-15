@@ -1,6 +1,7 @@
 import { Controller, Get, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { LoggedInUser } from '@/common/decorators/requests/logged-in-user.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { BookPage } from '@/modules/book/defs/book-repository.defs';
@@ -10,6 +11,7 @@ import { SearchInBookRequestDto } from '@/modules/search/dto/request/search-in-b
 import { GetInBookSearchResponseDto } from '@/modules/search/dto/response/get-in-book-search-response.dto';
 import { GetSearchBooksResponseDto } from '@/modules/search/dto/response/get-search-books-response.dto';
 import { SearchService } from '@/modules/search/search.service';
+import { UserEntity } from '@/modules/user/entity/user.entity';
 
 @ApiTags('Reader - Search')
 @Controller('reader/search')
@@ -41,8 +43,10 @@ export class SearchReaderController {
   async searchInBook(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: SearchInBookRequestDto,
+    @LoggedInUser() currentUser: UserEntity,
   ): Promise<GetInBookSearchResponseDto> {
     const page: InBookSearchPage = await this.searchService.searchInBook({
+      userId: currentUser.id,
       bookId: id,
       query: query.q,
       limit: query.limit,

@@ -8,6 +8,7 @@ import { BookService } from '@/modules/book/book.service';
 import { BookLayoutType, BookType } from '@/modules/book/enum/general.enum';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
+import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
 
 describe('Reading bookmarks (e2e)', () => {
@@ -40,6 +41,9 @@ describe('Reading bookmarks (e2e)', () => {
     });
     await prismaProviderService.book.deleteMany({
       where: { owner: { email: { in: emails } } },
+    });
+    await prismaProviderService.subscription.deleteMany({
+      where: { user: { email: { in: emails } } },
     });
     await prismaProviderService.user.deleteMany({ where: { email: { in: emails } } });
     await app.close();
@@ -103,6 +107,7 @@ describe('Reading bookmarks (e2e)', () => {
       email,
       password,
     });
+    await assignMonthlySubscription(getRunningApp(), registerResponse.body.user.id as number);
     return registerResponse.body.accessToken as string;
   }
 

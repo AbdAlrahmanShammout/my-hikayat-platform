@@ -6,6 +6,7 @@ import { BookService } from '@/modules/book/book.service';
 import { BookPage } from '@/modules/book/defs/book-repository.defs';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
+import { EntitlementService } from '@/modules/entitlement/entitlement.service';
 import {
   SearchInBookHitRecord,
   SearchInBookRecordPage,
@@ -24,6 +25,7 @@ export class SearchService {
   constructor(
     private readonly bookService: BookService,
     private readonly searchReadModelRepository: SearchReadModelRepository,
+    private readonly entitlementService: EntitlementService,
   ) {}
 
   async searchCatalogBooks(input: SearchCatalogBooksServiceInput = {}): Promise<BookPage> {
@@ -39,6 +41,7 @@ export class SearchService {
   async searchInBook(input: SearchInBookServiceInput): Promise<InBookSearchPage> {
     const query: string = SearchService.normalizeSearchQuery(input.query);
     const book: BookEntity = await this.bookService.getCatalogBookById(input.bookId);
+    await this.entitlementService.assertPaidReadingAccess(input.userId);
     if (
       book.layoutType !== BookLayoutType.REFLOWABLE &&
       book.layoutType !== BookLayoutType.FIXED_LAYOUT

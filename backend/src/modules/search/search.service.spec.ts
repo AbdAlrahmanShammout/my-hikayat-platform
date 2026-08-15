@@ -8,6 +8,7 @@ import {
   BookPublishingStatus,
   BookType,
 } from '@/modules/book/enum/general.enum';
+import { EntitlementService } from '@/modules/entitlement/entitlement.service';
 
 import { SearchService } from './search.service';
 
@@ -33,14 +34,17 @@ function createCatalogBook(
 describe('SearchService', () => {
   let mockBookService: { listCatalogBooks: jest.Mock; getCatalogBookById: jest.Mock };
   let mockSearchReadModelRepository: { searchInBook: jest.Mock };
+  let mockEntitlementService: { assertPaidReadingAccess: jest.Mock };
   let searchService: SearchService;
 
   beforeEach(() => {
     mockBookService = { listCatalogBooks: jest.fn(), getCatalogBookById: jest.fn() };
     mockSearchReadModelRepository = { searchInBook: jest.fn() };
+    mockEntitlementService = { assertPaidReadingAccess: jest.fn().mockResolvedValue(undefined) };
     searchService = new SearchService(
       mockBookService as unknown as BookService,
       mockSearchReadModelRepository,
+      mockEntitlementService as unknown as EntitlementService,
     );
   });
 
@@ -84,7 +88,11 @@ describe('SearchService', () => {
         ],
         total: 1,
       });
-      const actualPage = await searchService.searchInBook({ bookId: 8, query: '  Harbor  ' });
+      const actualPage = await searchService.searchInBook({
+        userId: 7,
+        bookId: 8,
+        query: '  Harbor  ',
+      });
       expect(mockSearchReadModelRepository.searchInBook).toHaveBeenCalledWith({
         bookId: 8,
         query: 'Harbor',
@@ -116,7 +124,11 @@ describe('SearchService', () => {
         ],
         total: 1,
       });
-      const actualPage = await searchService.searchInBook({ bookId: 8, query: 'Harbor' });
+      const actualPage = await searchService.searchInBook({
+        userId: 7,
+        bookId: 8,
+        query: 'Harbor',
+      });
       expect(actualPage.hits[0].pageNumber).toBe(1);
       expect(actualPage.hits[0].spreadIndex).toBe(0);
       expect(actualPage.hits[0].highlights).toEqual([
@@ -129,8 +141,9 @@ describe('SearchService', () => {
         new ResourceNotFoundException('Book', 8),
       );
       await expect(
-        searchService.searchInBook({ bookId: 8, query: 'Harbor' }),
+        searchService.searchInBook({ userId: 7, bookId: 8, query: 'Harbor' }),
       ).rejects.toBeInstanceOf(ResourceNotFoundException);
+      expect(mockEntitlementService.assertPaidReadingAccess).not.toHaveBeenCalled();
       expect(mockSearchReadModelRepository.searchInBook).not.toHaveBeenCalled();
     });
   });

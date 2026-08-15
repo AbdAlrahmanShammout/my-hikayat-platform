@@ -9,6 +9,7 @@ export type SearchCatalogBooksServiceInput = {
 };
 
 export type SearchInBookServiceInput = {
+  readonly userId: number;
   readonly bookId: number;
   readonly query: string;
   readonly limit?: number;

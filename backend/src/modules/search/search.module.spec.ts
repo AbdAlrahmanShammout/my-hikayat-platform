@@ -32,6 +32,19 @@ describe('SearchModule', () => {
         user: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
         bookChapter: { findMany: jest.fn(), count: jest.fn() },
         bookPageTextLayer: { findMany: jest.fn(), count: jest.fn() },
+        plan: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+        },
+        subscription: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
       })
       .compile();
     expect(moduleRef.get(SearchService)).toBeDefined();

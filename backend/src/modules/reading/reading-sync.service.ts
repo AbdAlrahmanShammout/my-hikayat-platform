@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { BookService } from '@/modules/book/book.service';
+import { EntitlementService } from '@/modules/entitlement/entitlement.service';
 import { ReadingBookmarkPage } from '@/modules/reading/defs/reading-bookmark-repository.defs';
 import { ReadingProgressPage } from '@/modules/reading/defs/reading-progress-repository.defs';
 import {
@@ -16,14 +16,17 @@ export class ReadingSyncService {
   constructor(
     private readonly readingProgressService: ReadingProgressService,
     private readonly readingBookmarkService: ReadingBookmarkService,
-    private readonly bookService: BookService,
     private readonly userService: UserService,
+    private readonly entitlementService: EntitlementService,
   ) {}
 
   async getReadingSync(input: GetReadingSyncServiceInput): Promise<ReadingSyncSnapshot> {
     await this.userService.getUserById(input.userId);
     if (input.bookId !== undefined) {
-      await this.bookService.getBookById(input.bookId);
+      await this.entitlementService.assertCanAccessFullBook({
+        userId: input.userId,
+        bookId: input.bookId,
+      });
     }
     const progress: ReadingProgressPage = await this.readingProgressService.listReadingProgresses({
       userId: input.userId,

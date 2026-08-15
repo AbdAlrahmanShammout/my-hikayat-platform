@@ -4,6 +4,7 @@ import { ResourceNotFoundException } from '@/common/exceptions/resource-not-foun
 import { BookService } from '@/modules/book/book.service';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
+import { EntitlementService } from '@/modules/entitlement/entitlement.service';
 import {
   EndReadingSessionServiceInput,
   FindOpenReadingSessionServiceInput,
@@ -40,11 +41,16 @@ export class ReadingSessionService {
     private readonly readingSessionRepository: ReadingSessionRepository,
     private readonly bookService: BookService,
     private readonly userService: UserService,
+    private readonly entitlementService: EntitlementService,
   ) {}
 
   async startReadingSession(input: StartReadingSessionServiceInput): Promise<ReadingSessionEntity> {
     await this.userService.getUserById(input.userId);
     const book: BookEntity = await this.bookService.getBookById(input.bookId);
+    await this.entitlementService.assertCanAccessFullBook({
+      userId: input.userId,
+      bookId: input.bookId,
+    });
     const layoutType: BookLayoutType = ReadingSessionService.requireLayoutType(book);
     const position: NormalizedReadingPosition = ReadingSessionService.requirePosition(
       layoutType,
@@ -144,6 +150,10 @@ export class ReadingSessionService {
     input: FindOpenReadingSessionServiceInput,
   ): Promise<ReadingSessionEntity> {
     await this.bookService.getBookById(input.bookId);
+    await this.entitlementService.assertCanAccessFullBook({
+      userId: input.userId,
+      bookId: input.bookId,
+    });
     const session: ReadingSessionEntity | null =
       await this.findOpenReadingSessionByUserAndBook(input);
     if (session === null) {
@@ -155,6 +165,10 @@ export class ReadingSessionService {
   async getOwnedReadingSession(
     input: FindOwnedReadingSessionServiceInput,
   ): Promise<ReadingSessionEntity> {
+    await this.entitlementService.assertCanAccessFullBook({
+      userId: input.userId,
+      bookId: input.bookId,
+    });
     const session: ReadingSessionEntity = await this.getReadingSessionById(input.id);
     if (session.userId !== input.userId || session.bookId !== input.bookId) {
       throw new ResourceNotFoundException('ReadingSession', input.id);

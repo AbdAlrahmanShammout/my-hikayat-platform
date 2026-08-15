@@ -11,6 +11,7 @@ import {
 import { ReadingBookmarkEntity } from '@/modules/reading/entity/reading-bookmark.entity';
 import { ReadingBookmarkBookLayoutUnknownException } from '@/modules/reading/exceptions/reading-bookmark-book-layout-unknown.exception';
 import { ReadingBookmarkInvalidPositionException } from '@/modules/reading/exceptions/reading-bookmark-invalid-position.exception';
+import { EntitlementService } from '@/modules/entitlement/entitlement.service';
 import { UserService } from '@/modules/user/user.service';
 
 import { ReadingBookmarkService } from './reading-bookmark.service';
@@ -55,6 +56,7 @@ describe('ReadingBookmarkService', () => {
   };
   let mockBookService: { getBookById: jest.Mock };
   let mockUserService: { getUserById: jest.Mock };
+  let mockEntitlementService: { assertCanAccessFullBook: jest.Mock };
   let readingBookmarkService: ReadingBookmarkService;
 
   beforeEach(() => {
@@ -66,10 +68,12 @@ describe('ReadingBookmarkService', () => {
     };
     mockBookService = { getBookById: jest.fn() };
     mockUserService = { getUserById: jest.fn() };
+    mockEntitlementService = { assertCanAccessFullBook: jest.fn().mockResolvedValue(undefined) };
     readingBookmarkService = new ReadingBookmarkService(
       mockReadingBookmarkRepository,
       mockBookService as unknown as BookService,
       mockUserService as unknown as UserService,
+      mockEntitlementService as unknown as EntitlementService,
     );
   });
 
@@ -157,6 +161,7 @@ describe('ReadingBookmarkService', () => {
         updatedSince: undefined,
       });
       expect(actualPage).toBe(expectedPage);
+      expect(mockEntitlementService.assertCanAccessFullBook).not.toHaveBeenCalled();
     });
   });
 

@@ -5,6 +5,7 @@ import { ResourceNotFoundException } from '@/common/exceptions/resource-not-foun
 import { BookService } from '@/modules/book/book.service';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
+import { EntitlementService } from '@/modules/entitlement/entitlement.service';
 import { ReadingBookmarkPage } from '@/modules/reading/defs/reading-bookmark-repository.defs';
 import {
   CreateReadingBookmarkServiceInput,
@@ -31,6 +32,7 @@ export class ReadingBookmarkService {
     private readonly readingBookmarkRepository: ReadingBookmarkRepository,
     private readonly bookService: BookService,
     private readonly userService: UserService,
+    private readonly entitlementService: EntitlementService,
   ) {}
 
   async createReadingBookmark(
@@ -38,6 +40,10 @@ export class ReadingBookmarkService {
   ): Promise<ReadingBookmarkEntity> {
     await this.userService.getUserById(input.userId);
     const book: BookEntity = await this.bookService.getBookById(input.bookId);
+    await this.entitlementService.assertCanAccessFullBook({
+      userId: input.userId,
+      bookId: input.bookId,
+    });
     const layoutType: BookLayoutType = ReadingBookmarkService.requireLayoutType(book);
     const position: NormalizedReadingPosition = ReadingBookmarkService.normalizePosition(
       layoutType,
@@ -55,6 +61,10 @@ export class ReadingBookmarkService {
     input: ListReadingBookmarksServiceInput,
   ): Promise<ReadingBookmarkPage> {
     await this.bookService.getBookById(input.bookId);
+    await this.entitlementService.assertCanAccessFullBook({
+      userId: input.userId,
+      bookId: input.bookId,
+    });
     return this.readingBookmarkRepository.list({
       userId: input.userId,
       bookId: input.bookId,
@@ -88,6 +98,10 @@ export class ReadingBookmarkService {
   async deleteReadingBookmark(
     input: DeleteReadingBookmarkServiceInput,
   ): Promise<ReadingBookmarkEntity> {
+    await this.entitlementService.assertCanAccessFullBook({
+      userId: input.userId,
+      bookId: input.bookId,
+    });
     const bookmark: ReadingBookmarkEntity = await this.getReadingBookmarkById(input.id);
     if (bookmark.userId !== input.userId || bookmark.bookId !== input.bookId) {
       throw new ResourceNotFoundException('ReadingBookmark', input.id);

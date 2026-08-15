@@ -19,6 +19,7 @@ import { CategoryService } from '@/modules/category/category.service';
 import { ReadingProgressService } from '@/modules/reading/reading-progress.service';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
+import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
 
 describe('Reader catalog (e2e)', () => {
@@ -54,6 +55,9 @@ describe('Reader catalog (e2e)', () => {
     });
     await prismaProviderService.category.deleteMany({
       where: { slug: { in: [`adventure-${slugSuffix}`, `picture-${slugSuffix}`] } },
+    });
+    await prismaProviderService.subscription.deleteMany({
+      where: { user: { email: { in: emails } } },
     });
     await prismaProviderService.user.deleteMany({ where: { email: { in: emails } } });
     await app.close();
@@ -234,6 +238,7 @@ describe('Reader catalog (e2e)', () => {
     if (readerUser === null) {
       throw new Error('Reader user was not created');
     }
+    await assignMonthlySubscription(getRunningApp(), readerUser.id);
     await getRunningApp().get(ReadingProgressService).saveReadingProgress({
       userId: readerUser.id,
       bookId: getOlderBookId(),

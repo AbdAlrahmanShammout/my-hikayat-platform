@@ -10,6 +10,7 @@ import { ReadingProgressInvalidPositionException } from '@/modules/reading/excep
 import { ReadingProgressService } from '@/modules/reading/reading-progress.service';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
+import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
 
 describe('Reading progress (e2e)', () => {
@@ -35,6 +36,9 @@ describe('Reading progress (e2e)', () => {
     });
     await prismaProviderService.book.deleteMany({
       where: { owner: { email: ownerEmail } },
+    });
+    await prismaProviderService.subscription.deleteMany({
+      where: { user: { email: ownerEmail } },
     });
     await prismaProviderService.user.deleteMany({ where: { email: ownerEmail } });
     await app.close();
@@ -67,6 +71,7 @@ describe('Reading progress (e2e)', () => {
       .post('/user/publisher')
       .set('Authorization', `Bearer ${registerResponse.body.accessToken}`);
     userId = publisherResponse.body.user.id as number;
+    await assignMonthlySubscription(getRunningApp(), userId);
     const bookService: BookService = getRunningApp().get(BookService);
     const reflowableBook = await bookService.createBook({
       title: 'Reflowable Progress Fixture',

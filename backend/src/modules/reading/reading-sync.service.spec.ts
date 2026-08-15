@@ -1,5 +1,5 @@
-import { BookService } from '@/modules/book/book.service';
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
+import { EntitlementService } from '@/modules/entitlement/entitlement.service';
 import { ReadingBookmarkEntity } from '@/modules/reading/entity/reading-bookmark.entity';
 import { ReadingProgressEntity } from '@/modules/reading/entity/reading-progress.entity';
 import { ReadingBookmarkService } from '@/modules/reading/reading-bookmark.service';
@@ -42,20 +42,20 @@ function createSampleBookmark(): ReadingBookmarkEntity {
 describe('ReadingSyncService', () => {
   let mockReadingProgressService: { listReadingProgresses: jest.Mock };
   let mockReadingBookmarkService: { listReadingBookmarksForSync: jest.Mock };
-  let mockBookService: { getBookById: jest.Mock };
   let mockUserService: { getUserById: jest.Mock };
+  let mockEntitlementService: { assertCanAccessFullBook: jest.Mock };
   let readingSyncService: ReadingSyncService;
 
   beforeEach(() => {
     mockReadingProgressService = { listReadingProgresses: jest.fn() };
     mockReadingBookmarkService = { listReadingBookmarksForSync: jest.fn() };
-    mockBookService = { getBookById: jest.fn() };
     mockUserService = { getUserById: jest.fn() };
+    mockEntitlementService = { assertCanAccessFullBook: jest.fn().mockResolvedValue(undefined) };
     readingSyncService = new ReadingSyncService(
       mockReadingProgressService as unknown as ReadingProgressService,
       mockReadingBookmarkService as unknown as ReadingBookmarkService,
-      mockBookService as unknown as BookService,
       mockUserService as unknown as UserService,
+      mockEntitlementService as unknown as EntitlementService,
     );
   });
 
@@ -66,7 +66,7 @@ describe('ReadingSyncService', () => {
     mockReadingProgressService.listReadingProgresses.mockResolvedValue(expectedProgress);
     mockReadingBookmarkService.listReadingBookmarksForSync.mockResolvedValue(expectedBookmarks);
     const actualSnapshot = await readingSyncService.getReadingSync({ userId: 7 });
-    expect(mockBookService.getBookById).not.toHaveBeenCalled();
+    expect(mockEntitlementService.assertCanAccessFullBook).not.toHaveBeenCalled();
     expect(mockReadingProgressService.listReadingProgresses).toHaveBeenCalledWith({
       userId: 7,
       bookId: undefined,
@@ -81,10 +81,9 @@ describe('ReadingSyncService', () => {
     expect(actualSnapshot.bookmarks).toBe(expectedBookmarks);
   });
 
-  it('scopes a book pull to that book after verifying it exists', async () => {
+  it('scopes a book pull to that book after verifying paid access', async () => {
     const updatedSince = new Date('2026-08-15T00:00:00.000Z');
     mockUserService.getUserById.mockResolvedValue({ id: 7 });
-    mockBookService.getBookById.mockResolvedValue({ id: 8 });
     mockReadingProgressService.listReadingProgresses.mockResolvedValue({
       entities: [createSampleProgress()],
       total: 1,
@@ -98,7 +97,10 @@ describe('ReadingSyncService', () => {
       bookId: 8,
       updatedSince,
     });
-    expect(mockBookService.getBookById).toHaveBeenCalledWith(8);
+    expect(mockEntitlementService.assertCanAccessFullBook).toHaveBeenCalledWith({
+      userId: 7,
+      bookId: 8,
+    });
     expect(mockReadingProgressService.listReadingProgresses).toHaveBeenCalledWith({
       userId: 7,
       bookId: 8,

@@ -55,6 +55,19 @@ describe('ReadingModule', () => {
           update: jest.fn(),
         },
         user: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+        plan: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+        },
+        subscription: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
       })
       .compile();
     expect(moduleRef.get(ReadingBookmarkService)).toBeDefined();

@@ -10,6 +10,7 @@ import {
 import { ReadingProgressEntity } from '@/modules/reading/entity/reading-progress.entity';
 import { ReadingProgressBookLayoutUnknownException } from '@/modules/reading/exceptions/reading-progress-book-layout-unknown.exception';
 import { ReadingProgressInvalidPositionException } from '@/modules/reading/exceptions/reading-progress-invalid-position.exception';
+import { EntitlementService } from '@/modules/entitlement/entitlement.service';
 import { UserService } from '@/modules/user/user.service';
 
 import { ReadingProgressService } from './reading-progress.service';
@@ -56,6 +57,7 @@ describe('ReadingProgressService', () => {
   };
   let mockBookService: { getBookById: jest.Mock };
   let mockUserService: { getUserById: jest.Mock };
+  let mockEntitlementService: { assertCanAccessFullBook: jest.Mock };
   let readingProgressService: ReadingProgressService;
 
   beforeEach(() => {
@@ -68,10 +70,12 @@ describe('ReadingProgressService', () => {
     };
     mockBookService = { getBookById: jest.fn() };
     mockUserService = { getUserById: jest.fn() };
+    mockEntitlementService = { assertCanAccessFullBook: jest.fn().mockResolvedValue(undefined) };
     readingProgressService = new ReadingProgressService(
       mockReadingProgressRepository,
       mockBookService as unknown as BookService,
       mockUserService as unknown as UserService,
+      mockEntitlementService as unknown as EntitlementService,
     );
   });
 
@@ -214,6 +218,7 @@ describe('ReadingProgressService', () => {
         updatedSince: new Date('2026-08-15T00:00:00.000Z'),
       });
       expect(actualPage).toBe(expectedPage);
+      expect(mockEntitlementService.assertCanAccessFullBook).not.toHaveBeenCalled();
     });
   });
 });

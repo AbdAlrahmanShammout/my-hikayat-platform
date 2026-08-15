@@ -1,46 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { ReadingSessionService } from '@/modules/reading/reading-session.service';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
-import { ReadingIntelligenceService } from './reading-intelligence.service';
-import { ReadingIntelligenceModule } from './reading-intelligence.module';
+import { EntitlementModule } from './entitlement.module';
+import { EntitlementService } from './entitlement.service';
 
-describe('ReadingIntelligenceModule', () => {
-  it('exports the intelligence service over the reading session service', async () => {
+describe('EntitlementModule', () => {
+  it('exports the entitlement service', async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [ReadingIntelligenceModule],
+      imports: [EntitlementModule],
     })
       .overrideProvider(PrismaProviderService)
       .useValue({
         $connect: jest.fn(),
         $disconnect: jest.fn(),
         $transaction: jest.fn(),
-        readingProgress: {
-          create: jest.fn(),
-          findFirst: jest.fn(),
-          findMany: jest.fn(),
-          count: jest.fn(),
-          update: jest.fn(),
-        },
-        readingBookmark: {
-          create: jest.fn(),
-          findFirst: jest.fn(),
-          findMany: jest.fn(),
-          count: jest.fn(),
-          update: jest.fn(),
-        },
-        readingSession: {
-          create: jest.fn(),
-          findFirst: jest.fn(),
-          update: jest.fn(),
-        },
-        readingVisualEngagement: {
-          upsert: jest.fn(),
-          findFirst: jest.fn(),
-          findMany: jest.fn(),
-          count: jest.fn(),
-        },
         book: {
           create: jest.fn(),
           findFirst: jest.fn(),
@@ -71,8 +45,7 @@ describe('ReadingIntelligenceModule', () => {
         },
       })
       .compile();
-    expect(moduleRef.get(ReadingIntelligenceService)).toBeDefined();
-    expect(moduleRef.get(ReadingSessionService)).toBeDefined();
+    expect(moduleRef.get(EntitlementService)).toBeDefined();
     await moduleRef.close();
   });
 });
