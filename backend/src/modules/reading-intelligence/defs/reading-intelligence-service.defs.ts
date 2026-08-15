@@ -1,30 +1,16 @@
-export type StartReadingSessionServiceInput = {
+export type StartReadingIntelligenceSessionServiceInput = {
   readonly userId: number;
   readonly bookId: number;
   readonly spineIndex?: number | null;
   readonly scrollOffset?: number | null;
   readonly spreadIndex?: number | null;
   readonly pageNumber?: number | null;
-  readonly startedAt?: Date;
 };
 
-export type EndReadingSessionServiceInput = {
-  readonly id: number;
+export type IngestReadingActivityServiceInput = {
   readonly userId: number;
   readonly bookId: number;
-  readonly endedAt?: Date;
-  readonly activeDurationMs?: number;
-  readonly idleDurationMs?: number;
-  readonly spineIndex?: number | null;
-  readonly scrollOffset?: number | null;
-  readonly spreadIndex?: number | null;
-  readonly pageNumber?: number | null;
-};
-
-export type RecordReadingSessionActivityServiceInput = {
-  readonly id: number;
-  readonly userId: number;
-  readonly bookId: number;
+  readonly sessionId: number;
   readonly activeDurationMs: number;
   readonly idleDurationMs: number;
   readonly spineIndex?: number | null;
@@ -33,7 +19,19 @@ export type RecordReadingSessionActivityServiceInput = {
   readonly pageNumber?: number | null;
 };
 
-export type FindOpenReadingSessionServiceInput = {
+export type EndReadingIntelligenceSessionServiceInput = {
+  readonly userId: number;
+  readonly bookId: number;
+  readonly sessionId: number;
+  readonly activeDurationMs?: number;
+  readonly idleDurationMs?: number;
+  readonly spineIndex?: number | null;
+  readonly scrollOffset?: number | null;
+  readonly spreadIndex?: number | null;
+  readonly pageNumber?: number | null;
+};
+
+export type FindCurrentReadingIntelligenceSessionServiceInput = {
   readonly userId: number;
   readonly bookId: number;
 };

@@ -169,6 +169,7 @@ describe('ReadingSessionService', () => {
       const actualSession = await readingSessionService.endReadingSession({
         id: 9,
         userId: 7,
+        bookId: 8,
         endedAt,
         activeDurationMs: 900_000,
         idleDurationMs: 120_000,
@@ -199,6 +200,7 @@ describe('ReadingSessionService', () => {
         readingSessionService.endReadingSession({
           id: 9,
           userId: 7,
+          bookId: 8,
           activeDurationMs: 1,
           idleDurationMs: 0,
         }),
@@ -211,6 +213,7 @@ describe('ReadingSessionService', () => {
         readingSessionService.endReadingSession({
           id: 9,
           userId: 11,
+          bookId: 8,
           activeDurationMs: 1,
           idleDurationMs: 0,
         }),
@@ -224,11 +227,46 @@ describe('ReadingSessionService', () => {
         readingSessionService.endReadingSession({
           id: 9,
           userId: 7,
+          bookId: 8,
           endedAt: new Date('2025-12-31T00:00:00.000Z'),
           activeDurationMs: 1,
           idleDurationMs: 0,
         }),
       ).rejects.toBeInstanceOf(ReadingSessionInvalidTimingException);
+    });
+  });
+
+  describe('recordReadingSessionActivity', () => {
+    it('adds active and idle intervals onto an open session', async () => {
+      const openSession = createOpenSession();
+      const expectedSession = new ReadingSessionEntity({
+        ...openSession,
+        activeDurationMs: 15_000,
+        idleDurationMs: 3_000,
+        spineIndex: 2,
+        scrollOffset: 400,
+      });
+      mockReadingSessionRepository.findById.mockResolvedValue(openSession);
+      mockReadingSessionRepository.update.mockResolvedValue(expectedSession);
+      const actualSession = await readingSessionService.recordReadingSessionActivity({
+        id: 9,
+        userId: 7,
+        bookId: 8,
+        activeDurationMs: 15_000,
+        idleDurationMs: 3_000,
+        spineIndex: 2,
+        scrollOffset: 400,
+      });
+      expect(mockReadingSessionRepository.update).toHaveBeenCalledWith({
+        id: 9,
+        activeDurationMs: 15_000,
+        idleDurationMs: 3_000,
+        spineIndex: 2,
+        scrollOffset: 400,
+        spreadIndex: null,
+        pageNumber: null,
+      });
+      expect(actualSession).toBe(expectedSession);
     });
   });
 });

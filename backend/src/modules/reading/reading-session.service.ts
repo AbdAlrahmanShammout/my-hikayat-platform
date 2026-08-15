@@ -7,6 +7,7 @@ import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import {
   EndReadingSessionServiceInput,
   FindOpenReadingSessionServiceInput,
+  RecordReadingSessionActivityServiceInput,
   StartReadingSessionServiceInput,
 } from '@/modules/reading/defs/reading-session-service.defs';
 import { ReadingSessionEntity } from '@/modules/reading/entity/reading-session.entity';
@@ -65,14 +66,42 @@ export class ReadingSessionService {
     });
   }
 
-  async endReadingSession(input: EndReadingSessionServiceInput): Promise<ReadingSessionEntity> {
-    const session: ReadingSessionEntity = await this.getOwnedOpenSession(input.id, input.userId);
-    const endedAt: Date = input.endedAt ?? new Date();
-    ReadingSessionService.assertValidTiming(session.id, session.startedAt, {
-      endedAt,
-      activeDurationMs: input.activeDurationMs,
-      idleDurationMs: input.idleDurationMs,
+  async recordReadingSessionActivity(
+    input: RecordReadingSessionActivityServiceInput,
+  ): Promise<ReadingSessionEntity> {
+    const session: ReadingSessionEntity = await this.getOwnedOpenSession(
+      input.id,
+      input.userId,
+      input.bookId,
+    );
+    ReadingSessionService.assertNonNegativeDuration(session.id, input.activeDurationMs);
+    ReadingSessionService.assertNonNegativeDuration(session.id, input.idleDurationMs);
+    const position: Partial<NormalizedReadingPosition> = ReadingSessionService.optionalPosition(
+      session.layoutType,
+      input,
+    );
+    return this.readingSessionRepository.update({
+      id: session.id,
+      activeDurationMs: session.activeDurationMs + input.activeDurationMs,
+      idleDurationMs: session.idleDurationMs + input.idleDurationMs,
+      ...position,
     });
+  }
+
+  async endReadingSession(input: EndReadingSessionServiceInput): Promise<ReadingSessionEntity> {
+    const session: ReadingSessionEntity = await this.getOwnedOpenSession(
+      input.id,
+      input.userId,
+      input.bookId,
+    );
+    const endedAt: Date = input.endedAt ?? new Date();
+    ReadingSessionService.assertValidEndTime(session.id, session.startedAt, endedAt);
+    if (input.activeDurationMs !== undefined) {
+      ReadingSessionService.assertNonNegativeDuration(session.id, input.activeDurationMs);
+    }
+    if (input.idleDurationMs !== undefined) {
+      ReadingSessionService.assertNonNegativeDuration(session.id, input.idleDurationMs);
+    }
     const position: Partial<NormalizedReadingPosition> = ReadingSessionService.optionalPosition(
       session.layoutType,
       input,
@@ -80,8 +109,14 @@ export class ReadingSessionService {
     return this.readingSessionRepository.update({
       id: session.id,
       endedAt,
-      activeDurationMs: input.activeDurationMs,
-      idleDurationMs: input.idleDurationMs,
+      activeDurationMs:
+        input.activeDurationMs !== undefined
+          ? session.activeDurationMs + input.activeDurationMs
+          : undefined,
+      idleDurationMs:
+        input.idleDurationMs !== undefined
+          ? session.idleDurationMs + input.idleDurationMs
+          : undefined,
       ...position,
     });
   }
@@ -104,9 +139,25 @@ export class ReadingSessionService {
     return this.readingSessionRepository.findOpenByUserIdAndBookId(input.userId, input.bookId);
   }
 
-  private async getOwnedOpenSession(id: number, userId: number): Promise<ReadingSessionEntity> {
+  async getOpenReadingSessionByUserAndBook(
+    input: FindOpenReadingSessionServiceInput,
+  ): Promise<ReadingSessionEntity> {
+    await this.bookService.getBookById(input.bookId);
+    const session: ReadingSessionEntity | null =
+      await this.findOpenReadingSessionByUserAndBook(input);
+    if (session === null) {
+      throw new ResourceNotFoundException('ReadingSession', `${input.userId}:${input.bookId}`);
+    }
+    return session;
+  }
+
+  private async getOwnedOpenSession(
+    id: number,
+    userId: number,
+    bookId: number,
+  ): Promise<ReadingSessionEntity> {
     const session: ReadingSessionEntity = await this.getReadingSessionById(id);
-    if (session.userId !== userId) {
+    if (session.userId !== userId || session.bookId !== bookId) {
       throw new ResourceNotFoundException('ReadingSession', id);
     }
     if (session.endedAt !== null) {
@@ -189,16 +240,14 @@ export class ReadingSessionService {
     };
   }
 
-  private static assertValidTiming(
-    sessionId: number,
-    startedAt: Date,
-    input: { endedAt: Date; activeDurationMs: number; idleDurationMs: number },
-  ): void {
-    if (
-      input.endedAt.getTime() < startedAt.getTime() ||
-      !ReadingSessionService.isNonNegativeInt(input.activeDurationMs) ||
-      !ReadingSessionService.isNonNegativeInt(input.idleDurationMs)
-    ) {
+  private static assertValidEndTime(sessionId: number, startedAt: Date, endedAt: Date): void {
+    if (endedAt.getTime() < startedAt.getTime()) {
+      throw new ReadingSessionInvalidTimingException(sessionId);
+    }
+  }
+
+  private static assertNonNegativeDuration(sessionId: number, durationMs: number): void {
+    if (!ReadingSessionService.isNonNegativeInt(durationMs)) {
       throw new ReadingSessionInvalidTimingException(sessionId);
     }
   }

@@ -157,6 +157,7 @@ describe('Reading session (e2e)', () => {
     const actualSession = await getRunningApp().get(ReadingSessionService).endReadingSession({
       id: getReflowableSessionId(),
       userId: getUserId(),
+      bookId: getReflowableBookId(),
       endedAt,
       activeDurationMs: 900_000,
       idleDurationMs: 120_000,
@@ -180,6 +181,7 @@ describe('Reading session (e2e)', () => {
       getRunningApp().get(ReadingSessionService).endReadingSession({
         id: getReflowableSessionId(),
         userId: getUserId(),
+        bookId: getReflowableBookId(),
         activeDurationMs: 1,
         idleDurationMs: 0,
       }),
