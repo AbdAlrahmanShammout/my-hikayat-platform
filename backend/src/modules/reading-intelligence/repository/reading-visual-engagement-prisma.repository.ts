@@ -8,7 +8,9 @@ import {
   BookVisualDurationTotal,
   ListReadingVisualEngagementsRepoInput,
   ReadingVisualEngagementPage,
+  SpreadVisualDurationTotal,
   SumReadingVisualEngagementDurationsRepoInput,
+  SumSpreadVisualEngagementRepoInput,
 } from '@/modules/reading-intelligence/defs/reading-visual-engagement-repository.defs';
 import { ReadingVisualEngagementEntity } from '@/modules/reading-intelligence/entity/reading-visual-engagement.entity';
 import { ReadingVisualEngagementMapper } from '@/modules/reading-intelligence/mapper/reading-visual-engagement.mapper';
@@ -104,5 +106,39 @@ export class ReadingVisualEngagementPrismaRepository implements ReadingVisualEng
       activeDurationMs: row._sum.activeDurationMs ?? 0,
       visualSceneTimeMs: row._sum.visualSceneTimeMs ?? 0,
     }));
+  }
+
+  async sumDurationsBySpreadInRange(
+    input: SumSpreadVisualEngagementRepoInput,
+  ): Promise<SpreadVisualDurationTotal[]> {
+    const rows = await this.prismaProviderService.readingVisualEngagement.groupBy({
+      by: ['spreadIndex', 'pageNumber'],
+      where: {
+        bookId: input.bookId,
+        deletedAt: null,
+        layoutType: BookLayoutType.FIXED_LAYOUT,
+        session: {
+          deletedAt: null,
+          startedAt: { gte: input.startsAt, lt: input.endsAt },
+        },
+      },
+      _sum: { activeDurationMs: true, visualSceneTimeMs: true },
+    });
+    return rows
+      .map((row) => ({
+        spreadIndex: row.spreadIndex,
+        pageNumber: row.pageNumber,
+        activeDurationMs: row._sum.activeDurationMs ?? 0,
+        visualSceneTimeMs: row._sum.visualSceneTimeMs ?? 0,
+      }))
+      .sort((left, right) => {
+        if (right.activeDurationMs !== left.activeDurationMs) {
+          return right.activeDurationMs - left.activeDurationMs;
+        }
+        if (left.spreadIndex !== right.spreadIndex) {
+          return left.spreadIndex - right.spreadIndex;
+        }
+        return left.pageNumber - right.pageNumber;
+      });
   }
 }

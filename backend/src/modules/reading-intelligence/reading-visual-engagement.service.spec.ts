@@ -29,6 +29,7 @@ describe('ReadingVisualEngagementService', () => {
     list: jest.Mock;
     findById: jest.Mock;
     sumDurationsByBookInRange: jest.Mock;
+    sumDurationsBySpreadInRange: jest.Mock;
   };
   let readingVisualEngagementService: ReadingVisualEngagementService;
 
@@ -38,6 +39,7 @@ describe('ReadingVisualEngagementService', () => {
       list: jest.fn(),
       findById: jest.fn(),
       sumDurationsByBookInRange: jest.fn(),
+      sumDurationsBySpreadInRange: jest.fn(),
     };
     readingVisualEngagementService = new ReadingVisualEngagementService(
       mockReadingVisualEngagementRepository,
@@ -136,6 +138,28 @@ describe('ReadingVisualEngagementService', () => {
       expect(mockReadingVisualEngagementRepository.sumDurationsByBookInRange).toHaveBeenCalledWith(
         inputRange,
       );
+      expect(actualTotals).toBe(expectedTotals);
+    });
+  });
+
+  describe('sumDurationsBySpreadInRange', () => {
+    it('delegates spread duration totals for a book and range', async () => {
+      const expectedTotals = [
+        { spreadIndex: 0, pageNumber: 1, activeDurationMs: 180000, visualSceneTimeMs: 90000 },
+      ];
+      mockReadingVisualEngagementRepository.sumDurationsBySpreadInRange.mockResolvedValue(
+        expectedTotals,
+      );
+      const inputRange = {
+        bookId: 10,
+        startsAt: new Date('2026-08-01T00:00:00.000Z'),
+        endsAt: new Date('2026-09-01T00:00:00.000Z'),
+      };
+      const actualTotals =
+        await readingVisualEngagementService.sumDurationsBySpreadInRange(inputRange);
+      expect(
+        mockReadingVisualEngagementRepository.sumDurationsBySpreadInRange,
+      ).toHaveBeenCalledWith(inputRange);
       expect(actualTotals).toBe(expectedTotals);
     });
   });

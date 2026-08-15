@@ -4,6 +4,7 @@ import { BookModule } from '@/modules/book/book.module';
 import { ReadingIntelligenceModule } from '@/modules/reading-intelligence/reading-intelligence.module';
 import { DatabaseProviderModule } from '@/providers/database/database-provider.module';
 
+import { AuthorAnalyticsService } from './author-analytics.service';
 import { BookEngagementService } from './book-engagement.service';
 import { BookRevenueService } from './book-revenue.service';
 import { BookEngagementPrismaRepository } from './repository/book-engagement-prisma.repository';
@@ -20,10 +21,16 @@ import { RevenuePeriodService } from './revenue-period.service';
     RevenuePeriodService,
     BookEngagementService,
     BookRevenueService,
+    AuthorAnalyticsService,
     { provide: RevenuePeriodRepository, useClass: RevenuePeriodPrismaRepository },
     { provide: BookEngagementRepository, useClass: BookEngagementPrismaRepository },
     { provide: BookRevenueRepository, useClass: BookRevenuePrismaRepository },
   ],
-  exports: [RevenuePeriodService, BookEngagementService, BookRevenueService],
+  exports: [
+    RevenuePeriodService,
+    BookEngagementService,
+    BookRevenueService,
+    AuthorAnalyticsService,
+  ],
 })
 export class MonetizationModule {}

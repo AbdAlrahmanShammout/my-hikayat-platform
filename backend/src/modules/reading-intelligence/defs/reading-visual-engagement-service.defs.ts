@@ -20,3 +20,9 @@ export type SumReadingVisualEngagementDurationsServiceInput = {
   readonly startsAt: Date;
   readonly endsAt: Date;
 };
+
+export type SumSpreadVisualEngagementServiceInput = {
+  readonly bookId: number;
+  readonly startsAt: Date;
+  readonly endsAt: Date;
+};

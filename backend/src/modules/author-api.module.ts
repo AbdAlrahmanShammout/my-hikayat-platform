@@ -8,10 +8,12 @@ import { BookAuthorController } from '@/modules/book/book.author.controller';
 import { BookAssetModule } from '@/modules/book-asset/book-asset.module';
 import { BookAssetAuthorController } from '@/modules/book-asset/book-asset.author.controller';
 import { BookProcessingModule } from '@/modules/book-processing/book-processing.module';
+import { MonetizationAuthorController } from '@/modules/monetization/monetization.author.controller';
+import { MonetizationModule } from '@/modules/monetization/monetization.module';
 
 @Module({
-  imports: [AuthModule, BookAssetModule, BookProcessingModule],
-  controllers: [BookAssetAuthorController, BookAuthorController],
+  imports: [AuthModule, BookAssetModule, BookProcessingModule, MonetizationModule],
+  controllers: [BookAssetAuthorController, BookAuthorController, MonetizationAuthorController],
   providers: [JwtAuthGuard, LocalAuthGuard, RolesGuard],
 })
 export class AuthorApiModule {}

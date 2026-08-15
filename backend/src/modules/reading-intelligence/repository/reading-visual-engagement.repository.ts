@@ -4,7 +4,9 @@ import {
   BookVisualDurationTotal,
   ListReadingVisualEngagementsRepoInput,
   ReadingVisualEngagementPage,
+  SpreadVisualDurationTotal,
   SumReadingVisualEngagementDurationsRepoInput,
+  SumSpreadVisualEngagementRepoInput,
 } from '@/modules/reading-intelligence/defs/reading-visual-engagement-repository.defs';
 import { ReadingVisualEngagementEntity } from '@/modules/reading-intelligence/entity/reading-visual-engagement.entity';
 
@@ -18,4 +20,7 @@ export abstract class ReadingVisualEngagementRepository {
   abstract sumDurationsByBookInRange(
     input: SumReadingVisualEngagementDurationsRepoInput,
   ): Promise<BookVisualDurationTotal[]>;
+  abstract sumDurationsBySpreadInRange(
+    input: SumSpreadVisualEngagementRepoInput,
+  ): Promise<SpreadVisualDurationTotal[]>;
 }

@@ -83,6 +83,7 @@ describe('BookEngagementService', () => {
     listAllByPeriod: jest.Mock;
     findById: jest.Mock;
     findByPeriodAndBook: jest.Mock;
+    summarizeByOwner: jest.Mock;
   };
   let mockRevenuePeriodService: { getRevenuePeriodById: jest.Mock };
   let mockReadingIntelligenceService: { listBookEngagementSignalsInRange: jest.Mock };
@@ -96,6 +97,7 @@ describe('BookEngagementService', () => {
       listAllByPeriod: jest.fn(),
       findById: jest.fn(),
       findByPeriodAndBook: jest.fn(),
+      summarizeByOwner: jest.fn(),
     };
     mockRevenuePeriodService = { getRevenuePeriodById: jest.fn() };
     mockReadingIntelligenceService = { listBookEngagementSignalsInRange: jest.fn() };
@@ -235,10 +237,32 @@ describe('BookEngagementService', () => {
       const actualPage = await bookEngagementService.listBookEngagements({ revenuePeriodId: 4 });
       expect(mockBookEngagementRepository.list).toHaveBeenCalledWith({
         revenuePeriodId: 4,
+        ownerId: undefined,
         limit: DEFAULT_PAGE_SIZE,
         offset: DEFAULT_PAGE_OFFSET,
       });
       expect(actualPage.total).toBe(1);
+    });
+  });
+
+  describe('summarizeOwnerEngagementForPeriod', () => {
+    it('returns owner totals after confirming the period exists', async () => {
+      mockRevenuePeriodService.getRevenuePeriodById.mockResolvedValue(createSamplePeriod());
+      mockBookEngagementRepository.summarizeByOwner.mockResolvedValue({
+        totalActiveReadingMs: 120000,
+        totalActiveSpreadMs: 180000,
+        totalVisualSceneTimeMs: 90000,
+        totalWeightedEngagement: 7,
+      });
+      const actualSummary = await bookEngagementService.summarizeOwnerEngagementForPeriod({
+        revenuePeriodId: 4,
+        ownerId: 3,
+      });
+      expect(mockBookEngagementRepository.summarizeByOwner).toHaveBeenCalledWith({
+        revenuePeriodId: 4,
+        ownerId: 3,
+      });
+      expect(actualSummary.totalWeightedEngagement).toBe(7);
     });
   });
 

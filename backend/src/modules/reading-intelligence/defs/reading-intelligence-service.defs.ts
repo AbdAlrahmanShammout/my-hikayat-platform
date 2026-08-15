@@ -61,6 +61,12 @@ export type ListBookEngagementSignalsServiceInput = {
   readonly endsAt: Date;
 };
 
+export type ListSpreadEngagementTotalsServiceInput = {
+  readonly bookId: number;
+  readonly startsAt: Date;
+  readonly endsAt: Date;
+};
+
 export type BookEngagementSignal = {
   readonly bookId: number;
   readonly layoutType: BookLayoutType;

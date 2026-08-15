@@ -9,12 +9,14 @@ import { DEFAULT_CATEGORY_WEIGHT } from '@/modules/category/consts';
 import { CategoryEntity } from '@/modules/category/entity/category.entity';
 import {
   BookEngagementPage,
+  OwnerBookEngagementSummary,
   UpsertBookEngagementRepoInput,
 } from '@/modules/monetization/defs/book-engagement-repository.defs';
 import {
   AggregatePeriodEngagementServiceInput,
   FindBookEngagementByPeriodAndBookServiceInput,
   ListBookEngagementsServiceInput,
+  SummarizeOwnerEngagementServiceInput,
 } from '@/modules/monetization/defs/book-engagement-service.defs';
 import { BookEngagementEntity } from '@/modules/monetization/entity/book-engagement.entity';
 import { BookEngagementRepository } from '@/modules/monetization/repository/book-engagement.repository';
@@ -57,6 +59,7 @@ export class BookEngagementService {
     await this.revenuePeriodService.getRevenuePeriodById(input.revenuePeriodId);
     return this.bookEngagementRepository.list({
       revenuePeriodId: input.revenuePeriodId,
+      ownerId: input.ownerId,
       limit: input.limit ?? DEFAULT_PAGE_SIZE,
       offset: input.offset ?? DEFAULT_PAGE_OFFSET,
     });
@@ -97,6 +100,16 @@ export class BookEngagementService {
       );
     }
     return engagement;
+  }
+
+  async summarizeOwnerEngagementForPeriod(
+    input: SummarizeOwnerEngagementServiceInput,
+  ): Promise<OwnerBookEngagementSummary> {
+    await this.revenuePeriodService.getRevenuePeriodById(input.revenuePeriodId);
+    return this.bookEngagementRepository.summarizeByOwner({
+      revenuePeriodId: input.revenuePeriodId,
+      ownerId: input.ownerId,
+    });
   }
 
   private async buildRow(

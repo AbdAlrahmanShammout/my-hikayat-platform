@@ -3,7 +3,9 @@ import {
   BookEngagementPage,
   ListAllBookEngagementsRepoInput,
   ListBookEngagementsRepoInput,
+  OwnerBookEngagementSummary,
   ReplaceBookEngagementsForPeriodRepoInput,
+  SummarizeOwnerBookEngagementsRepoInput,
 } from '@/modules/monetization/defs/book-engagement-repository.defs';
 import { BookEngagementEntity } from '@/modules/monetization/entity/book-engagement.entity';
 
@@ -19,4 +21,7 @@ export abstract class BookEngagementRepository {
     revenuePeriodId: number,
     bookId: number,
   ): Promise<BookEngagementEntity | null>;
+  abstract summarizeByOwner(
+    input: SummarizeOwnerBookEngagementsRepoInput,
+  ): Promise<OwnerBookEngagementSummary>;
 }

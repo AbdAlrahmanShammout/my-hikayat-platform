@@ -4,6 +4,7 @@ export type AggregatePeriodEngagementServiceInput = {
 
 export type ListBookEngagementsServiceInput = {
   readonly revenuePeriodId: number;
+  readonly ownerId?: number;
   readonly limit?: number;
   readonly offset?: number;
 };
@@ -11,4 +12,9 @@ export type ListBookEngagementsServiceInput = {
 export type FindBookEngagementByPeriodAndBookServiceInput = {
   readonly revenuePeriodId: number;
   readonly bookId: number;
+};
+
+export type SummarizeOwnerEngagementServiceInput = {
+  readonly revenuePeriodId: number;
+  readonly ownerId: number;
 };

@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { TransactionContext } from '@/common/base/transaction-context';
 import {
   BookEngagementPage,
   ListAllBookEngagementsRepoInput,
   ListBookEngagementsRepoInput,
+  OwnerBookEngagementSummary,
   ReplaceBookEngagementsForPeriodRepoInput,
+  SummarizeOwnerBookEngagementsRepoInput,
   UpsertBookEngagementRepoInput,
 } from '@/modules/monetization/defs/book-engagement-repository.defs';
 import { BookEngagementEntity } from '@/modules/monetization/entity/book-engagement.entity';
@@ -35,7 +38,8 @@ export class BookEngagementPrismaRepository implements BookEngagementRepository 
   }
 
   async list(input: ListBookEngagementsRepoInput): Promise<BookEngagementPage> {
-    const where = { revenuePeriodId: input.revenuePeriodId, deletedAt: null };
+    const where: Prisma.BookEngagementWhereInput =
+      BookEngagementPrismaRepository.buildOwnerPeriodWhere(input);
     const [rows, total] = await this.prismaProviderService.$transaction([
       this.prismaProviderService.bookEngagement.findMany({
         where,
@@ -80,6 +84,40 @@ export class BookEngagementPrismaRepository implements BookEngagementRepository 
       return null;
     }
     return BookEngagementMapper.toEntity(result);
+  }
+
+  async summarizeByOwner(
+    input: SummarizeOwnerBookEngagementsRepoInput,
+  ): Promise<OwnerBookEngagementSummary> {
+    const result = await this.prismaProviderService.bookEngagement.aggregate({
+      where: BookEngagementPrismaRepository.buildOwnerPeriodWhere(input),
+      _sum: {
+        activeReadingMs: true,
+        activeSpreadMs: true,
+        visualSceneTimeMs: true,
+        weightedEngagement: true,
+      },
+    });
+    return {
+      totalActiveReadingMs: result._sum.activeReadingMs ?? 0,
+      totalActiveSpreadMs: result._sum.activeSpreadMs ?? 0,
+      totalVisualSceneTimeMs: result._sum.visualSceneTimeMs ?? 0,
+      totalWeightedEngagement: Number(result._sum.weightedEngagement ?? 0),
+    };
+  }
+
+  private static buildOwnerPeriodWhere(input: {
+    readonly revenuePeriodId: number;
+    readonly ownerId?: number;
+  }): Prisma.BookEngagementWhereInput {
+    const where: Prisma.BookEngagementWhereInput = {
+      revenuePeriodId: input.revenuePeriodId,
+      deletedAt: null,
+    };
+    if (input.ownerId !== undefined) {
+      where.book = { ownerId: input.ownerId, deletedAt: null };
+    }
+    return where;
   }
 
   private static async writePeriodRows(

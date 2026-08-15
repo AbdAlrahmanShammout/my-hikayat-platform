@@ -8,10 +8,14 @@ import {
   IngestReadingVisualEngagementServiceInput,
   ListBookEngagementSignalsServiceInput,
   ListReadingIntelligenceVisualEngagementsServiceInput,
+  ListSpreadEngagementTotalsServiceInput,
   StartReadingIntelligenceSessionServiceInput,
   BookEngagementSignal,
 } from '@/modules/reading-intelligence/defs/reading-intelligence-service.defs';
-import { ReadingVisualEngagementPage } from '@/modules/reading-intelligence/defs/reading-visual-engagement-repository.defs';
+import {
+  ReadingVisualEngagementPage,
+  SpreadVisualDurationTotal,
+} from '@/modules/reading-intelligence/defs/reading-visual-engagement-repository.defs';
 import { ReadingVisualEngagementEntity } from '@/modules/reading-intelligence/entity/reading-visual-engagement.entity';
 import { ReadingVisualEngagementNotFixedLayoutException } from '@/modules/reading-intelligence/exceptions/reading-visual-engagement-not-fixed-layout.exception';
 import { ReadingVisualEngagementService } from '@/modules/reading-intelligence/reading-visual-engagement.service';
@@ -150,6 +154,12 @@ export class ReadingIntelligenceService {
           visualSceneTimeMs: total.visualSceneTimeMs,
         })),
     ];
+  }
+
+  async listSpreadEngagementTotalsForBook(
+    input: ListSpreadEngagementTotalsServiceInput,
+  ): Promise<SpreadVisualDurationTotal[]> {
+    return this.readingVisualEngagementService.sumDurationsBySpreadInRange(input);
   }
 
   private static assertFixedLayout(session: ReadingSessionEntity): void {

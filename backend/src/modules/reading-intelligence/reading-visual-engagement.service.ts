@@ -6,11 +6,13 @@ import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import {
   BookVisualDurationTotal,
   ReadingVisualEngagementPage,
+  SpreadVisualDurationTotal,
 } from '@/modules/reading-intelligence/defs/reading-visual-engagement-repository.defs';
 import {
   ListReadingVisualEngagementsServiceInput,
   RecordReadingVisualEngagementServiceInput,
   SumReadingVisualEngagementDurationsServiceInput,
+  SumSpreadVisualEngagementServiceInput,
 } from '@/modules/reading-intelligence/defs/reading-visual-engagement-service.defs';
 import { ReadingVisualEngagementEntity } from '@/modules/reading-intelligence/entity/reading-visual-engagement.entity';
 import { ReadingVisualEngagementInvalidDurationException } from '@/modules/reading-intelligence/exceptions/reading-visual-engagement-invalid-duration.exception';
@@ -61,6 +63,12 @@ export class ReadingVisualEngagementService {
     input: SumReadingVisualEngagementDurationsServiceInput,
   ): Promise<BookVisualDurationTotal[]> {
     return this.readingVisualEngagementRepository.sumDurationsByBookInRange(input);
+  }
+
+  async sumDurationsBySpreadInRange(
+    input: SumSpreadVisualEngagementServiceInput,
+  ): Promise<SpreadVisualDurationTotal[]> {
+    return this.readingVisualEngagementRepository.sumDurationsBySpreadInRange(input);
   }
 
   async getReadingVisualEngagementById(id: number): Promise<ReadingVisualEngagementEntity> {

@@ -19,6 +19,7 @@ export type ReplaceBookEngagementsForPeriodRepoInput = {
 
 export type ListBookEngagementsRepoInput = {
   readonly revenuePeriodId: number;
+  readonly ownerId?: number;
   readonly limit: number;
   readonly offset: number;
 };
@@ -30,4 +31,16 @@ export type BookEngagementPage = {
 
 export type ListAllBookEngagementsRepoInput = {
   readonly revenuePeriodId: number;
+};
+
+export type SummarizeOwnerBookEngagementsRepoInput = {
+  readonly revenuePeriodId: number;
+  readonly ownerId: number;
+};
+
+export type OwnerBookEngagementSummary = {
+  readonly totalActiveReadingMs: number;
+  readonly totalActiveSpreadMs: number;
+  readonly totalVisualSceneTimeMs: number;
+  readonly totalWeightedEngagement: number;
 };

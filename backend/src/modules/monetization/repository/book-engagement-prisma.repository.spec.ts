@@ -28,6 +28,7 @@ describe('BookEngagementPrismaRepository', () => {
       count: jest.Mock;
       upsert: jest.Mock;
       updateMany: jest.Mock;
+      aggregate: jest.Mock;
     };
   };
   let bookEngagementPrismaRepository: BookEngagementPrismaRepository;
@@ -41,6 +42,7 @@ describe('BookEngagementPrismaRepository', () => {
         count: jest.fn(),
         upsert: jest.fn(),
         updateMany: jest.fn(),
+        aggregate: jest.fn(),
       },
     };
     bookEngagementPrismaRepository = new BookEngagementPrismaRepository(
@@ -58,6 +60,46 @@ describe('BookEngagementPrismaRepository', () => {
       orderBy: [{ weightedEngagement: 'desc' }, { bookId: 'asc' }],
     });
     expect(actualEntities).toEqual([BookEngagementMapper.toEntity(persistenceRow)]);
+  });
+
+  it('filters listed engagements by book owner', async () => {
+    mockPrismaProviderService.$transaction.mockResolvedValue([[persistenceRow], 1]);
+    await bookEngagementPrismaRepository.list({
+      revenuePeriodId: 4,
+      ownerId: 3,
+      limit: 20,
+      offset: 0,
+    });
+    expect(mockPrismaProviderService.bookEngagement.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          revenuePeriodId: 4,
+          deletedAt: null,
+          book: { ownerId: 3, deletedAt: null },
+        },
+      }),
+    );
+  });
+
+  it('summarizes owner engagement totals for a period', async () => {
+    mockPrismaProviderService.bookEngagement.aggregate.mockResolvedValue({
+      _sum: {
+        activeReadingMs: 120000,
+        activeSpreadMs: 180000,
+        visualSceneTimeMs: 90000,
+        weightedEngagement: 7,
+      },
+    });
+    const actualSummary = await bookEngagementPrismaRepository.summarizeByOwner({
+      revenuePeriodId: 4,
+      ownerId: 3,
+    });
+    expect(actualSummary).toEqual({
+      totalActiveReadingMs: 120000,
+      totalActiveSpreadMs: 180000,
+      totalVisualSceneTimeMs: 90000,
+      totalWeightedEngagement: 7,
+    });
   });
 
   it('lists book engagements ordered by weighted engagement descending', async () => {

@@ -56,6 +56,7 @@ describe('ReadingIntelligenceService', () => {
     recordReadingVisualEngagement: jest.Mock;
     listReadingVisualEngagements: jest.Mock;
     sumDurationsByBookInRange: jest.Mock;
+    sumDurationsBySpreadInRange: jest.Mock;
   };
   let mockReadingSessionTotalsService: {
     sumActiveDurationByBookInRange: jest.Mock;
@@ -75,6 +76,7 @@ describe('ReadingIntelligenceService', () => {
       recordReadingVisualEngagement: jest.fn(),
       listReadingVisualEngagements: jest.fn(),
       sumDurationsByBookInRange: jest.fn(),
+      sumDurationsBySpreadInRange: jest.fn(),
     };
     mockReadingSessionTotalsService = {
       sumActiveDurationByBookInRange: jest.fn(),
@@ -211,5 +213,23 @@ describe('ReadingIntelligenceService', () => {
         visualSceneTimeMs: 90000,
       },
     ]);
+  });
+
+  it('lists spread engagement totals for a book in a range', async () => {
+    const inputRange = {
+      bookId: 10,
+      startsAt: new Date('2026-08-01T00:00:00.000Z'),
+      endsAt: new Date('2026-09-01T00:00:00.000Z'),
+    };
+    const expectedCells = [
+      { spreadIndex: 0, pageNumber: 1, activeDurationMs: 180000, visualSceneTimeMs: 90000 },
+    ];
+    mockReadingVisualEngagementService.sumDurationsBySpreadInRange.mockResolvedValue(expectedCells);
+    const actualCells =
+      await readingIntelligenceService.listSpreadEngagementTotalsForBook(inputRange);
+    expect(mockReadingVisualEngagementService.sumDurationsBySpreadInRange).toHaveBeenCalledWith(
+      inputRange,
+    );
+    expect(actualCells).toBe(expectedCells);
   });
 });

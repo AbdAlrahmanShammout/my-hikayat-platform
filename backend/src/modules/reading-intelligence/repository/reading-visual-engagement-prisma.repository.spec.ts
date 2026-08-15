@@ -131,4 +131,43 @@ describe('ReadingVisualEngagementPrismaRepository', () => {
       { bookId: 8, activeDurationMs: 180000, visualSceneTimeMs: 90000 },
     ]);
   });
+
+  it('sums spread and visual scene time by spread for sessions in range', async () => {
+    mockPrismaProviderService.readingVisualEngagement.groupBy.mockResolvedValue([
+      {
+        spreadIndex: 1,
+        pageNumber: 2,
+        _sum: { activeDurationMs: 40000, visualSceneTimeMs: 10000 },
+      },
+      {
+        spreadIndex: 0,
+        pageNumber: 1,
+        _sum: { activeDurationMs: 180000, visualSceneTimeMs: 90000 },
+      },
+    ]);
+    const inputStartsAt = new Date('2026-08-01T00:00:00.000Z');
+    const inputEndsAt = new Date('2026-09-01T00:00:00.000Z');
+    const actualTotals = await readingVisualEngagementPrismaRepository.sumDurationsBySpreadInRange({
+      bookId: 10,
+      startsAt: inputStartsAt,
+      endsAt: inputEndsAt,
+    });
+    expect(mockPrismaProviderService.readingVisualEngagement.groupBy).toHaveBeenCalledWith({
+      by: ['spreadIndex', 'pageNumber'],
+      where: {
+        bookId: 10,
+        deletedAt: null,
+        layoutType: BookLayoutType.FIXED_LAYOUT,
+        session: {
+          deletedAt: null,
+          startedAt: { gte: inputStartsAt, lt: inputEndsAt },
+        },
+      },
+      _sum: { activeDurationMs: true, visualSceneTimeMs: true },
+    });
+    expect(actualTotals).toEqual([
+      { spreadIndex: 0, pageNumber: 1, activeDurationMs: 180000, visualSceneTimeMs: 90000 },
+      { spreadIndex: 1, pageNumber: 2, activeDurationMs: 40000, visualSceneTimeMs: 10000 },
+    ]);
+  });
 });
