@@ -5,6 +5,9 @@ import { IsNotEmpty, IsString } from 'class-validator';
 import type { Server } from 'node:http';
 import request from 'supertest';
 
+import { UNAUTHENTICATED_THROTTLE_LIMIT } from '@/common/constants/http-surface.constant';
+import { PublicRoute } from '@/common/decorators/route/public-route.decorator';
+
 import { createTestingApp } from './create-testing-app';
 
 class ProbeRequestDto {
@@ -15,6 +18,7 @@ class ProbeRequestDto {
 
 @Controller('http-surface-probe')
 class HttpSurfaceProbeController {
+  @PublicRoute()
   @Post()
   @HttpCode(HttpStatus.OK)
   executeProbe(@Body() body: ProbeRequestDto): ProbeRequestDto {
@@ -96,6 +100,26 @@ describe('HTTP surface (e2e)', () => {
       expect.objectContaining({
         code: 'PAYLOAD_TOO_LARGE',
         statusCode: HttpStatus.PAYLOAD_TOO_LARGE,
+      }),
+    );
+  });
+
+  it('Given an unauthenticated public route, When the tightened limit is exceeded, Then the request is rejected', async () => {
+    const server: Server = getServer();
+    for (let i = 0; i < UNAUTHENTICATED_THROTTLE_LIMIT; i += 1) {
+      const allowedResponse = await request(server)
+        .post('/http-surface-probe')
+        .send({ title: 'probe' });
+      expect(allowedResponse.status).toBe(HttpStatus.OK);
+    }
+    const actualResponse = await request(server)
+      .post('/http-surface-probe')
+      .send({ title: 'probe' });
+    expect(actualResponse.status).toBe(HttpStatus.TOO_MANY_REQUESTS);
+    expect(actualResponse.body).toEqual(
+      expect.objectContaining({
+        code: 'HTTP_EXCEPTION',
+        statusCode: HttpStatus.TOO_MANY_REQUESTS,
       }),
     );
   });

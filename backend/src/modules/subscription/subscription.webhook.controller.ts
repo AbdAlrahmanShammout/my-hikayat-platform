@@ -1,12 +1,15 @@
 import { Controller, Headers, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 
+import { SKIP_ALL_NAMED_THROTTLERS } from '@/common/constants/http-surface.constant';
 import { RawBody } from '@/common/decorators/requests/raw-body.decorator';
 import { StripeWebhookReceivedResponseDto } from '@/modules/subscription/dto/response/stripe-webhook-received-response.dto';
 import { SubscriptionBillingService } from '@/modules/subscription/subscription-billing.service';
 
 @ApiTags('Webhooks - Stripe')
 @Controller('webhooks/stripe')
+@SkipThrottle(SKIP_ALL_NAMED_THROTTLERS)
 export class SubscriptionWebhookController {
   constructor(private readonly subscriptionBillingService: SubscriptionBillingService) {}
 

@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 
-import { CredentialThrottlerGuard } from '@/common/guards/credential-throttler.guard';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { LocalAuthGuard } from '@/common/guards/local-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -18,7 +17,6 @@ import { LocalStrategy } from './strategies/local.strategy';
   controllers: [AuthController],
   providers: [
     AuthService,
-    CredentialThrottlerGuard,
     JwtAuthGuard,
     LocalAuthGuard,
     RolesGuard,

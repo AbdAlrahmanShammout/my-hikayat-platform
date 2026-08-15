@@ -1,9 +1,7 @@
 import { PassportModule } from '@nestjs/passport';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ThrottlerModule } from '@nestjs/throttler';
 
 import { AuthSession } from '@/authentication/defs/auth-service.defs';
-import { CredentialThrottlerGuard } from '@/common/guards/credential-throttler.guard';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { LocalAuthGuard } from '@/common/guards/local-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -43,14 +41,10 @@ describe('AuthController', () => {
       createSession: jest.fn(),
     };
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [
-        ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
-        PassportModule.register({ defaultStrategy: 'jwt' }),
-      ],
+      imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       controllers: [AuthController],
       providers: [
         { provide: AuthService, useValue: mockAuthService },
-        CredentialThrottlerGuard,
         JwtAuthGuard,
         LocalAuthGuard,
         RolesGuard,

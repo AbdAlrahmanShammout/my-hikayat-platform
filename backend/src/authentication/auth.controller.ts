@@ -9,10 +9,11 @@ import { AuthSessionResponseDto } from '@/authentication/dto/response/auth-sessi
 import {
   CREDENTIAL_THROTTLE_LIMIT,
   CREDENTIAL_THROTTLE_TTL_MS,
+  DEFAULT_THROTTLE_NAME,
 } from '@/common/constants/http-surface.constant';
 import { LoggedInUser } from '@/common/decorators/requests/logged-in-user.decorator';
+import { CredentialRoute } from '@/common/decorators/route/credential-route.decorator';
 import { PublicRoute } from '@/common/decorators/route/public-route.decorator';
-import { CredentialThrottlerGuard } from '@/common/guards/credential-throttler.guard';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { LocalAuthGuard } from '@/common/guards/local-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -29,8 +30,10 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @PublicRoute()
-  @UseGuards(CredentialThrottlerGuard)
-  @Throttle({ default: { ttl: CREDENTIAL_THROTTLE_TTL_MS, limit: CREDENTIAL_THROTTLE_LIMIT } })
+  @CredentialRoute()
+  @Throttle({
+    [DEFAULT_THROTTLE_NAME]: { ttl: CREDENTIAL_THROTTLE_TTL_MS, limit: CREDENTIAL_THROTTLE_LIMIT },
+  })
   @Post('register')
   @ApiOperation({ summary: 'Register a reader account' })
   @ApiBody({ type: RegisterRequestDto })
@@ -44,8 +47,11 @@ export class AuthController {
   }
 
   @PublicRoute()
-  @UseGuards(CredentialThrottlerGuard, LocalAuthGuard)
-  @Throttle({ default: { ttl: CREDENTIAL_THROTTLE_TTL_MS, limit: CREDENTIAL_THROTTLE_LIMIT } })
+  @CredentialRoute()
+  @UseGuards(LocalAuthGuard)
+  @Throttle({
+    [DEFAULT_THROTTLE_NAME]: { ttl: CREDENTIAL_THROTTLE_TTL_MS, limit: CREDENTIAL_THROTTLE_LIMIT },
+  })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Sign in with email and password' })

@@ -1,8 +1,10 @@
+import { HttpStatus } from '@nestjs/common';
 import type { INestApplication } from '@nestjs/common';
 
 import type { Server } from 'node:http';
 import request from 'supertest';
 
+import { UNAUTHENTICATED_THROTTLE_LIMIT } from '@/common/constants/http-surface.constant';
 import { HEALTH_OK_STATUS } from '@/health/health.service';
 
 import { createTestingApp } from './create-testing-app';
@@ -41,5 +43,15 @@ describe('Health (e2e)', () => {
     );
     expect(actualResponse.status).toBe(200);
     expect(actualResponse.body).toEqual({ status: HEALTH_OK_STATUS });
+  });
+
+  it('Given repeated liveness probes, When they exceed the unauthenticated limit, Then health stays available', async () => {
+    const server: Server = getRunningApp().getHttpServer() as Server;
+    const requestCount: number = UNAUTHENTICATED_THROTTLE_LIMIT + 1;
+    for (let i = 0; i < requestCount; i += 1) {
+      const actualResponse = await request(server).get('/health/live');
+      expect(actualResponse.status).toBe(HttpStatus.OK);
+      expect(actualResponse.body).toEqual({ status: HEALTH_OK_STATUS });
+    }
   });
 });
