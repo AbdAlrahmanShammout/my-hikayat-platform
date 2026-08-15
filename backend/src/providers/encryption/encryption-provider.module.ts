@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 
-import { EncryptionManagerService } from '@/providers/encryption/encryption-manager.service';
+import { NodeEncryptionProviderModule } from '@/providers/encryption/node/node-encryption-provider.module';
 
 @Module({
-  providers: [EncryptionManagerService],
-  exports: [EncryptionManagerService],
+  imports: [NodeEncryptionProviderModule],
+  exports: [NodeEncryptionProviderModule],
 })
 export class EncryptionProviderModule {}
