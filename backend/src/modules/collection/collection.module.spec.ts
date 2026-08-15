@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CollectionRepository } from '@/modules/collection/repository/collection.repository';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
+import { CollectionDiscoveryService } from './collection-discovery.service';
 import { CollectionModule } from './collection.module';
 import { CollectionService } from './collection.service';
 
@@ -45,6 +46,7 @@ describe('CollectionModule', () => {
       })
       .compile();
     expect(moduleRef.get(CollectionService)).toBeDefined();
+    expect(moduleRef.get(CollectionDiscoveryService)).toBeDefined();
     expect(moduleRef.get(CollectionRepository)).toBeDefined();
     await moduleRef.close();
   });

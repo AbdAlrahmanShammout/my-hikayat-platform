@@ -52,3 +52,7 @@ export type BookPage = {
   readonly entities: BookEntity[];
   readonly total: number;
 };
+
+export type ListCatalogBooksByIdsRepoInput = {
+  readonly ids: readonly number[];
+};

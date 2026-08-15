@@ -60,6 +60,17 @@ describe('ReaderApiModule', () => {
           findMany: jest.fn(),
           count: jest.fn(),
         },
+        collection: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
+        collectionBook: {
+          createMany: jest.fn(),
+          deleteMany: jest.fn(),
+        },
       })
       .compile();
     const actualModule: ReaderApiModule = moduleRef.get(ReaderApiModule);

@@ -6,6 +6,8 @@ import { LocalAuthGuard } from '@/common/guards/local-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { BookModule } from '@/modules/book/book.module';
 import { BookReaderController } from '@/modules/book/book.reader.controller';
+import { CollectionModule } from '@/modules/collection/collection.module';
+import { CollectionReaderController } from '@/modules/collection/collection.reader.controller';
 import { ReadingIntelligenceModule } from '@/modules/reading-intelligence/reading-intelligence.module';
 import { ReadingIntelligenceReaderController } from '@/modules/reading-intelligence/reading-intelligence.reader.controller';
 import { ReadingModule } from '@/modules/reading/reading.module';
@@ -20,6 +22,7 @@ import { UserReaderController } from '@/modules/user/user.reader.controller';
   imports: [
     AuthModule,
     BookModule,
+    CollectionModule,
     ReadingIntelligenceModule,
     ReadingModule,
     SearchModule,
@@ -27,6 +30,7 @@ import { UserReaderController } from '@/modules/user/user.reader.controller';
   ],
   controllers: [
     BookReaderController,
+    CollectionReaderController,
     ReadingIntelligenceReaderController,
     ReadingSyncReaderController,
     ReadingReaderController,

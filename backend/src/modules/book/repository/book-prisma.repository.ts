@@ -6,6 +6,7 @@ import {
   BookPage,
   CreateBookRepoInput,
   ListBooksRepoInput,
+  ListCatalogBooksByIdsRepoInput,
   ListCatalogBooksRepoInput,
   UpdateBookRepoInput,
 } from '@/modules/book/defs/book-repository.defs';
@@ -133,13 +134,29 @@ export class BookPrismaRepository implements BookRepository {
     };
   }
 
-  private static buildCatalogWhere(input: ListCatalogBooksRepoInput): Prisma.BookWhereInput {
-    const where: Prisma.BookWhereInput = {
+  async listCatalogByIds(input: ListCatalogBooksByIdsRepoInput): Promise<BookEntity[]> {
+    const rows = await this.prismaProviderService.book.findMany({
+      where: {
+        ...BookPrismaRepository.buildCatalogVisibilityWhere(),
+        id: { in: [...input.ids] },
+      },
+      include: bookDetailsInclude,
+      orderBy: [{ id: 'asc' }],
+    });
+    return rows.map((row) => BookMapper.toEntity(row));
+  }
+
+  private static buildCatalogVisibilityWhere(): Prisma.BookWhereInput {
+    return {
       deletedAt: null,
       publishingStatus: BookPublishingStatus.APPROVED,
       processingStatus: BookProcessingStatus.READY,
       publishedAt: { not: null },
     };
+  }
+
+  private static buildCatalogWhere(input: ListCatalogBooksRepoInput): Prisma.BookWhereInput {
+    const where: Prisma.BookWhereInput = BookPrismaRepository.buildCatalogVisibilityWhere();
     if (input.categoryId !== undefined) {
       where.categories = { some: { id: input.categoryId, deletedAt: null } };
     }

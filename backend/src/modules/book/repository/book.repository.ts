@@ -3,6 +3,7 @@ import {
   BookPage,
   CreateBookRepoInput,
   ListBooksRepoInput,
+  ListCatalogBooksByIdsRepoInput,
   ListCatalogBooksRepoInput,
   UpdateBookRepoInput,
 } from '@/modules/book/defs/book-repository.defs';
@@ -14,4 +15,5 @@ export abstract class BookRepository {
   abstract findById(id: number): Promise<BookEntity | null>;
   abstract list(input: ListBooksRepoInput): Promise<BookPage>;
   abstract listCatalog(input: ListCatalogBooksRepoInput): Promise<BookPage>;
+  abstract listCatalogByIds(input: ListCatalogBooksByIdsRepoInput): Promise<BookEntity[]>;
 }

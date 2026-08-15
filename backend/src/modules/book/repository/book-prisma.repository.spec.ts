@@ -211,4 +211,21 @@ describe('BookPrismaRepository', () => {
       }),
     );
   });
+
+  it('lists catalog-visible books by id with a fixed id order', async () => {
+    mockPrismaProviderService.book.findMany.mockResolvedValue([persistenceRow]);
+    const actualBooks = await bookPrismaRepository.listCatalogByIds({ ids: [8, 9] });
+    expect(mockPrismaProviderService.book.findMany).toHaveBeenCalledWith({
+      where: {
+        deletedAt: null,
+        publishingStatus: BookPublishingStatus.APPROVED,
+        processingStatus: BookProcessingStatus.READY,
+        publishedAt: { not: null },
+        id: { in: [8, 9] },
+      },
+      include: bookDetailsInclude,
+      orderBy: [{ id: 'asc' }],
+    });
+    expect(actualBooks).toEqual([BookMapper.toEntity(persistenceRow)]);
+  });
 });

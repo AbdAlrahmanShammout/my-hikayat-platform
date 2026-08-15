@@ -77,6 +77,7 @@ describe('BookService', () => {
     findById: jest.Mock;
     list: jest.Mock;
     listCatalog: jest.Mock;
+    listCatalogByIds: jest.Mock;
   };
   let mockCategoryService: { getCategoryById: jest.Mock };
   let mockUserService: { getUserById: jest.Mock };
@@ -89,6 +90,7 @@ describe('BookService', () => {
       findById: jest.fn(),
       list: jest.fn(),
       listCatalog: jest.fn(),
+      listCatalogByIds: jest.fn(),
     };
     mockCategoryService = { getCategoryById: jest.fn() };
     mockUserService = { getUserById: jest.fn() };
@@ -364,6 +366,22 @@ describe('BookService', () => {
     it('throws when the book is missing', async () => {
       mockBookRepository.findById.mockResolvedValue(null);
       await expect(bookService.getBookById(99)).rejects.toBeInstanceOf(ResourceNotFoundException);
+    });
+  });
+
+  describe('listCatalogBooksByIds', () => {
+    it('returns an empty list without querying when no ids are provided', async () => {
+      const actualBooks = await bookService.listCatalogBooksByIds([]);
+      expect(mockBookRepository.listCatalogByIds).not.toHaveBeenCalled();
+      expect(actualBooks).toEqual([]);
+    });
+
+    it('loads unique catalog-visible books by id', async () => {
+      const expectedBook = createSampleBook();
+      mockBookRepository.listCatalogByIds.mockResolvedValue([expectedBook]);
+      const actualBooks = await bookService.listCatalogBooksByIds([8, 8]);
+      expect(mockBookRepository.listCatalogByIds).toHaveBeenCalledWith({ ids: [8] });
+      expect(actualBooks).toEqual([expectedBook]);
     });
   });
 });
