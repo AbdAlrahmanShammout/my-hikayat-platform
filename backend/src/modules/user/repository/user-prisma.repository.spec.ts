@@ -18,9 +18,12 @@ describe('UserPrismaRepository', () => {
     isPublisher: false,
   };
   let mockPrismaProviderService: {
+    $transaction: jest.Mock;
     user: {
       create: jest.Mock;
       findFirst: jest.Mock;
+      findMany: jest.Mock;
+      count: jest.Mock;
       update: jest.Mock;
     };
   };
@@ -28,9 +31,12 @@ describe('UserPrismaRepository', () => {
 
   beforeEach(() => {
     mockPrismaProviderService = {
+      $transaction: jest.fn(),
       user: {
         create: jest.fn(),
         findFirst: jest.fn(),
+        findMany: jest.fn(),
+        count: jest.fn(),
         update: jest.fn(),
       },
     };
@@ -62,14 +68,14 @@ describe('UserPrismaRepository', () => {
     );
   });
 
-  it('updates publisher capability and maps the persistence payload', async () => {
+  it('updates role and publisher capability and maps the persistence payload', async () => {
     const updatedRow = {
       ...persistenceRow,
       role: 'author',
       isPublisher: true,
     };
     mockPrismaProviderService.user.update.mockResolvedValue(updatedRow);
-    const actualEntity = await userPrismaRepository.updatePublisherCapability({
+    const actualEntity = await userPrismaRepository.update({
       id: 3,
       role: UserRole.AUTHOR,
       isPublisher: true,
@@ -82,5 +88,39 @@ describe('UserPrismaRepository', () => {
       },
     });
     expect(actualEntity).toEqual(UserMapper.toEntity(updatedRow));
+  });
+
+  it('soft-deletes a user', async () => {
+    const deletedRow = {
+      ...persistenceRow,
+      deletedAt: new Date('2026-08-15T00:00:00.000Z'),
+    };
+    mockPrismaProviderService.user.update.mockResolvedValue(deletedRow);
+    const actualEntity = await userPrismaRepository.delete(3);
+    expect(mockPrismaProviderService.user.update).toHaveBeenCalledWith({
+      where: { id: 3 },
+      data: { deletedAt: expect.any(Date) },
+    });
+    expect(actualEntity.deletedAt).toEqual(deletedRow.deletedAt);
+  });
+
+  it('lists users with a real total', async () => {
+    mockPrismaProviderService.$transaction.mockResolvedValue([[persistenceRow], 1]);
+    const actualPage = await userPrismaRepository.list({
+      limit: 20,
+      offset: 0,
+      role: UserRole.READER,
+    });
+    expect(actualPage.total).toBe(1);
+    expect(actualPage.entities).toEqual([UserMapper.toEntity(persistenceRow)]);
+  });
+
+  it('counts operational users by role', async () => {
+    mockPrismaProviderService.user.count.mockResolvedValue(2);
+    const actualCount = await userPrismaRepository.countByRole(UserRole.ADMIN);
+    expect(mockPrismaProviderService.user.count).toHaveBeenCalledWith({
+      where: { role: UserRole.ADMIN, deletedAt: null },
+    });
+    expect(actualCount).toBe(2);
   });
 });

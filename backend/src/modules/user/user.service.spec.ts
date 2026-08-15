@@ -4,6 +4,9 @@ import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
 import { UserEmailConflictException } from '@/modules/user/exceptions/user-email-conflict.exception';
+import { UserInvalidCapabilityException } from '@/modules/user/exceptions/user-invalid-capability.exception';
+import { UserLastAdminException } from '@/modules/user/exceptions/user-last-admin.exception';
+import { UserSelfManagementException } from '@/modules/user/exceptions/user-self-management.exception';
 
 import { UserService } from './user.service';
 
@@ -24,7 +27,10 @@ describe('UserService', () => {
     create: jest.Mock;
     findById: jest.Mock;
     findByEmail: jest.Mock;
-    updatePublisherCapability: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+    list: jest.Mock;
+    countByRole: jest.Mock;
   };
   let mockAuditLogService: { append: jest.Mock };
   let mockTransactionRunner: { run: jest.Mock };
@@ -35,7 +41,10 @@ describe('UserService', () => {
       create: jest.fn(),
       findById: jest.fn(),
       findByEmail: jest.fn(),
-      updatePublisherCapability: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      list: jest.fn(),
+      countByRole: jest.fn(),
     };
     mockAuditLogService = { append: jest.fn() };
     mockTransactionRunner = {
@@ -88,9 +97,9 @@ describe('UserService', () => {
         isPublisher: true,
       });
       mockUserRepository.findById.mockResolvedValue(reader);
-      mockUserRepository.updatePublisherCapability.mockResolvedValue(expectedUser);
+      mockUserRepository.update.mockResolvedValue(expectedUser);
       const actualUser = await userService.enablePublisherCapability({ userId: 1 });
-      expect(mockUserRepository.updatePublisherCapability).toHaveBeenCalledWith(
+      expect(mockUserRepository.update).toHaveBeenCalledWith(
         {
           id: 1,
           role: UserRole.AUTHOR,
@@ -124,9 +133,9 @@ describe('UserService', () => {
         isPublisher: true,
       });
       mockUserRepository.findById.mockResolvedValue(admin);
-      mockUserRepository.updatePublisherCapability.mockResolvedValue(expectedUser);
+      mockUserRepository.update.mockResolvedValue(expectedUser);
       const actualUser = await userService.enablePublisherCapability({ userId: 1 });
-      expect(mockUserRepository.updatePublisherCapability).toHaveBeenCalledWith(
+      expect(mockUserRepository.update).toHaveBeenCalledWith(
         {
           id: 1,
           role: UserRole.ADMIN,
@@ -145,7 +154,7 @@ describe('UserService', () => {
       });
       mockUserRepository.findById.mockResolvedValue(publisher);
       const actualUser = await userService.enablePublisherCapability({ userId: 1 });
-      expect(mockUserRepository.updatePublisherCapability).not.toHaveBeenCalled();
+      expect(mockUserRepository.update).not.toHaveBeenCalled();
       expect(actualUser).toBe(publisher);
     });
 
@@ -154,6 +163,176 @@ describe('UserService', () => {
       await expect(userService.enablePublisherCapability({ userId: 99 })).rejects.toBeInstanceOf(
         ResourceNotFoundException,
       );
+    });
+  });
+
+  describe('listUsers', () => {
+    it('forwards filters with default pagination', async () => {
+      const expectedPage = { entities: [createSampleUser()], total: 1 };
+      mockUserRepository.list.mockResolvedValue(expectedPage);
+      const actualPage = await userService.listUsers({
+        role: UserRole.READER,
+        email: '  Reader@Example.com ',
+      });
+      expect(mockUserRepository.list).toHaveBeenCalledWith({
+        limit: 20,
+        offset: 0,
+        role: UserRole.READER,
+        isPublisher: undefined,
+        email: 'reader@example.com',
+      });
+      expect(actualPage).toBe(expectedPage);
+    });
+  });
+
+  describe('updateManagedUser', () => {
+    it('promotes a reader to admin and records the actor', async () => {
+      const reader = createSampleUser();
+      const expectedUser = new UserEntity({
+        ...reader,
+        id: 1,
+        role: UserRole.ADMIN,
+      });
+      mockUserRepository.findById.mockResolvedValue(reader);
+      mockUserRepository.update.mockResolvedValue(expectedUser);
+      const actualUser = await userService.updateManagedUser({
+        userId: 1,
+        actorUserId: 9,
+        role: UserRole.ADMIN,
+      });
+      expect(mockUserRepository.update).toHaveBeenCalledWith(
+        {
+          id: 1,
+          role: UserRole.ADMIN,
+          isPublisher: false,
+        },
+        undefined,
+      );
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        {
+          actorUserId: 9,
+          action: AuditAction.USER_ROLE_CHANGED,
+          subjectType: AuditSubjectType.USER,
+          subjectId: 1,
+          metadata: {
+            fromRole: UserRole.READER,
+            toRole: UserRole.ADMIN,
+          },
+        },
+        undefined,
+      );
+      expect(actualUser).toBe(expectedUser);
+    });
+
+    it('enables publisher on a reader by promoting to author', async () => {
+      const reader = createSampleUser();
+      const expectedUser = new UserEntity({
+        ...reader,
+        role: UserRole.AUTHOR,
+        isPublisher: true,
+      });
+      mockUserRepository.findById.mockResolvedValue(reader);
+      mockUserRepository.update.mockResolvedValue(expectedUser);
+      const actualUser = await userService.updateManagedUser({
+        userId: 1,
+        actorUserId: 9,
+        isPublisher: true,
+      });
+      expect(mockUserRepository.update).toHaveBeenCalledWith(
+        {
+          id: 1,
+          role: UserRole.AUTHOR,
+          isPublisher: true,
+        },
+        undefined,
+      );
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        expect.objectContaining({ action: AuditAction.USER_ROLE_CHANGED, actorUserId: 9 }),
+        undefined,
+      );
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        expect.objectContaining({ action: AuditAction.PUBLISHER_ENABLED, actorUserId: 9 }),
+        undefined,
+      );
+      expect(actualUser).toBe(expectedUser);
+    });
+
+    it('rejects changing the signed-in admin', async () => {
+      mockUserRepository.findById.mockResolvedValue(createSampleUser());
+      await expect(
+        userService.updateManagedUser({
+          userId: 1,
+          actorUserId: 1,
+          role: UserRole.ADMIN,
+        }),
+      ).rejects.toBeInstanceOf(UserSelfManagementException);
+      expect(mockUserRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects an author without publisher capability', async () => {
+      mockUserRepository.findById.mockResolvedValue(createSampleUser());
+      await expect(
+        userService.updateManagedUser({
+          userId: 1,
+          actorUserId: 9,
+          role: UserRole.AUTHOR,
+          isPublisher: false,
+        }),
+      ).rejects.toBeInstanceOf(UserInvalidCapabilityException);
+    });
+
+    it('rejects demoting the last remaining admin', async () => {
+      const admin = new UserEntity({
+        ...createSampleUser(),
+        id: 4,
+        role: UserRole.ADMIN,
+      });
+      mockUserRepository.findById.mockResolvedValue(admin);
+      mockUserRepository.countByRole.mockResolvedValue(1);
+      await expect(
+        userService.updateManagedUser({
+          userId: 4,
+          actorUserId: 9,
+          role: UserRole.READER,
+        }),
+      ).rejects.toBeInstanceOf(UserLastAdminException);
+      expect(mockUserRepository.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteManagedUser', () => {
+    it('soft-deletes another user and records the actor', async () => {
+      const reader = createSampleUser();
+      const expectedUser = new UserEntity({
+        ...reader,
+        deletedAt: new Date('2026-08-15T00:00:00.000Z'),
+      });
+      mockUserRepository.findById.mockResolvedValue(reader);
+      mockUserRepository.delete.mockResolvedValue(expectedUser);
+      const actualUser = await userService.deleteManagedUser({ userId: 1, actorUserId: 9 });
+      expect(mockUserRepository.delete).toHaveBeenCalledWith(1, undefined);
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        {
+          actorUserId: 9,
+          action: AuditAction.USER_DELETED,
+          subjectType: AuditSubjectType.USER,
+          subjectId: 1,
+          metadata: {
+            fromRole: UserRole.READER,
+            wasPublisher: false,
+          },
+        },
+        undefined,
+      );
+      expect(actualUser).toBe(expectedUser);
+    });
+
+    it('rejects deleting the signed-in admin', async () => {
+      mockUserRepository.findById.mockResolvedValue(createSampleUser());
+      await expect(
+        userService.deleteManagedUser({ userId: 1, actorUserId: 1 }),
+      ).rejects.toBeInstanceOf(UserSelfManagementException);
+      expect(mockUserRepository.delete).not.toHaveBeenCalled();
     });
   });
 

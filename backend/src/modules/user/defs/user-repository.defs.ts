@@ -1,3 +1,4 @@
+import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
 
 export type CreateUserRepoInput = {
@@ -7,8 +8,21 @@ export type CreateUserRepoInput = {
   readonly isPublisher: boolean;
 };
 
-export type UpdatePublisherCapabilityRepoInput = {
+export type UpdateUserRepoInput = {
   readonly id: number;
   readonly role: UserRole;
   readonly isPublisher: boolean;
+};
+
+export type ListUsersRepoInput = {
+  readonly limit: number;
+  readonly offset: number;
+  readonly role?: UserRole;
+  readonly isPublisher?: boolean;
+  readonly email?: string;
+};
+
+export type UserPage = {
+  readonly entities: UserEntity[];
+  readonly total: number;
 };

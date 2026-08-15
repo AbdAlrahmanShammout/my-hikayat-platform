@@ -486,6 +486,9 @@ enum AuditAction {
   book_approved
   book_rejected
   publisher_enabled
+  publisher_disabled
+  user_role_changed
+  user_deleted
 }
 
 enum AuditSubjectType {

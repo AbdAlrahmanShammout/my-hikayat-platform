@@ -3,6 +3,9 @@ export enum AuditAction {
   BOOK_APPROVED = 'book_approved',
   BOOK_REJECTED = 'book_rejected',
   PUBLISHER_ENABLED = 'publisher_enabled',
+  PUBLISHER_DISABLED = 'publisher_disabled',
+  USER_ROLE_CHANGED = 'user_role_changed',
+  USER_DELETED = 'user_deleted',
 }
 
 export enum AuditSubjectType {
