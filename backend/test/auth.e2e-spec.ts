@@ -9,6 +9,7 @@ import { JwtTokenPurpose } from '@/providers/jwt/enum/jwt-token-purpose.enum';
 import { JwtTokenService } from '@/providers/jwt/jwt-token.service';
 
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 describe('Authentication (e2e)', () => {
   const email = `reader-${Date.now()}@auth.test`;
@@ -24,7 +25,7 @@ describe('Authentication (e2e)', () => {
       return;
     }
     const prismaProviderService: PrismaProviderService = app.get(PrismaProviderService);
-    await prismaProviderService.user.deleteMany({ where: { email } });
+    await deleteUsersByEmail(prismaProviderService, email);
     await app.close();
   });
 

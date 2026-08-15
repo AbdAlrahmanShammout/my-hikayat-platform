@@ -14,6 +14,7 @@ import { SubscriptionService } from '@/modules/subscription/subscription.service
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 describe('Subscription domain (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -32,7 +33,7 @@ describe('Subscription domain (e2e)', () => {
     await prismaProviderService.subscription.deleteMany({
       where: { user: { email: ownerEmail } },
     });
-    await prismaProviderService.user.deleteMany({ where: { email: ownerEmail } });
+    await deleteUsersByEmail(prismaProviderService, ownerEmail);
     await app.close();
   });
 

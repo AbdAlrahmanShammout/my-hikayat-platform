@@ -10,6 +10,7 @@ import { CollectionService } from '@/modules/collection/collection.service';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 describe('Collection domain (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -38,7 +39,7 @@ describe('Collection domain (e2e)', () => {
     await prismaProviderService.category.deleteMany({
       where: { slug: `collection-${slugSuffix}` },
     });
-    await prismaProviderService.user.deleteMany({ where: { email: ownerEmail } });
+    await deleteUsersByEmail(prismaProviderService, ownerEmail);
     await app.close();
   });
 

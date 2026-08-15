@@ -8,6 +8,7 @@ import { CREDENTIAL_THROTTLE_LIMIT } from '@/common/constants/http-surface.const
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 describe('Authentication rate limits (e2e)', () => {
   const email = `throttle-${Date.now()}@auth.test`;
@@ -28,7 +29,7 @@ describe('Authentication rate limits (e2e)', () => {
       return;
     }
     const prismaProviderService: PrismaProviderService = app.get(PrismaProviderService);
-    await prismaProviderService.user.deleteMany({ where: { email } });
+    await deleteUsersByEmail(prismaProviderService, email);
     await app.close();
   });
 

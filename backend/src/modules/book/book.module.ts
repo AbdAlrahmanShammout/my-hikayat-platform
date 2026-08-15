@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AuditModule } from '@/modules/audit/audit.module';
 import { CategoryModule } from '@/modules/category/category.module';
 import { UserModule } from '@/modules/user/user.module';
 import { DatabaseProviderModule } from '@/providers/database/database-provider.module';
@@ -11,7 +12,7 @@ import { BookPrismaRepository } from './repository/book-prisma.repository';
 import { BookRepository } from './repository/book.repository';
 
 @Module({
-  imports: [DatabaseProviderModule, CategoryModule, UserModule],
+  imports: [DatabaseProviderModule, CategoryModule, UserModule, AuditModule],
   providers: [
     BookService,
     BookProcessingStatusService,

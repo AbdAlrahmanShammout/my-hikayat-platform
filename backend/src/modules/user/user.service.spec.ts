@@ -1,4 +1,6 @@
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
 import { UserEmailConflictException } from '@/modules/user/exceptions/user-email-conflict.exception';
@@ -24,6 +26,8 @@ describe('UserService', () => {
     findByEmail: jest.Mock;
     updatePublisherCapability: jest.Mock;
   };
+  let mockAuditLogService: { append: jest.Mock };
+  let mockTransactionRunner: { run: jest.Mock };
   let userService: UserService;
 
   beforeEach(() => {
@@ -33,7 +37,15 @@ describe('UserService', () => {
       findByEmail: jest.fn(),
       updatePublisherCapability: jest.fn(),
     };
-    userService = new UserService(mockUserRepository);
+    mockAuditLogService = { append: jest.fn() };
+    mockTransactionRunner = {
+      run: jest.fn(async (work: (context: undefined) => Promise<unknown>) => work(undefined)),
+    };
+    userService = new UserService(
+      mockUserRepository,
+      mockAuditLogService as unknown as AuditLogService,
+      mockTransactionRunner,
+    );
   });
 
   describe('createUser', () => {
@@ -78,11 +90,27 @@ describe('UserService', () => {
       mockUserRepository.findById.mockResolvedValue(reader);
       mockUserRepository.updatePublisherCapability.mockResolvedValue(expectedUser);
       const actualUser = await userService.enablePublisherCapability({ userId: 1 });
-      expect(mockUserRepository.updatePublisherCapability).toHaveBeenCalledWith({
-        id: 1,
-        role: UserRole.AUTHOR,
-        isPublisher: true,
-      });
+      expect(mockUserRepository.updatePublisherCapability).toHaveBeenCalledWith(
+        {
+          id: 1,
+          role: UserRole.AUTHOR,
+          isPublisher: true,
+        },
+        undefined,
+      );
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        {
+          actorUserId: 1,
+          action: AuditAction.PUBLISHER_ENABLED,
+          subjectType: AuditSubjectType.USER,
+          subjectId: 1,
+          metadata: {
+            fromRole: UserRole.READER,
+            toRole: UserRole.AUTHOR,
+          },
+        },
+        undefined,
+      );
       expect(actualUser).toBe(expectedUser);
     });
 
@@ -98,11 +126,14 @@ describe('UserService', () => {
       mockUserRepository.findById.mockResolvedValue(admin);
       mockUserRepository.updatePublisherCapability.mockResolvedValue(expectedUser);
       const actualUser = await userService.enablePublisherCapability({ userId: 1 });
-      expect(mockUserRepository.updatePublisherCapability).toHaveBeenCalledWith({
-        id: 1,
-        role: UserRole.ADMIN,
-        isPublisher: true,
-      });
+      expect(mockUserRepository.updatePublisherCapability).toHaveBeenCalledWith(
+        {
+          id: 1,
+          role: UserRole.ADMIN,
+          isPublisher: true,
+        },
+        undefined,
+      );
       expect(actualUser).toBe(expectedUser);
     });
 

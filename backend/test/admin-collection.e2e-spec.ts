@@ -11,6 +11,7 @@ import { UserRole } from '@/modules/user/enum/general.enum';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 describe('Admin collections (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -47,7 +48,7 @@ describe('Admin collections (e2e)', () => {
     await prismaProviderService.category.deleteMany({
       where: { slug: `admin-collection-${slugSuffix}` },
     });
-    await prismaProviderService.user.deleteMany({ where: { email: { in: emails } } });
+    await deleteUsersByEmail(prismaProviderService, emails);
     await app.close();
   });
 

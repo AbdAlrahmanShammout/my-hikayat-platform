@@ -63,6 +63,7 @@ export class BookProcessingOrchestrationService {
     return this.bookPublishingStatusService.transitionPublishingStatus({
       bookId: book.id,
       to: BookPublishingStatus.IN_REVIEW,
+      actorUserId: input.actorId,
     });
   }
 

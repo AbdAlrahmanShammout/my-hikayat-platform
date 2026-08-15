@@ -4,6 +4,8 @@ import { AuthModule } from '@/authentication/auth.module';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { LocalAuthGuard } from '@/common/guards/local-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { AuditAdminController } from '@/modules/audit/audit.admin.controller';
+import { AuditModule } from '@/modules/audit/audit.module';
 import { BookAdminController } from '@/modules/book/book.admin.controller';
 import { BookModule } from '@/modules/book/book.module';
 import { CollectionAdminController } from '@/modules/collection/collection.admin.controller';
@@ -12,8 +14,13 @@ import { MonetizationAdminController } from '@/modules/monetization/monetization
 import { MonetizationModule } from '@/modules/monetization/monetization.module';
 
 @Module({
-  imports: [AuthModule, BookModule, CollectionModule, MonetizationModule],
-  controllers: [BookAdminController, CollectionAdminController, MonetizationAdminController],
+  imports: [AuthModule, AuditModule, BookModule, CollectionModule, MonetizationModule],
+  controllers: [
+    AuditAdminController,
+    BookAdminController,
+    CollectionAdminController,
+    MonetizationAdminController,
+  ],
   providers: [JwtAuthGuard, LocalAuthGuard, RolesGuard],
 })
 export class AdminApiModule {}

@@ -7,6 +7,7 @@ import request from 'supertest';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 describe('Reader user (e2e)', () => {
   const email = `publisher-${Date.now()}@user.test`;
@@ -22,7 +23,7 @@ describe('Reader user (e2e)', () => {
       return;
     }
     const prismaProviderService: PrismaProviderService = app.get(PrismaProviderService);
-    await prismaProviderService.user.deleteMany({ where: { email } });
+    await deleteUsersByEmail(prismaProviderService, email);
     await app.close();
   });
 

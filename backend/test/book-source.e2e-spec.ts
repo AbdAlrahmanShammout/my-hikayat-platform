@@ -13,6 +13,7 @@ import { EncryptionManagerService } from '@/providers/encryption/encryption-mana
 import { StorageManagerService } from '@/providers/storage/storage-manager.service';
 
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 describe('Book source upload (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -41,7 +42,7 @@ describe('Book source upload (e2e)', () => {
     await prismaProviderService.book.deleteMany({
       where: { owner: { email: { in: emails } } },
     });
-    await prismaProviderService.user.deleteMany({ where: { email: { in: emails } } });
+    await deleteUsersByEmail(prismaProviderService, emails);
     await app.close();
   });
 

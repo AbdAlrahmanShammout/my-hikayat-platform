@@ -29,6 +29,7 @@ model User {
   readingVisualEngagements ReadingVisualEngagement[]
   subscription             Subscription?
   bookRevenues             BookRevenue[]
+  auditLogs                AuditLog[]
 }
 
 model Category {
@@ -478,4 +479,35 @@ model BookRevenue {
   @@index([bookId])
   @@index([ownerId])
   @@index([deletedAt])
+}
+
+enum AuditAction {
+  book_submitted_for_review
+  book_approved
+  book_rejected
+  publisher_enabled
+}
+
+enum AuditSubjectType {
+  book
+  user
+}
+
+model AuditLog {
+  id           Int              @id @default(autoincrement())
+  actorUserId  Int
+  action       AuditAction
+  subjectType  AuditSubjectType
+  subjectId    Int
+  reason       String?          @db.Text
+  metadata     Json?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  deletedAt    DateTime?
+  actor        User             @relation(fields: [actorUserId], references: [id])
+
+  @@index([actorUserId])
+  @@index([subjectType, subjectId])
+  @@index([action])
+  @@index([createdAt])
 }

@@ -21,6 +21,7 @@ import { SubscriptionService } from '@/modules/subscription/subscription.service
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 describe('Subscription refund (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -57,7 +58,7 @@ describe('Subscription refund (e2e)', () => {
     await prismaProviderService.subscription.deleteMany({
       where: { user: { email: { in: emails } } },
     });
-    await prismaProviderService.user.deleteMany({ where: { email: { in: emails } } });
+    await deleteUsersByEmail(prismaProviderService, emails);
     await app.close();
   });
 
@@ -163,7 +164,11 @@ describe('Subscription refund (e2e)', () => {
       bookId: created.id,
       to: BookPublishingStatus.IN_REVIEW,
     });
-    return publishingStatusService.approveBook(created.id);
+    return publishingStatusService.transitionPublishingStatus({
+      bookId: created.id,
+      to: BookPublishingStatus.APPROVED,
+      publishedAt: new Date(),
+    });
   }
 
   it('Given a paid reader inside the window, When a refund is requested, Then access is revoked', async () => {

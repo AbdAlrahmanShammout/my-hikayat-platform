@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
+import { TransactionContext } from '@/common/base/transaction-context';
+import { TransactionRunner } from '@/common/base/transaction-runner';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import {
   CreateUserServiceInput,
   EnablePublisherCapabilityServiceInput,
@@ -12,7 +16,11 @@ import { UserRepository } from '@/modules/user/repository/user.repository';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly auditLogService: AuditLogService,
+    private readonly transactionRunner: TransactionRunner,
+  ) {}
 
   async createUser(input: CreateUserServiceInput): Promise<UserEntity> {
     const email: string = UserService.normalizeEmail(input.email);
@@ -36,10 +44,29 @@ export class UserService {
     if (user.isPublisher && user.role === nextRole) {
       return user;
     }
-    return this.userRepository.updatePublisherCapability({
-      id: user.id,
-      role: nextRole,
-      isPublisher: true,
+    return this.transactionRunner.run(async (context: TransactionContext) => {
+      const updated: UserEntity = await this.userRepository.updatePublisherCapability(
+        {
+          id: user.id,
+          role: nextRole,
+          isPublisher: true,
+        },
+        context,
+      );
+      await this.auditLogService.append(
+        {
+          actorUserId: input.userId,
+          action: AuditAction.PUBLISHER_ENABLED,
+          subjectType: AuditSubjectType.USER,
+          subjectId: user.id,
+          metadata: {
+            fromRole: user.role,
+            toRole: nextRole,
+          },
+        },
+        context,
+      );
+      return updated;
     });
   }
 

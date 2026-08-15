@@ -12,8 +12,22 @@ import {
   BookPublishingStatus,
   BookType,
 } from '@/modules/book/enum/general.enum';
+import { UserEntity } from '@/modules/user/entity/user.entity';
+import { UserRole } from '@/modules/user/enum/general.enum';
 
 import { BookAdminController } from './book.admin.controller';
+
+function createSampleAdmin(): UserEntity {
+  return new UserEntity({
+    id: 9,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    email: 'admin@example.com',
+    passwordHash: 'hashed-password',
+    role: UserRole.ADMIN,
+    isPublisher: false,
+  });
+}
 
 function createSampleBook(publishingStatus = BookPublishingStatus.IN_REVIEW): BookEntity {
   return new BookEntity({
@@ -89,8 +103,11 @@ describe('BookAdminController', () => {
       mockBookPublishingStatusService.approveBook.mockResolvedValue(
         createSampleBook(BookPublishingStatus.APPROVED),
       );
-      const actualResponse = await bookAdminController.approveBook(8);
-      expect(mockBookPublishingStatusService.approveBook).toHaveBeenCalledWith(8);
+      const actualResponse = await bookAdminController.approveBook(8, createSampleAdmin());
+      expect(mockBookPublishingStatusService.approveBook).toHaveBeenCalledWith({
+        bookId: 8,
+        actorUserId: 9,
+      });
       expect(actualResponse.publishingStatus).toBe(BookPublishingStatus.APPROVED);
       expect(actualResponse.publishedAt).toEqual(new Date('2026-08-15T00:00:00.000Z'));
     });
@@ -101,8 +118,11 @@ describe('BookAdminController', () => {
       mockBookPublishingStatusService.rejectBook.mockResolvedValue(
         createSampleBook(BookPublishingStatus.REJECTED),
       );
-      const actualResponse = await bookAdminController.rejectBook(8);
-      expect(mockBookPublishingStatusService.rejectBook).toHaveBeenCalledWith(8);
+      const actualResponse = await bookAdminController.rejectBook(8, createSampleAdmin());
+      expect(mockBookPublishingStatusService.rejectBook).toHaveBeenCalledWith({
+        bookId: 8,
+        actorUserId: 9,
+      });
       expect(actualResponse.publishingStatus).toBe(BookPublishingStatus.REJECTED);
       expect(actualResponse.publishedAt).toBeNull();
     });

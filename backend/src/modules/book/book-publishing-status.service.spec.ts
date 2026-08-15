@@ -1,4 +1,6 @@
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { BookService } from '@/modules/book/book.service';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import {
@@ -34,14 +36,22 @@ function createSampleBook(
 describe('BookPublishingStatusService', () => {
   let mockBookService: { getBookById: jest.Mock };
   let mockBookRepository: { update: jest.Mock };
+  let mockAuditLogService: { append: jest.Mock };
+  let mockTransactionRunner: { run: jest.Mock };
   let bookPublishingStatusService: BookPublishingStatusService;
 
   beforeEach(() => {
     mockBookService = { getBookById: jest.fn() };
     mockBookRepository = { update: jest.fn() };
+    mockAuditLogService = { append: jest.fn() };
+    mockTransactionRunner = {
+      run: jest.fn(async (work: (context: undefined) => Promise<unknown>) => work(undefined)),
+    };
     bookPublishingStatusService = new BookPublishingStatusService(
       mockBookService as unknown as BookService,
       mockBookRepository as unknown as BookRepository,
+      mockAuditLogService as unknown as AuditLogService,
+      mockTransactionRunner,
     );
   });
 
@@ -57,10 +67,14 @@ describe('BookPublishingStatusService', () => {
       bookId: 8,
       to: BookPublishingStatus.IN_REVIEW,
     });
-    expect(mockBookRepository.update).toHaveBeenCalledWith({
-      id: 8,
-      publishingStatus: BookPublishingStatus.IN_REVIEW,
-    });
+    expect(mockBookRepository.update).toHaveBeenCalledWith(
+      {
+        id: 8,
+        publishingStatus: BookPublishingStatus.IN_REVIEW,
+      },
+      undefined,
+    );
+    expect(mockAuditLogService.append).not.toHaveBeenCalled();
     expect(actualBook).toBe(expectedBook);
   });
 
@@ -95,12 +109,31 @@ describe('BookPublishingStatusService', () => {
         createSampleBook(BookPublishingStatus.IN_REVIEW),
       );
       mockBookRepository.update.mockResolvedValue(expectedBook);
-      const actualBook = await bookPublishingStatusService.approveBook(8);
-      expect(mockBookRepository.update).toHaveBeenCalledWith({
-        id: 8,
-        publishingStatus: BookPublishingStatus.APPROVED,
-        publishedAt: expectedPublishedAt,
+      const actualBook = await bookPublishingStatusService.approveBook({
+        bookId: 8,
+        actorUserId: 9,
       });
+      expect(mockBookRepository.update).toHaveBeenCalledWith(
+        {
+          id: 8,
+          publishingStatus: BookPublishingStatus.APPROVED,
+          publishedAt: expectedPublishedAt,
+        },
+        undefined,
+      );
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        {
+          actorUserId: 9,
+          action: AuditAction.BOOK_APPROVED,
+          subjectType: AuditSubjectType.BOOK,
+          subjectId: 8,
+          metadata: {
+            from: BookPublishingStatus.IN_REVIEW,
+            to: BookPublishingStatus.APPROVED,
+          },
+        },
+        undefined,
+      );
       expect(actualBook).toBe(expectedBook);
     });
 
@@ -108,17 +141,17 @@ describe('BookPublishingStatusService', () => {
       mockBookService.getBookById.mockResolvedValue(
         createSampleBook(BookPublishingStatus.IN_REVIEW, BookProcessingStatus.NOT_STARTED),
       );
-      await expect(bookPublishingStatusService.approveBook(8)).rejects.toBeInstanceOf(
-        BookNotReadyForPublishingException,
-      );
+      await expect(
+        bookPublishingStatusService.approveBook({ bookId: 8, actorUserId: 9 }),
+      ).rejects.toBeInstanceOf(BookNotReadyForPublishingException);
       expect(mockBookRepository.update).not.toHaveBeenCalled();
     });
 
     it('rejects approving a pending book', async () => {
       mockBookService.getBookById.mockResolvedValue(createSampleBook());
-      await expect(bookPublishingStatusService.approveBook(8)).rejects.toBeInstanceOf(
-        BookInvalidPublishingTransitionException,
-      );
+      await expect(
+        bookPublishingStatusService.approveBook({ bookId: 8, actorUserId: 9 }),
+      ).rejects.toBeInstanceOf(BookInvalidPublishingTransitionException);
       expect(mockBookRepository.update).not.toHaveBeenCalled();
     });
   });
@@ -130,11 +163,17 @@ describe('BookPublishingStatusService', () => {
         createSampleBook(BookPublishingStatus.IN_REVIEW),
       );
       mockBookRepository.update.mockResolvedValue(expectedBook);
-      const actualBook = await bookPublishingStatusService.rejectBook(8);
-      expect(mockBookRepository.update).toHaveBeenCalledWith({
-        id: 8,
-        publishingStatus: BookPublishingStatus.REJECTED,
+      const actualBook = await bookPublishingStatusService.rejectBook({
+        bookId: 8,
+        actorUserId: 9,
       });
+      expect(mockBookRepository.update).toHaveBeenCalledWith(
+        {
+          id: 8,
+          publishingStatus: BookPublishingStatus.REJECTED,
+        },
+        undefined,
+      );
       expect(actualBook).toBe(expectedBook);
     });
   });

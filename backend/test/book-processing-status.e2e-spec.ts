@@ -11,6 +11,7 @@ import { BookInvalidProcessingTransitionException } from '@/modules/book/excepti
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 describe('Book processing status (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -34,7 +35,7 @@ describe('Book processing status (e2e)', () => {
     await prismaProviderService.book.deleteMany({
       where: { owner: { email: ownerEmail } },
     });
-    await prismaProviderService.user.deleteMany({ where: { email: ownerEmail } });
+    await deleteUsersByEmail(prismaProviderService, ownerEmail);
     await app.close();
   });
 

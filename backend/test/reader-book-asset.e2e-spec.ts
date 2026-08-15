@@ -23,6 +23,7 @@ import { StorageManagerService } from '@/providers/storage/storage-manager.servi
 
 import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 describe('Reader encrypted delivery grants (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -58,7 +59,7 @@ describe('Reader encrypted delivery grants (e2e)', () => {
     await prismaProviderService.subscription.deleteMany({
       where: { user: { email: { in: emails } } },
     });
-    await prismaProviderService.user.deleteMany({ where: { email: { in: emails } } });
+    await deleteUsersByEmail(prismaProviderService, emails);
     await app.close();
   });
 
@@ -130,7 +131,11 @@ describe('Reader encrypted delivery grants (e2e)', () => {
       bookId,
       to: BookPublishingStatus.IN_REVIEW,
     });
-    return publishingStatusService.approveBook(bookId);
+    return publishingStatusService.transitionPublishingStatus({
+      bookId,
+      to: BookPublishingStatus.APPROVED,
+      publishedAt: new Date(),
+    });
   }
 
   it('Given no access token, When a delivery grant is requested, Then authentication fails', async () => {

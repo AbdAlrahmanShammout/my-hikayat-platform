@@ -12,6 +12,7 @@ import { ZipArchive } from '@/modules/book-processing/zip-archive.helper';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 const CONTAINER_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -89,7 +90,7 @@ describe('Book processing orchestration (e2e)', () => {
     await prismaProviderService.book.deleteMany({
       where: { owner: { email: ownerEmail } },
     });
-    await prismaProviderService.user.deleteMany({ where: { email: ownerEmail } });
+    await deleteUsersByEmail(prismaProviderService, ownerEmail);
     await app.close();
   });
 

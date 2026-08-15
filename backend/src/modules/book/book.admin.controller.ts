@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { LoggedInUser } from '@/common/decorators/requests/logged-in-user.decorator';
 import { Roles } from '@/common/decorators/route/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -22,6 +23,7 @@ import { GetBooksResponseDto } from '@/modules/book/dto/response/get-books-respo
 import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookPublishingStatus } from '@/modules/book/enum/general.enum';
+import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
 
 @ApiTags('Admin - Books')
@@ -61,8 +63,14 @@ export class BookAdminController {
   @ApiOperation({ summary: 'Approve an in-review book and publish it' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, type: BookResponse })
-  async approveBook(@Param('id', ParseIntPipe) id: number): Promise<BookResponse> {
-    const entity: BookEntity = await this.bookPublishingStatusService.approveBook(id);
+  async approveBook(
+    @Param('id', ParseIntPipe) id: number,
+    @LoggedInUser() currentUser: UserEntity,
+  ): Promise<BookResponse> {
+    const entity: BookEntity = await this.bookPublishingStatusService.approveBook({
+      bookId: id,
+      actorUserId: currentUser.id,
+    });
     return new BookResponse(entity);
   }
 
@@ -71,8 +79,14 @@ export class BookAdminController {
   @ApiOperation({ summary: 'Reject an in-review book' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, type: BookResponse })
-  async rejectBook(@Param('id', ParseIntPipe) id: number): Promise<BookResponse> {
-    const entity: BookEntity = await this.bookPublishingStatusService.rejectBook(id);
+  async rejectBook(
+    @Param('id', ParseIntPipe) id: number,
+    @LoggedInUser() currentUser: UserEntity,
+  ): Promise<BookResponse> {
+    const entity: BookEntity = await this.bookPublishingStatusService.rejectBook({
+      bookId: id,
+      actorUserId: currentUser.id,
+    });
     return new BookResponse(entity);
   }
 }

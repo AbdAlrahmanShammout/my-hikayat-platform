@@ -10,6 +10,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 
 import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 describe('Reading visual engagement (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -50,7 +51,7 @@ describe('Reading visual engagement (e2e)', () => {
     await prismaProviderService.subscription.deleteMany({
       where: { user: { email: { in: emails } } },
     });
-    await prismaProviderService.user.deleteMany({ where: { email: { in: emails } } });
+    await deleteUsersByEmail(prismaProviderService, emails);
     await app.close();
   });
 

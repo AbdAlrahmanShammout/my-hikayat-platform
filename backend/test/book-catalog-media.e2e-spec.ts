@@ -11,6 +11,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 import { StorageManagerService } from '@/providers/storage/storage-manager.service';
 
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 describe('Book catalog media upload (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -40,7 +41,7 @@ describe('Book catalog media upload (e2e)', () => {
     await prismaProviderService.book.deleteMany({
       where: { owner: { email: { in: emails } } },
     });
-    await prismaProviderService.user.deleteMany({ where: { email: { in: emails } } });
+    await deleteUsersByEmail(prismaProviderService, emails);
     await app.close();
   });
 

@@ -147,6 +147,7 @@ describe('BookProcessingOrchestrationService', () => {
       expect(mockBookPublishingStatusService.transitionPublishingStatus).toHaveBeenCalledWith({
         bookId: 8,
         to: BookPublishingStatus.IN_REVIEW,
+        actorUserId: ownerInput.actorId,
       });
       expect(actualBook).toBe(expectedBook);
     });

@@ -19,6 +19,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 
 import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
+import { deleteUsersByEmail } from './delete-users.helper';
 
 describe('Entitlement (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -56,7 +57,7 @@ describe('Entitlement (e2e)', () => {
     await prismaProviderService.subscription.deleteMany({
       where: { user: { email: { in: emails } } },
     });
-    await prismaProviderService.user.deleteMany({ where: { email: { in: emails } } });
+    await deleteUsersByEmail(prismaProviderService, emails);
     await app.close();
   });
 
@@ -137,7 +138,11 @@ describe('Entitlement (e2e)', () => {
       bookId: created.id,
       to: BookPublishingStatus.IN_REVIEW,
     });
-    return publishingStatusService.approveBook(created.id);
+    return publishingStatusService.transitionPublishingStatus({
+      bookId: created.id,
+      to: BookPublishingStatus.APPROVED,
+      publishedAt: new Date(),
+    });
   }
 
   it('Given a free reader, When the catalog is listed, Then browsing is allowed', async () => {
