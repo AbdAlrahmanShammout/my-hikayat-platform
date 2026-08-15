@@ -47,4 +47,15 @@ export class SubscriptionReaderController {
     );
     return new SubscriptionResponse(entity);
   }
+
+  @Post('refund')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request a refund within 7 days of activating monthly access' })
+  @ApiResponse({ status: 200, type: SubscriptionResponse })
+  async requestRefund(@LoggedInUser() currentUser: UserEntity): Promise<SubscriptionResponse> {
+    const entity: SubscriptionEntity = await this.subscriptionBillingService.requestRefund(
+      currentUser.id,
+    );
+    return new SubscriptionResponse(entity);
+  }
 }

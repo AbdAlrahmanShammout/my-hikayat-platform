@@ -13,7 +13,9 @@ describe('StripeManagerService', () => {
   let mockStripe: {
     customers: { create: jest.Mock };
     checkout: { sessions: { create: jest.Mock } };
-    subscriptions: { retrieve: jest.Mock };
+    subscriptions: { retrieve: jest.Mock; cancel: jest.Mock };
+    invoices: { list: jest.Mock };
+    refunds: { create: jest.Mock };
     webhooks: { constructEvent: jest.Mock };
   };
   let stripeManagerService: StripeManagerService;
@@ -22,7 +24,9 @@ describe('StripeManagerService', () => {
     mockStripe = {
       customers: { create: jest.fn() },
       checkout: { sessions: { create: jest.fn() } },
-      subscriptions: { retrieve: jest.fn() },
+      subscriptions: { retrieve: jest.fn(), cancel: jest.fn() },
+      invoices: { list: jest.fn() },
+      refunds: { create: jest.fn() },
       webhooks: { constructEvent: jest.fn() },
     };
     stripeManagerService = new StripeManagerService(
@@ -193,6 +197,34 @@ describe('StripeManagerService', () => {
         currentPeriodStart: new Date(1_700_000_000 * 1000),
         currentPeriodEnd: new Date(1_702_592_000 * 1000),
       });
+    });
+  });
+
+  describe('refundPaidSubscription', () => {
+    it('refunds the latest paid invoice and cancels the Stripe subscription', async () => {
+      mockStripe.invoices.list.mockResolvedValue({
+        data: [{ payment_intent: 'pi_test_1' }],
+      });
+      mockStripe.refunds.create.mockResolvedValue({ id: 're_test_1' });
+      mockStripe.subscriptions.cancel.mockResolvedValue({ id: 'sub_test_1' });
+      const actualRefund = await stripeManagerService.refundPaidSubscription({
+        stripeSubscriptionId: 'sub_test_1',
+      });
+      expect(mockStripe.invoices.list).toHaveBeenCalledWith({
+        subscription: 'sub_test_1',
+        status: 'paid',
+        limit: 1,
+      });
+      expect(mockStripe.refunds.create).toHaveBeenCalledWith({ payment_intent: 'pi_test_1' });
+      expect(mockStripe.subscriptions.cancel).toHaveBeenCalledWith('sub_test_1');
+      expect(actualRefund).toEqual({ refundId: 're_test_1' });
+    });
+
+    it('wraps a missing paid invoice as a Stripe failure', async () => {
+      mockStripe.invoices.list.mockResolvedValue({ data: [] });
+      await expect(
+        stripeManagerService.refundPaidSubscription({ stripeSubscriptionId: 'sub_test_1' }),
+      ).rejects.toBeInstanceOf(StripeFailureException);
     });
   });
 });

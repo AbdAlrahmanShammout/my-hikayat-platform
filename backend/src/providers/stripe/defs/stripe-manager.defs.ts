@@ -63,3 +63,11 @@ export type MapStripeWebhookEventInput = {
   readonly type: string;
   readonly object: unknown;
 };
+
+export type RefundPaidSubscriptionInput = {
+  readonly stripeSubscriptionId: string;
+};
+
+export type StripeRefund = {
+  readonly refundId: string;
+};

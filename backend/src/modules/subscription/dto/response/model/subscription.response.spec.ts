@@ -21,6 +21,7 @@ describe('SubscriptionResponse', () => {
       currentPeriodStart: new Date('2026-08-01T00:00:00.000Z'),
       currentPeriodEnd: new Date('2026-09-01T00:00:00.000Z'),
       canceledAt: null,
+      activatedAt: null,
       stripeCustomerId: 'cus_secret',
       stripeSubscriptionId: 'sub_secret',
       plan: new PlanEntity({
@@ -37,6 +38,7 @@ describe('SubscriptionResponse', () => {
     expect(actualResponse.userId).toBe(5);
     expect(actualResponse.status).toBe(SubscriptionStatus.ACTIVE);
     expect(actualResponse.plan?.kind).toBe(PlanKind.MONTHLY_PAID);
+    expect(actualResponse.activatedAt).toBeNull();
     expect(actualResponse).not.toHaveProperty('stripeCustomerId');
     expect(actualResponse).not.toHaveProperty('stripeSubscriptionId');
   });

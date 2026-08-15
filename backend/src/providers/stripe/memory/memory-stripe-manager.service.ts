@@ -4,8 +4,10 @@ import {
   ConstructStripeWebhookEventInput,
   CreateStripeCheckoutSessionInput,
   CreateStripeCustomerInput,
+  RefundPaidSubscriptionInput,
   StripeCheckoutSession,
   StripeCustomer,
+  StripeRefund,
   StripeWebhookEvent,
 } from '@/providers/stripe/defs/stripe-manager.defs';
 import { dispatchStripeWebhookEvent } from '@/providers/stripe/dispatch-stripe-webhook-event.helper';
@@ -58,6 +60,10 @@ export class MemoryStripeManagerService {
       event: this.constructWebhookEvent(input),
       eventHandlers: this.eventHandlers,
     });
+  }
+
+  refundPaidSubscription(input: RefundPaidSubscriptionInput): Promise<StripeRefund> {
+    return Promise.resolve({ refundId: `re_memory_${input.stripeSubscriptionId}` });
   }
 
   private static parsePayload(payload: string | Buffer): unknown {

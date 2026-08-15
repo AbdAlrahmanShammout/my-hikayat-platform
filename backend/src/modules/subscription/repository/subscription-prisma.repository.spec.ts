@@ -21,6 +21,7 @@ describe('SubscriptionPrismaRepository', () => {
     currentPeriodStart: null,
     currentPeriodEnd: null,
     canceledAt: null,
+    activatedAt: null,
     stripeCustomerId: null,
     stripeSubscriptionId: null,
     plan: {
@@ -80,6 +81,7 @@ describe('SubscriptionPrismaRepository', () => {
         startedAt,
         currentPeriodStart: null,
         currentPeriodEnd: null,
+        activatedAt: null,
         stripeCustomerId: null,
         stripeSubscriptionId: null,
       },

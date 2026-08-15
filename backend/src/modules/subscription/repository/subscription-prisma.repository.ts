@@ -32,6 +32,7 @@ export class SubscriptionPrismaRepository implements SubscriptionRepository {
         startedAt: input.startedAt,
         currentPeriodStart: input.currentPeriodStart,
         currentPeriodEnd: input.currentPeriodEnd,
+        activatedAt: input.activatedAt ?? null,
         stripeCustomerId: input.stripeCustomerId ?? null,
         stripeSubscriptionId: input.stripeSubscriptionId ?? null,
       },
@@ -60,6 +61,9 @@ export class SubscriptionPrismaRepository implements SubscriptionRepository {
     }
     if (input.canceledAt !== undefined) {
       data.canceledAt = input.canceledAt;
+    }
+    if (input.activatedAt !== undefined) {
+      data.activatedAt = input.activatedAt;
     }
     if (input.stripeCustomerId !== undefined) {
       data.stripeCustomerId = input.stripeCustomerId;

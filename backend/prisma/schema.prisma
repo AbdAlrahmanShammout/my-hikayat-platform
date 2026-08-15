@@ -396,6 +396,7 @@ model Subscription {
   currentPeriodStart   DateTime?
   currentPeriodEnd     DateTime?
   canceledAt           DateTime?
+  activatedAt          DateTime?
   stripeCustomerId     String?            @unique
   stripeSubscriptionId String?            @unique
   createdAt            DateTime           @default(now())

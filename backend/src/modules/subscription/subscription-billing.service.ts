@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { AppConfigService } from '@/config/app/app-config.service';
 import { PLAN_SLUG } from '@/modules/subscription/consts/plan-slug.constant';
+import { REFUND_WINDOW } from '@/modules/subscription/consts/refund-window.constant';
 import {
   ReceiveWebhookServiceInput,
   StartCheckoutResult,
@@ -11,6 +12,8 @@ import { PlanEntity } from '@/modules/subscription/entity/plan.entity';
 import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.entity';
 import { PlanKind, SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
 import { CheckoutReturnUrlInvalidException } from '@/modules/subscription/exceptions/checkout-return-url-invalid.exception';
+import { RefundNotEligibleException } from '@/modules/subscription/exceptions/refund-not-eligible.exception';
+import { RefundWindowExpiredException } from '@/modules/subscription/exceptions/refund-window-expired.exception';
 import { SubscriptionAlreadyPaidException } from '@/modules/subscription/exceptions/subscription-already-paid.exception';
 import { PlanService } from '@/modules/subscription/plan.service';
 import { SubscriptionRepository } from '@/modules/subscription/repository/subscription.repository';
@@ -58,6 +61,28 @@ export class SubscriptionBillingService {
     return this.subscriptionService.getSubscriptionByUserId(userId);
   }
 
+  async requestRefund(userId: number): Promise<SubscriptionEntity> {
+    const subscription: SubscriptionEntity =
+      await this.subscriptionService.getSubscriptionByUserId(userId);
+    if (
+      !SubscriptionBillingService.isPaidMonthly(subscription) ||
+      subscription.stripeSubscriptionId === null
+    ) {
+      throw new RefundNotEligibleException();
+    }
+    const activatedAt: Date | null = subscription.activatedAt ?? subscription.currentPeriodStart;
+    if (activatedAt === null) {
+      throw new RefundNotEligibleException();
+    }
+    if (SubscriptionBillingService.isRefundWindowExpired(activatedAt)) {
+      throw new RefundWindowExpiredException();
+    }
+    await this.stripeManagerService.refundPaidSubscription({
+      stripeSubscriptionId: subscription.stripeSubscriptionId,
+    });
+    return this.subscriptionService.cancelSubscription(subscription.id);
+  }
+
   async applyCheckoutCompleted(input: HandleCheckoutCompletedInput): Promise<void> {
     const userId: number | null = SubscriptionBillingService.parseUserId(input.clientReferenceId);
     if (userId === null) {
@@ -82,6 +107,7 @@ export class SubscriptionBillingService {
       currentPeriodStart: input.currentPeriodStart,
       currentPeriodEnd: input.currentPeriodEnd,
       canceledAt: null,
+      activatedAt: SubscriptionBillingService.resolveActivatedAt(subscription, input),
     });
   }
 
@@ -191,6 +217,24 @@ export class SubscriptionBillingService {
       subscription.status === SubscriptionStatus.ACTIVE &&
       subscription.plan?.kind === PlanKind.MONTHLY_PAID
     );
+  }
+
+  private static resolveActivatedAt(
+    subscription: SubscriptionEntity,
+    input: HandleCheckoutCompletedInput,
+  ): Date {
+    if (
+      subscription.stripeSubscriptionId === input.subscriptionId &&
+      subscription.activatedAt !== null
+    ) {
+      return subscription.activatedAt;
+    }
+    return input.currentPeriodStart ?? new Date();
+  }
+
+  private static isRefundWindowExpired(activatedAt: Date, now: Date = new Date()): boolean {
+    const windowMs: number = REFUND_WINDOW.days * REFUND_WINDOW.millisecondsPerDay;
+    return now.getTime() > activatedAt.getTime() + windowMs;
   }
 
   private static parseUserId(clientReferenceId: string): number | null {

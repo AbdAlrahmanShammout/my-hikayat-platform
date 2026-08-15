@@ -7,8 +7,10 @@ import {
   ConstructStripeWebhookEventInput,
   CreateStripeCheckoutSessionInput,
   CreateStripeCustomerInput,
+  RefundPaidSubscriptionInput,
   StripeCheckoutSession,
   StripeCustomer,
+  StripeRefund,
   StripeWebhookEvent,
 } from '@/providers/stripe/defs/stripe-manager.defs';
 import { dispatchStripeWebhookEvent } from '@/providers/stripe/dispatch-stripe-webhook-event.helper';
@@ -97,6 +99,19 @@ export class StripeManagerService {
     await dispatchStripeWebhookEvent({ event, eventHandlers: this.eventHandlers });
   }
 
+  async refundPaidSubscription(input: RefundPaidSubscriptionInput): Promise<StripeRefund> {
+    try {
+      const paymentIntentId: string = await this.readLatestPaidPaymentIntentId(
+        input.stripeSubscriptionId,
+      );
+      const refund = await this.stripe.refunds.create({ payment_intent: paymentIntentId });
+      await this.stripe.subscriptions.cancel(input.stripeSubscriptionId);
+      return { refundId: refund.id };
+    } catch (err: unknown) {
+      throw StripeManagerService.translateRequestError(err);
+    }
+  }
+
   private async enrichCheckoutPeriods(event: StripeWebhookEvent): Promise<StripeWebhookEvent> {
     if (event.type !== STRIPE.webhookEventType.checkoutSessionCompleted) {
       return event;
@@ -126,6 +141,41 @@ export class StripeManagerService {
     } catch {
       return event;
     }
+  }
+
+  private async readLatestPaidPaymentIntentId(stripeSubscriptionId: string): Promise<string> {
+    const invoices = await this.stripe.invoices.list({
+      subscription: stripeSubscriptionId,
+      status: 'paid',
+      limit: 1,
+    });
+    const paymentIntentId: string | null = StripeManagerService.readPaymentIntentId(
+      invoices.data[0],
+    );
+    if (paymentIntentId === null) {
+      throw new StripeFailureException();
+    }
+    return paymentIntentId;
+  }
+
+  private static readPaymentIntentId(invoice: unknown): string | null {
+    if (typeof invoice !== 'object' || invoice === null) {
+      return null;
+    }
+    if (!('payment_intent' in invoice)) {
+      return null;
+    }
+    const paymentIntent: unknown = invoice.payment_intent;
+    if (typeof paymentIntent === 'string' && paymentIntent.length > 0) {
+      return paymentIntent;
+    }
+    if (typeof paymentIntent === 'object' && paymentIntent !== null && 'id' in paymentIntent) {
+      const paymentIntentId: unknown = paymentIntent.id;
+      if (typeof paymentIntentId === 'string' && paymentIntentId.length > 0) {
+        return paymentIntentId;
+      }
+    }
+    return null;
   }
 
   private static translateRequestError(err: unknown): Error {

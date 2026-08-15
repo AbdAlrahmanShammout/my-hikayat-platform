@@ -63,6 +63,7 @@ export class SubscriptionService {
       currentPeriodStart: input.currentPeriodStart,
       currentPeriodEnd: input.currentPeriodEnd,
       canceledAt: input.canceledAt,
+      activatedAt: input.activatedAt,
       stripeCustomerId: input.stripeCustomerId,
       stripeSubscriptionId: input.stripeSubscriptionId,
     });

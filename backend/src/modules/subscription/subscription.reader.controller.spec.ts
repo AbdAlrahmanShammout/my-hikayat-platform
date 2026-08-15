@@ -29,12 +29,14 @@ describe('SubscriptionReaderController', () => {
   let mockSubscriptionBillingService: {
     startCheckout: jest.Mock;
     getCurrentSubscription: jest.Mock;
+    requestRefund: jest.Mock;
   };
 
   beforeEach(async () => {
     mockSubscriptionBillingService = {
       startCheckout: jest.fn(),
       getCurrentSubscription: jest.fn(),
+      requestRefund: jest.fn(),
     };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
@@ -80,6 +82,7 @@ describe('SubscriptionReaderController', () => {
       currentPeriodStart: null,
       currentPeriodEnd: null,
       canceledAt: null,
+      activatedAt: null,
       stripeCustomerId: 'cus_secret',
       stripeSubscriptionId: null,
       plan: undefined,
@@ -90,5 +93,29 @@ describe('SubscriptionReaderController', () => {
     expect(actualResponse.userId).toBe(5);
     expect(actualResponse.status).toBe(SubscriptionStatus.ACTIVE);
     expect(actualResponse).not.toHaveProperty('stripeCustomerId');
+  });
+
+  it('requests a refund for the authenticated user', async () => {
+    const entity = new SubscriptionEntity({
+      id: 7,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      userId: 5,
+      planId: 2,
+      status: SubscriptionStatus.CANCELED,
+      startedAt: new Date('2026-01-01T00:00:00.000Z'),
+      currentPeriodStart: new Date('2026-08-01T00:00:00.000Z'),
+      currentPeriodEnd: new Date('2026-09-01T00:00:00.000Z'),
+      canceledAt: new Date('2026-08-02T00:00:00.000Z'),
+      activatedAt: new Date('2026-08-01T00:00:00.000Z'),
+      stripeCustomerId: 'cus_secret',
+      stripeSubscriptionId: 'sub_secret',
+      plan: undefined,
+    });
+    mockSubscriptionBillingService.requestRefund.mockResolvedValue(entity);
+    const actualResponse = await subscriptionReaderController.requestRefund(createSampleUser());
+    expect(mockSubscriptionBillingService.requestRefund).toHaveBeenCalledWith(5);
+    expect(actualResponse.status).toBe(SubscriptionStatus.CANCELED);
+    expect(actualResponse).not.toHaveProperty('stripeSubscriptionId');
   });
 });

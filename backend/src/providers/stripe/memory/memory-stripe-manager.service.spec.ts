@@ -97,4 +97,11 @@ describe('MemoryStripeManagerService', () => {
       }),
     ).rejects.toBeInstanceOf(StripeNotInitializedException);
   });
+
+  it('returns a deterministic refund identifier', async () => {
+    const actualRefund = await memoryStripeManagerService.refundPaidSubscription({
+      stripeSubscriptionId: 'sub_memory_7',
+    });
+    expect(actualRefund).toEqual({ refundId: 're_memory_sub_memory_7' });
+  });
 });

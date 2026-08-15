@@ -47,6 +47,13 @@ export class SubscriptionResponse extends BaseModelResponseDto {
   canceledAt: Date | null;
 
   @ApiPropertyOptional({
+    description: 'When paid monthly access first activated; null on the free plan',
+    example: '2026-08-01T00:00:00.000Z',
+    nullable: true,
+  })
+  activatedAt: Date | null;
+
+  @ApiPropertyOptional({
     description: 'Assigned plan projection when loaded',
     type: () => PlanResponse,
   })
@@ -61,6 +68,7 @@ export class SubscriptionResponse extends BaseModelResponseDto {
     this.currentPeriodStart = entity.currentPeriodStart;
     this.currentPeriodEnd = entity.currentPeriodEnd;
     this.canceledAt = entity.canceledAt;
+    this.activatedAt = entity.activatedAt;
     this.plan = entity.plan === undefined ? undefined : new PlanResponse(entity.plan);
   }
 }

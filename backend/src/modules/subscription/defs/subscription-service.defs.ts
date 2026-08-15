@@ -14,6 +14,7 @@ export type UpdateSubscriptionServiceInput = {
   readonly currentPeriodStart?: Date | null;
   readonly currentPeriodEnd?: Date | null;
   readonly canceledAt?: Date | null;
+  readonly activatedAt?: Date | null;
   readonly stripeCustomerId?: string | null;
   readonly stripeSubscriptionId?: string | null;
 };

@@ -20,6 +20,7 @@ export const SubscriptionZodSchema = BaseZodSchema.extend({
   currentPeriodStart: ZodDateNullable,
   currentPeriodEnd: ZodDateNullable,
   canceledAt: ZodDateNullable,
+  activatedAt: ZodDateNullable,
   stripeCustomerId: ZodStringNullable,
   stripeSubscriptionId: ZodStringNullable,
   plan: (z.any().nullish() as z.ZodType<PlanZodType | null | undefined>).optional(),

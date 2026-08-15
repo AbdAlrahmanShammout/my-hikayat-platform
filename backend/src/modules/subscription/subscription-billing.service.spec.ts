@@ -1,5 +1,6 @@
 import { AppConfigService } from '@/config/app/app-config.service';
 import { PLAN_SLUG } from '@/modules/subscription/consts/plan-slug.constant';
+import { REFUND_WINDOW } from '@/modules/subscription/consts/refund-window.constant';
 import { PlanEntity } from '@/modules/subscription/entity/plan.entity';
 import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.entity';
 import {
@@ -8,6 +9,8 @@ import {
   SubscriptionStatus,
 } from '@/modules/subscription/enum/general.enum';
 import { CheckoutReturnUrlInvalidException } from '@/modules/subscription/exceptions/checkout-return-url-invalid.exception';
+import { RefundNotEligibleException } from '@/modules/subscription/exceptions/refund-not-eligible.exception';
+import { RefundWindowExpiredException } from '@/modules/subscription/exceptions/refund-window-expired.exception';
 import { SubscriptionAlreadyPaidException } from '@/modules/subscription/exceptions/subscription-already-paid.exception';
 import { PlanService } from '@/modules/subscription/plan.service';
 import { SubscriptionRepository } from '@/modules/subscription/repository/subscription.repository';
@@ -60,6 +63,7 @@ function createSampleSubscription(
     currentPeriodStart: null,
     currentPeriodEnd: null,
     canceledAt: status === SubscriptionStatus.CANCELED ? new Date() : null,
+    activatedAt: kind === PlanKind.MONTHLY_PAID ? new Date() : null,
     stripeCustomerId: null,
     stripeSubscriptionId: null,
     plan,
@@ -84,6 +88,7 @@ describe('SubscriptionBillingService', () => {
     createCustomer: jest.Mock;
     createCheckoutSession: jest.Mock;
     processWebhook: jest.Mock;
+    refundPaidSubscription: jest.Mock;
   };
   let mockAppConfigService: { allowedOrigins: string[] };
   let subscriptionBillingService: SubscriptionBillingService;
@@ -106,6 +111,7 @@ describe('SubscriptionBillingService', () => {
       createCustomer: jest.fn(),
       createCheckoutSession: jest.fn(),
       processWebhook: jest.fn(),
+      refundPaidSubscription: jest.fn(),
     };
     mockAppConfigService = { allowedOrigins: ['http://localhost:3000'] };
     subscriptionBillingService = new SubscriptionBillingService(
@@ -201,6 +207,7 @@ describe('SubscriptionBillingService', () => {
         currentPeriodStart: new Date('2026-08-01T00:00:00.000Z'),
         currentPeriodEnd: new Date('2026-09-01T00:00:00.000Z'),
         canceledAt: null,
+        activatedAt: new Date('2026-08-01T00:00:00.000Z'),
       });
     });
 
@@ -259,6 +266,42 @@ describe('SubscriptionBillingService', () => {
         payload,
         signature: 'sig',
       });
+    });
+  });
+
+  describe('requestRefund', () => {
+    it('refunds Stripe and cancels a paid subscription inside the window', async () => {
+      const paidSubscription = createSampleSubscription(PlanKind.MONTHLY_PAID);
+      paidSubscription.stripeSubscriptionId = 'sub_1';
+      mockSubscriptionService.getSubscriptionByUserId.mockResolvedValue(paidSubscription);
+      mockStripeManagerService.refundPaidSubscription.mockResolvedValue({ refundId: 're_1' });
+      mockSubscriptionService.cancelSubscription.mockResolvedValue(
+        createSampleSubscription(PlanKind.MONTHLY_PAID, SubscriptionStatus.CANCELED),
+      );
+      await subscriptionBillingService.requestRefund(5);
+      expect(mockStripeManagerService.refundPaidSubscription).toHaveBeenCalledWith({
+        stripeSubscriptionId: 'sub_1',
+      });
+      expect(mockSubscriptionService.cancelSubscription).toHaveBeenCalledWith(7);
+    });
+
+    it('rejects a refund for a free subscription', async () => {
+      mockSubscriptionService.getSubscriptionByUserId.mockResolvedValue(createSampleSubscription());
+      await expect(subscriptionBillingService.requestRefund(5)).rejects.toBeInstanceOf(
+        RefundNotEligibleException,
+      );
+    });
+
+    it('rejects a refund after the seven-day window', async () => {
+      const paidSubscription = createSampleSubscription(PlanKind.MONTHLY_PAID);
+      paidSubscription.stripeSubscriptionId = 'sub_1';
+      paidSubscription.activatedAt = new Date(
+        Date.now() - (REFUND_WINDOW.days + 1) * REFUND_WINDOW.millisecondsPerDay,
+      );
+      mockSubscriptionService.getSubscriptionByUserId.mockResolvedValue(paidSubscription);
+      await expect(subscriptionBillingService.requestRefund(5)).rejects.toBeInstanceOf(
+        RefundWindowExpiredException,
+      );
     });
   });
 });

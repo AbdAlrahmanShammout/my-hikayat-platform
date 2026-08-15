@@ -16,6 +16,7 @@ describe('SubscriptionEntity', () => {
       currentPeriodStart: null,
       currentPeriodEnd: null,
       canceledAt: null,
+      activatedAt: null,
       stripeCustomerId: null,
       stripeSubscriptionId: null,
       plan: new PlanEntity({

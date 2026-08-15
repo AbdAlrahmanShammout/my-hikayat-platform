@@ -15,16 +15,19 @@ import {
   BookType,
 } from '@/modules/book/enum/general.enum';
 import { CategoryService } from '@/modules/category/category.service';
-import { PlanKind, SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
+import { REFUND_WINDOW } from '@/modules/subscription/consts/refund-window.constant';
+import { SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
+import { SubscriptionService } from '@/modules/subscription/subscription.service';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { createTestingApp } from './create-testing-app';
 
-describe('Subscription billing (e2e)', () => {
+describe('Subscription refund (e2e)', () => {
   const password = 'correct-horse-battery';
-  const ownerEmail = `billing-owner-${Date.now()}@book.test`;
-  const readerEmail = `billing-reader-${Date.now()}@book.test`;
-  const emails = [ownerEmail, readerEmail];
+  const ownerEmail = `refund-owner-${Date.now()}@book.test`;
+  const readerEmail = `refund-reader-${Date.now()}@book.test`;
+  const expiredEmail = `refund-expired-${Date.now()}@book.test`;
+  const emails = [ownerEmail, readerEmail, expiredEmail];
   const slugSuffix = `${Date.now()}`;
   let app: INestApplication | undefined;
   let readerId: number | undefined;
@@ -49,7 +52,7 @@ describe('Subscription billing (e2e)', () => {
       where: { owner: { email: { in: emails } } },
     });
     await prismaProviderService.category.deleteMany({
-      where: { slug: `billing-${slugSuffix}` },
+      where: { slug: `refund-${slugSuffix}` },
     });
     await prismaProviderService.subscription.deleteMany({
       where: { user: { email: { in: emails } } },
@@ -101,12 +104,37 @@ describe('Subscription billing (e2e)', () => {
     };
   }
 
+  async function completeCheckout(userId: number, accessToken: string): Promise<void> {
+    await request(getServer())
+      .post('/reader/billing/checkout')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        successUrl: 'http://localhost:3000/success',
+        cancelUrl: 'http://localhost:3000/cancel',
+      });
+    await request(getServer())
+      .post('/webhooks/stripe')
+      .set('stripe-signature', 'test')
+      .send({
+        id: `evt_checkout_${userId}`,
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: `cs_memory_${userId}`,
+            customer: `cus_memory_${userId}`,
+            subscription: `sub_memory_${userId}`,
+            client_reference_id: String(userId),
+          },
+        },
+      });
+  }
+
   async function publishCatalogBook(ownerId: number): Promise<BookEntity> {
     const category = await getRunningApp()
       .get(CategoryService)
       .createCategory({
-        name: `Billing ${slugSuffix}`,
-        slug: `billing-${slugSuffix}`,
+        name: `Refund ${slugSuffix}`,
+        slug: `refund-${slugSuffix}`,
       });
     const bookService: BookService = getRunningApp().get(BookService);
     const processingStatusService: BookProcessingStatusService = getRunningApp().get(
@@ -116,8 +144,8 @@ describe('Subscription billing (e2e)', () => {
       BookPublishingStatusService,
     );
     const created: BookEntity = await bookService.createBook({
-      title: 'Billing Harbor',
-      description: 'Used by subscription billing e2e tests.',
+      title: 'Refund Harbor',
+      description: 'Used by subscription refund e2e tests.',
       layoutType: BookLayoutType.REFLOWABLE,
       bookType: BookType.STANDARD_CHAPTER,
       ownerId,
@@ -138,7 +166,7 @@ describe('Subscription billing (e2e)', () => {
     return publishingStatusService.approveBook(created.id);
   }
 
-  it('Given a free reader, When the catalog is listed, Then browsing is allowed', async () => {
+  it('Given a paid reader inside the window, When a refund is requested, Then access is revoked', async () => {
     const reader = await registerUser(readerEmail);
     readerId = reader.userId;
     readerAccessToken = reader.accessToken;
@@ -148,115 +176,46 @@ describe('Subscription billing (e2e)', () => {
       .set('Authorization', `Bearer ${owner.accessToken}`);
     const publishedBook = await publishCatalogBook(publisherResponse.body.user.id as number);
     publishedBookId = publishedBook.id;
+    await completeCheckout(getReaderId(), getReaderAccessToken());
+    const unauthenticated = await request(getServer()).post('/reader/billing/refund');
+    expect(unauthenticated.status).toBe(HttpStatus.UNAUTHORIZED);
     const actualResponse = await request(getServer())
-      .get('/reader/catalog')
+      .post('/reader/billing/refund')
       .set('Authorization', `Bearer ${getReaderAccessToken()}`);
     expect(actualResponse.status).toBe(HttpStatus.OK);
-    expect(actualResponse.body.total).toEqual(expect.any(Number));
-  });
-
-  it('Given no token, When checkout starts, Then the request is unauthenticated', async () => {
-    const actualResponse = await request(getServer()).post('/reader/billing/checkout').send({
-      successUrl: 'http://localhost:3000/success',
-      cancelUrl: 'http://localhost:3000/cancel',
-    });
-    expect(actualResponse.status).toBe(HttpStatus.UNAUTHORIZED);
-  });
-
-  it('Given a return URL on another origin, When checkout starts, Then the URL is rejected', async () => {
-    const actualResponse = await request(getServer())
-      .post('/reader/billing/checkout')
-      .set('Authorization', `Bearer ${getReaderAccessToken()}`)
-      .send({
-        successUrl: 'https://evil.test/success',
-        cancelUrl: 'http://localhost:3000/cancel',
-      });
-    expect(actualResponse.status).toBe(HttpStatus.BAD_REQUEST);
-    expect(actualResponse.body.code).toBe('CHECKOUT_RETURN_URL_INVALID');
-  });
-
-  it('Given a free reader, When checkout starts, Then a hosted checkout URL is returned', async () => {
-    const actualResponse = await request(getServer())
-      .post('/reader/billing/checkout')
-      .set('Authorization', `Bearer ${getReaderAccessToken()}`)
-      .send({
-        successUrl: 'http://localhost:3000/success',
-        cancelUrl: 'http://localhost:3000/cancel',
-      });
-    expect(actualResponse.status).toBe(HttpStatus.OK);
-    expect(actualResponse.body.url).toBe(`https://checkout.stripe.test/cs_memory_${getReaderId()}`);
-  });
-
-  it('Given checkout completed, When the webhook is received, Then the subscription is monthly and active', async () => {
-    const webhookResponse = await request(getServer())
-      .post('/webhooks/stripe')
-      .set('stripe-signature', 'test')
-      .send({
-        id: 'evt_checkout_completed',
-        type: 'checkout.session.completed',
-        data: {
-          object: {
-            id: `cs_memory_${getReaderId()}`,
-            customer: `cus_memory_${getReaderId()}`,
-            subscription: `sub_memory_${getReaderId()}`,
-            client_reference_id: String(getReaderId()),
-          },
-        },
-      });
-    expect(webhookResponse.status).toBe(HttpStatus.OK);
-    expect(webhookResponse.body.received).toBe(true);
-    const actualResponse = await request(getServer())
-      .get('/reader/billing/subscription')
-      .set('Authorization', `Bearer ${getReaderAccessToken()}`);
-    expect(actualResponse.status).toBe(HttpStatus.OK);
-    expect(actualResponse.body.status).toBe(SubscriptionStatus.ACTIVE);
-    expect(actualResponse.body.plan.kind).toBe(PlanKind.MONTHLY_PAID);
-    expect(actualResponse.body.activatedAt).toEqual(expect.any(String));
-    expect(actualResponse.body).not.toHaveProperty('stripeCustomerId');
-  });
-
-  it('Given a paid reader, When progress is saved, Then the position is stored', async () => {
-    const actualResponse = await request(getServer())
+    expect(actualResponse.body.status).toBe(SubscriptionStatus.CANCELED);
+    expect(actualResponse.body).not.toHaveProperty('stripeSubscriptionId');
+    const progressResponse = await request(getServer())
       .put(`/reader/books/${getPublishedBookId()}/progress`)
       .set('Authorization', `Bearer ${getReaderAccessToken()}`)
       .send({ spineIndex: 1, scrollOffset: 40 });
-    expect(actualResponse.status).toBe(HttpStatus.OK);
-    expect(actualResponse.body.bookId).toBe(getPublishedBookId());
+    expect(progressResponse.status).toBe(HttpStatus.FORBIDDEN);
+    expect(progressResponse.body.code).toBe('FULL_BOOK_ACCESS_DENIED');
   });
 
-  it('Given an active monthly subscription, When checkout starts again, Then the request conflicts', async () => {
+  it('Given an already refunded reader, When a refund is requested again, Then it is not eligible', async () => {
     const actualResponse = await request(getServer())
-      .post('/reader/billing/checkout')
-      .set('Authorization', `Bearer ${getReaderAccessToken()}`)
-      .send({
-        successUrl: 'http://localhost:3000/success',
-        cancelUrl: 'http://localhost:3000/cancel',
-      });
-    expect(actualResponse.status).toBe(HttpStatus.CONFLICT);
-    expect(actualResponse.body.code).toBe('SUBSCRIPTION_ALREADY_PAID');
+      .post('/reader/billing/refund')
+      .set('Authorization', `Bearer ${getReaderAccessToken()}`);
+    expect(actualResponse.status).toBe(HttpStatus.BAD_REQUEST);
+    expect(actualResponse.body.code).toBe('REFUND_NOT_ELIGIBLE');
   });
 
-  it('Given subscription deleted, When progress is saved, Then paid access is required', async () => {
-    const webhookResponse = await request(getServer())
-      .post('/webhooks/stripe')
-      .set('stripe-signature', 'test')
-      .send({
-        id: 'evt_subscription_deleted',
-        type: 'customer.subscription.deleted',
-        data: {
-          object: {
-            id: `sub_memory_${getReaderId()}`,
-            customer: `cus_memory_${getReaderId()}`,
-            status: 'canceled',
-          },
-        },
-      });
-    expect(webhookResponse.status).toBe(HttpStatus.OK);
+  it('Given a paid reader after seven days, When a refund is requested, Then the window has expired', async () => {
+    const expiredUser = await registerUser(expiredEmail);
+    await completeCheckout(expiredUser.userId, expiredUser.accessToken);
+    const subscriptionService: SubscriptionService = getRunningApp().get(SubscriptionService);
+    const subscription = await subscriptionService.getSubscriptionByUserId(expiredUser.userId);
+    await subscriptionService.updateSubscription({
+      id: subscription.id,
+      activatedAt: new Date(
+        Date.now() - (REFUND_WINDOW.days + 1) * REFUND_WINDOW.millisecondsPerDay,
+      ),
+    });
     const actualResponse = await request(getServer())
-      .put(`/reader/books/${getPublishedBookId()}/progress`)
-      .set('Authorization', `Bearer ${getReaderAccessToken()}`)
-      .send({ spineIndex: 2, scrollOffset: 80 });
-    expect(actualResponse.status).toBe(HttpStatus.FORBIDDEN);
-    expect(actualResponse.body.code).toBe('FULL_BOOK_ACCESS_DENIED');
+      .post('/reader/billing/refund')
+      .set('Authorization', `Bearer ${expiredUser.accessToken}`);
+    expect(actualResponse.status).toBe(HttpStatus.BAD_REQUEST);
+    expect(actualResponse.body.code).toBe('REFUND_WINDOW_EXPIRED');
   });
 });
