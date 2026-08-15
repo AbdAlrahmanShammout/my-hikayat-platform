@@ -92,6 +92,9 @@ export class BookService {
       limit: input.limit ?? DEFAULT_PAGE_SIZE,
       offset: input.offset ?? DEFAULT_PAGE_OFFSET,
       categoryId: input.categoryId,
+      title: BookService.normalizeOptionalSearchText(input.title),
+      author: BookService.normalizeOptionalSearchText(input.author),
+      publisher: BookService.normalizeOptionalSearchText(input.publisher),
       sort: input.sort ?? CatalogSort.NEWEST,
     });
   }
@@ -149,6 +152,17 @@ export class BookService {
         code: 'BOOK_INVALID_TITLE',
       });
     }
+  }
+
+  private static normalizeOptionalSearchText(value: string | undefined): string | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+    const normalized: string = value.trim().replace(/\s+/g, ' ');
+    if (normalized.length === 0) {
+      return undefined;
+    }
+    return normalized;
   }
 
   private static isCatalogVisible(book: BookEntity): boolean {

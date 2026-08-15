@@ -293,6 +293,9 @@ describe('BookService', () => {
         limit: DEFAULT_PAGE_SIZE,
         offset: DEFAULT_PAGE_OFFSET,
         categoryId: undefined,
+        title: undefined,
+        author: undefined,
+        publisher: undefined,
         sort: CatalogSort.NEWEST,
       });
       expect(actualPage.total).toBe(1);
@@ -310,7 +313,28 @@ describe('BookService', () => {
         limit: DEFAULT_PAGE_SIZE,
         offset: DEFAULT_PAGE_OFFSET,
         categoryId: 2,
+        title: undefined,
+        author: undefined,
+        publisher: undefined,
         sort: CatalogSort.POPULARITY,
+      });
+    });
+
+    it('passes normalized title, author, and publisher filters', async () => {
+      mockBookRepository.listCatalog.mockResolvedValue({ entities: [], total: 0 });
+      await bookService.listCatalogBooks({
+        title: '  Harbor Lights  ',
+        author: 'Jane Author',
+        publisher: 'Harbor Press',
+      });
+      expect(mockBookRepository.listCatalog).toHaveBeenCalledWith({
+        limit: DEFAULT_PAGE_SIZE,
+        offset: DEFAULT_PAGE_OFFSET,
+        categoryId: undefined,
+        title: 'Harbor Lights',
+        author: 'Jane Author',
+        publisher: 'Harbor Press',
+        sort: CatalogSort.NEWEST,
       });
     });
   });

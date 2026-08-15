@@ -182,4 +182,33 @@ describe('BookPrismaRepository', () => {
       }),
     );
   });
+
+  it('lists catalog books filtered by title, author, and publisher', async () => {
+    mockPrismaProviderService.$transaction.mockResolvedValue([[persistenceRow], 1]);
+    await bookPrismaRepository.listCatalog({
+      limit: 20,
+      offset: 0,
+      title: 'Harbor',
+      author: 'Jane',
+      publisher: 'Harbor Press',
+      sort: CatalogSort.NEWEST,
+    });
+    expect(mockPrismaProviderService.book.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          deletedAt: null,
+          publishingStatus: BookPublishingStatus.APPROVED,
+          processingStatus: BookProcessingStatus.READY,
+          publishedAt: { not: null },
+          title: { contains: 'Harbor', mode: 'insensitive' },
+          sourceMetadata: {
+            is: {
+              creator: { contains: 'Jane', mode: 'insensitive' },
+              publisher: { contains: 'Harbor Press', mode: 'insensitive' },
+            },
+          },
+        },
+      }),
+    );
+  });
 });

@@ -42,6 +42,9 @@ export type ListCatalogBooksRepoInput = {
   readonly limit: number;
   readonly offset: number;
   readonly categoryId?: number;
+  readonly title?: string;
+  readonly author?: string;
+  readonly publisher?: string;
   readonly sort: CatalogSort;
 };
 

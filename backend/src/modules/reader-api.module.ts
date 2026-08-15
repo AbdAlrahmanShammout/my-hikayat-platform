@@ -11,16 +11,26 @@ import { ReadingIntelligenceReaderController } from '@/modules/reading-intellige
 import { ReadingModule } from '@/modules/reading/reading.module';
 import { ReadingReaderController } from '@/modules/reading/reading.reader.controller';
 import { ReadingSyncReaderController } from '@/modules/reading/reading-sync.reader.controller';
+import { SearchModule } from '@/modules/search/search.module';
+import { SearchReaderController } from '@/modules/search/search.reader.controller';
 import { UserModule } from '@/modules/user/user.module';
 import { UserReaderController } from '@/modules/user/user.reader.controller';
 
 @Module({
-  imports: [AuthModule, BookModule, ReadingIntelligenceModule, ReadingModule, UserModule],
+  imports: [
+    AuthModule,
+    BookModule,
+    ReadingIntelligenceModule,
+    ReadingModule,
+    SearchModule,
+    UserModule,
+  ],
   controllers: [
     BookReaderController,
     ReadingIntelligenceReaderController,
     ReadingSyncReaderController,
     ReadingReaderController,
+    SearchReaderController,
     UserReaderController,
   ],
   providers: [JwtAuthGuard, LocalAuthGuard, RolesGuard],

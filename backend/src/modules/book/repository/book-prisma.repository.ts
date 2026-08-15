@@ -116,15 +116,7 @@ export class BookPrismaRepository implements BookRepository {
   }
 
   async listCatalog(input: ListCatalogBooksRepoInput): Promise<BookPage> {
-    const where: Prisma.BookWhereInput = {
-      deletedAt: null,
-      publishingStatus: BookPublishingStatus.APPROVED,
-      processingStatus: BookProcessingStatus.READY,
-      publishedAt: { not: null },
-    };
-    if (input.categoryId !== undefined) {
-      where.categories = { some: { id: input.categoryId, deletedAt: null } };
-    }
+    const where: Prisma.BookWhereInput = BookPrismaRepository.buildCatalogWhere(input);
     const [rows, total] = await this.prismaProviderService.$transaction([
       this.prismaProviderService.book.findMany({
         where,
@@ -139,6 +131,32 @@ export class BookPrismaRepository implements BookRepository {
       entities: rows.map((row) => BookMapper.toEntity(row)),
       total,
     };
+  }
+
+  private static buildCatalogWhere(input: ListCatalogBooksRepoInput): Prisma.BookWhereInput {
+    const where: Prisma.BookWhereInput = {
+      deletedAt: null,
+      publishingStatus: BookPublishingStatus.APPROVED,
+      processingStatus: BookProcessingStatus.READY,
+      publishedAt: { not: null },
+    };
+    if (input.categoryId !== undefined) {
+      where.categories = { some: { id: input.categoryId, deletedAt: null } };
+    }
+    if (input.title !== undefined) {
+      where.title = { contains: input.title, mode: 'insensitive' };
+    }
+    const sourceMetadata: Prisma.BookSourceMetadataWhereInput = {};
+    if (input.author !== undefined) {
+      sourceMetadata.creator = { contains: input.author, mode: 'insensitive' };
+    }
+    if (input.publisher !== undefined) {
+      sourceMetadata.publisher = { contains: input.publisher, mode: 'insensitive' };
+    }
+    if (input.author !== undefined || input.publisher !== undefined) {
+      where.sourceMetadata = { is: sourceMetadata };
+    }
+    return where;
   }
 
   private static buildCatalogOrderBy(sort: CatalogSort): Prisma.BookOrderByWithRelationInput[] {
