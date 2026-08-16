@@ -61,6 +61,11 @@ export type ChangeBookPublishingStatusServiceInput = {
   readonly actorUserId: number;
 };
 
+export type DeleteBookServiceInput = {
+  readonly bookId: number;
+  readonly actorUserId: number;
+};
+
 export type TransitionBookPublishingStatusInput = {
   readonly bookId: number;
   readonly to: BookPublishingStatus;

@@ -5,6 +5,9 @@ describe('audit enums', () => {
     expect(AuditAction.BOOK_SUBMITTED_FOR_REVIEW).toBe('book_submitted_for_review');
     expect(AuditAction.BOOK_APPROVED).toBe('book_approved');
     expect(AuditAction.BOOK_REJECTED).toBe('book_rejected');
+    expect(AuditAction.BOOK_UNPUBLISHED).toBe('book_unpublished');
+    expect(AuditAction.BOOK_REPUBLISHED).toBe('book_republished');
+    expect(AuditAction.BOOK_DELETED).toBe('book_deleted');
     expect(AuditAction.PUBLISHER_ENABLED).toBe('publisher_enabled');
     expect(AuditAction.PUBLISHER_DISABLED).toBe('publisher_disabled');
     expect(AuditAction.USER_ROLE_CHANGED).toBe('user_role_changed');

@@ -73,12 +73,12 @@ function createSampleSubscription(
 
 describe('EntitlementService', () => {
   let mockSubscriptionService: { findSubscriptionByUserId: jest.Mock };
-  let mockBookService: { getBookById: jest.Mock };
+  let mockBookService: { getCatalogBookById: jest.Mock };
   let entitlementService: EntitlementService;
 
   beforeEach(() => {
     mockSubscriptionService = { findSubscriptionByUserId: jest.fn() };
-    mockBookService = { getBookById: jest.fn() };
+    mockBookService = { getCatalogBookById: jest.fn() };
     entitlementService = new EntitlementService(
       mockSubscriptionService as unknown as SubscriptionService,
       mockBookService as unknown as BookService,
@@ -121,8 +121,8 @@ describe('EntitlementService', () => {
   });
 
   describe('assertCanAccessFullBook', () => {
-    it('allows access when the book exists and the user is paid', async () => {
-      mockBookService.getBookById.mockResolvedValue(createSampleBook());
+    it('allows access when the catalog book exists and the user is paid', async () => {
+      mockBookService.getCatalogBookById.mockResolvedValue(createSampleBook());
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
         createSampleSubscription(PlanKind.MONTHLY_PAID),
       );
@@ -131,16 +131,18 @@ describe('EntitlementService', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('hides a missing book as not found before checking payment', async () => {
-      mockBookService.getBookById.mockRejectedValue(new ResourceNotFoundException('Book', 8));
+    it('hides a catalog-invisible book as not found before checking payment', async () => {
+      mockBookService.getCatalogBookById.mockRejectedValue(
+        new ResourceNotFoundException('Book', 8),
+      );
       await expect(
         entitlementService.assertCanAccessFullBook({ userId: 5, bookId: 8 }),
       ).rejects.toBeInstanceOf(ResourceNotFoundException);
       expect(mockSubscriptionService.findSubscriptionByUserId).not.toHaveBeenCalled();
     });
 
-    it('denies a free subscriber after the book is found', async () => {
-      mockBookService.getBookById.mockResolvedValue(createSampleBook());
+    it('denies a free subscriber after the catalog book is found', async () => {
+      mockBookService.getCatalogBookById.mockResolvedValue(createSampleBook());
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
         createSampleSubscription(PlanKind.FREE),
       );

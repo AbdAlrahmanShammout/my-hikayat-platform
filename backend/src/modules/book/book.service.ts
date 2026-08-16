@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
 
+import { TransactionContext } from '@/common/base/transaction-context';
+import { TransactionRunner } from '@/common/base/transaction-runner';
 import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagination.constant';
 import { InvalidStateException } from '@/common/exceptions/invalid-state.exception';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { BookPage } from '@/modules/book/defs/book-repository.defs';
 import {
   CreateBookServiceInput,
+  DeleteBookServiceInput,
   GetManagedBookServiceInput,
   ListBooksServiceInput,
   ListCatalogBooksServiceInput,
@@ -27,6 +32,8 @@ export class BookService {
     private readonly bookRepository: BookRepository,
     private readonly categoryService: CategoryService,
     private readonly userService: UserService,
+    private readonly auditLogService: AuditLogService,
+    private readonly transactionRunner: TransactionRunner,
   ) {}
 
   async createBook(input: CreateBookServiceInput): Promise<BookEntity> {
@@ -73,6 +80,27 @@ export class BookService {
       publishingStatus: input.publishingStatus,
       publishedAt: input.publishedAt,
       categoryIds,
+    });
+  }
+
+  async deleteBook(input: DeleteBookServiceInput): Promise<BookEntity> {
+    const book: BookEntity = await this.getBookById(input.bookId);
+    return this.transactionRunner.run(async (context: TransactionContext) => {
+      const deleted: BookEntity = await this.bookRepository.delete(book.id, context);
+      await this.auditLogService.append(
+        {
+          actorUserId: input.actorUserId,
+          action: AuditAction.BOOK_DELETED,
+          subjectType: AuditSubjectType.BOOK,
+          subjectId: book.id,
+          metadata: {
+            publishingStatus: book.publishingStatus,
+            publishedAt: book.publishedAt,
+          },
+        },
+        context,
+      );
+      return deleted;
     });
   }
 

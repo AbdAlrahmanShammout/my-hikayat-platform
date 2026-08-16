@@ -95,6 +95,23 @@ describe('BookPrismaRepository', () => {
     expect(actualEntity).toEqual(BookMapper.toEntity(persistenceRow));
   });
 
+  it('soft-deletes a book by setting deletedAt', async () => {
+    const deletedRow = {
+      ...persistenceRow,
+      deletedAt: new Date('2026-08-16T00:00:00.000Z'),
+    };
+    mockPrismaProviderService.book.update.mockResolvedValue(deletedRow);
+    const actualEntity = await bookPrismaRepository.delete(8);
+    expect(mockPrismaProviderService.book.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 8 },
+        data: { deletedAt: expect.any(Date) },
+        include: bookDetailsInclude,
+      }),
+    );
+    expect(actualEntity).toEqual(BookMapper.toEntity(deletedRow));
+  });
+
   it('returns null when findById misses an operational book', async () => {
     mockPrismaProviderService.book.findFirst.mockResolvedValue(null);
     const actualEntity = await bookPrismaRepository.findById(8);

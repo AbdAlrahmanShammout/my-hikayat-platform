@@ -78,6 +78,16 @@ export class BookPrismaRepository implements BookRepository {
     return BookMapper.toEntity(result);
   }
 
+  async delete(id: number, context?: TransactionContext): Promise<BookEntity> {
+    const client = resolvePrismaTransactionClient(this.prismaProviderService, context);
+    const result = await client.book.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+      include: bookDetailsInclude,
+    });
+    return BookMapper.toEntity(result);
+  }
+
   async findById(id: number): Promise<BookEntity | null> {
     const result = await this.prismaProviderService.book.findFirst({
       where: { id, deletedAt: null },

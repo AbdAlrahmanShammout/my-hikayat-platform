@@ -117,6 +117,7 @@ describe('BookAuthorController', () => {
         limit: 10,
         offset: 0,
         ownerId: 4,
+        publishingStatus: undefined,
       });
       expect(actualResponse.total).toBe(1);
       expect(actualResponse.books[0].id).toBe(8);

@@ -12,7 +12,9 @@ import {
 } from '@/modules/book/defs/book-service.defs';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookProcessingStatus, BookPublishingStatus } from '@/modules/book/enum/general.enum';
+import { BookAlreadyPublishedException } from '@/modules/book/exceptions/book-already-published.exception';
 import { BookInvalidPublishingTransitionException } from '@/modules/book/exceptions/book-invalid-publishing-transition.exception';
+import { BookNotPublishedException } from '@/modules/book/exceptions/book-not-published.exception';
 import { BookNotReadyForPublishingException } from '@/modules/book/exceptions/book-not-ready-for-publishing.exception';
 import { BookRepository } from '@/modules/book/repository/book.repository';
 
@@ -67,6 +69,61 @@ export class BookPublishingStatusService {
     });
   }
 
+  async unpublishBook(input: ChangeBookPublishingStatusServiceInput): Promise<BookEntity> {
+    const book: BookEntity = await this.bookService.getBookById(input.bookId);
+    BookPublishingStatusService.assertCanUnpublish(book);
+    return this.transactionRunner.run(async (context: TransactionContext) => {
+      const updated: BookEntity = await this.bookRepository.update(
+        {
+          id: book.id,
+          publishedAt: null,
+        },
+        context,
+      );
+      await this.auditLogService.append(
+        {
+          actorUserId: input.actorUserId,
+          action: AuditAction.BOOK_UNPUBLISHED,
+          subjectType: AuditSubjectType.BOOK,
+          subjectId: book.id,
+          metadata: {
+            publishingStatus: book.publishingStatus,
+          },
+        },
+        context,
+      );
+      return updated;
+    });
+  }
+
+  async republishBook(input: ChangeBookPublishingStatusServiceInput): Promise<BookEntity> {
+    const book: BookEntity = await this.bookService.getBookById(input.bookId);
+    BookPublishingStatusService.assertCanRepublish(book);
+    const publishedAt: Date = new Date();
+    return this.transactionRunner.run(async (context: TransactionContext) => {
+      const updated: BookEntity = await this.bookRepository.update(
+        {
+          id: book.id,
+          publishedAt,
+        },
+        context,
+      );
+      await this.auditLogService.append(
+        {
+          actorUserId: input.actorUserId,
+          action: AuditAction.BOOK_REPUBLISHED,
+          subjectType: AuditSubjectType.BOOK,
+          subjectId: book.id,
+          metadata: {
+            publishingStatus: book.publishingStatus,
+          },
+        },
+        context,
+      );
+      return updated;
+    });
+  }
+
   private async appendPublishingAudit(
     book: BookEntity,
     input: TransitionBookPublishingStatusInput,
@@ -112,6 +169,23 @@ export class BookPublishingStatusService {
       return;
     }
     throw new BookNotReadyForPublishingException(book.id);
+  }
+
+  private static assertCanUnpublish(book: BookEntity): void {
+    if (book.publishingStatus === BookPublishingStatus.APPROVED && book.publishedAt !== null) {
+      return;
+    }
+    throw new BookNotPublishedException(book.id);
+  }
+
+  private static assertCanRepublish(book: BookEntity): void {
+    if (book.publishingStatus !== BookPublishingStatus.APPROVED) {
+      throw new BookNotPublishedException(book.id);
+    }
+    if (book.publishedAt !== null) {
+      throw new BookAlreadyPublishedException(book.id);
+    }
+    BookPublishingStatusService.assertReadyForPublishing(book);
   }
 
   private static assertTransitionAllowed(

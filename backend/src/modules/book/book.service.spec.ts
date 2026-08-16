@@ -1,6 +1,8 @@
 import { InvalidStateException } from '@/common/exceptions/invalid-state.exception';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagination.constant';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { CatalogSort } from '@/modules/book/enum/catalog-sort.enum';
 import {
@@ -74,6 +76,7 @@ describe('BookService', () => {
   let mockBookRepository: {
     create: jest.Mock;
     update: jest.Mock;
+    delete: jest.Mock;
     findById: jest.Mock;
     list: jest.Mock;
     listCatalog: jest.Mock;
@@ -81,12 +84,15 @@ describe('BookService', () => {
   };
   let mockCategoryService: { getCategoryById: jest.Mock };
   let mockUserService: { getUserById: jest.Mock };
+  let mockAuditLogService: { append: jest.Mock };
+  let mockTransactionRunner: { run: jest.Mock };
   let bookService: BookService;
 
   beforeEach(() => {
     mockBookRepository = {
       create: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
       findById: jest.fn(),
       list: jest.fn(),
       listCatalog: jest.fn(),
@@ -94,10 +100,16 @@ describe('BookService', () => {
     };
     mockCategoryService = { getCategoryById: jest.fn() };
     mockUserService = { getUserById: jest.fn() };
+    mockAuditLogService = { append: jest.fn() };
+    mockTransactionRunner = {
+      run: jest.fn(async (work: (context: undefined) => Promise<unknown>) => work(undefined)),
+    };
     bookService = new BookService(
       mockBookRepository,
       mockCategoryService as unknown as CategoryService,
       mockUserService as unknown as UserService,
+      mockAuditLogService as unknown as AuditLogService,
+      mockTransactionRunner,
     );
   });
 
@@ -245,6 +257,38 @@ describe('BookService', () => {
     });
   });
 
+  describe('deleteBook', () => {
+    it('soft-deletes a book and records an audit event', async () => {
+      const current = createSampleBook();
+      mockBookRepository.findById.mockResolvedValue(current);
+      mockBookRepository.delete.mockResolvedValue(current);
+      const actualBook = await bookService.deleteBook({ bookId: 8, actorUserId: 9 });
+      expect(mockBookRepository.delete).toHaveBeenCalledWith(8, undefined);
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        {
+          actorUserId: 9,
+          action: AuditAction.BOOK_DELETED,
+          subjectType: AuditSubjectType.BOOK,
+          subjectId: 8,
+          metadata: {
+            publishingStatus: BookPublishingStatus.PENDING,
+            publishedAt: null,
+          },
+        },
+        undefined,
+      );
+      expect(actualBook).toBe(current);
+    });
+
+    it('throws when the book is missing', async () => {
+      mockBookRepository.findById.mockResolvedValue(null);
+      await expect(bookService.deleteBook({ bookId: 99, actorUserId: 9 })).rejects.toBeInstanceOf(
+        ResourceNotFoundException,
+      );
+      expect(mockBookRepository.delete).not.toHaveBeenCalled();
+    });
+  });
+
   describe('listBooks', () => {
     it('applies default pagination', async () => {
       mockBookRepository.list.mockResolvedValue({ entities: [createSampleBook()], total: 1 });
@@ -356,6 +400,20 @@ describe('BookService', () => {
 
     it('hides a pending book as not found', async () => {
       mockBookRepository.findById.mockResolvedValue(createSampleBook());
+      await expect(bookService.getCatalogBookById(8)).rejects.toBeInstanceOf(
+        ResourceNotFoundException,
+      );
+    });
+
+    it('hides an approved book without publishedAt as not found', async () => {
+      mockBookRepository.findById.mockResolvedValue(
+        new BookEntity({
+          ...createSampleBook(),
+          publishingStatus: BookPublishingStatus.APPROVED,
+          processingStatus: BookProcessingStatus.READY,
+          publishedAt: null,
+        }),
+      );
       await expect(bookService.getCatalogBookById(8)).rejects.toBeInstanceOf(
         ResourceNotFoundException,
       );

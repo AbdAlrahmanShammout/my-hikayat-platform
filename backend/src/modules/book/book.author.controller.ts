@@ -76,6 +76,7 @@ export class BookAuthorController {
       limit: query.limit,
       offset: query.offset,
       ownerId: currentUser.id,
+      publishingStatus: query.publishingStatus,
     });
     return new GetBooksResponseDto(page);
   }

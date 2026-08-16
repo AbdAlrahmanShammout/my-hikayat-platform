@@ -28,7 +28,7 @@ export class EntitlementService {
   }
 
   async assertCanAccessFullBook(input: AssertFullBookAccessServiceInput): Promise<void> {
-    await this.bookService.getBookById(input.bookId);
+    await this.bookService.getCatalogBookById(input.bookId);
     await this.assertPaidReadingAccess(input.userId);
   }
 

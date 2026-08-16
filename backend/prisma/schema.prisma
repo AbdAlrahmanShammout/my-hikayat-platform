@@ -485,6 +485,9 @@ enum AuditAction {
   book_submitted_for_review
   book_approved
   book_rejected
+  book_unpublished
+  book_republished
+  book_deleted
   publisher_enabled
   publisher_disabled
   user_role_changed

@@ -8,7 +8,9 @@ import {
   BookPublishingStatus,
   BookType,
 } from '@/modules/book/enum/general.enum';
+import { BookAlreadyPublishedException } from '@/modules/book/exceptions/book-already-published.exception';
 import { BookInvalidPublishingTransitionException } from '@/modules/book/exceptions/book-invalid-publishing-transition.exception';
+import { BookNotPublishedException } from '@/modules/book/exceptions/book-not-published.exception';
 import { BookNotReadyForPublishingException } from '@/modules/book/exceptions/book-not-ready-for-publishing.exception';
 import { BookRepository } from '@/modules/book/repository/book.repository';
 
@@ -17,6 +19,7 @@ import { BookPublishingStatusService } from './book-publishing-status.service';
 function createSampleBook(
   publishingStatus = BookPublishingStatus.PENDING,
   processingStatus = BookProcessingStatus.READY,
+  publishedAt: Date | null = null,
 ): BookEntity {
   return new BookEntity({
     id: 8,
@@ -28,7 +31,7 @@ function createSampleBook(
     bookType: BookType.STANDARD_CHAPTER,
     publishingStatus,
     processingStatus,
-    publishedAt: null,
+    publishedAt,
     ownerId: 4,
   });
 }
@@ -175,6 +178,123 @@ describe('BookPublishingStatusService', () => {
         undefined,
       );
       expect(actualBook).toBe(expectedBook);
+    });
+  });
+
+  describe('unpublishBook', () => {
+    it('clears publishedAt while leaving the book approved', async () => {
+      const publishedAt = new Date('2026-08-15T00:00:00.000Z');
+      const current = createSampleBook(
+        BookPublishingStatus.APPROVED,
+        BookProcessingStatus.READY,
+        publishedAt,
+      );
+      const expectedBook = createSampleBook(
+        BookPublishingStatus.APPROVED,
+        BookProcessingStatus.READY,
+        null,
+      );
+      mockBookService.getBookById.mockResolvedValue(current);
+      mockBookRepository.update.mockResolvedValue(expectedBook);
+      const actualBook = await bookPublishingStatusService.unpublishBook({
+        bookId: 8,
+        actorUserId: 9,
+      });
+      expect(mockBookRepository.update).toHaveBeenCalledWith(
+        {
+          id: 8,
+          publishedAt: null,
+        },
+        undefined,
+      );
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        {
+          actorUserId: 9,
+          action: AuditAction.BOOK_UNPUBLISHED,
+          subjectType: AuditSubjectType.BOOK,
+          subjectId: 8,
+          metadata: {
+            publishingStatus: BookPublishingStatus.APPROVED,
+          },
+        },
+        undefined,
+      );
+      expect(actualBook).toBe(expectedBook);
+    });
+
+    it('rejects unpublishing a book that is not live in the catalog', async () => {
+      mockBookService.getBookById.mockResolvedValue(
+        createSampleBook(BookPublishingStatus.APPROVED),
+      );
+      await expect(
+        bookPublishingStatusService.unpublishBook({ bookId: 8, actorUserId: 9 }),
+      ).rejects.toBeInstanceOf(BookNotPublishedException);
+      expect(mockBookRepository.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('republishBook', () => {
+    it('sets publishedAt on an approved unpublished book', async () => {
+      const expectedPublishedAt = new Date('2026-08-16T00:00:00.000Z');
+      jest.useFakeTimers();
+      jest.setSystemTime(expectedPublishedAt);
+      const expectedBook = createSampleBook(
+        BookPublishingStatus.APPROVED,
+        BookProcessingStatus.READY,
+        expectedPublishedAt,
+      );
+      mockBookService.getBookById.mockResolvedValue(
+        createSampleBook(BookPublishingStatus.APPROVED),
+      );
+      mockBookRepository.update.mockResolvedValue(expectedBook);
+      const actualBook = await bookPublishingStatusService.republishBook({
+        bookId: 8,
+        actorUserId: 9,
+      });
+      expect(mockBookRepository.update).toHaveBeenCalledWith(
+        {
+          id: 8,
+          publishedAt: expectedPublishedAt,
+        },
+        undefined,
+      );
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        {
+          actorUserId: 9,
+          action: AuditAction.BOOK_REPUBLISHED,
+          subjectType: AuditSubjectType.BOOK,
+          subjectId: 8,
+          metadata: {
+            publishingStatus: BookPublishingStatus.APPROVED,
+          },
+        },
+        undefined,
+      );
+      expect(actualBook).toBe(expectedBook);
+    });
+
+    it('rejects republishing a book that is already live', async () => {
+      mockBookService.getBookById.mockResolvedValue(
+        createSampleBook(
+          BookPublishingStatus.APPROVED,
+          BookProcessingStatus.READY,
+          new Date('2026-08-15T00:00:00.000Z'),
+        ),
+      );
+      await expect(
+        bookPublishingStatusService.republishBook({ bookId: 8, actorUserId: 9 }),
+      ).rejects.toBeInstanceOf(BookAlreadyPublishedException);
+      expect(mockBookRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects republishing a book that is not approved', async () => {
+      mockBookService.getBookById.mockResolvedValue(
+        createSampleBook(BookPublishingStatus.REJECTED),
+      );
+      await expect(
+        bookPublishingStatusService.republishBook({ bookId: 8, actorUserId: 9 }),
+      ).rejects.toBeInstanceOf(BookNotPublishedException);
+      expect(mockBookRepository.update).not.toHaveBeenCalled();
     });
   });
 });

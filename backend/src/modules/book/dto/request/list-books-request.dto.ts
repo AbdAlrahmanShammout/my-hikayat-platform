@@ -1,6 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNumber, IsOptional, Min } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, Min } from 'class-validator';
+
+import { BookPublishingStatus } from '@/modules/book/enum/general.enum';
 
 function parseOptionalIntQuery(value: unknown): number | undefined {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -35,4 +37,13 @@ export class ListBooksRequestDto {
   @Min(0)
   @Transform(({ value }: { value: unknown }) => parseOptionalIntQuery(value))
   offset?: number;
+
+  @ApiPropertyOptional({
+    description: 'Only include this publishing status; omit to list every status',
+    enum: BookPublishingStatus,
+    example: BookPublishingStatus.IN_REVIEW,
+  })
+  @IsOptional()
+  @IsEnum(BookPublishingStatus)
+  publishingStatus?: BookPublishingStatus;
 }

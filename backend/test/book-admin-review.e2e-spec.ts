@@ -220,6 +220,7 @@ describe('Book admin review (e2e)', () => {
     adminAccessToken = loginResponse.body.accessToken as string;
     const listResponse = await request(getServer())
       .get('/admin/books')
+      .query({ publishingStatus: BookPublishingStatus.IN_REVIEW })
       .set('Authorization', `Bearer ${getAdminAccessToken()}`);
     expect(listResponse.status).toBe(HttpStatus.OK);
     expect(listResponse.body.total).toBe(2);
@@ -256,6 +257,7 @@ describe('Book admin review (e2e)', () => {
     expect(actualResponse.body.title).toBe('Approve Catalog Title');
     const listResponse = await request(getServer())
       .get('/admin/books')
+      .query({ publishingStatus: BookPublishingStatus.IN_REVIEW })
       .set('Authorization', `Bearer ${getAdminAccessToken()}`);
     expect(listResponse.body.total).toBe(1);
     expect(listResponse.body.books[0].id).toBe(getRejectBookId());
@@ -271,6 +273,7 @@ describe('Book admin review (e2e)', () => {
     expect(actualResponse.body.title).toBe('Reject Catalog Title');
     const listResponse = await request(getServer())
       .get('/admin/books')
+      .query({ publishingStatus: BookPublishingStatus.IN_REVIEW })
       .set('Authorization', `Bearer ${getAdminAccessToken()}`);
     expect(listResponse.body.total).toBe(0);
     expect(listResponse.body.books).toHaveLength(0);
