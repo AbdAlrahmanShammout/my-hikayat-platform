@@ -334,6 +334,20 @@ describe('UserService', () => {
       ).rejects.toBeInstanceOf(UserSelfManagementException);
       expect(mockUserRepository.delete).not.toHaveBeenCalled();
     });
+
+    it('rejects deleting the last remaining admin', async () => {
+      const admin = new UserEntity({
+        ...createSampleUser(),
+        id: 4,
+        role: UserRole.ADMIN,
+      });
+      mockUserRepository.findById.mockResolvedValue(admin);
+      mockUserRepository.countByRole.mockResolvedValue(1);
+      await expect(
+        userService.deleteManagedUser({ userId: 4, actorUserId: 9 }),
+      ).rejects.toBeInstanceOf(UserLastAdminException);
+      expect(mockUserRepository.delete).not.toHaveBeenCalled();
+    });
   });
 
   describe('getUserById', () => {

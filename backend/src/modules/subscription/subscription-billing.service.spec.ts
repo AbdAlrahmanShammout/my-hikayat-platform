@@ -430,6 +430,9 @@ describe('SubscriptionBillingService', () => {
 
   describe('requestRefund', () => {
     it('refunds Stripe and cancels a paid subscription inside the window', async () => {
+      const expectedPeriodEnd = new Date('2026-08-16T12:00:00.000Z');
+      jest.useFakeTimers();
+      jest.setSystemTime(expectedPeriodEnd);
       const paidSubscription = createSampleSubscription(PlanKind.MONTHLY_PAID);
       paidSubscription.stripeSubscriptionId = 'sub_1';
       mockSubscriptionService.getSubscriptionByUserId.mockResolvedValue(paidSubscription);
@@ -437,15 +440,19 @@ describe('SubscriptionBillingService', () => {
       mockSubscriptionService.cancelSubscription.mockResolvedValue(
         createSampleSubscription(PlanKind.MONTHLY_PAID, SubscriptionStatus.CANCELED),
       );
-      await subscriptionBillingService.requestRefund(5);
-      expect(mockStripeManagerService.refundPaidSubscription).toHaveBeenCalledWith({
-        stripeSubscriptionId: 'sub_1',
-      });
-      expect(mockSubscriptionService.cancelSubscription).toHaveBeenCalledWith(7);
-      expect(mockSubscriptionService.updateSubscription).toHaveBeenCalledWith({
-        id: 7,
-        currentPeriodEnd: expect.any(Date),
-      });
+      try {
+        await subscriptionBillingService.requestRefund(5);
+        expect(mockStripeManagerService.refundPaidSubscription).toHaveBeenCalledWith({
+          stripeSubscriptionId: 'sub_1',
+        });
+        expect(mockSubscriptionService.cancelSubscription).toHaveBeenCalledWith(7);
+        expect(mockSubscriptionService.updateSubscription).toHaveBeenCalledWith({
+          id: 7,
+          currentPeriodEnd: expectedPeriodEnd,
+        });
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it('rejects a refund for a free subscription', async () => {

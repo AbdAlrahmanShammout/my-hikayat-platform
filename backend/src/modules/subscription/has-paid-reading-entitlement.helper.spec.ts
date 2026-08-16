@@ -88,4 +88,15 @@ describe('hasPaidReadingEntitlement', () => {
     );
     expect(actualResult).toBe(false);
   });
+
+  it('denies a paid subscription with no currentPeriodEnd', () => {
+    const actualResult = hasPaidReadingEntitlement(
+      createSampleSubscription({
+        kind: PlanKind.MONTHLY_PAID,
+        currentPeriodEnd: null,
+      }),
+      NOW,
+    );
+    expect(actualResult).toBe(false);
+  });
 });

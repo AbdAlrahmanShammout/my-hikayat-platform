@@ -323,6 +323,15 @@ describe('Admin book management (e2e)', () => {
       .set('Authorization', `Bearer ${getAdminAccessToken()}`);
     expect(alreadyPublished.status).toBe(HttpStatus.BAD_REQUEST);
     expect(alreadyPublished.body.code).toBe('BOOK_ALREADY_PUBLISHED');
+    const prismaProviderService: PrismaProviderService = getRunningApp().get(PrismaProviderService);
+    const republishAudit = await prismaProviderService.auditLog.findFirst({
+      where: {
+        action: AuditAction.BOOK_REPUBLISHED,
+        subjectType: AuditSubjectType.BOOK,
+        subjectId: getPublishedBookId(),
+      },
+    });
+    expect(republishAudit).not.toBeNull();
   });
 
   it('Given an admin session, When a book is deleted, Then it is hidden from admin and author APIs', async () => {

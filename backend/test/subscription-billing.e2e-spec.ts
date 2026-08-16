@@ -284,6 +284,11 @@ describe('Subscription billing (e2e)', () => {
   });
 
   it('Given invoice.payment_failed, When the paid period is still open, Then access remains allowed', async () => {
+    const beforeFailedPayment = await request(getServer())
+      .get('/reader/billing/subscription')
+      .set('Authorization', `Bearer ${getReaderAccessToken()}`);
+    expect(beforeFailedPayment.status).toBe(HttpStatus.OK);
+    const periodEndBeforeFailedPayment = beforeFailedPayment.body.currentPeriodEnd as string;
     const webhookResponse = await request(getServer())
       .post('/webhooks/stripe')
       .set('stripe-signature', 'test')
@@ -305,6 +310,7 @@ describe('Subscription billing (e2e)', () => {
       .set('Authorization', `Bearer ${getReaderAccessToken()}`);
     expect(subscriptionResponse.status).toBe(HttpStatus.OK);
     expect(subscriptionResponse.body.status).toBe(SubscriptionStatus.ACTIVE);
+    expect(subscriptionResponse.body.currentPeriodEnd).toBe(periodEndBeforeFailedPayment);
     const auditLogs = await getRunningApp().get(AuditLogService).listAuditLogs({
       actorUserId: getReaderId(),
       action: AuditAction.SUBSCRIPTION_PAYMENT_FAILED,
