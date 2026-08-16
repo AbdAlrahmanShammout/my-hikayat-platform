@@ -233,7 +233,14 @@ describe('Author monetization APIs (e2e)', () => {
       .set('Authorization', `Bearer ${owner.accessToken}`);
     expect(analyticsResponse.status).toBe(HttpStatus.OK);
     expect(analyticsResponse.body.totalReadingMinutes).toBe(5);
-    expect(analyticsResponse.body.bookEngagements[0].bookId).toBe(fixedBook.id);
+    const analyticsBooks = analyticsResponse.body.bookEngagements as {
+      bookId: number;
+      weightedEngagement: number;
+    }[];
+    expect(analyticsBooks.map((row) => row.bookId)).toEqual([fixedBook.id, reflowableBook.id]);
+    expect(analyticsBooks[0].weightedEngagement).toBeGreaterThan(
+      analyticsBooks[1].weightedEngagement,
+    );
     await readingIntelligenceService.ingestReadingActivity({
       userId: readerId,
       bookId: reflowableBook.id,

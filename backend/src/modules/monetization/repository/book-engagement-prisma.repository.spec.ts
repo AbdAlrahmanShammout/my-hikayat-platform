@@ -77,6 +77,7 @@ describe('BookEngagementPrismaRepository', () => {
           deletedAt: null,
           book: { ownerId: 3, deletedAt: null },
         },
+        orderBy: [{ weightedEngagement: 'desc' }, { bookId: 'asc' }],
       }),
     );
   });

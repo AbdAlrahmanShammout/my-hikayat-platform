@@ -109,7 +109,7 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §10.2 Unpublished books excluded from reader-facing collections | Discovery hydrates via catalog-visible books only; membership is unchanged for admins | `reader-collection.e2e-spec.ts`, `collection-discovery.service.spec.ts` | Complete |
 | §11 Sync reflowable position and bookmarks | Sync snapshot includes progress + bookmarks | `reading-sync.e2e-spec.ts`, `reading-bookmarks.e2e-spec.ts` | Complete |
 | §11 Sync fixed-layout spread/page and bookmarks | Same sync APIs, layout-discriminated fields | `reading-sync.e2e-spec.ts` | Complete |
-| §12.1 Author analytics APIs (total minutes, per book, ranking) | `GET /author/analytics` | `author-monetization.e2e-spec.ts` | Complete |
+| §12.1 Author analytics APIs (total minutes, per book, ranking) | `GET /author/analytics` returns totals and per-book rows ordered by weighted engagement descending (ties by `bookId`). No separate Top-N endpoint. | `author-monetization.e2e-spec.ts`, `book-engagement-prisma.repository.spec.ts` | Complete |
 | §12.2 Author earnings APIs (per book, total, trend) | `GET /author/earnings`, `GET /author/earnings/trend` | `author-monetization.e2e-spec.ts` | Complete |
 | §12.3 Layout-aware heatmap (fixed-layout spreads; reflowable chapters; unmatched title null; hottest first) | `GET /author/analytics/books/:bookId/heatmap`, `GET /admin/revenue-periods/:id/books/:bookId/heatmap` | `author-monetization.e2e-spec.ts`, `admin-monetization.e2e-spec.ts`, `book-heatmap.service.spec.ts` | Complete |
 | §12 Author dashboard UI | — | — | Not Required |

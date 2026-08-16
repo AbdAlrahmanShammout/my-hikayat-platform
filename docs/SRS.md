@@ -780,6 +780,11 @@ Authors can view:
 
 - Top performing books
 
+Top performing books are the author’s books in a revenue period ranked
+by weighted engagement, highest first. Equal weights are ordered by
+book id. Sort is not client-controlled. There is no separate Top-N
+endpoint.
+
 ## **12.2 Earnings**
 
 - Revenue per book
