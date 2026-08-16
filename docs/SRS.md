@@ -539,8 +539,9 @@ Authors earn based on **real reading time engagement**.
 The **Category Weight** logic is active and must be applied when
 calculating author revenue.
 
-For a book assigned to more than one category, category weight is the
-sum of the configured weights of all assigned categories.
+For a book assigned to multiple categories, the effective category weight
+is the arithmetic mean of the configured category weights of all
+assigned categories.
 
 For Reflowable Books, engagement can be measured using active reading
 time and reading activity.
@@ -592,8 +593,9 @@ Where:
   after applying the appropriate engagement metric and category weight.
 
 - categoryWeight represents the configured weight applied to the book:
-  the weight of its category, or the sum of the configured weights of
-  all assigned categories when the book has more than one category.
+  the weight of its category, or the arithmetic mean of the configured
+  category weights of all assigned categories when the book has more
+  than one category.
 
 ## **7.3 Distribution**
 

@@ -149,6 +149,57 @@ describe('BookEngagementService', () => {
       expect(actualEntities).toEqual([expectedEngagement]);
     });
 
+    it('uses the arithmetic mean of assigned category weights', async () => {
+      mockRevenuePeriodService.getRevenuePeriodById.mockResolvedValue(createSamplePeriod());
+      mockReadingIntelligenceService.listBookEngagementSignalsInRange.mockResolvedValue([
+        {
+          bookId: 8,
+          layoutType: BookLayoutType.REFLOWABLE,
+          activeDurationMs: 120000,
+          visualSceneTimeMs: 0,
+        },
+      ]);
+      mockBookService.getBookById.mockResolvedValue(
+        createSampleBook({
+          categories: [
+            new CategoryEntity({
+              id: 2,
+              createdAt: new Date('2026-01-01T00:00:00.000Z'),
+              updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+              name: 'Fiction',
+              slug: 'fiction',
+              categoryWeight: 1,
+            }),
+            new CategoryEntity({
+              id: 3,
+              createdAt: new Date('2026-01-01T00:00:00.000Z'),
+              updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+              name: 'History',
+              slug: 'history',
+              categoryWeight: 2,
+            }),
+          ],
+        }),
+      );
+      mockBookEngagementRepository.replaceForPeriod.mockResolvedValue([]);
+      await bookEngagementService.aggregatePeriodEngagement({ revenuePeriodId: 4 });
+      expect(mockBookEngagementRepository.replaceForPeriod).toHaveBeenCalledWith({
+        revenuePeriodId: 4,
+        rows: [
+          {
+            revenuePeriodId: 4,
+            bookId: 8,
+            layoutType: BookLayoutType.REFLOWABLE,
+            activeReadingMs: 120000,
+            activeSpreadMs: 0,
+            visualSceneTimeMs: 0,
+            categoryWeight: 1.5,
+            weightedEngagement: 3,
+          },
+        ],
+      });
+    });
+
     it('weights fixed-layout spread time and stores visual scene time separately', async () => {
       mockRevenuePeriodService.getRevenuePeriodById.mockResolvedValue(createSamplePeriod());
       mockReadingIntelligenceService.listBookEngagementSignalsInRange.mockResolvedValue([
