@@ -10,29 +10,33 @@ This matrix validates the Part 1 NestJS backend against `docs/SRS.md`.
 | --- | --- |
 | Complete | Implemented in the backend and covered by unit and/or e2e tests |
 | In Progress | A Part 1 backend requirement that is missing or only partly implemented |
+| Future | SRS requirement still present; out of scope for current Part 1 until a documented decision is resolved. Tracked in `docs/FUTURE.md` |
 | Blocked | Cannot finish because of an external dependency |
 | Not Required | Client UI, Part 2, Part 3, or a client-only runtime rule |
 
 Do not treat a row as Complete unless both the backend behavior and tests exist.
 
-**Validation snapshot:** 351 unit spec files, 52 e2e suites, including `test/critical-flow.e2e-spec.ts`. Snapshot after Steps 1–8 and the SRS documentation sync.
+**Validation snapshot:** 351 unit spec files, 52 e2e suites, including `test/critical-flow.e2e-spec.ts`. Snapshot after Steps 1–8 and the reflowable page-tracking decision.
 
 ## Summary
 
 | Status | Count |
 | --- | ---: |
 | Complete | 64 |
-| In Progress | 2 |
+| In Progress | 0 |
+| Future | 2 |
 | Blocked | 0 |
 | Not Required | 15 |
 | **Total** | **81** |
 
-## Open Part 1 gaps
+## Future / out of scope for current Part 1
 
-| SRS Requirement | Why it is not Complete |
-| --- | --- |
-| §5.1 Reading speed (pages/minute) | Not computed or stored. |
-| §5.1 Reflowable time per page | Sessions and chapter rows store active time by spine index, not by page. |
+Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
+
+| SRS Requirement | Status | Reason |
+| --- | --- | --- |
+| §5.1 Reflowable time per page | Future / out of scope for current Part 1 | No stable server-side page definition exists for reflowable content. |
+| §5.1 Reading speed (pages/minute) | Future / out of scope for current Part 1 | No stable server-side page definition exists for reflowable content. |
 
 ## Matrix
 
@@ -81,8 +85,8 @@ Do not treat a row as Complete unless both the backend behavior and tests exist.
 | §5.1 Reflowable total reading time and session counts | Session active ms aggregated into `BookEngagement` | `book-engagement.e2e-spec.ts`, `reading-session.e2e-spec.ts` | Complete |
 | §5.1 Reflowable idle-time detection | `idleDurationMs` on session ingest/end | `reading-intelligence.e2e-spec.ts` | Complete |
 | §5.1 Reflowable time per chapter (active ms per spine index) | Chapter engagement piggybacks on session activity; payload spine or session fallback; unmatched spines allowed; session totals remain monetization source | `reading-chapter-engagement.e2e-spec.ts`, `reading-intelligence.service.spec.ts` | Complete |
-| §5.1 Reflowable time per page | No per-page totals | — | In Progress |
-| §5.1 Reading speed (pages/minute) | Not implemented | — | In Progress |
+| §5.1 Reflowable time per page | Out of scope for current Part 1. Reflowable unit is spine/chapter (`spineIndex` + `scrollOffset`); no server-side page definition. See `docs/FUTURE.md`. | — | Future |
+| §5.1 Reading speed (pages/minute) | Out of scope for current Part 1. Pages/minute needs the same client pagination contract. See `docs/FUTURE.md`. | — | Future |
 | §5.1 Fixed-layout time per page/spread, active spread time, visual scene time, idle | `ReadingVisualEngagement` + session idle | `reading-visual-engagement.e2e-spec.ts` | Complete |
 | §5.2 Session tracking model (start/end, bookId, active vs idle, layout, layout-specific position) | `ReadingSession` | `reading-session.e2e-spec.ts`, `reading-intelligence.e2e-spec.ts` | Complete |
 | §5.2 Reflowable chapter attribution from session activity | Recorded with the session; idle is not copied onto chapter rows | `reading-chapter-engagement.e2e-spec.ts` | Complete |
@@ -130,3 +134,4 @@ Do not treat a row as Complete unless both the backend behavior and tests exist.
 - There is no complimentary paid grant and no user ban flag (soft-delete only).
 - Last-admin protection is unit-tested; it is hard to hit over HTTP because an admin cannot change themselves.
 - Author/admin book metadata PATCH and category-weight PATCH are implemented and are not listed in §2.4 as required audit events.
+- Reflowable time-per-page and reading speed remain SRS requirements. They are Future / out of scope for current Part 1 because there is no stable server-side page definition. See `docs/FUTURE.md`.
