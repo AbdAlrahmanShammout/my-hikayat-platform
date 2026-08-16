@@ -7,6 +7,7 @@
     "pnpm": ">=11.0.0"
   },
   "scripts": {
-    "backend": "pnpm --filter backend"
+    "backend": "pnpm --filter backend",
+    "frontend": "pnpm --filter frontend"
   }
 }

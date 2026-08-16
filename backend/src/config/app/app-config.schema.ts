@@ -3,7 +3,7 @@ import * as Joi from 'joi';
 import { Environment } from '@/config/environment';
 
 export const APP_PORT_DEFAULT = 3000;
-export const APP_CORS_ORIGINS_DEFAULT = 'http://localhost:3000';
+export const APP_CORS_ORIGINS_DEFAULT = 'http://localhost:3000,http://localhost:5173';
 
 export const appConfigSchema = {
   APP_ENV: Joi.string()

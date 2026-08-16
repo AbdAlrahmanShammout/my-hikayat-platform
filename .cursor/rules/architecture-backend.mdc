@@ -1,0 +1,43 @@
+---
+description: Enforce NestJS backend architecture from ARCHITECTURE.md
+globs: backend/**/*.{ts,json}, ARCHITECTURE.md, backend/prisma/**
+alwaysApply: false
+---
+
+Before writing or modifying backend code, consult `ARCHITECTURE.md` and identify the sections
+relevant to the current task.
+
+# Backend architecture authority
+
+`ARCHITECTURE.md` is the authoritative architecture specification for `backend/`.
+
+- Follow its dependency boundaries, folder organization, naming, domain/service/repository
+  split, Prisma and transaction rules, DTO and API conventions, provider isolation,
+  configuration access, auth, error handling, testing, and feature workflows.
+- Preserve persistence payload vs domain entity vs API response DTO.
+- Do not bypass repository abstractions from business services.
+- Do not introduce forbidden dependency directions.
+- Do not introduce alternative NestJS patterns because they are common elsewhere.
+
+If existing code conflicts with `ARCHITECTURE.md`:
+
+1. Do not propagate the conflicting pattern into new code.
+2. Flag the inconsistency.
+3. Follow `ARCHITECTURE.md` for new implementation unless explicitly instructed otherwise.
+
+# Required workflow
+
+1. Identify which `ARCHITECTURE.md` sections apply.
+2. Inspect the affected existing implementation.
+3. Plan according to those rules.
+4. Keep controllers thin; business logic in services; Prisma in repositories; SDKs in
+   providers; transport contracts in DTOs.
+5. Run relevant tests, lint, typecheck, and build if configured.
+6. Review changed files against `ARCHITECTURE.md` before declaring the task complete.
+
+# Compliance check
+
+Verify file placement, naming, module ownership, dependency direction, service/repository
+separation, no direct Prisma from business services, transaction boundary, no persistence
+payload leaking, no entity returned as an API response, DTO usage, provider isolation,
+configuration access, exception handling, and required tests.

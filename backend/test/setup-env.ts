@@ -6,7 +6,8 @@ const DEFAULT_TEST_DATABASE_URL = `postgresql://${userInfo().username}@localhost
 
 process.env.APP_ENV = process.env.APP_ENV ?? Environment.TEST;
 process.env.APP_PORT = process.env.APP_PORT ?? '3000';
-process.env.APP_CORS_ORIGINS = process.env.APP_CORS_ORIGINS ?? 'http://localhost:3000';
+process.env.APP_CORS_ORIGINS =
+  process.env.APP_CORS_ORIGINS ?? 'http://localhost:3000,http://localhost:5173';
 process.env.DATABASE_URL = process.env.DATABASE_URL ?? DEFAULT_TEST_DATABASE_URL;
 process.env.JWT_ACCESS_SECRET =
   process.env.JWT_ACCESS_SECRET ?? 'test-jwt-access-secret-not-for-production';

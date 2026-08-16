@@ -1,0 +1,29 @@
+---
+description: Enforce React dashboard architecture from docs/FRONTEND-ARCHITECTURE.md
+globs: frontend/**/*.{ts,tsx,css,json}, docs/FRONTEND-ARCHITECTURE.md
+alwaysApply: false
+---
+
+Before writing or modifying frontend code, consult `docs/FRONTEND-ARCHITECTURE.md`.
+
+# Frontend architecture authority
+
+`docs/FRONTEND-ARCHITECTURE.md` is the authoritative specification for `frontend/`.
+
+- Feature-oriented structure: `app` → `pages` → `features` → shared `components` / `api` / `lib`
+- Tailwind CSS, shadcn/ui, Lucide, Framer Motion, TanStack Query, React Hook Form + Zod
+- Pages stay thin. No raw `fetch` in components.
+- Server state stays in TanStack Query. UI state stays local.
+- Consume backend HTTP contracts. Do not import `backend/src`.
+- Do not recalculate monetization, entitlement, authorization, or category weights.
+- Every async screen needs loading, empty, and error states.
+- Route guards are UX only. The backend remains the security authority.
+
+If existing frontend code conflicts with `docs/FRONTEND-ARCHITECTURE.md`:
+
+1. Do not propagate the conflicting pattern.
+2. Flag the inconsistency.
+3. Follow `docs/FRONTEND-ARCHITECTURE.md` unless the user explicitly overrides it.
+
+Do not add libraries without justification. Do not create a feature folder without a real
+feature boundary.

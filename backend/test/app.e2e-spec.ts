@@ -23,7 +23,10 @@ describe('App bootstrap (e2e)', () => {
     app = await createTestingApp();
     const appConfigService: AppConfigService = app.get(AppConfigService);
     expect(appConfigService.port).toBe(3000);
-    expect(appConfigService.allowedOrigins).toEqual(['http://localhost:3000']);
+    expect(appConfigService.allowedOrigins).toEqual([
+      'http://localhost:3000',
+      'http://localhost:5173',
+    ]);
   });
 
   it('Given the root module, When TransactionRunner runs work, Then the work commits', async () => {
