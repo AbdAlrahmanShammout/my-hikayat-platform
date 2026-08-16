@@ -5,7 +5,6 @@ import type { Server } from 'node:http';
 import request from 'supertest';
 
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
-import { BookService } from '@/modules/book/book.service';
 import {
   BookLayoutType,
   BookProcessingStatus,
@@ -194,13 +193,17 @@ describe('Part 1 critical flow (e2e)', () => {
     expect(publisherResponse.body.user.role).toBe(UserRole.AUTHOR);
     authorAccessToken = publisherResponse.body.accessToken as string;
     authorUserId = publisherResponse.body.user.id as number;
-    const createdBook = await getRunningApp().get(BookService).createBook({
-      title: bookTitle,
-      description: 'Used by the Part 1 critical-flow e2e.',
-      bookType: BookType.STANDARD_CHAPTER,
-      ownerId: getAuthorUserId(),
-    });
-    bookId = createdBook.id;
+    const createdBookResponse = await request(getServer())
+      .post('/author/books')
+      .set('Authorization', `Bearer ${getAuthorAccessToken()}`)
+      .send({
+        title: bookTitle,
+        description: 'Used by the Part 1 critical-flow e2e.',
+        bookType: BookType.STANDARD_CHAPTER,
+      });
+    expect(createdBookResponse.status).toBe(HttpStatus.CREATED);
+    expect(createdBookResponse.body.publishingStatus).toBe(BookPublishingStatus.PENDING);
+    bookId = createdBookResponse.body.id as number;
     const uploadResponse = await request(getServer())
       .post(`/author/books/${getBookId()}/source`)
       .set('Authorization', `Bearer ${getAuthorAccessToken()}`)

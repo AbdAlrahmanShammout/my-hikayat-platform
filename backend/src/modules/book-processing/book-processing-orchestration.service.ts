@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 
-import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { BOOK_PUBLISHING_TRANSITIONS } from '@/modules/book/book-publishing-transitions';
 import { BookProcessingStatusService } from '@/modules/book/book-processing-status.service';
 import { BookPublishingStatusService } from '@/modules/book/book-publishing-status.service';
@@ -12,7 +11,6 @@ import { BookNotReadyForReviewException } from '@/modules/book/exceptions/book-n
 import { BOOK_PROCESSING_JOB } from '@/modules/book-processing/book-processing-job.constant';
 import { BookProcessingService } from '@/modules/book-processing/book-processing.service';
 import { SubmitBookForReviewServiceInput } from '@/modules/book-processing/defs/book-processing-service.defs';
-import { UserRole } from '@/modules/user/enum/general.enum';
 import { JobManagerService } from '@/providers/job/job-manager.service';
 
 @Injectable()
@@ -53,8 +51,11 @@ export class BookProcessingOrchestrationService {
   }
 
   async submitForReview(input: SubmitBookForReviewServiceInput): Promise<BookEntity> {
-    const book: BookEntity = await this.bookService.getBookById(input.bookId);
-    BookProcessingOrchestrationService.assertCanSubmit(book, input.actorId, input.actorRole);
+    const book: BookEntity = await this.bookService.getManagedBook({
+      bookId: input.bookId,
+      actorId: input.actorId,
+      actorRole: input.actorRole,
+    });
     BookProcessingOrchestrationService.assertCanEnterReview(book.publishingStatus);
     const processed: BookEntity = await this.ensureReadyForReview(book);
     if (processed.processingStatus !== BookProcessingStatus.READY) {
@@ -72,13 +73,6 @@ export class BookProcessingOrchestrationService {
       return book;
     }
     return this.startProcessing(book.id);
-  }
-
-  private static assertCanSubmit(book: BookEntity, actorId: number, actorRole: UserRole): void {
-    if (book.ownerId === actorId || actorRole === UserRole.ADMIN) {
-      return;
-    }
-    throw new ResourceNotFoundException('Book', book.id);
   }
 
   private static assertCanEnterReview(from: BookPublishingStatus): void {

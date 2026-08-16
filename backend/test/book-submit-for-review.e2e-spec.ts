@@ -156,20 +156,26 @@ describe('Book submit for review (e2e)', () => {
   it('Given a reflowable EPUB, When the owner submits for review, Then the book enters review ready', async () => {
     const owner = await registerPublisher(ownerEmail);
     accessToken = owner.accessToken;
-    const createdBook = await getRunningApp().get(BookService).createBook({
-      title: 'Catalog Title',
-      description: 'Used by submit-for-review e2e tests.',
-      bookType: BookType.STANDARD_CHAPTER,
-      ownerId: owner.userId,
-    });
-    bookId = createdBook.id;
-    const failedBook = await getRunningApp().get(BookService).createBook({
-      title: 'Failed Catalog Title',
-      description: 'Used by failed submit-for-review e2e tests.',
-      bookType: BookType.STANDARD_CHAPTER,
-      ownerId: owner.userId,
-    });
-    failedBookId = failedBook.id;
+    const createdBookResponse = await request(getServer())
+      .post('/author/books')
+      .set('Authorization', `Bearer ${getAccessToken()}`)
+      .send({
+        title: 'Catalog Title',
+        description: 'Used by submit-for-review e2e tests.',
+        bookType: BookType.STANDARD_CHAPTER,
+      });
+    expect(createdBookResponse.status).toBe(HttpStatus.CREATED);
+    bookId = createdBookResponse.body.id as number;
+    const failedBookResponse = await request(getServer())
+      .post('/author/books')
+      .set('Authorization', `Bearer ${getAccessToken()}`)
+      .send({
+        title: 'Failed Catalog Title',
+        description: 'Used by failed submit-for-review e2e tests.',
+        bookType: BookType.STANDARD_CHAPTER,
+      });
+    expect(failedBookResponse.status).toBe(HttpStatus.CREATED);
+    failedBookId = failedBookResponse.body.id as number;
     const uploadResponse = await request(getServer())
       .post(`/author/books/${getBookId()}/source`)
       .set('Authorization', `Bearer ${getAccessToken()}`)

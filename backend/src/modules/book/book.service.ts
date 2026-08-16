@@ -6,6 +6,7 @@ import { ResourceNotFoundException } from '@/common/exceptions/resource-not-foun
 import { BookPage } from '@/modules/book/defs/book-repository.defs';
 import {
   CreateBookServiceInput,
+  GetManagedBookServiceInput,
   ListBooksServiceInput,
   ListCatalogBooksServiceInput,
   UpdateBookServiceInput,
@@ -17,6 +18,7 @@ import { BookOwnerNotPublisherException } from '@/modules/book/exceptions/book-o
 import { BookRepository } from '@/modules/book/repository/book.repository';
 import { CategoryService } from '@/modules/category/category.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
+import { UserRole } from '@/modules/user/enum/general.enum';
 import { UserService } from '@/modules/user/user.service';
 
 @Injectable()
@@ -109,6 +111,14 @@ export class BookService {
       throw new ResourceNotFoundException('Book', id);
     }
     return book;
+  }
+
+  async getManagedBook(input: GetManagedBookServiceInput): Promise<BookEntity> {
+    const book: BookEntity = await this.getBookById(input.bookId);
+    if (book.ownerId === input.actorId || input.actorRole === UserRole.ADMIN) {
+      return book;
+    }
+    throw new ResourceNotFoundException('Book', book.id);
   }
 
   async getCatalogBookById(id: number): Promise<BookEntity> {

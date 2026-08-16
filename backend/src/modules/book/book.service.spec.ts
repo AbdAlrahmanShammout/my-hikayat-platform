@@ -369,6 +369,52 @@ describe('BookService', () => {
     });
   });
 
+  describe('getManagedBook', () => {
+    it('returns a book owned by the actor', async () => {
+      const expectedBook = createSampleBook();
+      mockBookRepository.findById.mockResolvedValue(expectedBook);
+      const actualBook = await bookService.getManagedBook({
+        bookId: 8,
+        actorId: 4,
+        actorRole: UserRole.AUTHOR,
+      });
+      expect(actualBook).toBe(expectedBook);
+    });
+
+    it('returns a foreign book to an admin', async () => {
+      const expectedBook = createSampleBook();
+      mockBookRepository.findById.mockResolvedValue(expectedBook);
+      const actualBook = await bookService.getManagedBook({
+        bookId: 8,
+        actorId: 9,
+        actorRole: UserRole.ADMIN,
+      });
+      expect(actualBook).toBe(expectedBook);
+    });
+
+    it('hides a foreign book from another author', async () => {
+      mockBookRepository.findById.mockResolvedValue(createSampleBook());
+      await expect(
+        bookService.getManagedBook({
+          bookId: 8,
+          actorId: 99,
+          actorRole: UserRole.AUTHOR,
+        }),
+      ).rejects.toBeInstanceOf(ResourceNotFoundException);
+    });
+
+    it('throws when the book is missing', async () => {
+      mockBookRepository.findById.mockResolvedValue(null);
+      await expect(
+        bookService.getManagedBook({
+          bookId: 99,
+          actorId: 4,
+          actorRole: UserRole.AUTHOR,
+        }),
+      ).rejects.toBeInstanceOf(ResourceNotFoundException);
+    });
+  });
+
   describe('listCatalogBooksByIds', () => {
     it('returns an empty list without querying when no ids are provided', async () => {
       const actualBooks = await bookService.listCatalogBooksByIds([]);

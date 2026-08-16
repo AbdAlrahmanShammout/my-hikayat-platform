@@ -43,7 +43,7 @@ function createSampleBook(options: SampleBookOptions = {}): BookEntity {
 }
 
 describe('BookProcessingOrchestrationService', () => {
-  let mockBookService: { getBookById: jest.Mock };
+  let mockBookService: { getBookById: jest.Mock; getManagedBook: jest.Mock };
   let mockBookProcessingStatusService: { transitionProcessingStatus: jest.Mock };
   let mockBookPublishingStatusService: { transitionPublishingStatus: jest.Mock };
   let mockBookProcessingService: { processSource: jest.Mock };
@@ -51,7 +51,7 @@ describe('BookProcessingOrchestrationService', () => {
   let bookProcessingOrchestrationService: BookProcessingOrchestrationService;
 
   beforeEach(() => {
-    mockBookService = { getBookById: jest.fn() };
+    mockBookService = { getBookById: jest.fn(), getManagedBook: jest.fn() };
     mockBookProcessingStatusService = { transitionProcessingStatus: jest.fn() };
     mockBookPublishingStatusService = { transitionPublishingStatus: jest.fn() };
     mockBookProcessingService = { processSource: jest.fn() };
@@ -140,7 +140,7 @@ describe('BookProcessingOrchestrationService', () => {
 
     it('submits a ready pending book without reprocessing', async () => {
       const expectedBook = createSampleBook({ publishingStatus: BookPublishingStatus.IN_REVIEW });
-      mockBookService.getBookById.mockResolvedValue(createSampleBook());
+      mockBookService.getManagedBook.mockResolvedValue(createSampleBook());
       mockBookPublishingStatusService.transitionPublishingStatus.mockResolvedValue(expectedBook);
       const actualBook = await bookProcessingOrchestrationService.submitForReview(ownerInput);
       expect(mockJobManagerService.enqueue).not.toHaveBeenCalled();
@@ -154,11 +154,10 @@ describe('BookProcessingOrchestrationService', () => {
 
     it('processes a pending book before moving it into review', async () => {
       const expectedBook = createSampleBook({ publishingStatus: BookPublishingStatus.IN_REVIEW });
-      mockBookService.getBookById
-        .mockResolvedValueOnce(
-          createSampleBook({ processingStatus: BookProcessingStatus.NOT_STARTED }),
-        )
-        .mockResolvedValueOnce(createSampleBook());
+      mockBookService.getManagedBook.mockResolvedValue(
+        createSampleBook({ processingStatus: BookProcessingStatus.NOT_STARTED }),
+      );
+      mockBookService.getBookById.mockResolvedValue(createSampleBook());
       mockBookProcessingStatusService.transitionProcessingStatus.mockResolvedValue(
         createSampleBook({ processingStatus: BookProcessingStatus.PROCESSING }),
       );
@@ -177,9 +176,14 @@ describe('BookProcessingOrchestrationService', () => {
 
     it('allows an admin to submit another owner book', async () => {
       const expectedBook = createSampleBook({ publishingStatus: BookPublishingStatus.IN_REVIEW });
-      mockBookService.getBookById.mockResolvedValue(createSampleBook());
+      mockBookService.getManagedBook.mockResolvedValue(createSampleBook());
       mockBookPublishingStatusService.transitionPublishingStatus.mockResolvedValue(expectedBook);
       const actualBook = await bookProcessingOrchestrationService.submitForReview({
+        bookId: 8,
+        actorId: 99,
+        actorRole: UserRole.ADMIN,
+      });
+      expect(mockBookService.getManagedBook).toHaveBeenCalledWith({
         bookId: 8,
         actorId: 99,
         actorRole: UserRole.ADMIN,
@@ -188,7 +192,7 @@ describe('BookProcessingOrchestrationService', () => {
     });
 
     it('hides a book from a non-owner author', async () => {
-      mockBookService.getBookById.mockResolvedValue(createSampleBook());
+      mockBookService.getManagedBook.mockRejectedValue(new ResourceNotFoundException('Book', 8));
       await expect(
         bookProcessingOrchestrationService.submitForReview({
           bookId: 8,
@@ -201,7 +205,7 @@ describe('BookProcessingOrchestrationService', () => {
     });
 
     it('rejects submitting a book that is already in review', async () => {
-      mockBookService.getBookById.mockResolvedValue(
+      mockBookService.getManagedBook.mockResolvedValue(
         createSampleBook({ publishingStatus: BookPublishingStatus.IN_REVIEW }),
       );
       await expect(
@@ -213,7 +217,7 @@ describe('BookProcessingOrchestrationService', () => {
 
     it('resubmits a rejected book that is already processed', async () => {
       const expectedBook = createSampleBook({ publishingStatus: BookPublishingStatus.IN_REVIEW });
-      mockBookService.getBookById.mockResolvedValue(
+      mockBookService.getManagedBook.mockResolvedValue(
         createSampleBook({ publishingStatus: BookPublishingStatus.REJECTED }),
       );
       mockBookPublishingStatusService.transitionPublishingStatus.mockResolvedValue(expectedBook);
@@ -223,11 +227,12 @@ describe('BookProcessingOrchestrationService', () => {
     });
 
     it('keeps publishing pending when processing fails', async () => {
-      mockBookService.getBookById
-        .mockResolvedValueOnce(
-          createSampleBook({ processingStatus: BookProcessingStatus.NOT_STARTED }),
-        )
-        .mockResolvedValueOnce(createSampleBook({ processingStatus: BookProcessingStatus.FAILED }));
+      mockBookService.getManagedBook.mockResolvedValue(
+        createSampleBook({ processingStatus: BookProcessingStatus.NOT_STARTED }),
+      );
+      mockBookService.getBookById.mockResolvedValue(
+        createSampleBook({ processingStatus: BookProcessingStatus.FAILED }),
+      );
       mockBookProcessingStatusService.transitionProcessingStatus.mockResolvedValue(
         createSampleBook({ processingStatus: BookProcessingStatus.PROCESSING }),
       );

@@ -5,6 +5,7 @@ import {
   BookPublishingStatus,
   BookType,
 } from '@/modules/book/enum/general.enum';
+import { UserRole } from '@/modules/user/enum/general.enum';
 
 export type CreateBookServiceInput = {
   readonly title: string;
@@ -24,6 +25,12 @@ export type UpdateBookServiceInput = {
   readonly publishingStatus?: BookPublishingStatus;
   readonly publishedAt?: Date | null;
   readonly categoryIds?: readonly number[];
+};
+
+export type GetManagedBookServiceInput = {
+  readonly bookId: number;
+  readonly actorId: number;
+  readonly actorRole: UserRole;
 };
 
 export type ListBooksServiceInput = {

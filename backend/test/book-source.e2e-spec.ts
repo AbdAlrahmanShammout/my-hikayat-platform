@@ -4,7 +4,6 @@ import type { INestApplication } from '@nestjs/common';
 import type { Server } from 'node:http';
 import request from 'supertest';
 
-import { BookService } from '@/modules/book/book.service';
 import { BookType } from '@/modules/book/enum/general.enum';
 import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
 import { UserRole } from '@/modules/user/enum/general.enum';
@@ -90,16 +89,18 @@ describe('Book source upload (e2e)', () => {
 
   it('Given a publisher session, When PDF and EPUB sources are uploaded, Then encrypted assets are stored', async () => {
     const owner = await registerPublisher(ownerEmail);
-    const bookService: BookService = getRunningApp().get(BookService);
-    const createdBook = await bookService.createBook({
-      title: 'Source Upload Fixture',
-      description: 'Used by source upload e2e tests.',
-      bookType: BookType.STANDARD_CHAPTER,
-      ownerId: owner.userId,
-    });
-    bookId = createdBook.id;
+    const createdBookResponse = await request(getServer())
+      .post('/author/books')
+      .set('Authorization', `Bearer ${owner.accessToken}`)
+      .send({
+        title: 'Source Upload Fixture',
+        description: 'Used by source upload e2e tests.',
+        bookType: BookType.STANDARD_CHAPTER,
+      });
+    expect(createdBookResponse.status).toBe(HttpStatus.CREATED);
+    bookId = createdBookResponse.body.id as number;
     const pdfResponse = await request(getServer())
-      .post(`/author/books/${createdBook.id}/source`)
+      .post(`/author/books/${getBookId()}/source`)
       .set('Authorization', `Bearer ${owner.accessToken}`)
       .attach('file', pdfBytes, { filename: 'book.pdf', contentType: 'application/pdf' });
     expect(pdfResponse.status).toBe(HttpStatus.CREATED);
@@ -108,7 +109,7 @@ describe('Book source upload (e2e)', () => {
     expect(pdfResponse.body.contentType).toBe('application/pdf');
     expect(pdfResponse.body.originalFileName).toBe('book.pdf');
     expect(pdfResponse.body.storageKey).toMatch(
-      new RegExp(`^books/${createdBook.id}/source/[0-9a-f-]{36}$`),
+      new RegExp(`^books/${getBookId()}/source/[0-9a-f-]{36}$`),
     );
     expect(pdfResponse.body.storageKey).not.toContain('book.pdf');
     expect(pdfResponse.body.checksumSha256).toMatch(/^[a-f0-9]{64}$/);
@@ -122,7 +123,7 @@ describe('Book source upload (e2e)', () => {
       .decrypt({ ciphertext: storedPdf.body });
     expect(decryptedPdf.plaintext.equals(pdfBytes)).toBe(true);
     const epubResponse = await request(getServer())
-      .post(`/author/books/${createdBook.id}/source`)
+      .post(`/author/books/${getBookId()}/source`)
       .set('Authorization', `Bearer ${owner.accessToken}`)
       .attach('file', epubBytes, { filename: 'book.epub', contentType: 'application/epub+zip' });
     expect(epubResponse.status).toBe(HttpStatus.CREATED);
