@@ -16,6 +16,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
 import { deleteUsersByEmail } from './delete-users.helper';
+import { publishTestBook } from './publish-test-book';
 
 describe('Book revenue calculation (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -120,6 +121,8 @@ describe('Book revenue calculation (e2e)', () => {
       ownerId,
       categoryIds: [picture.id],
     });
+    await publishTestBook(getRunningApp(), reflowableBook.id);
+    await publishTestBook(getRunningApp(), fixedBook.id);
     const readerRegister = await request(getServer()).post('/auth/register').send({
       email: readerEmail,
       password,
@@ -171,6 +174,7 @@ describe('Book revenue calculation (e2e)', () => {
     const bookRevenueService: BookRevenueService = getRunningApp().get(BookRevenueService);
     const calculated = await bookRevenueService.calculatePeriodRevenue({
       revenuePeriodId: period.id,
+      actorUserId: ownerId,
     });
     const reflowable = calculated.find((row) => row.bookId === reflowableBook.id);
     const fixed = calculated.find((row) => row.bookId === fixedBook.id);

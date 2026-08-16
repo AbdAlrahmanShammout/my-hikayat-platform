@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { STRIPE } from '@/providers/stripe/consts';
 import {
   ConstructStripeWebhookEventInput,
   CreateStripeCheckoutSessionInput,
@@ -16,6 +17,8 @@ import { StripeInvalidWebhookException } from '@/providers/stripe/exceptions/str
 import { StripeNotInitializedException } from '@/providers/stripe/exceptions/stripe-not-initialized.exception';
 import { StripeEventHandlers } from '@/providers/stripe/interfaces/stripe-event-handlers.interface';
 import { mapStripeWebhookEvent } from '@/providers/stripe/map-stripe-webhook-event.helper';
+
+const MEMORY_CHECKOUT_PERIOD_MS: number = 30 * 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class MemoryStripeManagerService {
@@ -58,7 +61,7 @@ export class MemoryStripeManagerService {
       throw new StripeNotInitializedException();
     }
     await dispatchStripeWebhookEvent({
-      event: this.constructWebhookEvent(input),
+      event: this.enrichCheckoutPeriods(this.constructWebhookEvent(input)),
       eventHandlers: this.eventHandlers,
     });
   }
@@ -69,6 +72,23 @@ export class MemoryStripeManagerService {
 
   cancelPaidSubscription(_input: CancelPaidSubscriptionInput): Promise<void> {
     return Promise.resolve();
+  }
+
+  private enrichCheckoutPeriods(event: StripeWebhookEvent): StripeWebhookEvent {
+    if (event.type !== STRIPE.webhookEventType.checkoutSessionCompleted) {
+      return event;
+    }
+    if (event.currentPeriodStart !== null && event.currentPeriodEnd !== null) {
+      return event;
+    }
+    const currentPeriodStart: Date = event.currentPeriodStart ?? new Date();
+    const currentPeriodEnd: Date =
+      event.currentPeriodEnd ?? new Date(currentPeriodStart.getTime() + MEMORY_CHECKOUT_PERIOD_MS);
+    return {
+      ...event,
+      currentPeriodStart,
+      currentPeriodEnd,
+    };
   }
 
   private static parsePayload(payload: string | Buffer): unknown {

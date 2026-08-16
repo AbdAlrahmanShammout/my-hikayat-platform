@@ -20,6 +20,7 @@ import { CheckoutReturnUrlInvalidException } from '@/modules/subscription/except
 import { RefundNotEligibleException } from '@/modules/subscription/exceptions/refund-not-eligible.exception';
 import { RefundWindowExpiredException } from '@/modules/subscription/exceptions/refund-window-expired.exception';
 import { SubscriptionAlreadyPaidException } from '@/modules/subscription/exceptions/subscription-already-paid.exception';
+import { hasPaidReadingEntitlement } from '@/modules/subscription/has-paid-reading-entitlement.helper';
 import { PlanService } from '@/modules/subscription/plan.service';
 import { SubscriptionRepository } from '@/modules/subscription/repository/subscription.repository';
 import { SubscriptionService } from '@/modules/subscription/subscription.service';
@@ -27,6 +28,7 @@ import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserService } from '@/modules/user/user.service';
 import {
   HandleCheckoutCompletedInput,
+  HandleInvoicePaymentFailedInput,
   HandleSubscriptionCanceledInput,
   HandleSubscriptionRenewedInput,
 } from '@/providers/stripe/defs/stripe-manager.defs';
@@ -51,7 +53,7 @@ export class SubscriptionBillingService {
     this.assertCheckoutReturnUrl(input.successUrl);
     this.assertCheckoutReturnUrl(input.cancelUrl);
     const subscription: SubscriptionEntity = await this.resolveCheckoutSubscription(user.id);
-    if (SubscriptionBillingService.isPaidMonthly(subscription)) {
+    if (hasPaidReadingEntitlement(subscription)) {
       throw new SubscriptionAlreadyPaidException();
     }
     const customerId: string = await this.resolveStripeCustomerId(user, subscription);
@@ -87,7 +89,13 @@ export class SubscriptionBillingService {
     await this.stripeManagerService.refundPaidSubscription({
       stripeSubscriptionId: subscription.stripeSubscriptionId,
     });
-    return this.subscriptionService.cancelSubscription(subscription.id);
+    const canceled: SubscriptionEntity = await this.subscriptionService.cancelSubscription(
+      subscription.id,
+    );
+    return this.subscriptionService.updateSubscription({
+      id: canceled.id,
+      currentPeriodEnd: new Date(),
+    });
   }
 
   async cancelManagedSubscription(
@@ -190,6 +198,28 @@ export class SubscriptionBillingService {
     await this.subscriptionService.updateSubscription({
       id: subscription.id,
       currentPeriodEnd: input.currentPeriodEnd,
+    });
+  }
+
+  async applyInvoicePaymentFailed(input: HandleInvoicePaymentFailedInput): Promise<void> {
+    const subscription: SubscriptionEntity | null = await this.findSubscriptionByStripeIds({
+      subscriptionId: input.subscriptionId,
+      customerId: input.customerId,
+    });
+    if (subscription === null) {
+      return;
+    }
+    await this.auditLogService.append({
+      actorUserId: subscription.userId,
+      action: AuditAction.SUBSCRIPTION_PAYMENT_FAILED,
+      subjectType: AuditSubjectType.SUBSCRIPTION,
+      subjectId: subscription.id,
+      metadata: {
+        stripeInvoiceId: input.invoiceId,
+        stripeCustomerId: input.customerId,
+        stripeSubscriptionId: input.subscriptionId,
+        invoiceStatus: input.status,
+      },
     });
   }
 

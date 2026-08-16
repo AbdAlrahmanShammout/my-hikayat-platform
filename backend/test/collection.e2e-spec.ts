@@ -89,11 +89,13 @@ describe('Collection domain (e2e)', () => {
     const created = await collectionService.createCollection({
       title: `Harbor Picks ${slugSuffix}`,
       bookIds: [firstBook.id, secondBook.id],
+      actorUserId: ownerId,
     });
     expect(created.items?.map((item) => item.bookId)).toEqual([firstBook.id, secondBook.id]);
     const reordered = await collectionService.reorderCollectionBooks({
       collectionId: created.id,
       bookIds: [secondBook.id, firstBook.id],
+      actorUserId: ownerId,
     });
     expect(reordered.items?.map((item) => item.bookId)).toEqual([secondBook.id, firstBook.id]);
     expect(reordered.items?.map((item) => item.displayOrder)).toEqual([0, 1]);

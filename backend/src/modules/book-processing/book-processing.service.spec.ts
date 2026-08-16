@@ -281,10 +281,10 @@ describe('BookProcessingService', () => {
     update: jest.Mock;
     findByBookId: jest.Mock;
   };
-  let mockBookChapterRepository: { replaceByBookId: jest.Mock };
+  let mockBookChapterRepository: { replaceByBookId: jest.Mock; listByBookId: jest.Mock };
   let mockBookPageRepository: { replaceByBookId: jest.Mock; listByBookId: jest.Mock };
   let mockBookPageTextLayerRepository: { replaceByBookId: jest.Mock };
-  let mockBookService: { updateBook: jest.Mock };
+  let mockBookService: { updateBook: jest.Mock; getBookById: jest.Mock };
   let mockStorageManagerService: { getObject: jest.Mock };
   let mockEncryptionManagerService: { decrypt: jest.Mock };
   let bookProcessingService: BookProcessingService;
@@ -296,10 +296,10 @@ describe('BookProcessingService', () => {
       update: jest.fn(),
       findByBookId: jest.fn(),
     };
-    mockBookChapterRepository = { replaceByBookId: jest.fn() };
+    mockBookChapterRepository = { replaceByBookId: jest.fn(), listByBookId: jest.fn() };
     mockBookPageRepository = { replaceByBookId: jest.fn(), listByBookId: jest.fn() };
     mockBookPageTextLayerRepository = { replaceByBookId: jest.fn() };
-    mockBookService = { updateBook: jest.fn() };
+    mockBookService = { updateBook: jest.fn(), getBookById: jest.fn() };
     mockStorageManagerService = { getObject: jest.fn() };
     mockEncryptionManagerService = { decrypt: jest.fn() };
     bookProcessingService = new BookProcessingService(
@@ -586,6 +586,26 @@ describe('BookProcessingService', () => {
         BookProcessingNotReflowableException,
       );
       expect(mockBookChapterRepository.replaceByBookId).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('listBookChapters', () => {
+    it('lists persisted chapters after confirming the book exists', async () => {
+      const expectedChapters = [createSampleChapter()];
+      mockBookService.getBookById.mockResolvedValue(createSampleBook(BookLayoutType.REFLOWABLE));
+      mockBookChapterRepository.listByBookId.mockResolvedValue(expectedChapters);
+      const actualChapters = await bookProcessingService.listBookChapters(8);
+      expect(mockBookService.getBookById).toHaveBeenCalledWith(8);
+      expect(mockBookChapterRepository.listByBookId).toHaveBeenCalledWith(8);
+      expect(actualChapters).toBe(expectedChapters);
+    });
+
+    it('does not list chapters when the book is missing', async () => {
+      mockBookService.getBookById.mockRejectedValue(new ResourceNotFoundException('Book', 8));
+      await expect(bookProcessingService.listBookChapters(8)).rejects.toBeInstanceOf(
+        ResourceNotFoundException,
+      );
+      expect(mockBookChapterRepository.listByBookId).not.toHaveBeenCalled();
     });
   });
 

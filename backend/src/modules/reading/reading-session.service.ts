@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { TransactionContext } from '@/common/base/transaction-context';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { BookService } from '@/modules/book/book.service';
 import { BookEntity } from '@/modules/book/entity/book.entity';
@@ -75,6 +76,7 @@ export class ReadingSessionService {
 
   async recordReadingSessionActivity(
     input: RecordReadingSessionActivityServiceInput,
+    context?: TransactionContext,
   ): Promise<ReadingSessionEntity> {
     const session: ReadingSessionEntity = await this.getOwnedOpenReadingSession({
       id: input.id,
@@ -87,15 +89,21 @@ export class ReadingSessionService {
       session.layoutType,
       input,
     );
-    return this.readingSessionRepository.update({
-      id: session.id,
-      activeDurationMs: session.activeDurationMs + input.activeDurationMs,
-      idleDurationMs: session.idleDurationMs + input.idleDurationMs,
-      ...position,
-    });
+    return this.readingSessionRepository.update(
+      {
+        id: session.id,
+        activeDurationMs: session.activeDurationMs + input.activeDurationMs,
+        idleDurationMs: session.idleDurationMs + input.idleDurationMs,
+        ...position,
+      },
+      context,
+    );
   }
 
-  async endReadingSession(input: EndReadingSessionServiceInput): Promise<ReadingSessionEntity> {
+  async endReadingSession(
+    input: EndReadingSessionServiceInput,
+    context?: TransactionContext,
+  ): Promise<ReadingSessionEntity> {
     const session: ReadingSessionEntity = await this.getOwnedOpenReadingSession({
       id: input.id,
       userId: input.userId,
@@ -113,19 +121,22 @@ export class ReadingSessionService {
       session.layoutType,
       input,
     );
-    return this.readingSessionRepository.update({
-      id: session.id,
-      endedAt,
-      activeDurationMs:
-        input.activeDurationMs !== undefined
-          ? session.activeDurationMs + input.activeDurationMs
-          : undefined,
-      idleDurationMs:
-        input.idleDurationMs !== undefined
-          ? session.idleDurationMs + input.idleDurationMs
-          : undefined,
-      ...position,
-    });
+    return this.readingSessionRepository.update(
+      {
+        id: session.id,
+        endedAt,
+        activeDurationMs:
+          input.activeDurationMs !== undefined
+            ? session.activeDurationMs + input.activeDurationMs
+            : undefined,
+        idleDurationMs:
+          input.idleDurationMs !== undefined
+            ? session.idleDurationMs + input.idleDurationMs
+            : undefined,
+        ...position,
+      },
+      context,
+    );
   }
 
   async findReadingSessionById(id: number): Promise<ReadingSessionEntity | null> {

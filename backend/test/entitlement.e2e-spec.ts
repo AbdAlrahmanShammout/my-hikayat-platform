@@ -15,6 +15,8 @@ import {
   BookType,
 } from '@/modules/book/enum/general.enum';
 import { CategoryService } from '@/modules/category/category.service';
+import { PlanKind, SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
+import { SubscriptionService } from '@/modules/subscription/subscription.service';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { assignMonthlySubscription } from './assign-monthly-subscription';
@@ -31,7 +33,9 @@ describe('Entitlement (e2e)', () => {
   const missingBookId = 999_999_999;
   let app: INestApplication | undefined;
   let publishedBookId: number | undefined;
+  let freeUserId: number | undefined;
   let freeAccessToken: string | undefined;
+  let paidUserId: number | undefined;
   let paidAccessToken: string | undefined;
 
   beforeAll(async () => {
@@ -93,6 +97,20 @@ describe('Entitlement (e2e)', () => {
     return paidAccessToken;
   }
 
+  function getFreeUserId(): number {
+    if (freeUserId === undefined) {
+      throw new Error('Free user was not created');
+    }
+    return freeUserId;
+  }
+
+  function getPaidUserId(): number {
+    if (paidUserId === undefined) {
+      throw new Error('Paid user was not created');
+    }
+    return paidUserId;
+  }
+
   async function registerUser(email: string): Promise<{ userId: number; accessToken: string }> {
     const registerResponse = await request(getServer()).post('/auth/register').send({
       email,
@@ -147,6 +165,7 @@ describe('Entitlement (e2e)', () => {
 
   it('Given a free reader, When the catalog is listed, Then browsing is allowed', async () => {
     const freeUser = await registerUser(freeEmail);
+    freeUserId = freeUser.userId;
     freeAccessToken = freeUser.accessToken;
     const actualResponse = await request(getServer())
       .get('/reader/catalog')
@@ -191,6 +210,7 @@ describe('Entitlement (e2e)', () => {
   it('Given a paid reader, When progress is saved, Then the position is stored', async () => {
     const paidUser = await registerUser(paidEmail);
     await assignMonthlySubscription(getRunningApp(), paidUser.userId);
+    paidUserId = paidUser.userId;
     paidAccessToken = paidUser.accessToken;
     const actualResponse = await request(getServer())
       .put(`/reader/books/${getPublishedBookId()}/progress`)
@@ -200,5 +220,100 @@ describe('Entitlement (e2e)', () => {
     expect(actualResponse.body.bookId).toBe(getPublishedBookId());
     expect(actualResponse.body.spineIndex).toBe(1);
     expect(actualResponse.body.scrollOffset).toBe(40);
+  });
+
+  it('Given an active paid subscription after currentPeriodEnd, When progress is saved, Then paid access is required', async () => {
+    const subscriptionService: SubscriptionService = getRunningApp().get(SubscriptionService);
+    const subscription = await subscriptionService.getSubscriptionByUserId(getPaidUserId());
+    await subscriptionService.updateSubscription({
+      id: subscription.id,
+      status: SubscriptionStatus.ACTIVE,
+      currentPeriodEnd: new Date('2020-01-01T00:00:00.000Z'),
+      canceledAt: null,
+    });
+    const actualResponse = await request(getServer())
+      .put(`/reader/books/${getPublishedBookId()}/progress`)
+      .set('Authorization', `Bearer ${getPaidAccessToken()}`)
+      .send({ spineIndex: 1, scrollOffset: 41 });
+    expect(actualResponse.status).toBe(HttpStatus.FORBIDDEN);
+    expect(actualResponse.body.code).toBe('FULL_BOOK_ACCESS_DENIED');
+  });
+
+  it('Given an active paid subscription after currentPeriodEnd, When checkout starts, Then a hosted checkout URL is returned', async () => {
+    const actualResponse = await request(getServer())
+      .post('/reader/billing/checkout')
+      .set('Authorization', `Bearer ${getPaidAccessToken()}`)
+      .send({
+        successUrl: 'http://localhost:3000/success',
+        cancelUrl: 'http://localhost:3000/cancel',
+      });
+    expect(actualResponse.status).toBe(HttpStatus.OK);
+    expect(actualResponse.body.url).toEqual(expect.any(String));
+  });
+
+  it('Given a canceled paid subscription before currentPeriodEnd, When progress is saved, Then the position is stored', async () => {
+    await assignMonthlySubscription(getRunningApp(), getPaidUserId(), {
+      status: SubscriptionStatus.CANCELED,
+      currentPeriodEnd: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+    const actualResponse = await request(getServer())
+      .put(`/reader/books/${getPublishedBookId()}/progress`)
+      .set('Authorization', `Bearer ${getPaidAccessToken()}`)
+      .send({ spineIndex: 2, scrollOffset: 50 });
+    expect(actualResponse.status).toBe(HttpStatus.OK);
+    expect(actualResponse.body.spineIndex).toBe(2);
+  });
+
+  it('Given a canceled paid subscription before currentPeriodEnd, When checkout starts, Then the request conflicts', async () => {
+    const actualResponse = await request(getServer())
+      .post('/reader/billing/checkout')
+      .set('Authorization', `Bearer ${getPaidAccessToken()}`)
+      .send({
+        successUrl: 'http://localhost:3000/success',
+        cancelUrl: 'http://localhost:3000/cancel',
+      });
+    expect(actualResponse.status).toBe(HttpStatus.CONFLICT);
+    expect(actualResponse.body.code).toBe('SUBSCRIPTION_ALREADY_PAID');
+  });
+
+  it('Given a canceled paid subscription after currentPeriodEnd, When progress is saved, Then paid access is required', async () => {
+    await assignMonthlySubscription(getRunningApp(), getPaidUserId(), {
+      status: SubscriptionStatus.CANCELED,
+      currentPeriodEnd: new Date('2020-01-01T00:00:00.000Z'),
+    });
+    const actualResponse = await request(getServer())
+      .put(`/reader/books/${getPublishedBookId()}/progress`)
+      .set('Authorization', `Bearer ${getPaidAccessToken()}`)
+      .send({ spineIndex: 3, scrollOffset: 60 });
+    expect(actualResponse.status).toBe(HttpStatus.FORBIDDEN);
+    expect(actualResponse.body.code).toBe('FULL_BOOK_ACCESS_DENIED');
+  });
+
+  it('Given a canceled paid subscription after currentPeriodEnd, When checkout starts, Then a hosted checkout URL is returned', async () => {
+    const actualResponse = await request(getServer())
+      .post('/reader/billing/checkout')
+      .set('Authorization', `Bearer ${getPaidAccessToken()}`)
+      .send({
+        successUrl: 'http://localhost:3000/success',
+        cancelUrl: 'http://localhost:3000/cancel',
+      });
+    expect(actualResponse.status).toBe(HttpStatus.OK);
+    expect(actualResponse.body.url).toEqual(expect.any(String));
+  });
+
+  it('Given a free plan with a future currentPeriodEnd, When progress is saved, Then paid access is required', async () => {
+    const subscriptionService: SubscriptionService = getRunningApp().get(SubscriptionService);
+    const subscription = await subscriptionService.ensureFreeSubscription(getFreeUserId());
+    expect(subscription.plan?.kind).toBe(PlanKind.FREE);
+    await subscriptionService.updateSubscription({
+      id: subscription.id,
+      currentPeriodEnd: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+    const actualResponse = await request(getServer())
+      .put(`/reader/books/${getPublishedBookId()}/progress`)
+      .set('Authorization', `Bearer ${getFreeAccessToken()}`)
+      .send({ spineIndex: 0, scrollOffset: 1 });
+    expect(actualResponse.status).toBe(HttpStatus.FORBIDDEN);
+    expect(actualResponse.body.code).toBe('FULL_BOOK_ACCESS_DENIED');
   });
 });

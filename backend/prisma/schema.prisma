@@ -25,9 +25,10 @@ model User {
   books                    Book[]
   readingProgresses        ReadingProgress[]
   readingBookmarks         ReadingBookmark[]
-  readingSessions          ReadingSession[]
-  readingVisualEngagements ReadingVisualEngagement[]
-  subscription             Subscription?
+  readingSessions            ReadingSession[]
+  readingVisualEngagements   ReadingVisualEngagement[]
+  readingChapterEngagements  ReadingChapterEngagement[]
+  subscription               Subscription?
   bookRevenues             BookRevenue[]
   auditLogs                AuditLog[]
 }
@@ -91,9 +92,10 @@ model Book {
   pageTextLayers    BookPageTextLayer[]
   readingProgresses        ReadingProgress[]
   readingBookmarks         ReadingBookmark[]
-  readingSessions          ReadingSession[]
-  readingVisualEngagements ReadingVisualEngagement[]
-  collectionBooks          CollectionBook[]
+  readingSessions            ReadingSession[]
+  readingVisualEngagements   ReadingVisualEngagement[]
+  readingChapterEngagements  ReadingChapterEngagement[]
+  collectionBooks            CollectionBook[]
   bookEngagements          BookEngagement[]
   bookRevenues             BookRevenue[]
 
@@ -306,7 +308,8 @@ model ReadingSession {
   deletedAt         DateTime?
   user              User                      @relation(fields: [userId], references: [id])
   book              Book                      @relation(fields: [bookId], references: [id])
-  visualEngagements ReadingVisualEngagement[]
+  visualEngagements  ReadingVisualEngagement[]
+  chapterEngagements ReadingChapterEngagement[]
 
   @@index([userId])
   @@index([bookId])
@@ -331,6 +334,27 @@ model ReadingVisualEngagement {
   session            ReadingSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, spreadIndex, pageNumber])
+  @@index([sessionId])
+  @@index([userId, bookId])
+  @@index([bookId])
+}
+
+model ReadingChapterEngagement {
+  id                Int             @id @default(autoincrement())
+  userId            Int
+  bookId            Int
+  sessionId         Int
+  layoutType        BookLayoutType
+  spineIndex        Int
+  activeDurationMs  Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?
+  user              User            @relation(fields: [userId], references: [id])
+  book              Book            @relation(fields: [bookId], references: [id])
+  session           ReadingSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, spineIndex])
   @@index([sessionId])
   @@index([userId, bookId])
   @@index([bookId])
@@ -493,12 +517,22 @@ enum AuditAction {
   user_role_changed
   user_deleted
   subscription_canceled
+  subscription_payment_failed
+  collection_created
+  collection_updated
+  collection_deleted
+  collection_book_added
+  collection_book_removed
+  collection_reordered
+  revenue_calculated
 }
 
 enum AuditSubjectType {
   book
   user
   subscription
+  collection
+  revenue_period
 }
 
 model AuditLog {

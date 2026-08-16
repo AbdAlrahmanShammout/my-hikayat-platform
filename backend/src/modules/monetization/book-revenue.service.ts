@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
+import { TransactionContext } from '@/common/base/transaction-context';
+import { TransactionRunner } from '@/common/base/transaction-runner';
 import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagination.constant';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { BookService } from '@/modules/book/book.service';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { allocateCentsByWeights } from '@/modules/monetization/allocate-cents.helper';
@@ -31,6 +35,8 @@ export class BookRevenueService {
     private readonly revenuePeriodService: RevenuePeriodService,
     private readonly bookEngagementService: BookEngagementService,
     private readonly bookService: BookService,
+    private readonly auditLogService: AuditLogService,
+    private readonly transactionRunner: TransactionRunner,
   ) {}
 
   async calculatePeriodRevenue(
@@ -50,9 +56,29 @@ export class BookRevenueService {
       poolAmountCents,
       engagements,
     );
-    return this.bookRevenueRepository.replaceForPeriod({
-      revenuePeriodId: period.id,
-      rows,
+    return this.transactionRunner.run(async (context: TransactionContext) => {
+      const created: BookRevenueEntity[] = await this.bookRevenueRepository.replaceForPeriod(
+        {
+          revenuePeriodId: period.id,
+          rows,
+        },
+        context,
+      );
+      await this.auditLogService.append(
+        {
+          actorUserId: input.actorUserId,
+          action: AuditAction.REVENUE_CALCULATED,
+          subjectType: AuditSubjectType.REVENUE_PERIOD,
+          subjectId: period.id,
+          metadata: {
+            poolAmountCents,
+            platformCutPercent: period.platformCutPercent,
+            bookCount: rows.length,
+          },
+        },
+        context,
+      );
+      return created;
     });
   }
 

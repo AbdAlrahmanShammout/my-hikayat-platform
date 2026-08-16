@@ -82,7 +82,7 @@ export class MonetizationAuthorController {
 
   @Get('analytics/books/:bookId/heatmap')
   @ApiOperation({
-    summary: 'List fixed-layout spread engagement for an owned book in a revenue period',
+    summary: 'List layout-specific engagement heatmap for an owned book in a revenue period',
   })
   @ApiParam({ name: 'bookId', type: Number })
   @ApiResponse({ status: 200, type: GetAuthorBookHeatmapResponseDto })

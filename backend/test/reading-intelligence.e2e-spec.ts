@@ -11,6 +11,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
 import { deleteUsersByEmail } from './delete-users.helper';
+import { publishTestBook } from './publish-test-book';
 
 describe('Reading intelligence ingest (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -33,6 +34,11 @@ describe('Reading intelligence ingest (e2e)', () => {
       return;
     }
     const prismaProviderService: PrismaProviderService = app.get(PrismaProviderService);
+    await prismaProviderService.readingChapterEngagement.deleteMany({
+      where: {
+        OR: [{ user: { email: { in: emails } } }, { book: { owner: { email: { in: emails } } } }],
+      },
+    });
     await prismaProviderService.readingSession.deleteMany({
       where: {
         OR: [{ user: { email: { in: emails } } }, { book: { owner: { email: { in: emails } } } }],
@@ -120,6 +126,7 @@ describe('Reading intelligence ingest (e2e)', () => {
       ownerId,
     });
     reflowableBookId = reflowableBook.id;
+    await publishTestBook(getRunningApp(), reflowableBook.id);
     readerAccessToken = await registerUser(readerEmail);
     otherAccessToken = await registerUser(otherEmail);
     const actualResponse = await request(getServer())

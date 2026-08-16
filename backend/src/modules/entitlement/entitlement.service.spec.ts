@@ -19,6 +19,10 @@ import { SubscriptionService } from '@/modules/subscription/subscription.service
 import { EntitlementService } from './entitlement.service';
 import { FullBookAccessDeniedException } from './exceptions/full-book-access-denied.exception';
 
+const NOW: Date = new Date('2026-08-16T12:00:00.000Z');
+const FUTURE_PERIOD_END: Date = new Date('2026-09-01T00:00:00.000Z');
+const PAST_PERIOD_END: Date = new Date('2026-08-01T00:00:00.000Z');
+
 function createSampleBook(): BookEntity {
   return new BookEntity({
     id: 8,
@@ -48,11 +52,15 @@ function createSamplePlan(kind: PlanKind): PlanEntity {
   });
 }
 
-function createSampleSubscription(
-  kind: PlanKind,
-  status = SubscriptionStatus.ACTIVE,
-): SubscriptionEntity {
-  const plan = createSamplePlan(kind);
+function createSampleSubscription(input: {
+  readonly kind: PlanKind;
+  readonly status?: SubscriptionStatus;
+  readonly currentPeriodEnd?: Date | null;
+}): SubscriptionEntity {
+  const plan = createSamplePlan(input.kind);
+  const status = input.status ?? SubscriptionStatus.ACTIVE;
+  const currentPeriodEnd =
+    input.currentPeriodEnd === undefined ? FUTURE_PERIOD_END : input.currentPeriodEnd;
   return new SubscriptionEntity({
     id: 7,
     createdAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -61,9 +69,9 @@ function createSampleSubscription(
     planId: plan.id,
     status,
     startedAt: new Date('2026-01-01T00:00:00.000Z'),
-    currentPeriodStart: null,
-    currentPeriodEnd: null,
-    canceledAt: status === SubscriptionStatus.CANCELED ? new Date() : null,
+    currentPeriodStart: currentPeriodEnd === null ? null : new Date('2026-08-01T00:00:00.000Z'),
+    currentPeriodEnd,
+    canceledAt: status === SubscriptionStatus.CANCELED ? NOW : null,
     activatedAt: null,
     stripeCustomerId: null,
     stripeSubscriptionId: null,
@@ -77,6 +85,8 @@ describe('EntitlementService', () => {
   let entitlementService: EntitlementService;
 
   beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(NOW);
     mockSubscriptionService = { findSubscriptionByUserId: jest.fn() };
     mockBookService = { getCatalogBookById: jest.fn() };
     entitlementService = new EntitlementService(
@@ -85,24 +95,80 @@ describe('EntitlementService', () => {
     );
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   describe('hasPaidReadingAccess', () => {
-    it('returns true for an active monthly subscription', async () => {
+    it('allows an active paid subscription before currentPeriodEnd', async () => {
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
-        createSampleSubscription(PlanKind.MONTHLY_PAID),
+        createSampleSubscription({ kind: PlanKind.MONTHLY_PAID }),
       );
       await expect(entitlementService.hasPaidReadingAccess(5)).resolves.toBe(true);
     });
 
-    it('returns false for an active free subscription', async () => {
+    it('denies an active paid subscription after currentPeriodEnd', async () => {
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
-        createSampleSubscription(PlanKind.FREE),
+        createSampleSubscription({
+          kind: PlanKind.MONTHLY_PAID,
+          currentPeriodEnd: PAST_PERIOD_END,
+        }),
       );
       await expect(entitlementService.hasPaidReadingAccess(5)).resolves.toBe(false);
     });
 
-    it('returns false when the paid subscription is canceled', async () => {
+    it('allows past_due before currentPeriodEnd when stored as local active', async () => {
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
-        createSampleSubscription(PlanKind.MONTHLY_PAID, SubscriptionStatus.CANCELED),
+        createSampleSubscription({
+          kind: PlanKind.MONTHLY_PAID,
+          status: SubscriptionStatus.ACTIVE,
+        }),
+      );
+      await expect(entitlementService.hasPaidReadingAccess(5)).resolves.toBe(true);
+    });
+
+    it('denies past_due after currentPeriodEnd when stored as local active', async () => {
+      mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
+        createSampleSubscription({
+          kind: PlanKind.MONTHLY_PAID,
+          status: SubscriptionStatus.ACTIVE,
+          currentPeriodEnd: PAST_PERIOD_END,
+        }),
+      );
+      await expect(entitlementService.hasPaidReadingAccess(5)).resolves.toBe(false);
+    });
+
+    it('allows a canceled paid subscription before currentPeriodEnd', async () => {
+      mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
+        createSampleSubscription({
+          kind: PlanKind.MONTHLY_PAID,
+          status: SubscriptionStatus.CANCELED,
+        }),
+      );
+      await expect(entitlementService.hasPaidReadingAccess(5)).resolves.toBe(true);
+    });
+
+    it('denies a canceled paid subscription after currentPeriodEnd', async () => {
+      mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
+        createSampleSubscription({
+          kind: PlanKind.MONTHLY_PAID,
+          status: SubscriptionStatus.CANCELED,
+          currentPeriodEnd: PAST_PERIOD_END,
+        }),
+      );
+      await expect(entitlementService.hasPaidReadingAccess(5)).resolves.toBe(false);
+    });
+
+    it('never treats a free plan as paid entitlement', async () => {
+      mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
+        createSampleSubscription({ kind: PlanKind.FREE }),
+      );
+      await expect(entitlementService.hasPaidReadingAccess(5)).resolves.toBe(false);
+    });
+
+    it('denies a paid subscription with no currentPeriodEnd', async () => {
+      mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
+        createSampleSubscription({ kind: PlanKind.MONTHLY_PAID, currentPeriodEnd: null }),
       );
       await expect(entitlementService.hasPaidReadingAccess(5)).resolves.toBe(false);
     });
@@ -113,7 +179,7 @@ describe('EntitlementService', () => {
     });
 
     it('returns false when the subscription has no plan loaded', async () => {
-      const subscription = createSampleSubscription(PlanKind.MONTHLY_PAID);
+      const subscription = createSampleSubscription({ kind: PlanKind.MONTHLY_PAID });
       subscription.plan = undefined;
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(subscription);
       await expect(entitlementService.hasPaidReadingAccess(5)).resolves.toBe(false);
@@ -124,7 +190,7 @@ describe('EntitlementService', () => {
     it('allows access when the catalog book exists and the user is paid', async () => {
       mockBookService.getCatalogBookById.mockResolvedValue(createSampleBook());
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
-        createSampleSubscription(PlanKind.MONTHLY_PAID),
+        createSampleSubscription({ kind: PlanKind.MONTHLY_PAID }),
       );
       await expect(
         entitlementService.assertCanAccessFullBook({ userId: 5, bookId: 8 }),
@@ -144,7 +210,7 @@ describe('EntitlementService', () => {
     it('denies a free subscriber after the catalog book is found', async () => {
       mockBookService.getCatalogBookById.mockResolvedValue(createSampleBook());
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
-        createSampleSubscription(PlanKind.FREE),
+        createSampleSubscription({ kind: PlanKind.FREE }),
       );
       await expect(
         entitlementService.assertCanAccessFullBook({ userId: 5, bookId: 8 }),

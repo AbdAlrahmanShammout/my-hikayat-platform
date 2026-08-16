@@ -1,13 +1,18 @@
 import { Injectable } from '@nestjs/common';
 
+import { TransactionContext } from '@/common/base/transaction-context';
+import { TransactionRunner } from '@/common/base/transaction-runner';
 import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagination.constant';
 import { InvalidStateException } from '@/common/exceptions/invalid-state.exception';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { BookService } from '@/modules/book/book.service';
 import { CollectionPage } from '@/modules/collection/defs/collection-repository.defs';
 import {
   AddCollectionBookServiceInput,
   CreateCollectionServiceInput,
+  DeleteCollectionServiceInput,
   ListCollectionsServiceInput,
   RemoveCollectionBookServiceInput,
   ReorderCollectionBooksServiceInput,
@@ -23,6 +28,8 @@ export class CollectionService {
   constructor(
     private readonly collectionRepository: CollectionRepository,
     private readonly bookService: BookService,
+    private readonly auditLogService: AuditLogService,
+    private readonly transactionRunner: TransactionRunner,
   ) {}
 
   async createCollection(input: CreateCollectionServiceInput): Promise<CollectionEntity> {
@@ -30,9 +37,25 @@ export class CollectionService {
     CollectionService.assertValidTitle(title);
     const bookIds: number[] = CollectionService.uniqueIds(input.bookIds ?? []);
     await this.assertBooksExist(bookIds);
-    return this.collectionRepository.create({
-      title,
-      books: CollectionService.toBooks(bookIds),
+    return this.transactionRunner.run(async (context: TransactionContext) => {
+      const created: CollectionEntity = await this.collectionRepository.create(
+        {
+          title,
+          books: CollectionService.toBooks(bookIds),
+        },
+        context,
+      );
+      await this.auditLogService.append(
+        {
+          actorUserId: input.actorUserId,
+          action: AuditAction.COLLECTION_CREATED,
+          subjectType: AuditSubjectType.COLLECTION,
+          subjectId: created.id,
+          metadata: { title, bookIds },
+        },
+        context,
+      );
+      return created;
     });
   }
 
@@ -43,12 +66,47 @@ export class CollectionService {
     }
     const title: string = CollectionService.normalizeTitle(input.title);
     CollectionService.assertValidTitle(title);
-    return this.collectionRepository.update({ id: current.id, title });
+    return this.transactionRunner.run(async (context: TransactionContext) => {
+      const updated: CollectionEntity = await this.collectionRepository.update(
+        { id: current.id, title },
+        context,
+      );
+      await this.auditLogService.append(
+        {
+          actorUserId: input.actorUserId,
+          action: AuditAction.COLLECTION_UPDATED,
+          subjectType: AuditSubjectType.COLLECTION,
+          subjectId: current.id,
+          metadata: { fromTitle: current.title, toTitle: title },
+        },
+        context,
+      );
+      return updated;
+    });
   }
 
-  async deleteCollection(id: number): Promise<CollectionEntity> {
-    await this.getCollectionById(id);
-    return this.collectionRepository.delete(id);
+  async deleteCollection(input: DeleteCollectionServiceInput): Promise<CollectionEntity> {
+    const collection: CollectionEntity = await this.getCollectionById(input.id);
+    return this.transactionRunner.run(async (context: TransactionContext) => {
+      const deleted: CollectionEntity = await this.collectionRepository.delete(
+        collection.id,
+        context,
+      );
+      await this.auditLogService.append(
+        {
+          actorUserId: input.actorUserId,
+          action: AuditAction.COLLECTION_DELETED,
+          subjectType: AuditSubjectType.COLLECTION,
+          subjectId: collection.id,
+          metadata: {
+            title: collection.title,
+            bookIds: CollectionService.readBookIds(collection),
+          },
+        },
+        context,
+      );
+      return deleted;
+    });
   }
 
   async addCollectionBook(input: AddCollectionBookServiceInput): Promise<CollectionEntity> {
@@ -58,9 +116,25 @@ export class CollectionService {
     if (bookIds.includes(input.bookId)) {
       throw new CollectionBookAlreadyAddedException(collection.id, input.bookId);
     }
-    return this.collectionRepository.update({
-      id: collection.id,
-      books: CollectionService.toBooks([...bookIds, input.bookId]),
+    return this.transactionRunner.run(async (context: TransactionContext) => {
+      const updated: CollectionEntity = await this.collectionRepository.update(
+        {
+          id: collection.id,
+          books: CollectionService.toBooks([...bookIds, input.bookId]),
+        },
+        context,
+      );
+      await this.auditLogService.append(
+        {
+          actorUserId: input.actorUserId,
+          action: AuditAction.COLLECTION_BOOK_ADDED,
+          subjectType: AuditSubjectType.COLLECTION,
+          subjectId: collection.id,
+          metadata: { bookId: input.bookId },
+        },
+        context,
+      );
+      return updated;
     });
   }
 
@@ -70,9 +144,25 @@ export class CollectionService {
     if (!bookIds.includes(input.bookId)) {
       throw new ResourceNotFoundException('Collection book', input.bookId);
     }
-    return this.collectionRepository.update({
-      id: collection.id,
-      books: CollectionService.toBooks(bookIds.filter((bookId) => bookId !== input.bookId)),
+    return this.transactionRunner.run(async (context: TransactionContext) => {
+      const updated: CollectionEntity = await this.collectionRepository.update(
+        {
+          id: collection.id,
+          books: CollectionService.toBooks(bookIds.filter((bookId) => bookId !== input.bookId)),
+        },
+        context,
+      );
+      await this.auditLogService.append(
+        {
+          actorUserId: input.actorUserId,
+          action: AuditAction.COLLECTION_BOOK_REMOVED,
+          subjectType: AuditSubjectType.COLLECTION,
+          subjectId: collection.id,
+          metadata: { bookId: input.bookId },
+        },
+        context,
+      );
+      return updated;
     });
   }
 
@@ -82,9 +172,25 @@ export class CollectionService {
     const collection: CollectionEntity = await this.getCollectionById(input.collectionId);
     const bookIds: number[] = CollectionService.uniqueIds(input.bookIds);
     CollectionService.assertSameBookSet(CollectionService.readBookIds(collection), bookIds);
-    return this.collectionRepository.update({
-      id: collection.id,
-      books: CollectionService.toBooks(bookIds),
+    return this.transactionRunner.run(async (context: TransactionContext) => {
+      const updated: CollectionEntity = await this.collectionRepository.update(
+        {
+          id: collection.id,
+          books: CollectionService.toBooks(bookIds),
+        },
+        context,
+      );
+      await this.auditLogService.append(
+        {
+          actorUserId: input.actorUserId,
+          action: AuditAction.COLLECTION_REORDERED,
+          subjectType: AuditSubjectType.COLLECTION,
+          subjectId: collection.id,
+          metadata: { bookIds },
+        },
+        context,
+      );
+      return updated;
     });
   }
 

@@ -14,6 +14,7 @@ describe('STRIPE', () => {
     expect(STRIPE.webhookEventType.customerSubscriptionDeleted).toBe(
       'customer.subscription.deleted',
     );
+    expect(STRIPE.webhookEventType.invoicePaymentFailed).toBe('invoice.payment_failed');
     expect(STRIPE.canceledStatuses).toEqual(['canceled', 'unpaid', 'incomplete_expired']);
   });
 });

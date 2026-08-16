@@ -164,6 +164,7 @@ describe('StripeManagerService', () => {
         handleCheckoutCompleted: mockHandleCheckoutCompleted,
         handleSubscriptionRenewed: jest.fn().mockResolvedValue(undefined),
         handleSubscriptionCanceled: jest.fn().mockResolvedValue(undefined),
+        handleInvoicePaymentFailed: jest.fn().mockResolvedValue(undefined),
       };
       mockStripe.webhooks.constructEvent.mockReturnValue({
         id: 'evt_test_1',

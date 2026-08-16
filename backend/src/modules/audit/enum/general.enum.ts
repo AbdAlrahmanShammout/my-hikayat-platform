@@ -10,10 +10,20 @@ export enum AuditAction {
   USER_ROLE_CHANGED = 'user_role_changed',
   USER_DELETED = 'user_deleted',
   SUBSCRIPTION_CANCELED = 'subscription_canceled',
+  SUBSCRIPTION_PAYMENT_FAILED = 'subscription_payment_failed',
+  COLLECTION_CREATED = 'collection_created',
+  COLLECTION_UPDATED = 'collection_updated',
+  COLLECTION_DELETED = 'collection_deleted',
+  COLLECTION_BOOK_ADDED = 'collection_book_added',
+  COLLECTION_BOOK_REMOVED = 'collection_book_removed',
+  COLLECTION_REORDERED = 'collection_reordered',
+  REVENUE_CALCULATED = 'revenue_calculated',
 }
 
 export enum AuditSubjectType {
   BOOK = 'book',
   USER = 'user',
   SUBSCRIPTION = 'subscription',
+  COLLECTION = 'collection',
+  REVENUE_PERIOD = 'revenue_period',
 }

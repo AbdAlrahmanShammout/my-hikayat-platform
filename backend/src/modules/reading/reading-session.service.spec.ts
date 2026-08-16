@@ -180,16 +180,19 @@ describe('ReadingSessionService', () => {
         spineIndex: 2,
         scrollOffset: 400,
       });
-      expect(mockReadingSessionRepository.update).toHaveBeenCalledWith({
-        id: 9,
-        endedAt,
-        activeDurationMs: 900_000,
-        idleDurationMs: 120_000,
-        spineIndex: 2,
-        scrollOffset: 400,
-        spreadIndex: null,
-        pageNumber: null,
-      });
+      expect(mockReadingSessionRepository.update).toHaveBeenCalledWith(
+        {
+          id: 9,
+          endedAt,
+          activeDurationMs: 900_000,
+          idleDurationMs: 120_000,
+          spineIndex: 2,
+          scrollOffset: 400,
+          spreadIndex: null,
+          pageNumber: null,
+        },
+        undefined,
+      );
       expect(actualSession).toBe(expectedSession);
     });
 
@@ -261,15 +264,18 @@ describe('ReadingSessionService', () => {
         spineIndex: 2,
         scrollOffset: 400,
       });
-      expect(mockReadingSessionRepository.update).toHaveBeenCalledWith({
-        id: 9,
-        activeDurationMs: 15_000,
-        idleDurationMs: 3_000,
-        spineIndex: 2,
-        scrollOffset: 400,
-        spreadIndex: null,
-        pageNumber: null,
-      });
+      expect(mockReadingSessionRepository.update).toHaveBeenCalledWith(
+        {
+          id: 9,
+          activeDurationMs: 15_000,
+          idleDurationMs: 3_000,
+          spineIndex: 2,
+          scrollOffset: 400,
+          spreadIndex: null,
+          pageNumber: null,
+        },
+        undefined,
+      );
       expect(actualSession).toBe(expectedSession);
     });
   });

@@ -6,8 +6,22 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { CollectionService } from '@/modules/collection/collection.service';
 import { CollectionBookEntity } from '@/modules/collection/entity/collection-book.entity';
 import { CollectionEntity } from '@/modules/collection/entity/collection.entity';
+import { UserEntity } from '@/modules/user/entity/user.entity';
+import { UserRole } from '@/modules/user/enum/general.enum';
 
 import { CollectionAdminController } from './collection.admin.controller';
+
+function createSampleAdmin(): UserEntity {
+  return new UserEntity({
+    id: 9,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    email: 'admin@example.com',
+    passwordHash: 'hashed-password',
+    role: UserRole.ADMIN,
+    isPublisher: false,
+  });
+}
 
 function createSampleCollection(title = 'Harbor Picks'): CollectionEntity {
   return new CollectionEntity({
@@ -75,13 +89,17 @@ describe('CollectionAdminController', () => {
   describe('createCollection', () => {
     it('maps title and book ids into the service', async () => {
       mockCollectionService.createCollection.mockResolvedValue(createSampleCollection());
-      const actualResponse = await collectionAdminController.createCollection({
-        title: 'Harbor Picks',
-        bookIds: [8, 9],
-      });
+      const actualResponse = await collectionAdminController.createCollection(
+        {
+          title: 'Harbor Picks',
+          bookIds: [8, 9],
+        },
+        createSampleAdmin(),
+      );
       expect(mockCollectionService.createCollection).toHaveBeenCalledWith({
         title: 'Harbor Picks',
         bookIds: [8, 9],
+        actorUserId: 9,
       });
       expect(actualResponse.id).toBe(3);
       expect(actualResponse.items.map((item) => item.bookId)).toEqual([8, 9]);
@@ -121,12 +139,17 @@ describe('CollectionAdminController', () => {
       mockCollectionService.updateCollection.mockResolvedValue(
         createSampleCollection('Harbor Classics'),
       );
-      const actualResponse = await collectionAdminController.updateCollection(3, {
-        title: 'Harbor Classics',
-      });
+      const actualResponse = await collectionAdminController.updateCollection(
+        3,
+        {
+          title: 'Harbor Classics',
+        },
+        createSampleAdmin(),
+      );
       expect(mockCollectionService.updateCollection).toHaveBeenCalledWith({
         id: 3,
         title: 'Harbor Classics',
+        actorUserId: 9,
       });
       expect(actualResponse.title).toBe('Harbor Classics');
     });
@@ -135,8 +158,14 @@ describe('CollectionAdminController', () => {
   describe('deleteCollection', () => {
     it('soft-deletes through the service', async () => {
       mockCollectionService.deleteCollection.mockResolvedValue(createSampleCollection());
-      const actualResponse = await collectionAdminController.deleteCollection(3);
-      expect(mockCollectionService.deleteCollection).toHaveBeenCalledWith(3);
+      const actualResponse = await collectionAdminController.deleteCollection(
+        3,
+        createSampleAdmin(),
+      );
+      expect(mockCollectionService.deleteCollection).toHaveBeenCalledWith({
+        id: 3,
+        actorUserId: 9,
+      });
       expect(actualResponse.id).toBe(3);
     });
   });
@@ -144,10 +173,15 @@ describe('CollectionAdminController', () => {
   describe('addCollectionBook', () => {
     it('maps the collection id and book id into the service', async () => {
       mockCollectionService.addCollectionBook.mockResolvedValue(createSampleCollection());
-      const actualResponse = await collectionAdminController.addCollectionBook(3, { bookId: 11 });
+      const actualResponse = await collectionAdminController.addCollectionBook(
+        3,
+        { bookId: 11 },
+        createSampleAdmin(),
+      );
       expect(mockCollectionService.addCollectionBook).toHaveBeenCalledWith({
         collectionId: 3,
         bookId: 11,
+        actorUserId: 9,
       });
       expect(actualResponse.id).toBe(3);
     });
@@ -156,10 +190,15 @@ describe('CollectionAdminController', () => {
   describe('removeCollectionBook', () => {
     it('maps the named book id into the service', async () => {
       mockCollectionService.removeCollectionBook.mockResolvedValue(createSampleCollection());
-      const actualResponse = await collectionAdminController.removeCollectionBook(3, 9);
+      const actualResponse = await collectionAdminController.removeCollectionBook(
+        3,
+        9,
+        createSampleAdmin(),
+      );
       expect(mockCollectionService.removeCollectionBook).toHaveBeenCalledWith({
         collectionId: 3,
         bookId: 9,
+        actorUserId: 9,
       });
       expect(actualResponse.id).toBe(3);
     });
@@ -168,12 +207,17 @@ describe('CollectionAdminController', () => {
   describe('reorderCollectionBooks', () => {
     it('maps the complete book id list into the service', async () => {
       mockCollectionService.reorderCollectionBooks.mockResolvedValue(createSampleCollection());
-      const actualResponse = await collectionAdminController.reorderCollectionBooks(3, {
-        bookIds: [9, 8],
-      });
+      const actualResponse = await collectionAdminController.reorderCollectionBooks(
+        3,
+        {
+          bookIds: [9, 8],
+        },
+        createSampleAdmin(),
+      );
       expect(mockCollectionService.reorderCollectionBooks).toHaveBeenCalledWith({
         collectionId: 3,
         bookIds: [9, 8],
+        actorUserId: 9,
       });
       expect(actualResponse.id).toBe(3);
     });

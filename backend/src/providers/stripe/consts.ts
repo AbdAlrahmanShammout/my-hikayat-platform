@@ -7,6 +7,7 @@ export const STRIPE = {
     checkoutSessionCompleted: 'checkout.session.completed',
     customerSubscriptionUpdated: 'customer.subscription.updated',
     customerSubscriptionDeleted: 'customer.subscription.deleted',
+    invoicePaymentFailed: 'invoice.payment_failed',
   },
   canceledStatuses: ['canceled', 'unpaid', 'incomplete_expired'],
 } as const;

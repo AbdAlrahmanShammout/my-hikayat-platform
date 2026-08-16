@@ -52,6 +52,7 @@ function createSamplePlan(kind = PlanKind.FREE): PlanEntity {
 function createSampleSubscription(
   kind = PlanKind.FREE,
   status = SubscriptionStatus.ACTIVE,
+  currentPeriodEnd: Date | null = null,
 ): SubscriptionEntity {
   const plan = createSamplePlan(kind);
   return new SubscriptionEntity({
@@ -62,8 +63,8 @@ function createSampleSubscription(
     planId: plan.id,
     status,
     startedAt: new Date('2026-01-01T00:00:00.000Z'),
-    currentPeriodStart: null,
-    currentPeriodEnd: null,
+    currentPeriodStart: currentPeriodEnd,
+    currentPeriodEnd,
     canceledAt: status === SubscriptionStatus.CANCELED ? new Date() : null,
     activatedAt: kind === PlanKind.MONTHLY_PAID ? new Date() : null,
     stripeCustomerId: null,
@@ -171,7 +172,11 @@ describe('SubscriptionBillingService', () => {
     it('rejects checkout when the user is already on an active monthly plan', async () => {
       mockUserService.getUserById.mockResolvedValue(createSampleUser());
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
-        createSampleSubscription(PlanKind.MONTHLY_PAID),
+        createSampleSubscription(
+          PlanKind.MONTHLY_PAID,
+          SubscriptionStatus.ACTIVE,
+          new Date(Date.now() + 24 * 60 * 60 * 1000),
+        ),
       );
       await expect(
         subscriptionBillingService.startCheckout({
@@ -180,6 +185,76 @@ describe('SubscriptionBillingService', () => {
           cancelUrl: 'http://localhost:3000/cancel',
         }),
       ).rejects.toBeInstanceOf(SubscriptionAlreadyPaidException);
+      expect(mockStripeManagerService.createCheckoutSession).not.toHaveBeenCalled();
+    });
+
+    it('rejects checkout when a canceled paid period is still open', async () => {
+      mockUserService.getUserById.mockResolvedValue(createSampleUser());
+      mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
+        createSampleSubscription(
+          PlanKind.MONTHLY_PAID,
+          SubscriptionStatus.CANCELED,
+          new Date(Date.now() + 24 * 60 * 60 * 1000),
+        ),
+      );
+      await expect(
+        subscriptionBillingService.startCheckout({
+          userId: 5,
+          successUrl: 'http://localhost:3000/success',
+          cancelUrl: 'http://localhost:3000/cancel',
+        }),
+      ).rejects.toBeInstanceOf(SubscriptionAlreadyPaidException);
+      expect(mockStripeManagerService.createCheckoutSession).not.toHaveBeenCalled();
+    });
+
+    it('allows checkout when an active paid period has already ended', async () => {
+      mockUserService.getUserById.mockResolvedValue(createSampleUser());
+      mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
+        createSampleSubscription(
+          PlanKind.MONTHLY_PAID,
+          SubscriptionStatus.ACTIVE,
+          new Date(Date.now() - 24 * 60 * 60 * 1000),
+        ),
+      );
+      mockStripeManagerService.createCustomer.mockResolvedValue({ customerId: 'cus_1' });
+      mockSubscriptionService.updateSubscription.mockResolvedValue(
+        createSampleSubscription(PlanKind.MONTHLY_PAID),
+      );
+      mockStripeManagerService.createCheckoutSession.mockResolvedValue({
+        checkoutSessionId: 'cs_1',
+        url: 'https://checkout.stripe.test/cs_1',
+      });
+      const actualResult = await subscriptionBillingService.startCheckout({
+        userId: 5,
+        successUrl: 'http://localhost:3000/success',
+        cancelUrl: 'http://localhost:3000/cancel',
+      });
+      expect(actualResult).toEqual({ url: 'https://checkout.stripe.test/cs_1' });
+    });
+
+    it('allows checkout when a canceled paid period has already ended', async () => {
+      mockUserService.getUserById.mockResolvedValue(createSampleUser());
+      mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
+        createSampleSubscription(
+          PlanKind.MONTHLY_PAID,
+          SubscriptionStatus.CANCELED,
+          new Date(Date.now() - 24 * 60 * 60 * 1000),
+        ),
+      );
+      mockStripeManagerService.createCustomer.mockResolvedValue({ customerId: 'cus_1' });
+      mockSubscriptionService.updateSubscription.mockResolvedValue(
+        createSampleSubscription(PlanKind.MONTHLY_PAID, SubscriptionStatus.CANCELED),
+      );
+      mockStripeManagerService.createCheckoutSession.mockResolvedValue({
+        checkoutSessionId: 'cs_1',
+        url: 'https://checkout.stripe.test/cs_1',
+      });
+      const actualResult = await subscriptionBillingService.startCheckout({
+        userId: 5,
+        successUrl: 'http://localhost:3000/success',
+        cancelUrl: 'http://localhost:3000/cancel',
+      });
+      expect(actualResult).toEqual({ url: 'https://checkout.stripe.test/cs_1' });
     });
 
     it('rejects a return URL outside the allowed origins', async () => {
@@ -265,6 +340,76 @@ describe('SubscriptionBillingService', () => {
     });
   });
 
+  describe('applySubscriptionRenewed', () => {
+    it('keeps a past_due Stripe subscription locally active and updates the period', async () => {
+      mockSubscriptionRepository.findByStripeSubscriptionId.mockResolvedValue(
+        createSampleSubscription(PlanKind.MONTHLY_PAID),
+      );
+      mockPlanService.getPlanBySlug.mockResolvedValue(createSamplePlan(PlanKind.MONTHLY_PAID));
+      mockSubscriptionService.updateSubscription.mockResolvedValue(
+        createSampleSubscription(PlanKind.MONTHLY_PAID),
+      );
+      await subscriptionBillingService.applySubscriptionRenewed({
+        customerId: 'cus_1',
+        subscriptionId: 'sub_1',
+        currentPeriodStart: new Date('2026-08-01T00:00:00.000Z'),
+        currentPeriodEnd: new Date('2026-09-01T00:00:00.000Z'),
+        status: 'past_due',
+      });
+      expect(mockSubscriptionService.updateSubscription).toHaveBeenCalledWith({
+        id: 7,
+        planId: 2,
+        status: SubscriptionStatus.ACTIVE,
+        currentPeriodStart: new Date('2026-08-01T00:00:00.000Z'),
+        currentPeriodEnd: new Date('2026-09-01T00:00:00.000Z'),
+        canceledAt: null,
+      });
+      expect(mockSubscriptionService.cancelSubscription).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('applyInvoicePaymentFailed', () => {
+    it('records a payment failure without rewriting subscription status', async () => {
+      const paidSubscription = createSampleSubscription(PlanKind.MONTHLY_PAID);
+      paidSubscription.stripeSubscriptionId = 'sub_1';
+      mockSubscriptionRepository.findByStripeSubscriptionId.mockResolvedValue(paidSubscription);
+      mockAuditLogService.append.mockResolvedValue(undefined);
+      await subscriptionBillingService.applyInvoicePaymentFailed({
+        customerId: 'cus_1',
+        subscriptionId: 'sub_1',
+        invoiceId: 'in_1',
+        status: 'open',
+      });
+      expect(mockAuditLogService.append).toHaveBeenCalledWith({
+        actorUserId: 5,
+        action: AuditAction.SUBSCRIPTION_PAYMENT_FAILED,
+        subjectType: AuditSubjectType.SUBSCRIPTION,
+        subjectId: 7,
+        metadata: {
+          stripeInvoiceId: 'in_1',
+          stripeCustomerId: 'cus_1',
+          stripeSubscriptionId: 'sub_1',
+          invoiceStatus: 'open',
+        },
+      });
+      expect(mockSubscriptionService.cancelSubscription).not.toHaveBeenCalled();
+      expect(mockSubscriptionService.updateSubscription).not.toHaveBeenCalled();
+    });
+
+    it('no-ops when no local subscription matches the Stripe ids', async () => {
+      mockSubscriptionRepository.findByStripeSubscriptionId.mockResolvedValue(null);
+      mockSubscriptionRepository.findByStripeCustomerId.mockResolvedValue(null);
+      await subscriptionBillingService.applyInvoicePaymentFailed({
+        customerId: 'cus_missing',
+        subscriptionId: 'sub_missing',
+        invoiceId: 'in_1',
+        status: 'open',
+      });
+      expect(mockAuditLogService.append).not.toHaveBeenCalled();
+      expect(mockSubscriptionService.cancelSubscription).not.toHaveBeenCalled();
+    });
+  });
+
   describe('receiveWebhook', () => {
     it('rejects a missing signature or raw body', async () => {
       await expect(
@@ -297,6 +442,10 @@ describe('SubscriptionBillingService', () => {
         stripeSubscriptionId: 'sub_1',
       });
       expect(mockSubscriptionService.cancelSubscription).toHaveBeenCalledWith(7);
+      expect(mockSubscriptionService.updateSubscription).toHaveBeenCalledWith({
+        id: 7,
+        currentPeriodEnd: expect.any(Date),
+      });
     });
 
     it('rejects a refund for a free subscription', async () => {

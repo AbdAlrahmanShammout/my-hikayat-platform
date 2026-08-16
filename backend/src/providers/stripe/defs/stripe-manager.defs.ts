@@ -58,6 +58,13 @@ export type HandleSubscriptionCanceledInput = {
   readonly currentPeriodEnd: Date | null;
 };
 
+export type HandleInvoicePaymentFailedInput = {
+  readonly customerId: string | null;
+  readonly subscriptionId: string;
+  readonly invoiceId: string | null;
+  readonly status: string | null;
+};
+
 export type MapStripeWebhookEventInput = {
   readonly id: string;
   readonly type: string;

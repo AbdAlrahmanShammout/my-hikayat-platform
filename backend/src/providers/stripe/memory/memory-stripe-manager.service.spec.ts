@@ -63,6 +63,7 @@ describe('MemoryStripeManagerService', () => {
       handleCheckoutCompleted: mockHandleCheckoutCompleted,
       handleSubscriptionRenewed: jest.fn().mockResolvedValue(undefined),
       handleSubscriptionCanceled: jest.fn().mockResolvedValue(undefined),
+      handleInvoicePaymentFailed: jest.fn().mockResolvedValue(undefined),
     };
     await memoryStripeManagerService.initialize(mockEventHandlers);
     await memoryStripeManagerService.processWebhook({
@@ -84,9 +85,15 @@ describe('MemoryStripeManagerService', () => {
       customerId: 'cus_memory_7',
       subscriptionId: 'sub_memory_7',
       clientReferenceId: '7',
-      currentPeriodStart: null,
-      currentPeriodEnd: null,
+      currentPeriodStart: expect.any(Date),
+      currentPeriodEnd: expect.any(Date),
     });
+    const [actualInput] = mockHandleCheckoutCompleted.mock.calls[0] as [
+      { currentPeriodStart: Date; currentPeriodEnd: Date },
+    ];
+    expect(actualInput.currentPeriodEnd.getTime()).toBeGreaterThan(
+      actualInput.currentPeriodStart.getTime(),
+    );
   });
 
   it('rejects processing before handlers are registered', async () => {

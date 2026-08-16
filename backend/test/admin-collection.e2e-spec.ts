@@ -4,6 +4,7 @@ import type { INestApplication } from '@nestjs/common';
 import type { Server } from 'node:http';
 import request from 'supertest';
 
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { BookService } from '@/modules/book/book.service';
 import { BookType } from '@/modules/book/enum/general.enum';
 import { CategoryService } from '@/modules/category/category.service';
@@ -304,5 +305,52 @@ describe('Admin collections (e2e)', () => {
       .set('Authorization', `Bearer ${getAdminAccessToken()}`);
     expect(missingCollectionResponse.status).toBe(HttpStatus.NOT_FOUND);
     expect(missingCollectionResponse.body.code).toBe('RESOURCE_NOT_FOUND');
+    const auditResponse = await request(getServer())
+      .get('/admin/audit-logs')
+      .query({
+        subjectType: AuditSubjectType.COLLECTION,
+        subjectId: getCollectionId(),
+      })
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`);
+    expect(auditResponse.status).toBe(HttpStatus.OK);
+    expect(auditResponse.body.total).toBe(6);
+    expect(auditResponse.body.auditLogs).toEqual([
+      expect.objectContaining({
+        actorUserId: admin.userId,
+        action: AuditAction.COLLECTION_DELETED,
+        subjectType: AuditSubjectType.COLLECTION,
+        subjectId: getCollectionId(),
+      }),
+      expect.objectContaining({
+        actorUserId: admin.userId,
+        action: AuditAction.COLLECTION_BOOK_REMOVED,
+        subjectType: AuditSubjectType.COLLECTION,
+        subjectId: getCollectionId(),
+      }),
+      expect.objectContaining({
+        actorUserId: admin.userId,
+        action: AuditAction.COLLECTION_REORDERED,
+        subjectType: AuditSubjectType.COLLECTION,
+        subjectId: getCollectionId(),
+      }),
+      expect.objectContaining({
+        actorUserId: admin.userId,
+        action: AuditAction.COLLECTION_BOOK_ADDED,
+        subjectType: AuditSubjectType.COLLECTION,
+        subjectId: getCollectionId(),
+      }),
+      expect.objectContaining({
+        actorUserId: admin.userId,
+        action: AuditAction.COLLECTION_UPDATED,
+        subjectType: AuditSubjectType.COLLECTION,
+        subjectId: getCollectionId(),
+      }),
+      expect.objectContaining({
+        actorUserId: admin.userId,
+        action: AuditAction.COLLECTION_CREATED,
+        subjectType: AuditSubjectType.COLLECTION,
+        subjectId: getCollectionId(),
+      }),
+    ]);
   });
 });

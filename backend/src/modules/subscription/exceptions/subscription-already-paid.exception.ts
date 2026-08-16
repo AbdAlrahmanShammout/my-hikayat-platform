@@ -3,7 +3,7 @@ import { ResourceConflictException } from '@/common/exceptions/resource-conflict
 export class SubscriptionAlreadyPaidException extends ResourceConflictException {
   constructor() {
     super({
-      message: 'The user already has an active monthly subscription',
+      message: 'The user already has paid monthly access',
       code: 'SUBSCRIPTION_ALREADY_PAID',
     });
   }

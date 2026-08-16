@@ -20,6 +20,10 @@ export async function dispatchStripeWebhookEvent(
   }
   if (input.event.type === STRIPE.webhookEventType.customerSubscriptionDeleted) {
     await dispatchSubscriptionCanceled(input);
+    return;
+  }
+  if (input.event.type === STRIPE.webhookEventType.invoicePaymentFailed) {
+    await dispatchInvoicePaymentFailed(input);
   }
 }
 
@@ -66,6 +70,18 @@ async function dispatchSubscriptionCanceled(input: DispatchStripeWebhookEventInp
     customerId: input.event.customerId,
     subscriptionId: input.event.subscriptionId,
     currentPeriodEnd: input.event.currentPeriodEnd,
+  });
+}
+
+async function dispatchInvoicePaymentFailed(input: DispatchStripeWebhookEventInput): Promise<void> {
+  if (input.event.subscriptionId === null) {
+    return;
+  }
+  await input.eventHandlers.handleInvoicePaymentFailed({
+    customerId: input.event.customerId,
+    subscriptionId: input.event.subscriptionId,
+    invoiceId: input.event.objectId,
+    status: input.event.status,
   });
 }
 

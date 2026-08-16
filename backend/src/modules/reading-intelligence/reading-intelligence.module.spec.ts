@@ -44,6 +44,13 @@ describe('ReadingIntelligenceModule', () => {
           count: jest.fn(),
           groupBy: jest.fn(),
         },
+        readingChapterEngagement: {
+          upsert: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          groupBy: jest.fn(),
+        },
         book: {
           create: jest.fn(),
           findFirst: jest.fn(),

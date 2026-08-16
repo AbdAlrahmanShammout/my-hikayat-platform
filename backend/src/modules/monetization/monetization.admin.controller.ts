@@ -20,6 +20,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { LoggedInUser } from '@/common/decorators/requests/logged-in-user.decorator';
 import { Roles } from '@/common/decorators/route/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -41,6 +42,7 @@ import { GetRevenuePeriodsResponseDto } from '@/modules/monetization/dto/respons
 import { RevenuePeriodResponse } from '@/modules/monetization/dto/response/model/revenue-period.response';
 import { RevenuePeriodEntity } from '@/modules/monetization/entity/revenue-period.entity';
 import { RevenuePeriodService } from '@/modules/monetization/revenue-period.service';
+import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
 
 @ApiTags('Admin - Monetization')
@@ -150,10 +152,12 @@ export class MonetizationAdminController {
   @ApiResponse({ status: 200, type: GetAdminPeriodEarningsResponseDto })
   async calculatePeriodRevenue(
     @Param('id', ParseIntPipe) id: number,
+    @LoggedInUser() currentUser: UserEntity,
   ): Promise<GetAdminPeriodEarningsResponseDto> {
     const result: AdminPeriodEarningsPage = await this.adminAnalyticsService.calculatePeriodRevenue(
       {
         revenuePeriodId: id,
+        actorUserId: currentUser.id,
       },
     );
     return new GetAdminPeriodEarningsResponseDto(result);
@@ -195,7 +199,7 @@ export class MonetizationAdminController {
 
   @Get(':id/books/:bookId/heatmap')
   @ApiOperation({
-    summary: 'List fixed-layout spread engagement for a book in a revenue period',
+    summary: 'List layout-specific engagement heatmap for a book in a revenue period',
   })
   @ApiParam({ name: 'id', type: Number })
   @ApiParam({ name: 'bookId', type: Number })

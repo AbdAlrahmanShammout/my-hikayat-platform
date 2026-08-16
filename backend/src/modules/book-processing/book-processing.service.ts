@@ -115,6 +115,11 @@ export class BookProcessingService {
     return this.bookChapterRepository.replaceByBookId({ bookId, chapters });
   }
 
+  async listBookChapters(bookId: number): Promise<BookChapterEntity[]> {
+    await this.bookService.getBookById(bookId);
+    return this.bookChapterRepository.listByBookId(bookId);
+  }
+
   async extractEpubFixedLayout(bookId: number): Promise<BookFixedLayoutStructure> {
     const plaintext: Buffer = await this.loadEpubPlaintext(bookId);
     const opened: EpubOcfOpenedPackage = EpubOcfHelper.open(plaintext);

@@ -16,6 +16,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
 import { deleteUsersByEmail } from './delete-users.helper';
+import { publishTestBook } from './publish-test-book';
 
 describe('Author monetization APIs (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -43,6 +44,11 @@ describe('Author monetization APIs (e2e)', () => {
     await prismaProviderService.bookEngagement.deleteMany({
       where: { book: { owner: { email: { in: emails } } } },
     });
+    await prismaProviderService.readingChapterEngagement.deleteMany({
+      where: {
+        OR: [{ user: { email: { in: emails } } }, { book: { owner: { email: { in: emails } } } }],
+      },
+    });
     await prismaProviderService.readingVisualEngagement.deleteMany({
       where: {
         OR: [{ user: { email: { in: emails } } }, { book: { owner: { email: { in: emails } } } }],
@@ -52,6 +58,9 @@ describe('Author monetization APIs (e2e)', () => {
       where: {
         OR: [{ user: { email: { in: emails } } }, { book: { owner: { email: { in: emails } } } }],
       },
+    });
+    await prismaProviderService.bookChapter.deleteMany({
+      where: { book: { owner: { email: { in: emails } } } },
     });
     await prismaProviderService.book.deleteMany({
       where: { owner: { email: { in: emails } } },
@@ -147,7 +156,24 @@ describe('Author monetization APIs (e2e)', () => {
       ownerId: owner.userId,
       categoryIds: [picture.id],
     });
+    await publishTestBook(getRunningApp(), reflowableBook.id);
+    await publishTestBook(getRunningApp(), fixedBook.id);
+    await getRunningApp()
+      .get(PrismaProviderService)
+      .bookChapter.create({
+        data: {
+          bookId: reflowableBook.id,
+          spineIndex: 0,
+          href: 'OEBPS/chapter1.xhtml',
+          manifestId: 'c1',
+          title: 'The Harbor',
+          contentText: 'First chapter text.',
+        },
+      });
     const readingSessionService: ReadingSessionService = getRunningApp().get(ReadingSessionService);
+    const readingIntelligenceService: ReadingIntelligenceService = getRunningApp().get(
+      ReadingIntelligenceService,
+    );
     const inRangeStart = new Date('2098-06-15T12:00:00.000Z');
     const reflowableSession = await readingSessionService.startReadingSession({
       userId: readerId,
@@ -156,10 +182,10 @@ describe('Author monetization APIs (e2e)', () => {
       scrollOffset: 0,
       startedAt: inRangeStart,
     });
-    await readingSessionService.recordReadingSessionActivity({
-      id: reflowableSession.id,
+    await readingIntelligenceService.ingestReadingActivity({
       userId: readerId,
       bookId: reflowableBook.id,
+      sessionId: reflowableSession.id,
       activeDurationMs: 120000,
       idleDurationMs: 900000,
     });
@@ -170,9 +196,6 @@ describe('Author monetization APIs (e2e)', () => {
       pageNumber: 1,
       startedAt: inRangeStart,
     });
-    const readingIntelligenceService: ReadingIntelligenceService = getRunningApp().get(
-      ReadingIntelligenceService,
-    );
     await readingIntelligenceService.ingestVisualEngagement({
       userId: readerId,
       bookId: fixedBook.id,
@@ -191,7 +214,7 @@ describe('Author monetization APIs (e2e)', () => {
     createdPeriodIds.push(period.id);
     await getRunningApp()
       .get(BookRevenueService)
-      .calculatePeriodRevenue({ revenuePeriodId: period.id });
+      .calculatePeriodRevenue({ revenuePeriodId: period.id, actorUserId: owner.userId });
     const forbiddenResponse = await request(getServer())
       .get('/author/earnings')
       .query({ revenuePeriodId: period.id })
@@ -211,14 +234,44 @@ describe('Author monetization APIs (e2e)', () => {
     expect(analyticsResponse.status).toBe(HttpStatus.OK);
     expect(analyticsResponse.body.totalReadingMinutes).toBe(5);
     expect(analyticsResponse.body.bookEngagements[0].bookId).toBe(fixedBook.id);
+    await readingIntelligenceService.ingestReadingActivity({
+      userId: readerId,
+      bookId: reflowableBook.id,
+      sessionId: reflowableSession.id,
+      activeDurationMs: 8000,
+      idleDurationMs: 0,
+      spineIndex: 99,
+      scrollOffset: 0,
+    });
     const heatmapResponse = await request(getServer())
       .get(`/author/analytics/books/${fixedBook.id}/heatmap`)
       .query({ revenuePeriodId: period.id })
       .set('Authorization', `Bearer ${owner.accessToken}`);
     expect(heatmapResponse.status).toBe(HttpStatus.OK);
-    expect(heatmapResponse.body.spreads).toEqual([
-      { spreadIndex: 0, pageNumber: 1, activeDurationMs: 180000, visualSceneTimeMs: 90000 },
-    ]);
+    expect(heatmapResponse.body).toEqual({
+      bookId: fixedBook.id,
+      revenuePeriodId: period.id,
+      layoutType: BookLayoutType.FIXED_LAYOUT,
+      spreads: [
+        { spreadIndex: 0, pageNumber: 1, activeDurationMs: 180000, visualSceneTimeMs: 90000 },
+      ],
+      chapters: [],
+    });
+    const chapterHeatmapResponse = await request(getServer())
+      .get(`/author/analytics/books/${reflowableBook.id}/heatmap`)
+      .query({ revenuePeriodId: period.id })
+      .set('Authorization', `Bearer ${owner.accessToken}`);
+    expect(chapterHeatmapResponse.status).toBe(HttpStatus.OK);
+    expect(chapterHeatmapResponse.body).toEqual({
+      bookId: reflowableBook.id,
+      revenuePeriodId: period.id,
+      layoutType: BookLayoutType.REFLOWABLE,
+      spreads: [],
+      chapters: [
+        { spineIndex: 0, title: 'The Harbor', activeDurationMs: 120000 },
+        { spineIndex: 99, title: null, activeDurationMs: 8000 },
+      ],
+    });
     const hiddenHeatmap = await request(getServer())
       .get(`/author/analytics/books/${fixedBook.id}/heatmap`)
       .query({ revenuePeriodId: period.id })

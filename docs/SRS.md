@@ -51,6 +51,24 @@ The platform supports:
 
 - View analytics and earnings
 
+Publishers manage their own books through the author book API:
+
+- `POST /author/books` — create a book. The owner is the authenticated
+  publisher. The request may set title, description, book type, and
+  categories. It does not set publishing status or layout type.
+
+- `GET /author/books` — list books owned by the authenticated
+  publisher, optionally filtered by publishing status.
+
+- `GET /author/books/:id` — get one owned book.
+
+- `PATCH /author/books/:id` — update title, description, book type,
+  and/or categories only. Publishing status, processing status, layout
+  type, and owner cannot be changed on this path.
+
+A publisher cannot retrieve or update another publisher’s book through
+these endpoints.
+
 ## **2.3 Admin / Moderator**
 
 - Review then approve or reject books
@@ -61,11 +79,84 @@ The platform supports:
 
 - Manage books
 
+- Manage category revenue weights
+
 - Create and manage curated collections / editorial shelves
 
 - Add or remove books from collections
 
 - Define and manage the display order of books within each collection
+
+- Inspect the append-only audit log
+
+Admin book management:
+
+- `GET /admin/books` returns all publishing statuses by default. An
+  optional `publishingStatus` query parameter allows admins to filter
+  the results by publishing status.
+
+- `GET /admin/books/:id` returns one book for administration.
+
+- `PATCH /admin/books/:id` updates title, description, book type,
+  and/or categories without changing publishing status.
+
+- Approve or reject an in-review book (`POST /admin/books/:id/approve`,
+  `POST /admin/books/:id/reject`).
+
+- Unpublish an approved catalog book
+  (`POST /admin/books/:id/unpublish`): publishing status stays
+  approved; the published timestamp is cleared; readers no longer see
+  the book (treated as not found).
+
+- Republish (`POST /admin/books/:id/republish`) restores catalog
+  visibility without a new review and sets the published timestamp to
+  the current time.
+
+- Soft-delete (`DELETE /admin/books/:id`) removes the book from the
+  catalog and from author/admin lists.
+
+Admin category revenue-weight management (admin only):
+
+- `GET /admin/categories`, `GET /admin/categories/:id` — list or get
+  categories, including `categoryWeight`.
+
+- `PATCH /admin/categories/:id` — update `categoryWeight` only. The
+  value must be greater than 0.
+
+This category API does not create, rename, or delete categories.
+
+## **2.4 Audit Log**
+
+Administrators can list and inspect an append-only audit log
+(`GET /admin/audit-logs`). Entries record the actor, action, subject
+type, subject id, optional reason, and optional metadata.
+
+Read operations are not audited.
+
+The following state changes must produce an audit record:
+
+- Book submitted for review, approved, rejected, unpublished,
+  republished, or deleted
+
+- Publisher enabled or disabled; user role changed; user deleted
+
+- Subscription canceled; subscription payment failed (audit only; this
+  event does not by itself change access)
+
+- Collection created; title updated; deleted; book added; book
+  removed; or reordered
+
+- Revenue period calculated
+
+Collection title update is audited only when a title is actually
+persisted. Adding a book that is already in the collection, removing a
+book that is not in the collection, or reordering with a different
+book set does not write an audit row.
+
+Revenue engagement aggregation, period close, and pool or platform-cut
+updates are not audited as revenue calculation. Recalculating the same
+revenue period produces another audit record on each successful
+calculation.
 
 # **3. Book Management System**
 
@@ -107,6 +198,18 @@ Each book contains:
 
 The system must detect the EPUB layout type and automatically use the
 appropriate reading engine.
+
+A book’s publishing status is one of: pending, in review, approved, or
+rejected. Unpublished is not a publishing status.
+
+Catalog and reader full-book access require all of: publishing status
+approved, processing complete, and a published timestamp. Clearing the
+published timestamp hides an approved book from readers without
+changing its publishing status, including in reader-facing collection
+results (§10.2). A later republish returns that book to the catalog
+without another review and sets the published timestamp to the current
+time. Soft-deleted books are removed from the catalog and from
+author/admin lists.
 
 ## **3.1 Fixed-Layout Books**
 
@@ -270,7 +373,8 @@ System tracks deep reading behavior.
 
 - Time per page
 
-- Time per chapter
+- Time per chapter, measured as active reading time attributed to a
+  chapter spine index
 
 - Total reading time
 
@@ -280,6 +384,27 @@ System tracks deep reading behavior.
   wall try
 
 - Reading speed (pages/minute)
+
+For reflowable books, chapter time is recorded from reading-session
+activity:
+
+- Only **active** duration is stored per chapter. Idle time remains a
+  session metric and is not copied onto chapter rows.
+
+- The spine index is taken from the activity payload when present;
+  otherwise from the current session spine index.
+
+- Activity with no usable spine index, or with no positive active
+  duration, does not write chapter time.
+
+- A spine index does not have to match a stored chapter record at
+  ingest time. Heatmaps may later show that spine with no title.
+
+- Repeated activity for the same session and spine **adds** active
+  time (no idempotency key in this version).
+
+Author revenue continues to use session-level active reading totals,
+not the chapter ledger.
 
 ### **Fixed-Layout Books**
 
@@ -347,6 +472,9 @@ For Fixed-Layout Books, each session must additionally track:
 The system must be able to determine which spread or page was actively
 viewed and how long the user engaged with it.
 
+For reflowable books, the system must also be able to attribute active
+session time to a chapter spine index as described in §5.1.
+
 # **6. Subscription System**
 
 - Single subscription model for users
@@ -359,15 +487,42 @@ viewed and how long the user engaged with it.
 
 - Free tier does not require a credit card
 
-## **6.1 Refund Policy**
+## **6.1 Paid Reading Entitlement**
+
+Paid full-book reading is allowed when both are true:
+
+- the user’s plan is the monthly paid plan, and
+
+- the current time is before `currentPeriodEnd`.
+
+If `currentPeriodEnd` is missing, paid reading is denied.
+
+The free plan never grants paid reading.
+
+Local subscription status is `active` or `canceled`. A **canceled**
+monthly paid subscription still grants paid reading until
+`currentPeriodEnd`. After that timestamp, access stops even if status
+is still `active`.
+
+Stripe collection states such as `past_due` or `unpaid` are not stored
+as local statuses. A failed invoice payment (`invoice.payment_failed`)
+is recorded in the admin audit log and does not change local status,
+period end, or access by itself.
+
+A user who already has paid reading entitlement cannot start another
+checkout. After entitlement ends, checkout is allowed again.
+
+## **6.2 Refund Policy**
 
 Noory offers a money-back guarantee.
 
 Users can request a refund within **7 days of activating their
 subscription**.
 
-This refund policy is a business policy and does not represent a
-technical requirement beyond supporting the applicable refund process.
+A refund granted under this policy cancels the paid subscription and
+ends paid reading immediately (the paid period end is closed at the
+time of refund). Canceling without a refund does not by itself end
+access before `currentPeriodEnd`.
 
 # **7. Monetization System (Author Revenue Model)**
 
@@ -383,6 +538,9 @@ Authors earn based on **real reading time engagement**.
 
 The **Category Weight** logic is active and must be applied when
 calculating author revenue.
+
+For a book assigned to more than one category, category weight is the
+sum of the configured weights of all assigned categories.
 
 For Reflowable Books, engagement can be measured using active reading
 time and reading activity.
@@ -433,7 +591,9 @@ Where:
 - weightedBookEngagement represents the engagement generated by the book
   after applying the appropriate engagement metric and category weight.
 
-- categoryWeight represents the configured weight for the book category.
+- categoryWeight represents the configured weight applied to the book:
+  the weight of its category, or the sum of the configured weights of
+  all assigned categories when the book has more than one category.
 
 ## **7.3 Distribution**
 
@@ -441,6 +601,17 @@ Where:
 
 - Remaining distributed to authors based on reading time and weighted
   engagement of their books
+
+## **7.4 Revenue Period Calculation**
+
+Administrators calculate a revenue period’s author shares with
+`POST /admin/revenue-periods/:id/calculate`. Recalculating the same
+period is allowed and produces a new audit record each successful
+time.
+
+Setting the pool or platform cut, aggregating engagement only, and
+closing a period are separate operations and are not revenue-
+calculation audit events.
 
 # **8. Anti-Piracy & Security System**
 
@@ -532,7 +703,7 @@ Admins must be able to:
 
 - Create collections
 
-- Edit collections
+- Edit a collection’s title
 
 - Delete collections
 
@@ -541,6 +712,10 @@ Admins must be able to:
 - Remove books from collections
 
 - Reorder books within a collection
+
+Editing a collection’s title is separate from changing membership.
+Adding a book, removing a book, and reordering books are distinct
+operations. Reorder must include exactly the current membership.
 
 ### **Discovery**
 
@@ -553,6 +728,13 @@ The Discovery experience must allow users to:
 - View books within the collection
 
 - View books according to the configured editorial order
+
+Reader-facing collection results must exclude any book that is not
+catalog-visible. An unpublished book must not be visible to readers,
+even if it belongs to a collection. Administrators may still keep that
+book in the collection. After the book is republished and otherwise
+meets catalog visibility requirements, it may appear in reader-facing
+collections again.
 
 Curated collections provide an editorial discovery surface in addition
 to full-text search and standard filters.
@@ -606,11 +788,23 @@ Authors can view:
 
 ## **12.3 Engagement Heatmap**
 
-- Where users spend most time
+Authors and administrators can view a per-book heatmap for a revenue
+period. The response is layout-aware and includes:
 
-- Active Time Spent on Spread for Fixed-Layout books
+- `layoutType`
 
-- Visual engagement by page / spread where applicable
+- `spreads` — used for fixed-layout books (unchanged spread/page
+  visual engagement)
+
+- `chapters` — used for reflowable books
+
+For reflowable books, each chapter cell is a spine index, a title when
+a matching chapter exists (otherwise null), and active duration. Only
+spines with positive active duration appear. Cells are ordered hottest
+first; equal duration is ordered by spine index ascending.
+
+Fixed-layout heatmaps continue to use spread/page cells and return an
+empty chapter list.
 
 # **13. Non-Functional Requirements**
 

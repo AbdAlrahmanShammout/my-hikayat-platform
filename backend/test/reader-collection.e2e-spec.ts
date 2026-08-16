@@ -216,11 +216,13 @@ describe('Reader collections (e2e)', () => {
     const created = await collectionService.createCollection({
       title: `Harbor Picks ${slugSuffix}`,
       bookIds: [getSecondBookId(), getPendingBookId(), getFirstBookId()],
+      actorUserId: ownerId,
     });
     collectionId = created.id;
     const unpublishedOnly = await collectionService.createCollection({
       title: `Draft Shelf ${slugSuffix}`,
       bookIds: [getPendingBookId()],
+      actorUserId: ownerId,
     });
     unpublishedOnlyCollectionId = unpublishedOnly.id;
     readerAccessToken = await registerUser(readerEmail);
@@ -254,7 +256,10 @@ describe('Reader collections (e2e)', () => {
       getSecondBookId(),
       getFirstBookId(),
     ]);
-    await collectionService.deleteCollection(getCollectionId());
+    await collectionService.deleteCollection({
+      id: getCollectionId(),
+      actorUserId: ownerId,
+    });
     const missingResponse = await request(getServer())
       .get(`/reader/collections/${getCollectionId()}`)
       .set('Authorization', `Bearer ${getReaderAccessToken()}`);

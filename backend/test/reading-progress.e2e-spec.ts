@@ -13,6 +13,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
 import { deleteUsersByEmail } from './delete-users.helper';
+import { publishTestBook } from './publish-test-book';
 
 describe('Reading progress (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -97,6 +98,9 @@ describe('Reading progress (e2e)', () => {
       ownerId: getUserId(),
     });
     unknownLayoutBookId = unknownLayoutBook.id;
+    await publishTestBook(getRunningApp(), reflowableBook.id);
+    await publishTestBook(getRunningApp(), fixedBook.id);
+    await publishTestBook(getRunningApp(), unknownLayoutBook.id);
     const lastSessionAt = new Date('2026-08-15T02:00:00.000Z');
     const actualProgress = await getRunningApp().get(ReadingProgressService).saveReadingProgress({
       userId: getUserId(),

@@ -11,6 +11,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
 import { deleteUsersByEmail } from './delete-users.helper';
+import { publishTestBook } from './publish-test-book';
 
 describe('Reading Smart Resume (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -170,6 +171,10 @@ describe('Reading Smart Resume (e2e)', () => {
       ownerId,
     });
     unknownLayoutBookId = unknownLayoutBook.id;
+    await publishTestBook(getRunningApp(), reflowableBook.id);
+    await publishTestBook(getRunningApp(), fixedBook.id);
+    await publishTestBook(getRunningApp(), unreadBook.id);
+    await publishTestBook(getRunningApp(), unknownLayoutBook.id);
     readerAccessToken = await registerUser(readerEmail);
     otherAccessToken = await registerUser(otherEmail);
     const actualResponse = await request(getServer())

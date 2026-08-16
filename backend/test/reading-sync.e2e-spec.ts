@@ -11,6 +11,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
 import { deleteUsersByEmail } from './delete-users.helper';
+import { publishTestBook } from './publish-test-book';
 
 describe('Reading cross-device sync (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -146,6 +147,9 @@ describe('Reading cross-device sync (e2e)', () => {
       ownerId,
     });
     unreadBookId = unreadBook.id;
+    await publishTestBook(getRunningApp(), reflowableBook.id);
+    await publishTestBook(getRunningApp(), fixedBook.id);
+    await publishTestBook(getRunningApp(), unreadBook.id);
     readerAccessToken = await registerUser(readerEmail);
     otherAccessToken = await registerUser(otherEmail);
     const reflowableProgress = await request(getServer())

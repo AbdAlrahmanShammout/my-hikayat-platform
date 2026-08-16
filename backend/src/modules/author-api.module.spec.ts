@@ -143,6 +143,13 @@ describe('AuthorApiModule', () => {
           count: jest.fn(),
           groupBy: jest.fn(),
         },
+        readingChapterEngagement: {
+          upsert: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          groupBy: jest.fn(),
+        },
         plan: {
           create: jest.fn(),
           findFirst: jest.fn(),

@@ -8,13 +8,13 @@ import {
 } from '@/modules/book/enum/general.enum';
 import { AdminAnalyticsService } from '@/modules/monetization/admin-analytics.service';
 import { BookEngagementService } from '@/modules/monetization/book-engagement.service';
+import { BookHeatmapService } from '@/modules/monetization/book-heatmap.service';
 import { BookRevenueService } from '@/modules/monetization/book-revenue.service';
 import { BookEngagementEntity } from '@/modules/monetization/entity/book-engagement.entity';
 import { BookRevenueEntity } from '@/modules/monetization/entity/book-revenue.entity';
 import { RevenuePeriodEntity } from '@/modules/monetization/entity/revenue-period.entity';
 import { RevenuePeriodStatus } from '@/modules/monetization/enum/general.enum';
 import { RevenuePeriodService } from '@/modules/monetization/revenue-period.service';
-import { ReadingIntelligenceService } from '@/modules/reading-intelligence/reading-intelligence.service';
 
 function createSamplePeriod(
   overrides: Partial<ConstructorParameters<typeof RevenuePeriodEntity>[0]> = {},
@@ -92,7 +92,7 @@ describe('AdminAnalyticsService', () => {
     aggregatePeriodEngagement: jest.Mock;
   };
   let mockBookService: { getBookById: jest.Mock };
-  let mockReadingIntelligenceService: { listSpreadEngagementTotalsForBook: jest.Mock };
+  let mockBookHeatmapService: { getBookHeatmap: jest.Mock };
   let adminAnalyticsService: AdminAnalyticsService;
 
   beforeEach(() => {
@@ -108,13 +108,13 @@ describe('AdminAnalyticsService', () => {
       aggregatePeriodEngagement: jest.fn(),
     };
     mockBookService = { getBookById: jest.fn() };
-    mockReadingIntelligenceService = { listSpreadEngagementTotalsForBook: jest.fn() };
+    mockBookHeatmapService = { getBookHeatmap: jest.fn() };
     adminAnalyticsService = new AdminAnalyticsService(
       mockRevenuePeriodService as unknown as RevenuePeriodService,
       mockBookRevenueService as unknown as BookRevenueService,
       mockBookEngagementService as unknown as BookEngagementService,
       mockBookService as unknown as BookService,
-      mockReadingIntelligenceService as unknown as ReadingIntelligenceService,
+      mockBookHeatmapService as unknown as BookHeatmapService,
     );
   });
 
@@ -172,17 +172,28 @@ describe('AdminAnalyticsService', () => {
   });
 
   describe('getPeriodBookHeatmap', () => {
-    it('aggregates spread time for any book in the period window', async () => {
+    it('returns the book heatmap for the period window', async () => {
+      const expectedHeatmap = {
+        bookId: 10,
+        revenuePeriodId: 4,
+        layoutType: BookLayoutType.FIXED_LAYOUT,
+        spreads: [
+          { spreadIndex: 0, pageNumber: 1, activeDurationMs: 180000, visualSceneTimeMs: 90000 },
+        ],
+        chapters: [],
+      };
       mockBookService.getBookById.mockResolvedValue(createSampleBook());
       mockRevenuePeriodService.getRevenuePeriodById.mockResolvedValue(createSamplePeriod());
-      mockReadingIntelligenceService.listSpreadEngagementTotalsForBook.mockResolvedValue([
-        { spreadIndex: 0, pageNumber: 1, activeDurationMs: 180000, visualSceneTimeMs: 90000 },
-      ]);
+      mockBookHeatmapService.getBookHeatmap.mockResolvedValue(expectedHeatmap);
       const actualHeatmap = await adminAnalyticsService.getPeriodBookHeatmap({
         revenuePeriodId: 4,
         bookId: 10,
       });
-      expect(actualHeatmap.cells[0].activeDurationMs).toBe(180000);
+      expect(mockBookHeatmapService.getBookHeatmap).toHaveBeenCalledWith({
+        book: createSampleBook(),
+        period: createSamplePeriod(),
+      });
+      expect(actualHeatmap).toEqual(expectedHeatmap);
     });
   });
 
@@ -197,9 +208,11 @@ describe('AdminAnalyticsService', () => {
       mockBookRevenueService.sumAuthorCentsForPeriod.mockResolvedValue(7000);
       const actualResult = await adminAnalyticsService.calculatePeriodRevenue({
         revenuePeriodId: 4,
+        actorUserId: 9,
       });
       expect(mockBookRevenueService.calculatePeriodRevenue).toHaveBeenCalledWith({
         revenuePeriodId: 4,
+        actorUserId: 9,
       });
       expect(actualResult.authorCents).toBe(7000);
     });

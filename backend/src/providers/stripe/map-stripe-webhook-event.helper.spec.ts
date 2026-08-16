@@ -43,4 +43,28 @@ describe('mapStripeWebhookEvent', () => {
     expect(actualEvent.currentPeriodEnd).toEqual(new Date(1_702_592_000 * 1000));
     expect(actualEvent.status).toBe('active');
   });
+
+  it('reads the subscription id from an invoice payment failure', () => {
+    const actualEvent = mapStripeWebhookEvent({
+      id: 'evt_3',
+      type: 'invoice.payment_failed',
+      object: {
+        id: 'in_1',
+        customer: 'cus_1',
+        subscription: 'sub_1',
+        status: 'open',
+      },
+    });
+    expect(actualEvent).toEqual({
+      id: 'evt_3',
+      type: 'invoice.payment_failed',
+      objectId: 'in_1',
+      customerId: 'cus_1',
+      subscriptionId: 'sub_1',
+      clientReferenceId: null,
+      currentPeriodStart: null,
+      currentPeriodEnd: null,
+      status: 'open',
+    });
+  });
 });

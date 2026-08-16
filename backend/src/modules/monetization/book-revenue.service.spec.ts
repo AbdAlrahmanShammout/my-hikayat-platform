@@ -1,4 +1,6 @@
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
+import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { BookService } from '@/modules/book/book.service';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import {
@@ -15,6 +17,8 @@ import { RevenuePeriodPoolAmountMissingException } from '@/modules/monetization/
 import { RevenuePeriodService } from '@/modules/monetization/revenue-period.service';
 
 import { BookRevenueService } from './book-revenue.service';
+
+const actorUserId = 9;
 
 function createSamplePeriod(
   overrides: Partial<ConstructorParameters<typeof RevenuePeriodEntity>[0]> = {},
@@ -81,6 +85,8 @@ describe('BookRevenueService', () => {
     listAllBookEngagementsForPeriod: jest.Mock;
   };
   let mockBookService: { getBookById: jest.Mock };
+  let mockAuditLogService: { append: jest.Mock };
+  let mockTransactionRunner: { run: jest.Mock };
   let bookRevenueService: BookRevenueService;
 
   beforeEach(() => {
@@ -97,11 +103,17 @@ describe('BookRevenueService', () => {
       listAllBookEngagementsForPeriod: jest.fn(),
     };
     mockBookService = { getBookById: jest.fn() };
+    mockAuditLogService = { append: jest.fn() };
+    mockTransactionRunner = {
+      run: jest.fn(async (work: (context: undefined) => Promise<unknown>) => work(undefined)),
+    };
     bookRevenueService = new BookRevenueService(
       mockBookRevenueRepository,
       mockRevenuePeriodService as unknown as RevenuePeriodService,
       mockBookEngagementService as unknown as BookEngagementService,
       mockBookService as unknown as BookService,
+      mockAuditLogService as unknown as AuditLogService,
+      mockTransactionRunner,
     );
   });
 
@@ -127,33 +139,50 @@ describe('BookRevenueService', () => {
         return Promise.resolve(createSampleBook(10, 5));
       });
       mockBookRevenueRepository.replaceForPeriod.mockResolvedValue([]);
-      await bookRevenueService.calculatePeriodRevenue({ revenuePeriodId: 4 });
+      await bookRevenueService.calculatePeriodRevenue({ revenuePeriodId: 4, actorUserId });
       expect(mockBookEngagementService.aggregatePeriodEngagement).toHaveBeenCalledWith({
         revenuePeriodId: 4,
       });
-      expect(mockBookRevenueRepository.replaceForPeriod).toHaveBeenCalledWith({
-        revenuePeriodId: 4,
-        rows: [
-          {
-            revenuePeriodId: 4,
-            bookId: 8,
-            ownerId: 3,
-            weightedEngagement: 2.5,
-            authorCents: 2500,
-            platformCutCents: 1071,
-            poolShareCents: 3571,
+      expect(mockBookRevenueRepository.replaceForPeriod).toHaveBeenCalledWith(
+        {
+          revenuePeriodId: 4,
+          rows: [
+            {
+              revenuePeriodId: 4,
+              bookId: 8,
+              ownerId: 3,
+              weightedEngagement: 2.5,
+              authorCents: 2500,
+              platformCutCents: 1071,
+              poolShareCents: 3571,
+            },
+            {
+              revenuePeriodId: 4,
+              bookId: 10,
+              ownerId: 5,
+              weightedEngagement: 4.5,
+              authorCents: 4500,
+              platformCutCents: 1929,
+              poolShareCents: 6429,
+            },
+          ],
+        },
+        undefined,
+      );
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        {
+          actorUserId,
+          action: AuditAction.REVENUE_CALCULATED,
+          subjectType: AuditSubjectType.REVENUE_PERIOD,
+          subjectId: 4,
+          metadata: {
+            poolAmountCents: 10000,
+            platformCutPercent: 30,
+            bookCount: 2,
           },
-          {
-            revenuePeriodId: 4,
-            bookId: 10,
-            ownerId: 5,
-            weightedEngagement: 4.5,
-            authorCents: 4500,
-            platformCutCents: 1929,
-            poolShareCents: 6429,
-          },
-        ],
-      });
+        },
+        undefined,
+      );
     });
 
     it('rejects a period whose pool amount has not been set', async () => {
@@ -161,9 +190,11 @@ describe('BookRevenueService', () => {
         createSamplePeriod({ poolAmountCents: null }),
       );
       await expect(
-        bookRevenueService.calculatePeriodRevenue({ revenuePeriodId: 4 }),
+        bookRevenueService.calculatePeriodRevenue({ revenuePeriodId: 4, actorUserId }),
       ).rejects.toBeInstanceOf(RevenuePeriodPoolAmountMissingException);
       expect(mockBookEngagementService.aggregatePeriodEngagement).not.toHaveBeenCalled();
+      expect(mockBookRevenueRepository.replaceForPeriod).not.toHaveBeenCalled();
+      expect(mockAuditLogService.append).not.toHaveBeenCalled();
     });
   });
 

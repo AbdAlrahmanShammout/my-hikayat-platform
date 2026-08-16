@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { BookService } from '@/modules/book/book.service';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookEngagementService } from '@/modules/monetization/book-engagement.service';
+import { BookHeatmapService } from '@/modules/monetization/book-heatmap.service';
 import { BookRevenueService } from '@/modules/monetization/book-revenue.service';
 import { ENGAGEMENT_MS_PER_MINUTE } from '@/modules/monetization/consts/engagement-ms-per-minute.constant';
 import {
@@ -19,7 +20,6 @@ import { OwnerBookEngagementSummary } from '@/modules/monetization/defs/book-eng
 import { RevenuePeriodEntity } from '@/modules/monetization/entity/revenue-period.entity';
 import { computePlatformCutCents } from '@/modules/monetization/platform-cut-cents.helper';
 import { RevenuePeriodService } from '@/modules/monetization/revenue-period.service';
-import { ReadingIntelligenceService } from '@/modules/reading-intelligence/reading-intelligence.service';
 
 @Injectable()
 export class AdminAnalyticsService {
@@ -28,7 +28,7 @@ export class AdminAnalyticsService {
     private readonly bookRevenueService: BookRevenueService,
     private readonly bookEngagementService: BookEngagementService,
     private readonly bookService: BookService,
-    private readonly readingIntelligenceService: ReadingIntelligenceService,
+    private readonly bookHeatmapService: BookHeatmapService,
   ) {}
 
   async listPeriodEarnings(
@@ -90,12 +90,7 @@ export class AdminAnalyticsService {
     const period: RevenuePeriodEntity = await this.revenuePeriodService.getRevenuePeriodById(
       input.revenuePeriodId,
     );
-    const cells = await this.readingIntelligenceService.listSpreadEngagementTotalsForBook({
-      bookId: book.id,
-      startsAt: period.startsAt,
-      endsAt: period.endsAt,
-    });
-    return { bookId: book.id, revenuePeriodId: period.id, cells };
+    return this.bookHeatmapService.getBookHeatmap({ book, period });
   }
 
   async calculatePeriodRevenue(
@@ -103,6 +98,7 @@ export class AdminAnalyticsService {
   ): Promise<AdminPeriodEarningsPage> {
     await this.bookRevenueService.calculatePeriodRevenue({
       revenuePeriodId: input.revenuePeriodId,
+      actorUserId: input.actorUserId,
     });
     return this.listPeriodEarnings({ revenuePeriodId: input.revenuePeriodId });
   }

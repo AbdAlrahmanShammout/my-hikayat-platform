@@ -16,6 +16,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
 import { deleteUsersByEmail } from './delete-users.helper';
+import { publishTestBook } from './publish-test-book';
 
 describe('Book engagement aggregation (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -39,6 +40,11 @@ describe('Book engagement aggregation (e2e)', () => {
       where: { book: { owner: { email: { in: emails } } } },
     });
     await prismaProviderService.readingVisualEngagement.deleteMany({
+      where: {
+        OR: [{ user: { email: { in: emails } } }, { book: { owner: { email: { in: emails } } } }],
+      },
+    });
+    await prismaProviderService.readingChapterEngagement.deleteMany({
       where: {
         OR: [{ user: { email: { in: emails } } }, { book: { owner: { email: { in: emails } } } }],
       },
@@ -114,6 +120,8 @@ describe('Book engagement aggregation (e2e)', () => {
       ownerId,
       categoryIds: [picture.id],
     });
+    await publishTestBook(getRunningApp(), reflowableBook.id);
+    await publishTestBook(getRunningApp(), fixedBook.id);
     const readerRegister = await request(getServer()).post('/auth/register').send({
       email: readerEmail,
       password,

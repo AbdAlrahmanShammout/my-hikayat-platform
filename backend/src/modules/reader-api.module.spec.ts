@@ -67,6 +67,12 @@ describe('ReaderApiModule', () => {
           findMany: jest.fn(),
           count: jest.fn(),
         },
+        readingChapterEngagement: {
+          upsert: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+        },
         collection: {
           create: jest.fn(),
           findFirst: jest.fn(),

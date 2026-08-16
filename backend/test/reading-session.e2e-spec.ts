@@ -15,6 +15,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
 import { deleteUsersByEmail } from './delete-users.helper';
+import { publishTestBook } from './publish-test-book';
 
 describe('Reading session (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -128,6 +129,9 @@ describe('Reading session (e2e)', () => {
       ownerId: getUserId(),
     });
     unknownLayoutBookId = unknownLayoutBook.id;
+    await publishTestBook(getRunningApp(), reflowableBook.id);
+    await publishTestBook(getRunningApp(), fixedBook.id);
+    await publishTestBook(getRunningApp(), unknownLayoutBook.id);
     const startedAt = new Date('2026-08-15T02:00:00.000Z');
     const actualSession = await getRunningApp().get(ReadingSessionService).startReadingSession({
       userId: getUserId(),

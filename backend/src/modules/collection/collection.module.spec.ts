@@ -43,6 +43,12 @@ describe('CollectionModule', () => {
           update: jest.fn(),
         },
         user: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+        auditLog: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+        },
       })
       .compile();
     expect(moduleRef.get(CollectionService)).toBeDefined();

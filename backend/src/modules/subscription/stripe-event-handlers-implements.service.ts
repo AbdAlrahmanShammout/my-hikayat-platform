@@ -3,6 +3,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { SubscriptionBillingService } from '@/modules/subscription/subscription-billing.service';
 import {
   HandleCheckoutCompletedInput,
+  HandleInvoicePaymentFailedInput,
   HandleSubscriptionCanceledInput,
   HandleSubscriptionRenewedInput,
 } from '@/providers/stripe/defs/stripe-manager.defs';
@@ -30,5 +31,9 @@ export class StripeEventHandlersImplementsService implements StripeEventHandlers
 
   async handleSubscriptionCanceled(input: HandleSubscriptionCanceledInput): Promise<void> {
     await this.subscriptionBillingService.applySubscriptionCanceled(input);
+  }
+
+  async handleInvoicePaymentFailed(input: HandleInvoicePaymentFailedInput): Promise<void> {
+    await this.subscriptionBillingService.applyInvoicePaymentFailed(input);
   }
 }

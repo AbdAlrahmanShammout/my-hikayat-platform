@@ -4,6 +4,8 @@ import type { INestApplication } from '@nestjs/common';
 import type { Server } from 'node:http';
 import request from 'supertest';
 
+import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { BookProcessingStatusService } from '@/modules/book/book-processing-status.service';
 import { BookPublishingStatusService } from '@/modules/book/book-publishing-status.service';
 import { BookService } from '@/modules/book/book.service';
@@ -100,6 +102,10 @@ describe('Subscription billing (e2e)', () => {
       userId: registerResponse.body.user.id as number,
       accessToken: registerResponse.body.accessToken as string,
     };
+  }
+
+  function toUnixSeconds(date: Date): number {
+    return Math.floor(date.getTime() / 1000);
   }
 
   async function publishCatalogBook(ownerId: number): Promise<BookEntity> {
@@ -217,6 +223,10 @@ describe('Subscription billing (e2e)', () => {
     expect(actualResponse.body.status).toBe(SubscriptionStatus.ACTIVE);
     expect(actualResponse.body.plan.kind).toBe(PlanKind.MONTHLY_PAID);
     expect(actualResponse.body.activatedAt).toEqual(expect.any(String));
+    expect(actualResponse.body.currentPeriodEnd).toEqual(expect.any(String));
+    expect(new Date(actualResponse.body.currentPeriodEnd as string).getTime()).toBeGreaterThan(
+      Date.now(),
+    );
     expect(actualResponse.body).not.toHaveProperty('stripeCustomerId');
   });
 
@@ -241,7 +251,132 @@ describe('Subscription billing (e2e)', () => {
     expect(actualResponse.body.code).toBe('SUBSCRIPTION_ALREADY_PAID');
   });
 
-  it('Given subscription deleted, When progress is saved, Then paid access is required', async () => {
+  it('Given past_due before currentPeriodEnd, When progress is saved, Then access remains allowed', async () => {
+    const periodStart = toUnixSeconds(new Date());
+    const periodEnd = toUnixSeconds(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
+    const webhookResponse = await request(getServer())
+      .post('/webhooks/stripe')
+      .set('stripe-signature', 'test')
+      .send({
+        id: 'evt_subscription_past_due_future',
+        type: 'customer.subscription.updated',
+        data: {
+          object: {
+            id: `sub_memory_${getReaderId()}`,
+            customer: `cus_memory_${getReaderId()}`,
+            status: 'past_due',
+            current_period_start: periodStart,
+            current_period_end: periodEnd,
+          },
+        },
+      });
+    expect(webhookResponse.status).toBe(HttpStatus.OK);
+    const subscriptionResponse = await request(getServer())
+      .get('/reader/billing/subscription')
+      .set('Authorization', `Bearer ${getReaderAccessToken()}`);
+    expect(subscriptionResponse.status).toBe(HttpStatus.OK);
+    expect(subscriptionResponse.body.status).toBe(SubscriptionStatus.ACTIVE);
+    const actualResponse = await request(getServer())
+      .put(`/reader/books/${getPublishedBookId()}/progress`)
+      .set('Authorization', `Bearer ${getReaderAccessToken()}`)
+      .send({ spineIndex: 2, scrollOffset: 50 });
+    expect(actualResponse.status).toBe(HttpStatus.OK);
+  });
+
+  it('Given invoice.payment_failed, When the paid period is still open, Then access remains allowed', async () => {
+    const webhookResponse = await request(getServer())
+      .post('/webhooks/stripe')
+      .set('stripe-signature', 'test')
+      .send({
+        id: 'evt_invoice_payment_failed',
+        type: 'invoice.payment_failed',
+        data: {
+          object: {
+            id: `in_memory_${getReaderId()}`,
+            customer: `cus_memory_${getReaderId()}`,
+            subscription: `sub_memory_${getReaderId()}`,
+            status: 'open',
+          },
+        },
+      });
+    expect(webhookResponse.status).toBe(HttpStatus.OK);
+    const subscriptionResponse = await request(getServer())
+      .get('/reader/billing/subscription')
+      .set('Authorization', `Bearer ${getReaderAccessToken()}`);
+    expect(subscriptionResponse.status).toBe(HttpStatus.OK);
+    expect(subscriptionResponse.body.status).toBe(SubscriptionStatus.ACTIVE);
+    const auditLogs = await getRunningApp().get(AuditLogService).listAuditLogs({
+      actorUserId: getReaderId(),
+      action: AuditAction.SUBSCRIPTION_PAYMENT_FAILED,
+      subjectType: AuditSubjectType.SUBSCRIPTION,
+    });
+    expect(auditLogs.total).toBeGreaterThan(0);
+    const actualResponse = await request(getServer())
+      .put(`/reader/books/${getPublishedBookId()}/progress`)
+      .set('Authorization', `Bearer ${getReaderAccessToken()}`)
+      .send({ spineIndex: 2, scrollOffset: 55 });
+    expect(actualResponse.status).toBe(HttpStatus.OK);
+  });
+
+  it('Given past_due after currentPeriodEnd, When progress is saved, Then paid access is required', async () => {
+    const periodStart = toUnixSeconds(new Date('2026-07-01T00:00:00.000Z'));
+    const periodEnd = toUnixSeconds(new Date('2026-08-01T00:00:00.000Z'));
+    const webhookResponse = await request(getServer())
+      .post('/webhooks/stripe')
+      .set('stripe-signature', 'test')
+      .send({
+        id: 'evt_subscription_past_due_expired',
+        type: 'customer.subscription.updated',
+        data: {
+          object: {
+            id: `sub_memory_${getReaderId()}`,
+            customer: `cus_memory_${getReaderId()}`,
+            status: 'past_due',
+            current_period_start: periodStart,
+            current_period_end: periodEnd,
+          },
+        },
+      });
+    expect(webhookResponse.status).toBe(HttpStatus.OK);
+    const subscriptionResponse = await request(getServer())
+      .get('/reader/billing/subscription')
+      .set('Authorization', `Bearer ${getReaderAccessToken()}`);
+    expect(subscriptionResponse.status).toBe(HttpStatus.OK);
+    expect(subscriptionResponse.body.status).toBe(SubscriptionStatus.ACTIVE);
+    const actualResponse = await request(getServer())
+      .put(`/reader/books/${getPublishedBookId()}/progress`)
+      .set('Authorization', `Bearer ${getReaderAccessToken()}`)
+      .send({ spineIndex: 3, scrollOffset: 80 });
+    expect(actualResponse.status).toBe(HttpStatus.FORBIDDEN);
+    expect(actualResponse.body.code).toBe('FULL_BOOK_ACCESS_DENIED');
+  });
+
+  it('Given invoice.payment_failed after currentPeriodEnd, When progress is saved, Then paid access is required', async () => {
+    const webhookResponse = await request(getServer())
+      .post('/webhooks/stripe')
+      .set('stripe-signature', 'test')
+      .send({
+        id: 'evt_invoice_payment_failed_expired',
+        type: 'invoice.payment_failed',
+        data: {
+          object: {
+            id: `in_memory_expired_${getReaderId()}`,
+            customer: `cus_memory_${getReaderId()}`,
+            subscription: `sub_memory_${getReaderId()}`,
+            status: 'open',
+          },
+        },
+      });
+    expect(webhookResponse.status).toBe(HttpStatus.OK);
+    const actualResponse = await request(getServer())
+      .put(`/reader/books/${getPublishedBookId()}/progress`)
+      .set('Authorization', `Bearer ${getReaderAccessToken()}`)
+      .send({ spineIndex: 3, scrollOffset: 81 });
+    expect(actualResponse.status).toBe(HttpStatus.FORBIDDEN);
+    expect(actualResponse.body.code).toBe('FULL_BOOK_ACCESS_DENIED');
+  });
+
+  it('Given subscription deleted after currentPeriodEnd, When progress is saved, Then paid access is required', async () => {
     const webhookResponse = await request(getServer())
       .post('/webhooks/stripe')
       .set('stripe-signature', 'test')
@@ -253,6 +388,7 @@ describe('Subscription billing (e2e)', () => {
             id: `sub_memory_${getReaderId()}`,
             customer: `cus_memory_${getReaderId()}`,
             status: 'canceled',
+            current_period_end: toUnixSeconds(new Date('2026-08-01T00:00:00.000Z')),
           },
         },
       });

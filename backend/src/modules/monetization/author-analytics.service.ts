@@ -4,6 +4,7 @@ import { ResourceNotFoundException } from '@/common/exceptions/resource-not-foun
 import { BookService } from '@/modules/book/book.service';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookEngagementService } from '@/modules/monetization/book-engagement.service';
+import { BookHeatmapService } from '@/modules/monetization/book-heatmap.service';
 import { BookRevenueService } from '@/modules/monetization/book-revenue.service';
 import { ENGAGEMENT_MS_PER_MINUTE } from '@/modules/monetization/consts/engagement-ms-per-minute.constant';
 import {
@@ -21,7 +22,6 @@ import { OwnerBookEngagementSummary } from '@/modules/monetization/defs/book-eng
 import { RevenuePeriodEntity } from '@/modules/monetization/entity/revenue-period.entity';
 import { RevenuePeriodPage } from '@/modules/monetization/defs/revenue-period-repository.defs';
 import { RevenuePeriodService } from '@/modules/monetization/revenue-period.service';
-import { ReadingIntelligenceService } from '@/modules/reading-intelligence/reading-intelligence.service';
 
 @Injectable()
 export class AuthorAnalyticsService {
@@ -30,7 +30,7 @@ export class AuthorAnalyticsService {
     private readonly bookEngagementService: BookEngagementService,
     private readonly revenuePeriodService: RevenuePeriodService,
     private readonly bookService: BookService,
-    private readonly readingIntelligenceService: ReadingIntelligenceService,
+    private readonly bookHeatmapService: BookHeatmapService,
   ) {}
 
   async listAuthorEarnings(input: ListAuthorEarningsServiceInput): Promise<AuthorEarningsPage> {
@@ -93,12 +93,7 @@ export class AuthorAnalyticsService {
     const period: RevenuePeriodEntity = await this.revenuePeriodService.getRevenuePeriodById(
       input.revenuePeriodId,
     );
-    const cells = await this.readingIntelligenceService.listSpreadEngagementTotalsForBook({
-      bookId: book.id,
-      startsAt: period.startsAt,
-      endsAt: period.endsAt,
-    });
-    return { bookId: book.id, revenuePeriodId: period.id, cells };
+    return this.bookHeatmapService.getBookHeatmap({ book, period });
   }
 
   private async requireOwnedBook(bookId: number, ownerId: number): Promise<BookEntity> {

@@ -11,6 +11,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 import { assignMonthlySubscription } from './assign-monthly-subscription';
 import { createTestingApp } from './create-testing-app';
 import { deleteUsersByEmail } from './delete-users.helper';
+import { publishTestBook } from './publish-test-book';
 
 describe('Reading visual engagement (e2e)', () => {
   const password = 'correct-horse-battery';
@@ -153,6 +154,8 @@ describe('Reading visual engagement (e2e)', () => {
       ownerId,
     });
     fixedBookId = fixedBook.id;
+    await publishTestBook(getRunningApp(), reflowableBook.id);
+    await publishTestBook(getRunningApp(), fixedBook.id);
     readerAccessToken = await registerUser(readerEmail);
     otherAccessToken = await registerUser(otherEmail);
     const startResponse = await request(getServer())

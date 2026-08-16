@@ -1,7 +1,7 @@
 import { BookEngagementPage } from '@/modules/monetization/defs/book-engagement-repository.defs';
+import { BookHeatmap } from '@/modules/monetization/defs/book-heatmap-service.defs';
 import { BookRevenuePage } from '@/modules/monetization/defs/book-revenue-repository.defs';
 import { RevenuePeriodEntity } from '@/modules/monetization/entity/revenue-period.entity';
-import { SpreadVisualDurationTotal } from '@/modules/reading-intelligence/defs/reading-visual-engagement-repository.defs';
 
 export type ListAdminPeriodEarningsServiceInput = {
   readonly revenuePeriodId: number;
@@ -24,6 +24,7 @@ export type GetAdminPeriodBookHeatmapServiceInput = {
 
 export type CalculateAdminPeriodRevenueServiceInput = {
   readonly revenuePeriodId: number;
+  readonly actorUserId: number;
 };
 
 export type AggregateAdminPeriodEngagementServiceInput = {
@@ -47,8 +48,4 @@ export type AdminPeriodAnalyticsPage = {
   readonly totalReadingMinutes: number;
 };
 
-export type AdminPeriodBookHeatmap = {
-  readonly bookId: number;
-  readonly revenuePeriodId: number;
-  readonly cells: SpreadVisualDurationTotal[];
-};
+export type AdminPeriodBookHeatmap = BookHeatmap;

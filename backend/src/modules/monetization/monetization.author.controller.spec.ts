@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import { AuthorAnalyticsService } from '@/modules/monetization/author-analytics.service';
 import { BookRevenueEntity } from '@/modules/monetization/entity/book-revenue.entity';
 import { UserEntity } from '@/modules/user/entity/user.entity';
@@ -91,9 +92,11 @@ describe('MonetizationAuthorController', () => {
       mockAuthorAnalyticsService.getAuthorBookHeatmap.mockResolvedValue({
         bookId: 10,
         revenuePeriodId: 4,
-        cells: [
+        layoutType: BookLayoutType.FIXED_LAYOUT,
+        spreads: [
           { spreadIndex: 0, pageNumber: 1, activeDurationMs: 180000, visualSceneTimeMs: 90000 },
         ],
+        chapters: [],
       });
       const actualResponse = await monetizationAuthorController.getAuthorBookHeatmap(
         10,
@@ -106,6 +109,8 @@ describe('MonetizationAuthorController', () => {
         revenuePeriodId: 4,
       });
       expect(actualResponse.spreads[0].activeDurationMs).toBe(180000);
+      expect(actualResponse.layoutType).toBe(BookLayoutType.FIXED_LAYOUT);
+      expect(actualResponse.chapters).toEqual([]);
     });
   });
 });

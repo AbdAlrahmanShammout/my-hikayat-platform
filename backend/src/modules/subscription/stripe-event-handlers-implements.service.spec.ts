@@ -9,6 +9,7 @@ describe('StripeEventHandlersImplementsService', () => {
     applyCheckoutCompleted: jest.Mock;
     applySubscriptionRenewed: jest.Mock;
     applySubscriptionCanceled: jest.Mock;
+    applyInvoicePaymentFailed: jest.Mock;
   };
   let stripeEventHandlersImplementsService: StripeEventHandlersImplementsService;
 
@@ -18,6 +19,7 @@ describe('StripeEventHandlersImplementsService', () => {
       applyCheckoutCompleted: jest.fn(),
       applySubscriptionRenewed: jest.fn(),
       applySubscriptionCanceled: jest.fn(),
+      applyInvoicePaymentFailed: jest.fn(),
     };
     stripeEventHandlersImplementsService = new StripeEventHandlersImplementsService(
       mockStripeManagerService as unknown as StripeManagerService,
@@ -48,5 +50,22 @@ describe('StripeEventHandlersImplementsService', () => {
       currentPeriodStart: null,
       currentPeriodEnd: null,
     });
+  });
+
+  it('forwards invoice payment failures to billing without rewriting status', async () => {
+    mockSubscriptionBillingService.applyInvoicePaymentFailed.mockResolvedValue(undefined);
+    await stripeEventHandlersImplementsService.handleInvoicePaymentFailed({
+      customerId: 'cus_1',
+      subscriptionId: 'sub_1',
+      invoiceId: 'in_1',
+      status: 'open',
+    });
+    expect(mockSubscriptionBillingService.applyInvoicePaymentFailed).toHaveBeenCalledWith({
+      customerId: 'cus_1',
+      subscriptionId: 'sub_1',
+      invoiceId: 'in_1',
+      status: 'open',
+    });
+    expect(mockSubscriptionBillingService.applySubscriptionCanceled).not.toHaveBeenCalled();
   });
 });

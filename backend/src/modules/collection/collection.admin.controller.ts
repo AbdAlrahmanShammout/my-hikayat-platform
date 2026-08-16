@@ -21,6 +21,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { LoggedInUser } from '@/common/decorators/requests/logged-in-user.decorator';
 import { Roles } from '@/common/decorators/route/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
@@ -34,6 +35,7 @@ import { UpdateCollectionRequestDto } from '@/modules/collection/dto/request/upd
 import { GetCollectionsResponseDto } from '@/modules/collection/dto/response/get-collections-response.dto';
 import { CollectionResponse } from '@/modules/collection/dto/response/model/collection.response';
 import { CollectionEntity } from '@/modules/collection/entity/collection.entity';
+import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
 
 @ApiTags('Admin - Collections')
@@ -48,10 +50,14 @@ export class CollectionAdminController {
   @ApiOperation({ summary: 'Create an editorial collection with an optional ordered book list' })
   @ApiBody({ type: CreateCollectionRequestDto })
   @ApiResponse({ status: 201, type: CollectionResponse })
-  async createCollection(@Body() body: CreateCollectionRequestDto): Promise<CollectionResponse> {
+  async createCollection(
+    @Body() body: CreateCollectionRequestDto,
+    @LoggedInUser() currentUser: UserEntity,
+  ): Promise<CollectionResponse> {
     const entity: CollectionEntity = await this.collectionService.createCollection({
       title: body.title,
       bookIds: body.bookIds,
+      actorUserId: currentUser.id,
     });
     return new CollectionResponse(entity);
   }
@@ -86,10 +92,12 @@ export class CollectionAdminController {
   async updateCollection(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: UpdateCollectionRequestDto,
+    @LoggedInUser() currentUser: UserEntity,
   ): Promise<CollectionResponse> {
     const entity: CollectionEntity = await this.collectionService.updateCollection({
       id,
       title: body.title,
+      actorUserId: currentUser.id,
     });
     return new CollectionResponse(entity);
   }
@@ -99,8 +107,14 @@ export class CollectionAdminController {
   @ApiOperation({ summary: 'Soft-delete an editorial collection' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, type: CollectionResponse })
-  async deleteCollection(@Param('id', ParseIntPipe) id: number): Promise<CollectionResponse> {
-    const entity: CollectionEntity = await this.collectionService.deleteCollection(id);
+  async deleteCollection(
+    @Param('id', ParseIntPipe) id: number,
+    @LoggedInUser() currentUser: UserEntity,
+  ): Promise<CollectionResponse> {
+    const entity: CollectionEntity = await this.collectionService.deleteCollection({
+      id,
+      actorUserId: currentUser.id,
+    });
     return new CollectionResponse(entity);
   }
 
@@ -112,10 +126,12 @@ export class CollectionAdminController {
   async addCollectionBook(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: AddCollectionBookRequestDto,
+    @LoggedInUser() currentUser: UserEntity,
   ): Promise<CollectionResponse> {
     const entity: CollectionEntity = await this.collectionService.addCollectionBook({
       collectionId: id,
       bookId: body.bookId,
+      actorUserId: currentUser.id,
     });
     return new CollectionResponse(entity);
   }
@@ -129,10 +145,12 @@ export class CollectionAdminController {
   async removeCollectionBook(
     @Param('id', ParseIntPipe) id: number,
     @Param('bookId', ParseIntPipe) bookId: number,
+    @LoggedInUser() currentUser: UserEntity,
   ): Promise<CollectionResponse> {
     const entity: CollectionEntity = await this.collectionService.removeCollectionBook({
       collectionId: id,
       bookId,
+      actorUserId: currentUser.id,
     });
     return new CollectionResponse(entity);
   }
@@ -146,10 +164,12 @@ export class CollectionAdminController {
   async reorderCollectionBooks(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: ReorderCollectionBooksRequestDto,
+    @LoggedInUser() currentUser: UserEntity,
   ): Promise<CollectionResponse> {
     const entity: CollectionEntity = await this.collectionService.reorderCollectionBooks({
       collectionId: id,
       bookIds: body.bookIds,
+      actorUserId: currentUser.id,
     });
     return new CollectionResponse(entity);
   }

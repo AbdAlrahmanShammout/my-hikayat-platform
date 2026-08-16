@@ -9,6 +9,7 @@ import { PrismaProviderService } from '@/providers/database/prisma/prisma-provid
 import { AdminAnalyticsService } from './admin-analytics.service';
 import { AuthorAnalyticsService } from './author-analytics.service';
 import { BookEngagementService } from './book-engagement.service';
+import { BookHeatmapService } from './book-heatmap.service';
 import { BookRevenueService } from './book-revenue.service';
 import { MonetizationModule } from './monetization.module';
 import { RevenuePeriodService } from './revenue-period.service';
@@ -77,7 +78,68 @@ describe('MonetizationModule', () => {
           count: jest.fn(),
           groupBy: jest.fn(),
         },
+        readingChapterEngagement: {
+          upsert: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          groupBy: jest.fn(),
+        },
         book: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
+        bookSourceMetadata: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
+        bookChapter: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+          deleteMany: jest.fn(),
+        },
+        bookPage: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+          deleteMany: jest.fn(),
+        },
+        bookSpread: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+          deleteMany: jest.fn(),
+        },
+        bookPageTextLayer: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+          deleteMany: jest.fn(),
+        },
+        bookPageTextRun: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+          deleteMany: jest.fn(),
+        },
+        bookAsset: {
           create: jest.fn(),
           findFirst: jest.fn(),
           findMany: jest.fn(),
@@ -92,6 +154,12 @@ describe('MonetizationModule', () => {
           update: jest.fn(),
         },
         user: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+        auditLog: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+        },
         plan: {
           create: jest.fn(),
           findFirst: jest.fn(),
@@ -110,6 +178,7 @@ describe('MonetizationModule', () => {
     expect(moduleRef.get(RevenuePeriodService)).toBeDefined();
     expect(moduleRef.get(BookEngagementService)).toBeDefined();
     expect(moduleRef.get(BookRevenueService)).toBeDefined();
+    expect(moduleRef.get(BookHeatmapService)).toBeDefined();
     expect(moduleRef.get(AuthorAnalyticsService)).toBeDefined();
     expect(moduleRef.get(AdminAnalyticsService)).toBeDefined();
     expect(moduleRef.get(RevenuePeriodRepository)).toBeDefined();

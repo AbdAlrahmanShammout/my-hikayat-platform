@@ -9,13 +9,13 @@ import {
 } from '@/modules/book/enum/general.enum';
 import { AuthorAnalyticsService } from '@/modules/monetization/author-analytics.service';
 import { BookEngagementService } from '@/modules/monetization/book-engagement.service';
+import { BookHeatmapService } from '@/modules/monetization/book-heatmap.service';
 import { BookRevenueService } from '@/modules/monetization/book-revenue.service';
 import { BookEngagementEntity } from '@/modules/monetization/entity/book-engagement.entity';
 import { BookRevenueEntity } from '@/modules/monetization/entity/book-revenue.entity';
 import { RevenuePeriodEntity } from '@/modules/monetization/entity/revenue-period.entity';
 import { RevenuePeriodStatus } from '@/modules/monetization/enum/general.enum';
 import { RevenuePeriodService } from '@/modules/monetization/revenue-period.service';
-import { ReadingIntelligenceService } from '@/modules/reading-intelligence/reading-intelligence.service';
 
 function createSamplePeriod(): RevenuePeriodEntity {
   return new RevenuePeriodEntity({
@@ -91,7 +91,7 @@ describe('AuthorAnalyticsService', () => {
     getRevenuePeriodById: jest.Mock;
   };
   let mockBookService: { getBookById: jest.Mock };
-  let mockReadingIntelligenceService: { listSpreadEngagementTotalsForBook: jest.Mock };
+  let mockBookHeatmapService: { getBookHeatmap: jest.Mock };
   let authorAnalyticsService: AuthorAnalyticsService;
 
   beforeEach(() => {
@@ -108,13 +108,13 @@ describe('AuthorAnalyticsService', () => {
       getRevenuePeriodById: jest.fn(),
     };
     mockBookService = { getBookById: jest.fn() };
-    mockReadingIntelligenceService = { listSpreadEngagementTotalsForBook: jest.fn() };
+    mockBookHeatmapService = { getBookHeatmap: jest.fn() };
     authorAnalyticsService = new AuthorAnalyticsService(
       mockBookRevenueService as unknown as BookRevenueService,
       mockBookEngagementService as unknown as BookEngagementService,
       mockRevenuePeriodService as unknown as RevenuePeriodService,
       mockBookService as unknown as BookService,
-      mockReadingIntelligenceService as unknown as ReadingIntelligenceService,
+      mockBookHeatmapService as unknown as BookHeatmapService,
     );
   });
 
@@ -187,25 +187,29 @@ describe('AuthorAnalyticsService', () => {
   });
 
   describe('getAuthorBookHeatmap', () => {
-    it('aggregates owned-book spread time inside the period window', async () => {
+    it('returns the owned-book heatmap for the period window', async () => {
+      const expectedHeatmap = {
+        bookId: 10,
+        revenuePeriodId: 4,
+        layoutType: BookLayoutType.FIXED_LAYOUT,
+        spreads: [
+          { spreadIndex: 0, pageNumber: 1, activeDurationMs: 180000, visualSceneTimeMs: 90000 },
+        ],
+        chapters: [],
+      };
       mockBookService.getBookById.mockResolvedValue(createSampleBook());
       mockRevenuePeriodService.getRevenuePeriodById.mockResolvedValue(createSamplePeriod());
-      mockReadingIntelligenceService.listSpreadEngagementTotalsForBook.mockResolvedValue([
-        { spreadIndex: 0, pageNumber: 1, activeDurationMs: 180000, visualSceneTimeMs: 90000 },
-      ]);
+      mockBookHeatmapService.getBookHeatmap.mockResolvedValue(expectedHeatmap);
       const actualHeatmap = await authorAnalyticsService.getAuthorBookHeatmap({
         ownerId: 3,
         bookId: 10,
         revenuePeriodId: 4,
       });
-      expect(mockReadingIntelligenceService.listSpreadEngagementTotalsForBook).toHaveBeenCalledWith(
-        {
-          bookId: 10,
-          startsAt: new Date('2026-08-01T00:00:00.000Z'),
-          endsAt: new Date('2026-09-01T00:00:00.000Z'),
-        },
-      );
-      expect(actualHeatmap.cells[0].activeDurationMs).toBe(180000);
+      expect(mockBookHeatmapService.getBookHeatmap).toHaveBeenCalledWith({
+        book: createSampleBook(),
+        period: createSamplePeriod(),
+      });
+      expect(actualHeatmap).toEqual(expectedHeatmap);
     });
 
     it('hides another author book as not found', async () => {
@@ -217,9 +221,7 @@ describe('AuthorAnalyticsService', () => {
           revenuePeriodId: 4,
         }),
       ).rejects.toBeInstanceOf(ResourceNotFoundException);
-      expect(
-        mockReadingIntelligenceService.listSpreadEngagementTotalsForBook,
-      ).not.toHaveBeenCalled();
+      expect(mockBookHeatmapService.getBookHeatmap).not.toHaveBeenCalled();
     });
   });
 });
