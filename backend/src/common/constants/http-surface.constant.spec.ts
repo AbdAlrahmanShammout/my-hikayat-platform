@@ -1,4 +1,5 @@
 import {
+  CORS_ALLOWED_METHODS,
   CREDENTIAL_THROTTLE_LIMIT,
   CREDENTIAL_THROTTLE_NAME,
   CREDENTIAL_THROTTLE_TTL_MS,
@@ -12,6 +13,10 @@ import {
 } from './http-surface.constant';
 
 describe('HTTP surface constants', () => {
+  it('allows PUT so browser Smart Resume preflight can succeed', () => {
+    expect(CORS_ALLOWED_METHODS).toEqual(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
+  });
+
   it('keeps a conservative global floor and tighter unauthenticated and credential limits', () => {
     expect(DEFAULT_THROTTLE_NAME).toBe('default');
     expect(DEFAULT_THROTTLE_TTL_MS).toBe(60_000);

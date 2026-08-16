@@ -1,4 +1,5 @@
 export const CORS_PREFLIGHT_MAX_AGE_SECONDS = 86_400;
+export const CORS_ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 export const DEFAULT_THROTTLE_NAME = 'default';
 export const DEFAULT_THROTTLE_TTL_MS = 60_000;
 export const DEFAULT_THROTTLE_LIMIT = 120;

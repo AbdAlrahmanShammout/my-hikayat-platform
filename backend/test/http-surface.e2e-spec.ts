@@ -71,6 +71,28 @@ describe('HTTP surface (e2e)', () => {
     expect(actualResponse.headers['access-control-allow-origin']).toBeUndefined();
   });
 
+  it('Given an allowed Origin, When a browser preflights PUT progress, Then CORS allows PUT', async () => {
+    const actualResponse = await request(getServer())
+      .options('/reader/books/1/progress')
+      .set('Origin', 'http://localhost:3000')
+      .set('Access-Control-Request-Method', 'PUT')
+      .set('Access-Control-Request-Headers', 'Authorization,Content-Type');
+    expect(actualResponse.status).toBe(HttpStatus.NO_CONTENT);
+    expect(actualResponse.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+    expect(actualResponse.headers['access-control-allow-credentials']).toBe('true');
+    expect(actualResponse.headers['access-control-allow-methods'].split(/,\s*/)).toEqual(
+      expect.arrayContaining(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
+    );
+  });
+
+  it('Given a disallowed Origin, When a browser preflights PUT, Then CORS does not reflect it', async () => {
+    const actualResponse = await request(getServer())
+      .options('/reader/books/1/progress')
+      .set('Origin', 'https://evil.example')
+      .set('Access-Control-Request-Method', 'PUT');
+    expect(actualResponse.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
   it('Given an invalid body, When POST hits a DTO route, Then the validation error shape is returned', async () => {
     const actualResponse = await request(getServer())
       .post('/http-surface-probe')
