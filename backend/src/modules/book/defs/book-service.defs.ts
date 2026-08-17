@@ -61,6 +61,12 @@ export type ChangeBookPublishingStatusServiceInput = {
   readonly actorUserId: number;
 };
 
+export type RejectBookServiceInput = {
+  readonly bookId: number;
+  readonly actorUserId: number;
+  readonly reason: string;
+};
+
 export type DeleteBookServiceInput = {
   readonly bookId: number;
   readonly actorUserId: number;
@@ -71,4 +77,5 @@ export type TransitionBookPublishingStatusInput = {
   readonly to: BookPublishingStatus;
   readonly publishedAt?: Date | null;
   readonly actorUserId?: number;
+  readonly reason?: string;
 };

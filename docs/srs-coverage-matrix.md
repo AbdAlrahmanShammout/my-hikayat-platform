@@ -22,12 +22,12 @@ Do not treat a row as Complete unless both the backend behavior and tests exist.
 
 | Status | Count |
 | --- | ---: |
-| Complete | 69 |
+| Complete | 70 |
 | In Progress | 0 |
 | Future | 2 |
 | Blocked | 0 |
 | Not Required | 15 |
-| **Total** | **86** |
+| **Total** | **87** |
 
 ## Future / out of scope for current Part 1
 
@@ -64,7 +64,8 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §2.2 Book status lifecycle pending → in_review → approved / rejected | Publishing status machine; submit, approve, reject | `book-submit-for-review.e2e-spec.ts`, `book-admin-review.e2e-spec.ts` | Complete |
 | §2.2 Author analytics and earnings APIs | `GET /author/analytics`, `GET /author/earnings`, trend, heatmap | `author-monetization.e2e-spec.ts` | Complete |
 | §2.2 Author dashboard UI | — | — | Not Required |
-| §2.3 Review then approve or reject books | `POST /admin/books/:id/approve`, `POST /admin/books/:id/reject` | `book-admin-review.e2e-spec.ts` | Complete |
+| §2.3 Review then approve or reject books | `POST /admin/books/:id/approve`, `POST /admin/books/:id/reject` (reject requires non-empty `reason` stored on `audit.reason`) | `book-admin-review.e2e-spec.ts` | Complete |
+| §2.3 Required book rejection reason | `POST /admin/books/:id/reject` body `reason`; persisted on append-only `audit.reason` for `book_rejected` | `book-admin-review.e2e-spec.ts`, `book-publishing-status.service.spec.ts`, `book.admin.controller.spec.ts` | Complete |
 | §2.3 Manage users | `GET/PATCH/DELETE /admin/users` | `admin-user.e2e-spec.ts` | Complete |
 | §2.3 Manage subscriptions | `GET /admin/subscriptions`, `POST /admin/subscriptions/:id/cancel` | `admin-subscription.e2e-spec.ts` | Complete |
 | §2.3 Admin book list, metadata edit, unpublish, republish, soft-delete | `GET /admin/books` lists all statuses by default, optional `publishingStatus`; `PATCH`; `POST .../unpublish`; `POST .../republish` sets `publishedAt` to now; `DELETE` soft-deletes | `admin-book.e2e-spec.ts` | Complete |
@@ -140,4 +141,5 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 - Last-admin protection is unit-tested; it is hard to hit over HTTP because an admin cannot change themselves.
 - Author/admin book metadata PATCH and category-weight PATCH are implemented and are not listed in §2.4 as required audit events.
 - Starter categories are inserted by migration. Admin HTTP create and rename exist; author and reader lists are read-only; delete is not part of that seed.
+- Book rejection requires a non-empty reason stored on the existing append-only audit row. Dedicated rejection-history read APIs are a later task.
 - Reflowable time-per-page and reading speed remain SRS requirements. They are Future / out of scope for current Part 1 because there is no stable server-side page definition. See `docs/FUTURE.md`.

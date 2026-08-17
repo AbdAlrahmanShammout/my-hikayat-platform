@@ -4,6 +4,7 @@ import type { INestApplication } from '@nestjs/common';
 import type { Server } from 'node:http';
 import request from 'supertest';
 
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { BookService } from '@/modules/book/book.service';
 import {
   BookLayoutType,
@@ -263,10 +264,27 @@ describe('Book admin review (e2e)', () => {
     expect(listResponse.body.books[0].id).toBe(getRejectBookId());
   });
 
-  it('Given an in-review book, When an admin rejects it, Then it is not published', async () => {
+  it('Given an in-review book, When an admin rejects it without a reason, Then validation fails', async () => {
+    const missingReason = await request(getServer())
+      .post(`/admin/books/${getRejectBookId()}/reject`)
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`)
+      .send({});
+    expect(missingReason.status).toBe(HttpStatus.UNPROCESSABLE_ENTITY);
+    expect(missingReason.body.code).toBe('BAD_USER_INPUT');
+    const emptyReason = await request(getServer())
+      .post(`/admin/books/${getRejectBookId()}/reject`)
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`)
+      .send({ reason: '   ' });
+    expect(emptyReason.status).toBe(HttpStatus.UNPROCESSABLE_ENTITY);
+    expect(emptyReason.body.code).toBe('BAD_USER_INPUT');
+  });
+
+  it('Given an in-review book, When an admin rejects it, Then it is not published and the reason is audited', async () => {
+    const rejectionReason = 'Cover art is unreadable at catalog size.';
     const actualResponse = await request(getServer())
       .post(`/admin/books/${getRejectBookId()}/reject`)
-      .set('Authorization', `Bearer ${getAdminAccessToken()}`);
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`)
+      .send({ reason: rejectionReason });
     expect(actualResponse.status).toBe(HttpStatus.OK);
     expect(actualResponse.body.publishingStatus).toBe(BookPublishingStatus.REJECTED);
     expect(actualResponse.body.publishedAt).toBeNull();
@@ -277,6 +295,18 @@ describe('Book admin review (e2e)', () => {
       .set('Authorization', `Bearer ${getAdminAccessToken()}`);
     expect(listResponse.body.total).toBe(0);
     expect(listResponse.body.books).toHaveLength(0);
+    const auditResponse = await request(getServer())
+      .get('/admin/audit-logs')
+      .query({
+        action: AuditAction.BOOK_REJECTED,
+        subjectType: AuditSubjectType.BOOK,
+        subjectId: getRejectBookId(),
+      })
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`);
+    expect(auditResponse.status).toBe(HttpStatus.OK);
+    expect(auditResponse.body.total).toBe(1);
+    expect(auditResponse.body.auditLogs[0].action).toBe(AuditAction.BOOK_REJECTED);
+    expect(auditResponse.body.auditLogs[0].reason).toBe(rejectionReason);
   });
 
   it('Given an approved book, When it is approved again, Then the publishing transition is rejected', async () => {

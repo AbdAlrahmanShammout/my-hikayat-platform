@@ -171,10 +171,15 @@ describe('BookAdminController', () => {
       mockBookPublishingStatusService.rejectBook.mockResolvedValue(
         createSampleBook(BookPublishingStatus.REJECTED),
       );
-      const actualResponse = await bookAdminController.rejectBook(8, createSampleAdmin());
+      const actualResponse = await bookAdminController.rejectBook(
+        8,
+        { reason: 'Cover art is unreadable at catalog size.' },
+        createSampleAdmin(),
+      );
       expect(mockBookPublishingStatusService.rejectBook).toHaveBeenCalledWith({
         bookId: 8,
         actorUserId: 9,
+        reason: 'Cover art is unreadable at catalog size.',
       });
       expect(actualResponse.publishingStatus).toBe(BookPublishingStatus.REJECTED);
       expect(actualResponse.publishedAt).toBeNull();

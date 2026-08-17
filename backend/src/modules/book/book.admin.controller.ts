@@ -29,6 +29,7 @@ import { BookPublishingStatusService } from '@/modules/book/book-publishing-stat
 import { BookService } from '@/modules/book/book.service';
 import { BookPage } from '@/modules/book/defs/book-repository.defs';
 import { ListBooksRequestDto } from '@/modules/book/dto/request/list-books-request.dto';
+import { RejectBookRequestDto } from '@/modules/book/dto/request/reject-book-request.dto';
 import { UpdateBookRequestDto } from '@/modules/book/dto/request/update-book-request.dto';
 import { GetBooksResponseDto } from '@/modules/book/dto/response/get-books-response.dto';
 import { BookResponse } from '@/modules/book/dto/response/model/book.response';
@@ -105,16 +106,19 @@ export class BookAdminController {
 
   @Post(':id/reject')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Reject an in-review book' })
+  @ApiOperation({ summary: 'Reject an in-review book with a required reason' })
   @ApiParam({ name: 'id', type: Number })
+  @ApiBody({ type: RejectBookRequestDto })
   @ApiResponse({ status: 200, type: BookResponse })
   async rejectBook(
     @Param('id', ParseIntPipe) id: number,
+    @Body() body: RejectBookRequestDto,
     @LoggedInUser() currentUser: UserEntity,
   ): Promise<BookResponse> {
     const entity: BookEntity = await this.bookPublishingStatusService.rejectBook({
       bookId: id,
       actorUserId: currentUser.id,
+      reason: body.reason,
     });
     return new BookResponse(entity);
   }

@@ -106,7 +106,9 @@ Admin book management:
   and/or categories without changing publishing status.
 
 - Approve or reject an in-review book (`POST /admin/books/:id/approve`,
-  `POST /admin/books/:id/reject`).
+  `POST /admin/books/:id/reject`). Reject requires a non-empty
+  `reason`. The reason is stored on the append-only `book_rejected`
+  audit record (`audit.reason`).
 
 - Unpublish an approved catalog book
   (`POST /admin/books/:id/unpublish`): publishing status stays
@@ -160,7 +162,8 @@ Read operations are not audited.
 The following state changes must produce an audit record:
 
 - Book submitted for review, approved, rejected, unpublished,
-  republished, or deleted
+  republished, or deleted. Rejection records a required reason on
+  `audit.reason`.
 
 - Publisher enabled or disabled; user role changed; user deleted
 

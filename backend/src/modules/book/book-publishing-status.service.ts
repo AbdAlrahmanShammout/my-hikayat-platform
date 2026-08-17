@@ -8,6 +8,7 @@ import { BOOK_PUBLISHING_TRANSITIONS } from '@/modules/book/book-publishing-tran
 import { BookService } from '@/modules/book/book.service';
 import {
   ChangeBookPublishingStatusServiceInput,
+  RejectBookServiceInput,
   TransitionBookPublishingStatusInput,
 } from '@/modules/book/defs/book-service.defs';
 import { BookEntity } from '@/modules/book/entity/book.entity';
@@ -16,6 +17,7 @@ import { BookAlreadyPublishedException } from '@/modules/book/exceptions/book-al
 import { BookInvalidPublishingTransitionException } from '@/modules/book/exceptions/book-invalid-publishing-transition.exception';
 import { BookNotPublishedException } from '@/modules/book/exceptions/book-not-published.exception';
 import { BookNotReadyForPublishingException } from '@/modules/book/exceptions/book-not-ready-for-publishing.exception';
+import { BookRejectionReasonRequiredException } from '@/modules/book/exceptions/book-rejection-reason-required.exception';
 import { BookRepository } from '@/modules/book/repository/book.repository';
 
 @Injectable()
@@ -61,11 +63,14 @@ export class BookPublishingStatusService {
     });
   }
 
-  async rejectBook(input: ChangeBookPublishingStatusServiceInput): Promise<BookEntity> {
+  async rejectBook(input: RejectBookServiceInput): Promise<BookEntity> {
+    const reason: string = BookPublishingStatusService.normalizeRejectionReason(input.reason);
+    BookPublishingStatusService.assertRejectionReason(reason);
     return this.transitionPublishingStatus({
       bookId: input.bookId,
       to: BookPublishingStatus.REJECTED,
       actorUserId: input.actorUserId,
+      reason,
     });
   }
 
@@ -142,6 +147,7 @@ export class BookPublishingStatusService {
         action,
         subjectType: AuditSubjectType.BOOK,
         subjectId: book.id,
+        ...(input.reason === undefined ? {} : { reason: input.reason }),
         metadata: {
           from: book.publishingStatus,
           to: input.to,
@@ -162,6 +168,16 @@ export class BookPublishingStatusService {
       return AuditAction.BOOK_REJECTED;
     }
     return null;
+  }
+
+  private static normalizeRejectionReason(value: string): string {
+    return value.trim();
+  }
+
+  private static assertRejectionReason(reason: string): void {
+    if (reason.length === 0) {
+      throw new BookRejectionReasonRequiredException();
+    }
   }
 
   private static assertReadyForPublishing(book: BookEntity): void {

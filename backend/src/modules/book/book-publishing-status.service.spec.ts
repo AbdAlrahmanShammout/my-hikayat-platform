@@ -12,6 +12,7 @@ import { BookAlreadyPublishedException } from '@/modules/book/exceptions/book-al
 import { BookInvalidPublishingTransitionException } from '@/modules/book/exceptions/book-invalid-publishing-transition.exception';
 import { BookNotPublishedException } from '@/modules/book/exceptions/book-not-published.exception';
 import { BookNotReadyForPublishingException } from '@/modules/book/exceptions/book-not-ready-for-publishing.exception';
+import { BookRejectionReasonRequiredException } from '@/modules/book/exceptions/book-rejection-reason-required.exception';
 import { BookRepository } from '@/modules/book/repository/book.repository';
 
 import { BookPublishingStatusService } from './book-publishing-status.service';
@@ -160,7 +161,7 @@ describe('BookPublishingStatusService', () => {
   });
 
   describe('rejectBook', () => {
-    it('rejects an in-review book without setting publishedAt', async () => {
+    it('rejects an in-review book without setting publishedAt and stores the reason', async () => {
       const expectedBook = createSampleBook(BookPublishingStatus.REJECTED);
       mockBookService.getBookById.mockResolvedValue(
         createSampleBook(BookPublishingStatus.IN_REVIEW),
@@ -169,6 +170,7 @@ describe('BookPublishingStatusService', () => {
       const actualBook = await bookPublishingStatusService.rejectBook({
         bookId: 8,
         actorUserId: 9,
+        reason: '  Cover art is unreadable at catalog size.  ',
       });
       expect(mockBookRepository.update).toHaveBeenCalledWith(
         {
@@ -177,7 +179,33 @@ describe('BookPublishingStatusService', () => {
         },
         undefined,
       );
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        {
+          actorUserId: 9,
+          action: AuditAction.BOOK_REJECTED,
+          subjectType: AuditSubjectType.BOOK,
+          subjectId: 8,
+          reason: 'Cover art is unreadable at catalog size.',
+          metadata: {
+            from: BookPublishingStatus.IN_REVIEW,
+            to: BookPublishingStatus.REJECTED,
+          },
+        },
+        undefined,
+      );
       expect(actualBook).toBe(expectedBook);
+    });
+
+    it('rejects an empty rejection reason', async () => {
+      await expect(
+        bookPublishingStatusService.rejectBook({
+          bookId: 8,
+          actorUserId: 9,
+          reason: '   ',
+        }),
+      ).rejects.toBeInstanceOf(BookRejectionReasonRequiredException);
+      expect(mockBookRepository.update).not.toHaveBeenCalled();
+      expect(mockAuditLogService.append).not.toHaveBeenCalled();
     });
   });
 
