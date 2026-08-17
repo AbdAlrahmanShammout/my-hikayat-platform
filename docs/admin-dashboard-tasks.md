@@ -35,6 +35,7 @@ CORS default includes the Vite origin, agent routing to
 | 12 | Accept admin invitation (public page) | Complete |
 | 13 | Create and rename categories | Complete |
 | 14 | Reject book with required reason | Complete |
+| 15 | Admin subscription refund | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -468,18 +469,43 @@ Empty history is shown as an empty list. Reasons come from `audit.reason`.
 
 ---
 
+## STEP 15 — Admin subscription refund
+
+**SRS:** §2.3 / §6.2 same 7-day activation window as the reader refund.
+
+**APIs**
+
+- `POST /admin/subscriptions/:id/refund` — no body; backend eligibility and
+  window remain authoritative
+
+**UI**
+
+- Refund action on the subscription detail screen.
+- Do not compute the 7-day window or entitlement in the UI. Show displayed
+  `activatedAt` in the confirm copy only.
+- Disable from displayed fields when status is `canceled` or plan kind is
+  `free`. Window expiry still comes from the API (`REFUND_WINDOW_EXPIRED`,
+  `REFUND_NOT_ELIGIBLE`).
+- Cancel without refund remains available.
+
+**Route:** `/admin/subscriptions/:subscriptionId`
+
+**Written:** refund posts `POST /admin/subscriptions/:id/refund`. Confirm copy
+states the API owns the 7-day window and that a granted refund closes
+`currentPeriodEnd` immediately. 400 from the API still surfaces.
+
+---
+
 ## Out of scope for this list
 
 - Author dashboard (books upload, author analytics/earnings)
 - Reader catalog / dual-engine reader / React Native
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
-- Admin refund
 - Recalculating publisher earnings in the browser
 
 ## Implementation order
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
-STEP 8 must exist before STEP 9. STEPs 0–14 on this list are the current admin
-dashboard work. Next admin UI is remaining screens for HTTP that already exists
-(refund).
+STEP 8 must exist before STEP 9. STEPs 0–15 on this list are the current admin
+dashboard work. Remaining items on this list are out of scope.

@@ -11,7 +11,7 @@ export function AdminSubscriptionsPage(): JSX.Element {
     <>
       <PageHeader
         title="Subscriptions"
-        description="Cancel without a refund. Access lasts until currentPeriodEnd."
+        description="Cancel without a refund, or refund using the API 7-day activation window."
       />
       <AdminSubscriptionsPanel />
     </>

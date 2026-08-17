@@ -427,6 +427,14 @@ export interface paths {
       };
     };
   };
+  '/admin/subscriptions/{id}/refund': {
+    post: {
+      parameters: { path: { id: number } };
+      responses: {
+        '200': { content: { 'application/json': components['schemas']['SubscriptionResponse'] } };
+      };
+    };
+  };
   '/admin/invitations': {
     get: {
       parameters: { query?: { limit?: number; offset?: number } };

@@ -14,7 +14,7 @@ import { formatSubscriptionPlanLabel } from '@/features/subscriptions/lib/format
 import { parsePositiveInt } from '@/lib/parse-positive-int';
 
 /**
- * Admin subscription detail: plan, period dates, and cancel without refund.
+ * Admin subscription detail: plan, period dates, cancel, and refund.
  */
 export function AdminSubscriptionDetailPage(): JSX.Element {
   const { subscriptionId: subscriptionIdParam } = useParams();
@@ -24,7 +24,7 @@ export function AdminSubscriptionDetailPage(): JSX.Element {
       <>
         <PageHeader
           title="Subscription"
-          description="Cancel without a refund. Access lasts until currentPeriodEnd."
+          description="Cancel without a refund, or refund using the API 7-day activation window."
         />
         <ErrorState
           title="Invalid subscription id"
@@ -47,7 +47,7 @@ function AdminSubscriptionDetailContent({
       <>
         <PageHeader
           title="Subscription"
-          description="Cancel without a refund. Access lasts until currentPeriodEnd."
+          description="Cancel without a refund, or refund using the API 7-day activation window."
         />
         <PageSkeleton />
       </>
@@ -58,7 +58,7 @@ function AdminSubscriptionDetailContent({
       <>
         <PageHeader
           title="Subscription"
-          description="Cancel without a refund. Access lasts until currentPeriodEnd."
+          description="Cancel without a refund, or refund using the API 7-day activation window."
           actions={backToSubscriptionsAction()}
         />
         <ErrorState
@@ -75,7 +75,7 @@ function AdminSubscriptionDetailContent({
     <>
       <PageHeader
         title={formatSubscriptionPlanLabel(subscription)}
-        description="Cancel without a refund. Access lasts until currentPeriodEnd."
+        description="Cancel without a refund, or refund using the API 7-day activation window."
         actions={backToSubscriptionsAction()}
       />
       <div className="space-y-6">
