@@ -30,7 +30,7 @@ CORS default includes the Vite origin, agent routing to
 | 7 | Category weights | Complete |
 | 8 | Revenue periods | Complete |
 | 9 | Revenue calculate, analytics, heatmap | Complete |
-| 10 | Audit log | Pending |
+| 10 | Audit log | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -344,6 +344,13 @@ events (metadata PATCH and category-weight PATCH are not required audit events).
 
 **Routes:** `/admin/audit`, `/admin/audit/:id`
 
+**Written:** read-only list at `/admin/audit` with `actorUserId`, `action`,
+`subjectType`, and `subjectId` filters, and detail at `/admin/audit/:auditLogId`.
+Actor, action, subject, reason, and metadata come from GET `/admin/audit-logs`.
+Missing events are not invented. Metadata PATCH and category-weight PATCH are
+labeled as not required audit events. Subject rows link to the matching admin
+screen when the type is known.
+
 ---
 
 ## Out of scope for this list
@@ -359,6 +366,5 @@ events (metadata PATCH and category-weight PATCH are not required audit events).
 ## Implementation order
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
-STEP 8 must exist before STEP 9. Other feature STEPs (10) can proceed after
-STEP 1 if needed. Audit log (STEP 10) is the next screen after calculate,
-analytics, and heatmap.
+STEP 8 must exist before STEP 9. STEPs 0–10 on this list are complete. Next
+product UI is the author dashboard, which is out of this admin list.

@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { AdminRouteGuard } from '@/app/admin-route-guard';
+import { AdminAuditDetailPage } from '@/pages/admin/audit-detail-page';
 import { AdminAuditPage } from '@/pages/admin/audit-page';
 import { AdminBookDetailPage } from '@/pages/admin/book-detail-page';
 import { AdminBooksPage } from '@/pages/admin/books-page';
@@ -48,6 +49,7 @@ export const appRouter = createBrowserRouter([
         element: <AdminRevenuePeriodBookHeatmapPage />,
       },
       { path: 'audit', element: <AdminAuditPage /> },
+      { path: 'audit/:auditLogId', element: <AdminAuditDetailPage /> },
     ],
   },
   {

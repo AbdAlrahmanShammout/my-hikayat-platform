@@ -20,6 +20,9 @@ type AdminCategoriesListQuery = NonNullable<
 type AdminCollectionsListQuery = NonNullable<
   paths['/admin/collections']['get']['parameters']['query']
 >;
+type AdminAuditLogsListQuery = NonNullable<
+  paths['/admin/audit-logs']['get']['parameters']['query']
+>;
 
 /**
  * Feature-scoped TanStack Query keys. Keep mutations invalidating the smallest set.
@@ -73,6 +76,13 @@ export const queryKeys = {
         [...queryKeys.admin.revenuePeriods.all, revenuePeriodId, 'analytics', filters] as const,
       heatmap: (revenuePeriodId: number, bookId: number) =>
         [...queryKeys.admin.revenuePeriods.all, revenuePeriodId, 'heatmap', bookId] as const,
+    },
+    auditLogs: {
+      all: ['admin', 'audit-logs'] as const,
+      list: (filters: AdminAuditLogsListQuery) =>
+        [...queryKeys.admin.auditLogs.all, 'list', filters] as const,
+      detail: (auditLogId: number) =>
+        [...queryKeys.admin.auditLogs.all, 'detail', auditLogId] as const,
     },
   },
 } as const;
