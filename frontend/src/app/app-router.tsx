@@ -1,6 +1,8 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { AdminRouteGuard } from '@/app/admin-route-guard';
+import { ADMIN_INVITATION_ACCEPT_PATH } from '@/config/admin-invitation-accept-path';
+import { AcceptAdminInvitationPage } from '@/pages/accept-admin-invitation-page';
 import { AdminAuditDetailPage } from '@/pages/admin/audit-detail-page';
 import { AdminAuditPage } from '@/pages/admin/audit-page';
 import { AdminBookDetailPage } from '@/pages/admin/book-detail-page';
@@ -28,6 +30,10 @@ export const appRouter = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: ADMIN_INVITATION_ACCEPT_PATH,
+    element: <AcceptAdminInvitationPage />,
   },
   {
     path: '/admin',

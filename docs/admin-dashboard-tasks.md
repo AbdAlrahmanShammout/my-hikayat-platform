@@ -32,6 +32,7 @@ CORS default includes the Vite origin, agent routing to
 | 9 | Revenue calculate, analytics, heatmap | Complete |
 | 10 | Audit log | Complete |
 | 11 | Invite admin (pending list + email invite) | Complete |
+| 12 | Accept admin invitation (public page) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -382,6 +383,35 @@ from the API still surface.
 
 ---
 
+## STEP 12 — Accept admin invitation
+
+**SRS:** §2.3 public accept; token + password; session returned.
+
+**APIs**
+
+- `POST /auth/accept-admin-invitation` `{ token, password }` — public and
+  credential-throttled; returns an auth session
+
+**UI**
+
+- Public route reads `token` from the query string. Missing or blank token is an
+  incomplete-link state with a path to sign in. The token is never displayed.
+- Password + confirm (confirm is UX only). Client length checks match the API
+  bounds; the backend remains authoritative.
+- Invalid, expired, and already-accepted failures show the API `message`.
+- Success stores the session and replaces the history entry with `/admin`.
+
+**Route:** `/accept-admin-invitation`
+
+**Written:** public page at `/accept-admin-invitation`. `token` comes from the
+emailed query string via `parseAdminInvitationToken`. The form posts
+`POST /auth/accept-admin-invitation` `{ token, password }`, maps password
+validation onto the field, and surfaces 400 invitation errors as the API
+message. Confirm-password is client-only. A successful accept writes the
+access token, seeds `GET /auth/me`, and navigates to `/admin`.
+
+---
+
 ## Out of scope for this list
 
 - Author dashboard (books upload, author analytics/earnings)
@@ -390,11 +420,11 @@ from the API still surface.
 - Admin create/rename/delete categories
 - Admin refund
 - Reject-reason field (not on the current reject API)
-- Public accept-admin-invitation page
 - Recalculating publisher earnings in the browser
 
 ## Implementation order
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
-STEP 8 must exist before STEP 9. STEPs 0–11 on this list are complete historical
-admin dashboard work. Next admin UI is the public accept-admin-invitation page.
+STEP 8 must exist before STEP 9. STEPs 0–12 on this list are the current admin
+dashboard work. Next admin UI is remaining screens for HTTP that already exists
+(create/rename category, reject reason, refund).

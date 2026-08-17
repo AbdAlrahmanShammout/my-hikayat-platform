@@ -12,6 +12,18 @@ export interface paths {
       };
     };
   };
+  '/auth/accept-admin-invitation': {
+    post: {
+      requestBody: {
+        content: {
+          'application/json': components['schemas']['AcceptAdminInvitationRequestDto'];
+        };
+      };
+      responses: {
+        '201': { content: { 'application/json': components['schemas']['AuthSessionResponseDto'] } };
+      };
+    };
+  };
   '/auth/login': {
     post: {
       requestBody: { content: { 'application/json': components['schemas']['LoginRequestDto'] } };
@@ -691,5 +703,6 @@ export interface components {
       invitation: components['schemas']['AdminInvitationResponse'];
       token: string;
     };
+    AcceptAdminInvitationRequestDto: { token: string; password: string };
   };
 }

@@ -1,4 +1,4 @@
-export const ADMIN_INVITATION_ACCEPT_PATH = '/accept-admin-invitation';
+import { ADMIN_INVITATION_ACCEPT_PATH } from '@/config/admin-invitation-accept-path';
 
 export type BuildAdminInvitationAcceptUrlInput = {
   readonly origin: string;
@@ -6,7 +6,7 @@ export type BuildAdminInvitationAcceptUrlInput = {
 };
 
 /**
- * Builds the public accept URL shown once after create. G2 owns the page.
+ * Builds the public accept URL shown once after create.
  */
 export function buildAdminInvitationAcceptUrl(input: BuildAdminInvitationAcceptUrlInput): string {
   const origin: string = input.origin.replace(/\/+$/, '');
