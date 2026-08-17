@@ -59,6 +59,8 @@ export const queryKeys = {
       all: ['admin', 'revenue-periods'] as const,
       list: (filters: AdminRevenuePeriodsListQuery) =>
         [...queryKeys.admin.revenuePeriods.all, 'list', filters] as const,
+      detail: (revenuePeriodId: number) =>
+        [...queryKeys.admin.revenuePeriods.all, 'detail', revenuePeriodId] as const,
     },
   },
 } as const;

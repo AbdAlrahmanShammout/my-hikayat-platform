@@ -28,7 +28,7 @@ CORS default includes the Vite origin, agent routing to
 | 5 | Subscriptions | Complete |
 | 6 | Collections | Complete |
 | 7 | Category weights | Complete |
-| 8 | Revenue periods | Pending |
+| 8 | Revenue periods | Complete |
 | 9 | Revenue calculate, analytics, heatmap | Pending |
 | 10 | Audit log | Pending |
 
@@ -288,6 +288,13 @@ from Stripe in the UI.
 
 **Routes:** `/admin/revenue`, `/admin/revenue/:id`
 
+**Written:** list + create + “open current UTC month” at `/admin/revenue`, detail at
+`/admin/revenue/:revenuePeriodId`. Pool is displayed from integer cents and is not
+derived from Stripe. PATCH is limited to `poolAmountCents` and, while open,
+`platformCutPercent`. Cut is disabled after close; pool can still be set. Unchanged
+values are not sent. Close is confirmed and idempotent. Calculate, earnings, analytics,
+and heatmap stay on STEP 9.
+
 ---
 
 ## STEP 9 — Calculate, analytics, heatmap
@@ -346,4 +353,5 @@ events (metadata PATCH and category-weight PATCH are not required audit events).
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
 STEP 8 must exist before STEP 9. Other feature STEPs (10) can proceed after
-STEP 1 if needed. Revenue periods (STEP 8) is the next screen after category weights.
+STEP 1 if needed. Calculate, analytics, and heatmap (STEP 9) is the next screen
+after revenue periods.

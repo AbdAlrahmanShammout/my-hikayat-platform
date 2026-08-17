@@ -1,10 +1,10 @@
 import type { JSX } from 'react';
 
-import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/layout/page-header';
+import { AdminRevenuePeriodsPanel } from '@/features/revenue/components/admin-revenue-periods-panel';
 
 /**
- * Revenue-period management placeholder until STEP 8.
+ * Admin revenue-period list. Create, open the current UTC month, then edit pool on detail.
  */
 export function AdminRevenuePage(): JSX.Element {
   return (
@@ -13,10 +13,7 @@ export function AdminRevenuePage(): JSX.Element {
         title="Revenue periods"
         description="Pool amount is admin-set cents. Platform cut belongs to the period."
       />
-      <EmptyState
-        title="Revenue periods are not available yet"
-        description="STEP 8 will list and edit periods. Do not derive the pool from Stripe in the UI."
-      />
+      <AdminRevenuePeriodsPanel />
     </>
   );
 }
