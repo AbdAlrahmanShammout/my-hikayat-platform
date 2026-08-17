@@ -31,6 +31,7 @@ CORS default includes the Vite origin, agent routing to
 | 8 | Revenue periods | Complete |
 | 9 | Revenue calculate, analytics, heatmap | Complete |
 | 10 | Audit log | Complete |
+| 11 | Invite admin (pending list + email invite) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -353,6 +354,34 @@ screen when the type is known.
 
 ---
 
+## STEP 11 — Invite admin
+
+**SRS:** §2.3 invitation-only admin grant; official invitation email.
+
+**APIs**
+
+- `POST /admin/invitations` `{ email }` — sends the official email; returns the
+  raw token **once**
+- `GET /admin/invitations` — pending unexpired only; never `token` / `tokenHash`
+
+**UI**
+
+- Invite by email. Show that the official email was sent. Show the one-time
+  accept link only on the create response (G2 is the public accept page).
+- List pending invitations from the API. Do not invent used/expired rows.
+- `PATCH /admin/users` must not offer granting `ADMIN`. Demote remains available.
+
+**Route:** `/admin/invitations`
+
+**Written:** list + invite form at `/admin/invitations` (`limit`/`offset`). Create
+calls `POST /admin/invitations` `{ email }`, shows that the official email was
+sent, and shows the one-time accept link only on that response. The pending
+table is `GET /admin/invitations` and never displays `token` or `tokenHash`.
+User edit no longer offers granting `ADMIN`; demote remains available. 409/400
+from the API still surface.
+
+---
+
 ## Out of scope for this list
 
 - Author dashboard (books upload, author analytics/earnings)
@@ -361,10 +390,11 @@ screen when the type is known.
 - Admin create/rename/delete categories
 - Admin refund
 - Reject-reason field (not on the current reject API)
+- Public accept-admin-invitation page
 - Recalculating publisher earnings in the browser
 
 ## Implementation order
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
-STEP 8 must exist before STEP 9. STEPs 0–10 on this list are complete. Next
-product UI is the author dashboard, which is out of this admin list.
+STEP 8 must exist before STEP 9. STEPs 0–11 on this list are complete historical
+admin dashboard work. Next admin UI is the public accept-admin-invitation page.

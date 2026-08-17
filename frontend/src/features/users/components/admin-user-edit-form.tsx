@@ -19,6 +19,7 @@ import { Select } from '@/components/ui/select';
 import { useUpdateAdminUser } from '@/features/users/hooks/use-update-admin-user';
 import { formatUserRoleLabel } from '@/features/users/lib/format-user-role-label';
 import type { AdminUserActionAvailability } from '@/features/users/lib/get-admin-user-action-availability';
+import { getAssignableUserRoles } from '@/features/users/lib/get-assignable-user-roles';
 import { resolvePublisherForRole } from '@/features/users/lib/resolve-publisher-for-role';
 import {
   adminUserEditFormSchema,
@@ -35,10 +36,7 @@ type AdminUserEditFormProps = {
 /**
  * PATCH /admin/users/:id form. Only role and isPublisher.
  */
-export function AdminUserEditForm({
-  user,
-  availability,
-}: AdminUserEditFormProps): JSX.Element {
+export function AdminUserEditForm({ user, availability }: AdminUserEditFormProps): JSX.Element {
   const updateMutation = useUpdateAdminUser();
   const form = useForm<AdminUserEditFormValues>({
     resolver: zodResolver(adminUserEditFormSchema),
@@ -56,8 +54,8 @@ export function AdminUserEditForm({
       <CardHeader>
         <CardTitle>Role and publisher</CardTitle>
         <CardDescription>
-          Reader cannot be a publisher. Author is always a publisher. The backend still enforces
-          this.
+          Reader cannot be a publisher. Author is always a publisher. Admin is granted by
+          invitation, not from this form. The backend still enforces this.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -112,15 +110,11 @@ export function AdminUserEditForm({
                         );
                       }}
                     >
-                      <option value={USER_ROLES.READER}>
-                        {formatUserRoleLabel(USER_ROLES.READER)}
-                      </option>
-                      <option value={USER_ROLES.AUTHOR}>
-                        {formatUserRoleLabel(USER_ROLES.AUTHOR)}
-                      </option>
-                      <option value={USER_ROLES.ADMIN}>
-                        {formatUserRoleLabel(USER_ROLES.ADMIN)}
-                      </option>
+                      {getAssignableUserRoles(user.role).map((role) => (
+                        <option key={role} value={role}>
+                          {formatUserRoleLabel(role)}
+                        </option>
+                      ))}
                     </Select>
                   </FormControl>
                   <FormMessage />

@@ -7,6 +7,7 @@ import {
   Scale,
   ScrollText,
   Tags,
+  UserPlus,
   Users,
 } from 'lucide-react';
 
@@ -20,6 +21,7 @@ export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
   { to: '/admin', label: 'Home', icon: LayoutDashboard },
   { to: '/admin/books', label: 'Books', icon: BookOpen },
   { to: '/admin/users', label: 'Users', icon: Users },
+  { to: '/admin/invitations', label: 'Invitations', icon: UserPlus },
   { to: '/admin/subscriptions', label: 'Subscriptions', icon: Receipt },
   { to: '/admin/collections', label: 'Collections', icon: FolderKanban },
   { to: '/admin/categories', label: 'Categories', icon: Tags },

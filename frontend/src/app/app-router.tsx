@@ -9,6 +9,7 @@ import { AdminCategoriesPage } from '@/pages/admin/categories-page';
 import { AdminCollectionDetailPage } from '@/pages/admin/collection-detail-page';
 import { AdminCollectionsPage } from '@/pages/admin/collections-page';
 import { AdminHomePage } from '@/pages/admin/home-page';
+import { AdminInvitationsPage } from '@/pages/admin/invitations-page';
 import { AdminRevenueDetailPage } from '@/pages/admin/revenue-detail-page';
 import { AdminRevenuePeriodBookHeatmapPage } from '@/pages/admin/revenue-period-book-heatmap-page';
 import { AdminRevenuePage } from '@/pages/admin/revenue-page';
@@ -37,6 +38,7 @@ export const appRouter = createBrowserRouter([
       { path: 'books/:bookId', element: <AdminBookDetailPage /> },
       { path: 'users', element: <AdminUsersPage /> },
       { path: 'users/:userId', element: <AdminUserDetailPage /> },
+      { path: 'invitations', element: <AdminInvitationsPage /> },
       { path: 'subscriptions', element: <AdminSubscriptionsPage /> },
       { path: 'subscriptions/:subscriptionId', element: <AdminSubscriptionDetailPage /> },
       { path: 'collections', element: <AdminCollectionsPage /> },
