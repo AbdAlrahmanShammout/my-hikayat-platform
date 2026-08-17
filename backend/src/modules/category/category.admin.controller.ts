@@ -75,7 +75,7 @@ export class CategoryAdminController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update the configured revenue weight for a category' })
+  @ApiOperation({ summary: 'Update category name, slug, and/or configured revenue weight' })
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: UpdateCategoryRequestDto })
   @ApiResponse({ status: 200, type: CategoryResponse })
@@ -85,6 +85,8 @@ export class CategoryAdminController {
   ): Promise<CategoryResponse> {
     const entity: CategoryEntity = await this.categoryService.updateCategory({
       id,
+      name: body.name,
+      slug: body.slug,
       categoryWeight: body.categoryWeight,
     });
     return new CategoryResponse(entity);

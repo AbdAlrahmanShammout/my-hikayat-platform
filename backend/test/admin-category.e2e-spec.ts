@@ -22,6 +22,8 @@ describe('Admin categories (e2e)', () => {
   const httpCreateSlug = `http-create-${slugSuffix}`;
   const httpExplicitName = `HTTP Explicit ${slugSuffix}`;
   const httpExplicitSlug = `http-explicit-${slugSuffix}`;
+  const renamedName = `Admin Category Renamed ${slugSuffix}`;
+  const renamedSlug = `admin-category-renamed-${slugSuffix}`;
   let app: INestApplication | undefined;
   let ownerAccessToken: string | undefined;
   let adminAccessToken: string | undefined;
@@ -37,7 +39,7 @@ describe('Admin categories (e2e)', () => {
     }
     const prismaProviderService: PrismaProviderService = app.get(PrismaProviderService);
     await prismaProviderService.category.deleteMany({
-      where: { slug: { in: [categorySlug, httpCreateSlug, httpExplicitSlug] } },
+      where: { slug: { in: [categorySlug, httpCreateSlug, httpExplicitSlug, renamedSlug] } },
     });
     await deleteUsersByEmail(prismaProviderService, emails);
     await app.close();
@@ -242,5 +244,48 @@ describe('Admin categories (e2e)', () => {
       .send({ name: `Zero Weight ${slugSuffix}`, categoryWeight: 0 });
     expect(invalidWeight.status).toBe(HttpStatus.UNPROCESSABLE_ENTITY);
     expect(invalidWeight.body.code).toBe('BAD_USER_INPUT');
+  });
+
+  it('Given an admin session, When a category is renamed, Then name and slug change and weight is unchanged', async () => {
+    const renameResponse = await request(getServer())
+      .patch(`/admin/categories/${getCategoryId()}`)
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`)
+      .send({ name: renamedName, slug: renamedSlug });
+    expect(renameResponse.status).toBe(HttpStatus.OK);
+    expect(renameResponse.body.id).toBe(getCategoryId());
+    expect(renameResponse.body.name).toBe(renamedName);
+    expect(renameResponse.body.slug).toBe(renamedSlug);
+    expect(renameResponse.body.categoryWeight).toBe(2);
+    const persisted = await request(getServer())
+      .get(`/admin/categories/${getCategoryId()}`)
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`);
+    expect(persisted.status).toBe(HttpStatus.OK);
+    expect(persisted.body.name).toBe(renamedName);
+    expect(persisted.body.slug).toBe(renamedSlug);
+    expect(persisted.body.categoryWeight).toBe(2);
+  });
+
+  it('Given an admin session, When rename uses an existing name or slug, Then the conflict is rejected', async () => {
+    const nameConflict = await request(getServer())
+      .patch(`/admin/categories/${getCategoryId()}`)
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`)
+      .send({ name: 'Fiction' });
+    expect(nameConflict.status).toBe(HttpStatus.CONFLICT);
+    expect(nameConflict.body.code).toBe('CATEGORY_NAME_CONFLICT');
+    const slugConflict = await request(getServer())
+      .patch(`/admin/categories/${getCategoryId()}`)
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`)
+      .send({ slug: 'fiction' });
+    expect(slugConflict.status).toBe(HttpStatus.CONFLICT);
+    expect(slugConflict.body.code).toBe('CATEGORY_SLUG_CONFLICT');
+  });
+
+  it('Given an admin session, When rename uses an empty name, Then validation fails', async () => {
+    const actualResponse = await request(getServer())
+      .patch(`/admin/categories/${getCategoryId()}`)
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`)
+      .send({ name: '   ' });
+    expect(actualResponse.status).toBe(HttpStatus.UNPROCESSABLE_ENTITY);
+    expect(actualResponse.body.code).toBe('BAD_USER_INPUT');
   });
 });

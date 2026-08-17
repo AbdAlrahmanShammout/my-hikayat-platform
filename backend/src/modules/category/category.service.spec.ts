@@ -116,6 +116,31 @@ describe('CategoryService', () => {
       expect(actualCategory).toBe(expectedCategory);
     });
 
+    it('renames name and slug without changing weight', async () => {
+      const current = createSampleCategory();
+      const expectedCategory = new CategoryEntity({
+        ...current,
+        name: 'Graphic Novels',
+        slug: 'graphic-novels',
+      });
+      mockCategoryRepository.findById.mockResolvedValue(current);
+      mockCategoryRepository.findByName.mockResolvedValue(null);
+      mockCategoryRepository.findBySlug.mockResolvedValue(null);
+      mockCategoryRepository.update.mockResolvedValue(expectedCategory);
+      const actualCategory = await categoryService.updateCategory({
+        id: 1,
+        name: 'Graphic Novels',
+        slug: 'graphic-novels',
+      });
+      expect(mockCategoryRepository.update).toHaveBeenCalledWith({
+        id: 1,
+        name: 'Graphic Novels',
+        slug: 'graphic-novels',
+        categoryWeight: 1.25,
+      });
+      expect(actualCategory).toBe(expectedCategory);
+    });
+
     it('does not write when no category fields change', async () => {
       const current = createSampleCategory();
       mockCategoryRepository.findById.mockResolvedValue(current);

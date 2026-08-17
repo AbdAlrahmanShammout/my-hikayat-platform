@@ -125,14 +125,15 @@ Admin category revenue-weight management (admin only):
   from the name. Omitted weight defaults to 1.0. Weight must be
   greater than 0.
 
-- `PATCH /admin/categories/:id` — update `categoryWeight` only. The
-  value must be greater than 0.
+- `PATCH /admin/categories/:id` — update `name`, `slug`, and/or
+  `categoryWeight`. Omitted fields are left unchanged. Weight must be
+  greater than 0 when provided. Renaming does not change weight.
 
 The category taxonomy is admin-owned. Installations are seeded with
 Picture Books, Children's, Fiction, Nonfiction, and Young Adult, each
 with `categoryWeight` 1.0, so a new database is not empty. Rows that
 already use those slugs are left unchanged. This category API does not
-rename or delete categories.
+delete categories.
 
 ## **2.4 Audit Log**
 

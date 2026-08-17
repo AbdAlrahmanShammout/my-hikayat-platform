@@ -103,9 +103,26 @@ describe('CategoryAdminController', () => {
       });
       expect(mockCategoryService.updateCategory).toHaveBeenCalledWith({
         id: 1,
+        name: undefined,
+        slug: undefined,
         categoryWeight: 2,
       });
       expect(actualResponse.categoryWeight).toBe(2);
+    });
+
+    it('maps name and slug into the service without a weight', async () => {
+      mockCategoryService.updateCategory.mockResolvedValue(createSampleCategory());
+      const actualResponse = await categoryAdminController.updateCategory(1, {
+        name: 'Graphic Novels',
+        slug: 'graphic-novels',
+      });
+      expect(mockCategoryService.updateCategory).toHaveBeenCalledWith({
+        id: 1,
+        name: 'Graphic Novels',
+        slug: 'graphic-novels',
+        categoryWeight: undefined,
+      });
+      expect(actualResponse.name).toBe('Picture Books');
     });
   });
 });
