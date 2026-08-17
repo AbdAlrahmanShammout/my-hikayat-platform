@@ -54,6 +54,7 @@ describe('BookAuthorController', () => {
     createBook: jest.Mock;
     listBooks: jest.Mock;
     getManagedBook: jest.Mock;
+    listRejectionHistory: jest.Mock;
     updateBook: jest.Mock;
   };
   let mockBookProcessingOrchestrationService: { submitForReview: jest.Mock };
@@ -63,6 +64,7 @@ describe('BookAuthorController', () => {
       createBook: jest.fn(),
       listBooks: jest.fn(),
       getManagedBook: jest.fn(),
+      listRejectionHistory: jest.fn(),
       updateBook: jest.fn(),
     };
     mockBookProcessingOrchestrationService = { submitForReview: jest.fn() };
@@ -135,6 +137,29 @@ describe('BookAuthorController', () => {
         actorRole: UserRole.AUTHOR,
       });
       expect(actualResponse.id).toBe(8);
+    });
+  });
+
+  describe('listOwnedRejectionHistory', () => {
+    it('maps the book id, pagination, and owner principal into the book service', async () => {
+      mockBookService.listRejectionHistory.mockResolvedValue({
+        entities: [],
+        total: 0,
+      });
+      const actualResponse = await bookAuthorController.listOwnedRejectionHistory(
+        8,
+        { limit: 10, offset: 0 },
+        createSampleAuthor(),
+      );
+      expect(mockBookService.listRejectionHistory).toHaveBeenCalledWith({
+        bookId: 8,
+        actorId: 4,
+        actorRole: UserRole.AUTHOR,
+        limit: 10,
+        offset: 0,
+      });
+      expect(actualResponse.rejections).toEqual([]);
+      expect(actualResponse.total).toBe(0);
     });
   });
 

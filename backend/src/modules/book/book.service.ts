@@ -6,12 +6,14 @@ import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagin
 import { InvalidStateException } from '@/common/exceptions/invalid-state.exception';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { AuditLogPage } from '@/modules/audit/defs/audit-log-repository.defs';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { BookPage } from '@/modules/book/defs/book-repository.defs';
 import {
   CreateBookServiceInput,
   DeleteBookServiceInput,
   GetManagedBookServiceInput,
+  ListBookRejectionHistoryServiceInput,
   ListBooksServiceInput,
   ListCatalogBooksServiceInput,
   UpdateBookServiceInput,
@@ -147,6 +149,21 @@ export class BookService {
       return book;
     }
     throw new ResourceNotFoundException('Book', book.id);
+  }
+
+  async listRejectionHistory(input: ListBookRejectionHistoryServiceInput): Promise<AuditLogPage> {
+    await this.getManagedBook({
+      bookId: input.bookId,
+      actorId: input.actorId,
+      actorRole: input.actorRole,
+    });
+    return this.auditLogService.listAuditLogs({
+      action: AuditAction.BOOK_REJECTED,
+      subjectType: AuditSubjectType.BOOK,
+      subjectId: input.bookId,
+      limit: input.limit,
+      offset: input.offset,
+    });
   }
 
   async getCatalogBookById(id: number): Promise<BookEntity> {

@@ -55,6 +55,7 @@ describe('BookAdminController', () => {
   let mockBookService: {
     listBooks: jest.Mock;
     getBookById: jest.Mock;
+    listRejectionHistory: jest.Mock;
     updateBook: jest.Mock;
     deleteBook: jest.Mock;
   };
@@ -69,6 +70,7 @@ describe('BookAdminController', () => {
     mockBookService = {
       listBooks: jest.fn(),
       getBookById: jest.fn(),
+      listRejectionHistory: jest.fn(),
       updateBook: jest.fn(),
       deleteBook: jest.fn(),
     };
@@ -131,6 +133,29 @@ describe('BookAdminController', () => {
       const actualResponse = await bookAdminController.getBook(8);
       expect(mockBookService.getBookById).toHaveBeenCalledWith(8);
       expect(actualResponse.id).toBe(8);
+    });
+  });
+
+  describe('listRejectionHistory', () => {
+    it('maps the book id, pagination, and admin principal into the book service', async () => {
+      mockBookService.listRejectionHistory.mockResolvedValue({
+        entities: [],
+        total: 0,
+      });
+      const actualResponse = await bookAdminController.listRejectionHistory(
+        8,
+        { limit: 10, offset: 0 },
+        createSampleAdmin(),
+      );
+      expect(mockBookService.listRejectionHistory).toHaveBeenCalledWith({
+        bookId: 8,
+        actorId: 9,
+        actorRole: UserRole.ADMIN,
+        limit: 10,
+        offset: 0,
+      });
+      expect(actualResponse.rejections).toEqual([]);
+      expect(actualResponse.total).toBe(0);
     });
   });
 

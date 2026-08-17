@@ -64,6 +64,10 @@ Publishers manage their own books through the author book API:
 
 - `GET /author/books/:id` — get one owned book.
 
+- `GET /author/books/:id/rejection-history` — list `book_rejected`
+  audit rows for an owned book. Pagination uses `limit` and `offset`.
+  A book with no rejections returns an empty list.
+
 - `PATCH /author/books/:id` — update title, description, book type,
   and/or categories only. Publishing status, processing status, layout
   type, and owner cannot be changed on this path.
@@ -101,6 +105,12 @@ Admin book management:
   the results by publishing status.
 
 - `GET /admin/books/:id` returns one book for administration.
+
+- `GET /admin/books/:id/rejection-history` lists `book_rejected` audit
+  rows for that book. Pagination uses `limit` and `offset`. History is
+  the existing append-only audit log filtered by action and subject;
+  there is no separate rejection table. A book with no rejections
+  returns an empty list.
 
 - `PATCH /admin/books/:id` updates title, description, book type,
   and/or categories without changing publishing status.

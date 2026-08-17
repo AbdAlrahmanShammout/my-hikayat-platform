@@ -16,18 +16,18 @@ This matrix validates the Part 1 NestJS backend against `docs/SRS.md`.
 
 Do not treat a row as Complete unless both the backend behavior and tests exist.
 
-**Validation snapshot:** 351 unit spec files, 52 e2e suites, including `test/critical-flow.e2e-spec.ts`. Snapshot after Steps 1–8 and the reflowable page-tracking decision.
+**Validation snapshot:** 357 unit spec files, 55 e2e suites, including `test/critical-flow.e2e-spec.ts`. Snapshot after Steps 1–8 and the reflowable page-tracking decision.
 
 ## Summary
 
 | Status | Count |
 | --- | ---: |
-| Complete | 70 |
+| Complete | 71 |
 | In Progress | 0 |
 | Future | 2 |
 | Blocked | 0 |
 | Not Required | 15 |
-| **Total** | **87** |
+| **Total** | **88** |
 
 ## Future / out of scope for current Part 1
 
@@ -60,6 +60,7 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §2.2 Any user can become a publisher | `POST /user/publisher` | `reader-user.e2e-spec.ts` | Complete |
 | §2.2 Upload books (PDF / EPUB) | `POST /author/books/:bookId/source` | `book-source.e2e-spec.ts`, `book-pdf-source-ingest.e2e-spec.ts` | Complete |
 | §2.2 Author HTTP create / list / get / update book metadata | `POST/GET/PATCH /author/books`, `GET /author/books/:id`; owner from JWT; PATCH is metadata only | `author-book.e2e-spec.ts`, `book.author.controller.spec.ts` | Complete |
+| §2.2 / §2.3 Book rejection-history read APIs | `GET /admin/books/:id/rejection-history`, `GET /author/books/:id/rejection-history` (owner-scoped; `book_rejected` audit rows; empty list when never rejected) | `book-rejection-history.e2e-spec.ts`, `book.service.spec.ts`, `book.admin.controller.spec.ts`, `book.author.controller.spec.ts` | Complete |
 | §2.2 Author HTTP list categories | `GET /author/categories` (AUTHOR or ADMIN; read-only; includes `categoryWeight`) | `author-reader-category.e2e-spec.ts`, `category.author.controller.spec.ts` | Complete |
 | §2.2 Book status lifecycle pending → in_review → approved / rejected | Publishing status machine; submit, approve, reject | `book-submit-for-review.e2e-spec.ts`, `book-admin-review.e2e-spec.ts` | Complete |
 | §2.2 Author analytics and earnings APIs | `GET /author/analytics`, `GET /author/earnings`, trend, heatmap | `author-monetization.e2e-spec.ts` | Complete |
@@ -141,5 +142,5 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 - Last-admin protection is unit-tested; it is hard to hit over HTTP because an admin cannot change themselves.
 - Author/admin book metadata PATCH and category-weight PATCH are implemented and are not listed in §2.4 as required audit events.
 - Starter categories are inserted by migration. Admin HTTP create and rename exist; author and reader lists are read-only; delete is not part of that seed.
-- Book rejection requires a non-empty reason stored on the existing append-only audit row. Dedicated rejection-history read APIs are a later task.
+- Book rejection requires a non-empty reason stored on the existing append-only audit row. Rejection history is that same audit log, filtered by `book_rejected` and book id.
 - Reflowable time-per-page and reading speed remain SRS requirements. They are Future / out of scope for current Part 1 because there is no stable server-side page definition. See `docs/FUTURE.md`.

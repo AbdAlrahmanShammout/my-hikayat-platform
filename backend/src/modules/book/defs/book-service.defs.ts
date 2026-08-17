@@ -33,6 +33,14 @@ export type GetManagedBookServiceInput = {
   readonly actorRole: UserRole;
 };
 
+export type ListBookRejectionHistoryServiceInput = {
+  readonly bookId: number;
+  readonly actorId: number;
+  readonly actorRole: UserRole;
+  readonly limit?: number;
+  readonly offset?: number;
+};
+
 export type ListBooksServiceInput = {
   readonly limit?: number;
   readonly offset?: number;

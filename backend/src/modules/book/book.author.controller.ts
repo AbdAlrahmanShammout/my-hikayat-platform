@@ -24,11 +24,14 @@ import { LoggedInUser } from '@/common/decorators/requests/logged-in-user.decora
 import { Roles } from '@/common/decorators/route/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { AuditLogPage } from '@/modules/audit/defs/audit-log-repository.defs';
 import { BookService } from '@/modules/book/book.service';
 import { BookPage } from '@/modules/book/defs/book-repository.defs';
 import { CreateBookRequestDto } from '@/modules/book/dto/request/create-book-request.dto';
+import { ListBookRejectionHistoryRequestDto } from '@/modules/book/dto/request/list-book-rejection-history-request.dto';
 import { ListBooksRequestDto } from '@/modules/book/dto/request/list-books-request.dto';
 import { UpdateBookRequestDto } from '@/modules/book/dto/request/update-book-request.dto';
+import { GetBookRejectionHistoryResponseDto } from '@/modules/book/dto/response/get-book-rejection-history-response.dto';
 import { GetBooksResponseDto } from '@/modules/book/dto/response/get-books-response.dto';
 import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
@@ -79,6 +82,25 @@ export class BookAuthorController {
       publishingStatus: query.publishingStatus,
     });
     return new GetBooksResponseDto(page);
+  }
+
+  @Get(':id/rejection-history')
+  @ApiOperation({ summary: 'List book_rejected audit rows for an owned book' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: 200, type: GetBookRejectionHistoryResponseDto })
+  async listOwnedRejectionHistory(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: ListBookRejectionHistoryRequestDto,
+    @LoggedInUser() currentUser: UserEntity,
+  ): Promise<GetBookRejectionHistoryResponseDto> {
+    const page: AuditLogPage = await this.bookService.listRejectionHistory({
+      bookId: id,
+      actorId: currentUser.id,
+      actorRole: currentUser.role,
+      limit: query.limit,
+      offset: query.offset,
+    });
+    return new GetBookRejectionHistoryResponseDto(page);
   }
 
   @Get(':id')

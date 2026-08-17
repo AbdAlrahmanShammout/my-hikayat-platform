@@ -2,6 +2,7 @@ import { InvalidStateException } from '@/common/exceptions/invalid-state.excepti
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagination.constant';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
+import { AuditLogEntity } from '@/modules/audit/entity/audit-log.entity';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { CatalogSort } from '@/modules/book/enum/catalog-sort.enum';
@@ -61,6 +62,20 @@ function createSampleBook(): BookEntity {
   });
 }
 
+function createSampleRejection(): AuditLogEntity {
+  return new AuditLogEntity({
+    id: 12,
+    createdAt: new Date('2026-08-15T00:00:00.000Z'),
+    updatedAt: new Date('2026-08-15T00:00:00.000Z'),
+    actorUserId: 9,
+    action: AuditAction.BOOK_REJECTED,
+    subjectType: AuditSubjectType.BOOK,
+    subjectId: 8,
+    reason: 'Cover art is unreadable at catalog size.',
+    metadata: { from: 'in_review', to: 'rejected' },
+  });
+}
+
 function createSampleCategory(): CategoryEntity {
   return new CategoryEntity({
     id: 2,
@@ -84,7 +99,7 @@ describe('BookService', () => {
   };
   let mockCategoryService: { getCategoryById: jest.Mock };
   let mockUserService: { getUserById: jest.Mock };
-  let mockAuditLogService: { append: jest.Mock };
+  let mockAuditLogService: { append: jest.Mock; listAuditLogs: jest.Mock };
   let mockTransactionRunner: { run: jest.Mock };
   let bookService: BookService;
 
@@ -100,7 +115,7 @@ describe('BookService', () => {
     };
     mockCategoryService = { getCategoryById: jest.fn() };
     mockUserService = { getUserById: jest.fn() };
-    mockAuditLogService = { append: jest.fn() };
+    mockAuditLogService = { append: jest.fn(), listAuditLogs: jest.fn() };
     mockTransactionRunner = {
       run: jest.fn(async (work: (context: undefined) => Promise<unknown>) => work(undefined)),
     };
@@ -470,6 +485,72 @@ describe('BookService', () => {
           actorRole: UserRole.AUTHOR,
         }),
       ).rejects.toBeInstanceOf(ResourceNotFoundException);
+    });
+  });
+
+  describe('listRejectionHistory', () => {
+    it('lists book_rejected audit rows after confirming the actor can manage the book', async () => {
+      const expectedPage = { entities: [createSampleRejection()], total: 1 };
+      mockBookRepository.findById.mockResolvedValue(createSampleBook());
+      mockAuditLogService.listAuditLogs.mockResolvedValue(expectedPage);
+      const actualPage = await bookService.listRejectionHistory({
+        bookId: 8,
+        actorId: 4,
+        actorRole: UserRole.AUTHOR,
+        limit: 10,
+        offset: 0,
+      });
+      expect(mockAuditLogService.listAuditLogs).toHaveBeenCalledWith({
+        action: AuditAction.BOOK_REJECTED,
+        subjectType: AuditSubjectType.BOOK,
+        subjectId: 8,
+        limit: 10,
+        offset: 0,
+      });
+      expect(actualPage).toBe(expectedPage);
+    });
+
+    it('lets an admin read rejection history for a book they do not own', async () => {
+      const expectedPage = { entities: [createSampleRejection()], total: 1 };
+      mockBookRepository.findById.mockResolvedValue(createSampleBook());
+      mockAuditLogService.listAuditLogs.mockResolvedValue(expectedPage);
+      const actualPage = await bookService.listRejectionHistory({
+        bookId: 8,
+        actorId: 9,
+        actorRole: UserRole.ADMIN,
+      });
+      expect(mockAuditLogService.listAuditLogs).toHaveBeenCalledWith({
+        action: AuditAction.BOOK_REJECTED,
+        subjectType: AuditSubjectType.BOOK,
+        subjectId: 8,
+        limit: undefined,
+        offset: undefined,
+      });
+      expect(actualPage).toBe(expectedPage);
+    });
+
+    it('hides history for a foreign book from another author', async () => {
+      mockBookRepository.findById.mockResolvedValue(createSampleBook());
+      await expect(
+        bookService.listRejectionHistory({
+          bookId: 8,
+          actorId: 99,
+          actorRole: UserRole.AUTHOR,
+        }),
+      ).rejects.toBeInstanceOf(ResourceNotFoundException);
+      expect(mockAuditLogService.listAuditLogs).not.toHaveBeenCalled();
+    });
+
+    it('throws when the book is missing', async () => {
+      mockBookRepository.findById.mockResolvedValue(null);
+      await expect(
+        bookService.listRejectionHistory({
+          bookId: 99,
+          actorId: 4,
+          actorRole: UserRole.AUTHOR,
+        }),
+      ).rejects.toBeInstanceOf(ResourceNotFoundException);
+      expect(mockAuditLogService.listAuditLogs).not.toHaveBeenCalled();
     });
   });
 
