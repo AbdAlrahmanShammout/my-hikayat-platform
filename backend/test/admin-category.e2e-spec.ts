@@ -18,6 +18,10 @@ describe('Admin categories (e2e)', () => {
   const emails = [ownerEmail, adminEmail];
   const slugSuffix = `${Date.now()}`;
   const categorySlug = `admin-category-${slugSuffix}`;
+  const httpCreateName = `HTTP Create ${slugSuffix}`;
+  const httpCreateSlug = `http-create-${slugSuffix}`;
+  const httpExplicitName = `HTTP Explicit ${slugSuffix}`;
+  const httpExplicitSlug = `http-explicit-${slugSuffix}`;
   let app: INestApplication | undefined;
   let ownerAccessToken: string | undefined;
   let adminAccessToken: string | undefined;
@@ -33,7 +37,7 @@ describe('Admin categories (e2e)', () => {
     }
     const prismaProviderService: PrismaProviderService = app.get(PrismaProviderService);
     await prismaProviderService.category.deleteMany({
-      where: { slug: categorySlug },
+      where: { slug: { in: [categorySlug, httpCreateSlug, httpExplicitSlug] } },
     });
     await deleteUsersByEmail(prismaProviderService, emails);
     await app.close();
@@ -167,5 +171,76 @@ describe('Admin categories (e2e)', () => {
       .set('Authorization', `Bearer ${getAdminAccessToken()}`);
     expect(persisted.status).toBe(HttpStatus.OK);
     expect(persisted.body.categoryWeight).toBe(2);
+  });
+
+  it('Given an author session, When a category is created, Then access is denied', async () => {
+    const actualResponse = await request(getServer())
+      .post('/admin/categories')
+      .set('Authorization', `Bearer ${getOwnerAccessToken()}`)
+      .send({ name: `Author Create ${slugSuffix}` });
+    expect(actualResponse.status).toBe(HttpStatus.FORBIDDEN);
+    expect(actualResponse.body.code).toBe('ACCESS_DENIED');
+  });
+
+  it('Given an admin session, When a category is created with a name only, Then slug and default weight are persisted', async () => {
+    const createResponse = await request(getServer())
+      .post('/admin/categories')
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`)
+      .send({ name: httpCreateName });
+    expect(createResponse.status).toBe(HttpStatus.CREATED);
+    expect(createResponse.body.name).toBe(httpCreateName);
+    expect(createResponse.body.slug).toBe(httpCreateSlug);
+    expect(createResponse.body.categoryWeight).toBe(1);
+    const persisted = await request(getServer())
+      .get(`/admin/categories/${createResponse.body.id as number}`)
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`);
+    expect(persisted.status).toBe(HttpStatus.OK);
+    expect(persisted.body.slug).toBe(httpCreateSlug);
+    expect(persisted.body.categoryWeight).toBe(1);
+  });
+
+  it('Given an admin session, When a category is created with slug and weight, Then those values are persisted', async () => {
+    const createResponse = await request(getServer())
+      .post('/admin/categories')
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`)
+      .send({
+        name: httpExplicitName,
+        slug: httpExplicitSlug,
+        categoryWeight: 1.5,
+      });
+    expect(createResponse.status).toBe(HttpStatus.CREATED);
+    expect(createResponse.body.name).toBe(httpExplicitName);
+    expect(createResponse.body.slug).toBe(httpExplicitSlug);
+    expect(createResponse.body.categoryWeight).toBe(1.5);
+  });
+
+  it('Given an admin session, When create uses an existing name or slug, Then the conflict is rejected', async () => {
+    const nameConflict = await request(getServer())
+      .post('/admin/categories')
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`)
+      .send({ name: 'Fiction', slug: `fiction-copy-${slugSuffix}` });
+    expect(nameConflict.status).toBe(HttpStatus.CONFLICT);
+    expect(nameConflict.body.code).toBe('CATEGORY_NAME_CONFLICT');
+    const slugConflict = await request(getServer())
+      .post('/admin/categories')
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`)
+      .send({ name: `Fiction Duplicate ${slugSuffix}`, slug: 'fiction' });
+    expect(slugConflict.status).toBe(HttpStatus.CONFLICT);
+    expect(slugConflict.body.code).toBe('CATEGORY_SLUG_CONFLICT');
+  });
+
+  it('Given an admin session, When create omits name or uses weight 0, Then validation fails', async () => {
+    const missingName = await request(getServer())
+      .post('/admin/categories')
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`)
+      .send({ slug: `missing-name-${slugSuffix}` });
+    expect(missingName.status).toBe(HttpStatus.UNPROCESSABLE_ENTITY);
+    expect(missingName.body.code).toBe('BAD_USER_INPUT');
+    const invalidWeight = await request(getServer())
+      .post('/admin/categories')
+      .set('Authorization', `Bearer ${getAdminAccessToken()}`)
+      .send({ name: `Zero Weight ${slugSuffix}`, categoryWeight: 0 });
+    expect(invalidWeight.status).toBe(HttpStatus.UNPROCESSABLE_ENTITY);
+    expect(invalidWeight.body.code).toBe('BAD_USER_INPUT');
   });
 });

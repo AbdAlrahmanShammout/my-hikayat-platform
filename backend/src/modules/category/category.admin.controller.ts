@@ -5,6 +5,7 @@ import {
   Param,
   ParseIntPipe,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -22,6 +23,7 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { CategoryService } from '@/modules/category/category.service';
 import { CategoryPage } from '@/modules/category/defs/category-repository.defs';
+import { CreateCategoryRequestDto } from '@/modules/category/dto/request/create-category-request.dto';
 import { ListCategoriesRequestDto } from '@/modules/category/dto/request/list-categories-request.dto';
 import { UpdateCategoryRequestDto } from '@/modules/category/dto/request/update-category-request.dto';
 import { GetCategoriesResponseDto } from '@/modules/category/dto/response/get-categories-response.dto';
@@ -36,6 +38,19 @@ import { UserRole } from '@/modules/user/enum/general.enum';
 @ApiBearerAuth()
 export class CategoryAdminController {
   constructor(private readonly categoryService: CategoryService) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Create a category with an optional slug and revenue weight' })
+  @ApiBody({ type: CreateCategoryRequestDto })
+  @ApiResponse({ status: 201, type: CategoryResponse })
+  async createCategory(@Body() body: CreateCategoryRequestDto): Promise<CategoryResponse> {
+    const entity: CategoryEntity = await this.categoryService.createCategory({
+      name: body.name,
+      slug: body.slug,
+      categoryWeight: body.categoryWeight,
+    });
+    return new CategoryResponse(entity);
+  }
 
   @Get()
   @ApiOperation({ summary: 'List categories including configured revenue weights' })

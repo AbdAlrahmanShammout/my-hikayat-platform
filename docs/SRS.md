@@ -120,6 +120,11 @@ Admin category revenue-weight management (admin only):
 - `GET /admin/categories`, `GET /admin/categories/:id` — list or get
   categories, including `categoryWeight`.
 
+- `POST /admin/categories` — create a category. `name` is required.
+  `slug` and `categoryWeight` are optional. Omitted slug is derived
+  from the name. Omitted weight defaults to 1.0. Weight must be
+  greater than 0.
+
 - `PATCH /admin/categories/:id` — update `categoryWeight` only. The
   value must be greater than 0.
 
@@ -127,7 +132,7 @@ The category taxonomy is admin-owned. Installations are seeded with
 Picture Books, Children's, Fiction, Nonfiction, and Young Adult, each
 with `categoryWeight` 1.0, so a new database is not empty. Rows that
 already use those slugs are left unchanged. This category API does not
-create, rename, or delete categories.
+rename or delete categories.
 
 ## **2.4 Audit Log**
 

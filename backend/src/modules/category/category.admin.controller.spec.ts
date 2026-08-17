@@ -22,6 +22,7 @@ function createSampleCategory(categoryWeight = 1.25): CategoryEntity {
 describe('CategoryAdminController', () => {
   let categoryAdminController: CategoryAdminController;
   let mockCategoryService: {
+    createCategory: jest.Mock;
     listCategories: jest.Mock;
     getCategoryById: jest.Mock;
     updateCategory: jest.Mock;
@@ -29,6 +30,7 @@ describe('CategoryAdminController', () => {
 
   beforeEach(async () => {
     mockCategoryService = {
+      createCategory: jest.fn(),
       listCategories: jest.fn(),
       getCategoryById: jest.fn(),
       updateCategory: jest.fn(),
@@ -43,6 +45,25 @@ describe('CategoryAdminController', () => {
       ],
     }).compile();
     categoryAdminController = moduleRef.get(CategoryAdminController);
+  });
+
+  describe('createCategory', () => {
+    it('maps name, slug, and weight into the service', async () => {
+      mockCategoryService.createCategory.mockResolvedValue(createSampleCategory());
+      const actualResponse = await categoryAdminController.createCategory({
+        name: 'Picture Books',
+        slug: 'picture-books',
+        categoryWeight: 1.25,
+      });
+      expect(mockCategoryService.createCategory).toHaveBeenCalledWith({
+        name: 'Picture Books',
+        slug: 'picture-books',
+        categoryWeight: 1.25,
+      });
+      expect(actualResponse.id).toBe(1);
+      expect(actualResponse.slug).toBe('picture-books');
+      expect(actualResponse.categoryWeight).toBe(1.25);
+    });
   });
 
   describe('listCategories', () => {
