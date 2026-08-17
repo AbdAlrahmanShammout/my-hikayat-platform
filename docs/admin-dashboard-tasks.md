@@ -26,7 +26,7 @@ CORS default includes the Vite origin, agent routing to
 | 3 | Books review and catalog management | Complete |
 | 4 | Users | Complete |
 | 5 | Subscriptions | Complete |
-| 6 | Collections | Pending |
+| 6 | Collections | Complete |
 | 7 | Category weights | Pending |
 | 8 | Revenue periods | Pending |
 | 9 | Revenue calculate, analytics, heatmap | Pending |
@@ -239,6 +239,11 @@ already `canceled`. There is no refund action.
 
 **Routes:** `/admin/collections`, `/admin/collections/:id`
 
+**Written:** list + create at `/admin/collections`, detail at `/admin/collections/:collectionId`.
+Title PATCH only. Membership add/remove/reorder uses the collection book APIs. Unpublished
+books stay visible in the admin editor. Reorder is not sent when the order did not change.
+409 `COLLECTION_BOOK_ALREADY_ADDED` and other API errors still surface.
+
 ---
 
 ## STEP 7 — Category weights
@@ -334,5 +339,5 @@ events (metadata PATCH and category-weight PATCH are not required audit events).
 ## Implementation order
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
-STEP 8 must exist before STEP 9. Other feature STEPs (6–7, 10) can proceed after
-STEP 1 if needed. Collections (STEP 6) is the next screen after subscriptions.
+STEP 8 must exist before STEP 9. Other feature STEPs (7, 10) can proceed after
+STEP 1 if needed. Category weights (STEP 7) is the next screen after collections.

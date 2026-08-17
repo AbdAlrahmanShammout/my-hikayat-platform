@@ -5,6 +5,7 @@ import { AdminAuditPage } from '@/pages/admin/audit-page';
 import { AdminBookDetailPage } from '@/pages/admin/book-detail-page';
 import { AdminBooksPage } from '@/pages/admin/books-page';
 import { AdminCategoriesPage } from '@/pages/admin/categories-page';
+import { AdminCollectionDetailPage } from '@/pages/admin/collection-detail-page';
 import { AdminCollectionsPage } from '@/pages/admin/collections-page';
 import { AdminHomePage } from '@/pages/admin/home-page';
 import { AdminRevenuePage } from '@/pages/admin/revenue-page';
@@ -36,6 +37,7 @@ export const appRouter = createBrowserRouter([
       { path: 'subscriptions', element: <AdminSubscriptionsPage /> },
       { path: 'subscriptions/:subscriptionId', element: <AdminSubscriptionDetailPage /> },
       { path: 'collections', element: <AdminCollectionsPage /> },
+      { path: 'collections/:collectionId', element: <AdminCollectionDetailPage /> },
       { path: 'categories', element: <AdminCategoriesPage /> },
       { path: 'revenue', element: <AdminRevenuePage /> },
       { path: 'audit', element: <AdminAuditPage /> },
