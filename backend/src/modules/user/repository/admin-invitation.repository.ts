@@ -19,4 +19,5 @@ export abstract class AdminInvitationRepository {
     input: AcceptAdminInvitationRepoInput,
     context?: TransactionContext,
   ): Promise<AdminInvitationEntity>;
+  abstract delete(id: number, context?: TransactionContext): Promise<void>;
 }

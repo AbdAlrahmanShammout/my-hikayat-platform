@@ -96,4 +96,12 @@ export class AdminInvitationPrismaRepository implements AdminInvitationRepositor
     });
     return AdminInvitationMapper.toEntity(result);
   }
+
+  async delete(id: number, context?: TransactionContext): Promise<void> {
+    const client = resolvePrismaTransactionClient(this.prismaProviderService, context);
+    await client.adminInvitation.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
+  }
 }

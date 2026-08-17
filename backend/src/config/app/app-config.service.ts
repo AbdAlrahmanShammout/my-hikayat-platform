@@ -16,4 +16,8 @@ export class AppConfigService extends BaseConfigService {
   get allowedOrigins(): string[] {
     return this.getValue<string[]>('app.allowedOrigins');
   }
+
+  get publicOrigin(): string {
+    return this.getValue<string>('app.publicOrigin');
+  }
 }

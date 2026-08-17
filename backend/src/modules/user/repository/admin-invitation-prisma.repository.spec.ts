@@ -72,4 +72,13 @@ describe('AdminInvitationPrismaRepository', () => {
     const actualEntity = await adminInvitationPrismaRepository.findByTokenHash('missing');
     expect(actualEntity).toBeNull();
   });
+
+  it('soft-deletes an invitation', async () => {
+    mockPrismaProviderService.adminInvitation.update.mockResolvedValue(persistenceRow);
+    await adminInvitationPrismaRepository.delete(4);
+    expect(mockPrismaProviderService.adminInvitation.update).toHaveBeenCalledWith({
+      where: { id: 4 },
+      data: { deletedAt: expect.any(Date) },
+    });
+  });
 });

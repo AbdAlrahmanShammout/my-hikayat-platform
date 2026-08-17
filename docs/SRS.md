@@ -91,9 +91,14 @@ Admin accounts are invitation-only:
   allowed, including last-admin protection.
 
 - `POST /admin/invitations` `{ email }` creates a pending invitation
-  that expires in 7 days. The raw token is returned only at creation
-  and is stored hashed. A duplicate unexpired pending invitation for
-  the same email is rejected. Inviting an existing admin is rejected.
+  that expires in 7 days. The backend sends an official email that
+  identifies Noory, explains the admin invitation, includes a secure
+  accept link and the expiry, and does not include a password. The
+  raw token is returned only at creation and is stored hashed. A
+  duplicate unexpired pending invitation for the same email is
+  rejected. Inviting an existing admin is rejected. If mail delivery
+  fails, the invitation is revoked (`MAIL_FAILURE`) so the email can
+  be invited again.
 
 - `GET /admin/invitations` lists pending unexpired invitations. The
   raw token and token hash are never returned.

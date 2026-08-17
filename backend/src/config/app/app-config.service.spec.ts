@@ -44,4 +44,13 @@ describe('AppConfigService', () => {
       expect(mockConfigService.get).toHaveBeenCalledWith('app.allowedOrigins');
     });
   });
+
+  describe('publicOrigin', () => {
+    it('returns the configured public origin for outbound links', () => {
+      mockConfigService.get.mockReturnValue('http://localhost:5173');
+      const actualOrigin: string = appConfigService.publicOrigin;
+      expect(actualOrigin).toBe('http://localhost:5173');
+      expect(mockConfigService.get).toHaveBeenCalledWith('app.publicOrigin');
+    });
+  });
 });

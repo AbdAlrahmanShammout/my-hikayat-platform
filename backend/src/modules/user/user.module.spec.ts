@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
+import { ConfigsModule } from '@/config/configs.module';
 import { AdminInvitationRepository } from '@/modules/user/repository/admin-invitation.repository';
 import { UserRepository } from '@/modules/user/repository/user.repository';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
@@ -11,7 +12,7 @@ import { UserService } from './user.service';
 describe('UserModule', () => {
   it('binds the abstract repository and exports the service', async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
-      imports: [UserModule],
+      imports: [ConfigsModule, UserModule],
     })
       .overrideProvider(PrismaProviderService)
       .useValue({

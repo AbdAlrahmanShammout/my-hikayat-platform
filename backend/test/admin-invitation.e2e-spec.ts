@@ -7,6 +7,8 @@ import request from 'supertest';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { UserRole } from '@/modules/user/enum/general.enum';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
+import { MailManagerService } from '@/providers/mail/mail-manager.service';
+import { MemoryMailManagerService } from '@/providers/mail/memory/memory-mail-manager.service';
 
 import { createTestingApp } from './create-testing-app';
 import { deleteUsersByEmail } from './delete-users.helper';
@@ -113,6 +115,24 @@ describe('Admin invitations (e2e)', () => {
       }),
     );
     expect(createResponse.body.invitation).not.toHaveProperty('tokenHash');
+    const mailManagerService = getRunningApp().get(MailManagerService);
+    if (!(mailManagerService instanceof MemoryMailManagerService)) {
+      throw new Error('Expected the memory mail manager in tests');
+    }
+    const sentInvitationMail = mailManagerService
+      .readSentMessages()
+      .find((message) => message.to === invitedEmail);
+    expect(sentInvitationMail).toEqual(
+      expect.objectContaining({
+        to: invitedEmail,
+        subject: expect.stringContaining('Noory'),
+        text: expect.stringContaining(
+          `/accept-admin-invitation?token=${encodeURIComponent(createResponse.body.token as string)}`,
+        ),
+      }),
+    );
+    expect(sentInvitationMail?.text).toContain('expires');
+    expect(sentInvitationMail?.text).not.toContain(password);
     const duplicateResponse = await request(getServer())
       .post('/admin/invitations')
       .set('Authorization', `Bearer ${getAdminAccessToken()}`)

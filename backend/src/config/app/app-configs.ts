@@ -2,7 +2,11 @@ import { registerAs } from '@nestjs/config';
 
 import { Environment } from '@/config/environment';
 
-import { APP_CORS_ORIGINS_DEFAULT, APP_PORT_DEFAULT } from './app-config.schema';
+import {
+  APP_CORS_ORIGINS_DEFAULT,
+  APP_PORT_DEFAULT,
+  APP_PUBLIC_ORIGIN_DEFAULT,
+} from './app-config.schema';
 
 function parseOriginList(value: string | undefined): string[] {
   const rawValue: string = value ?? APP_CORS_ORIGINS_DEFAULT;
@@ -17,5 +21,6 @@ export default [
     env: process.env.APP_ENV ?? Environment.DEVELOPMENT,
     port: Number(process.env.APP_PORT ?? APP_PORT_DEFAULT),
     allowedOrigins: parseOriginList(process.env.APP_CORS_ORIGINS),
+    publicOrigin: process.env.APP_PUBLIC_ORIGIN ?? APP_PUBLIC_ORIGIN_DEFAULT,
   })),
 ];

@@ -4,6 +4,7 @@ import { DatabaseProviderModule } from '@/providers/database/database-provider.m
 import { EncryptionProviderModule } from '@/providers/encryption/encryption-provider.module';
 import { JobProviderModule } from '@/providers/job/job-provider.module';
 import { JwtProviderModule } from '@/providers/jwt/jwt-provider.module';
+import { MailProviderModule } from '@/providers/mail/mail-provider.module';
 import { StorageProviderModule } from '@/providers/storage/storage-provider.module';
 import { StripeProviderModule } from '@/providers/stripe/stripe-provider.module';
 
@@ -15,6 +16,7 @@ import { StripeProviderModule } from '@/providers/stripe/stripe-provider.module'
     EncryptionProviderModule,
     JobProviderModule,
     StripeProviderModule,
+    MailProviderModule,
   ],
   exports: [
     DatabaseProviderModule,
@@ -23,6 +25,7 @@ import { StripeProviderModule } from '@/providers/stripe/stripe-provider.module'
     EncryptionProviderModule,
     JobProviderModule,
     StripeProviderModule,
+    MailProviderModule,
   ],
 })
 export class ProviderModule {}

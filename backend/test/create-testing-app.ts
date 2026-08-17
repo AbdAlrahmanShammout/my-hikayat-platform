@@ -5,6 +5,8 @@ import { AppModule } from '@/app.module';
 import { configureHttpSurface } from '@/common/helpers/configure-http-surface.helper';
 import { AppConfigService } from '@/config/app/app-config.service';
 import type { Environment } from '@/config/environment';
+import { MailManagerService } from '@/providers/mail/mail-manager.service';
+import { MemoryMailManagerService } from '@/providers/mail/memory/memory-mail-manager.service';
 import { MemoryStorageManagerService } from '@/providers/storage/memory/memory-storage-manager.service';
 import { StorageManagerService } from '@/providers/storage/storage-manager.service';
 import { MemoryStripeManagerService } from '@/providers/stripe/memory/memory-stripe-manager.service';
@@ -27,12 +29,15 @@ export async function createTestingApp(
     .overrideProvider(StorageManagerService)
     .useClass(MemoryStorageManagerService)
     .overrideProvider(StripeManagerService)
-    .useClass(MemoryStripeManagerService);
+    .useClass(MemoryStripeManagerService)
+    .overrideProvider(MailManagerService)
+    .useClass(MemoryMailManagerService);
   if (input.env !== undefined) {
     testingModuleBuilder.overrideProvider(AppConfigService).useValue({
       env: input.env,
       port: 3000,
       allowedOrigins: ['http://localhost:3000'],
+      publicOrigin: 'http://localhost:5173',
     });
   }
   const moduleFixture: TestingModule = await testingModuleBuilder.compile();

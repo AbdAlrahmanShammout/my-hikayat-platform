@@ -14,6 +14,9 @@ import encryptionConfigs from './encryption/encryption-configs';
 import { jwtConfigSchema } from './jwt/jwt-config.schema';
 import { JwtConfigService } from './jwt/jwt-config.service';
 import jwtConfigs from './jwt/jwt-configs';
+import { mailConfigSchema } from './mail/mail-config.schema';
+import { MailConfigService } from './mail/mail-config.service';
+import mailConfigs from './mail/mail-configs';
 import { monetizationConfigSchema } from './monetization/monetization-config.schema';
 import { MonetizationConfigService } from './monetization/monetization-config.service';
 import monetizationConfigs from './monetization/monetization-configs';
@@ -39,6 +42,7 @@ import stripeConfigs from './stripe/stripe-configs';
         ...encryptionConfigs,
         ...stripeConfigs,
         ...monetizationConfigs,
+        ...mailConfigs,
       ],
       validationSchema: Joi.object({
         ...appConfigSchema,
@@ -48,6 +52,7 @@ import stripeConfigs from './stripe/stripe-configs';
         ...encryptionConfigSchema,
         ...stripeConfigSchema,
         ...monetizationConfigSchema,
+        ...mailConfigSchema,
       }),
       // OS and tool environment keys (PATH, npm_*, etc.) are always present.
       // Declared application variables are still validated by the merged schema.
@@ -65,6 +70,7 @@ import stripeConfigs from './stripe/stripe-configs';
     EncryptionConfigService,
     StripeConfigService,
     MonetizationConfigService,
+    MailConfigService,
   ],
   exports: [
     AppConfigService,
@@ -74,6 +80,7 @@ import stripeConfigs from './stripe/stripe-configs';
     EncryptionConfigService,
     StripeConfigService,
     MonetizationConfigService,
+    MailConfigService,
   ],
 })
 export class ConfigsModule {}

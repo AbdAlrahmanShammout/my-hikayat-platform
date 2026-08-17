@@ -1,3 +1,4 @@
+import { AppConfigService } from '@/config/app/app-config.service';
 import { ADMIN_INVITATION_WINDOW } from '@/modules/user/consts/admin-invitation.constant';
 import { AdminInvitationEntity } from '@/modules/user/entity/admin-invitation.entity';
 import { UserEntity } from '@/modules/user/entity/user.entity';
@@ -10,6 +11,7 @@ import { AdminInvitationInvalidException } from '@/modules/user/exceptions/admin
 import { AdminInvitationPendingException } from '@/modules/user/exceptions/admin-invitation-pending.exception';
 import { hashAdminInvitationToken } from '@/modules/user/helpers/admin-invitation-token.helper';
 import { UserService } from '@/modules/user/user.service';
+import { MailFailureException } from '@/providers/mail/exceptions/mail-failure.exception';
 
 import { AdminInvitationService } from './admin-invitation.service';
 
@@ -49,12 +51,15 @@ describe('AdminInvitationService', () => {
     findPendingByEmail: jest.Mock;
     listPending: jest.Mock;
     markAccepted: jest.Mock;
+    delete: jest.Mock;
   };
   let mockUserService: {
     findUserByEmail: jest.Mock;
     grantInvitedAdmin: jest.Mock;
   };
   let mockTransactionRunner: { run: jest.Mock };
+  let mockMailManagerService: { send: jest.Mock };
+  let mockAppConfigService: { publicOrigin: string };
   let adminInvitationService: AdminInvitationService;
 
   beforeEach(() => {
@@ -64,6 +69,7 @@ describe('AdminInvitationService', () => {
       findPendingByEmail: jest.fn(),
       listPending: jest.fn(),
       markAccepted: jest.fn(),
+      delete: jest.fn(),
     };
     mockUserService = {
       findUserByEmail: jest.fn(),
@@ -72,10 +78,14 @@ describe('AdminInvitationService', () => {
     mockTransactionRunner = {
       run: jest.fn(async (work: (context: undefined) => Promise<unknown>) => work(undefined)),
     };
+    mockMailManagerService = { send: jest.fn().mockResolvedValue(undefined) };
+    mockAppConfigService = { publicOrigin: 'http://localhost:5173' };
     adminInvitationService = new AdminInvitationService(
       mockAdminInvitationRepository,
       mockUserService as unknown as UserService,
       mockTransactionRunner,
+      mockMailManagerService,
+      mockAppConfigService as unknown as AppConfigService,
     );
   });
 
@@ -105,6 +115,41 @@ describe('AdminInvitationService', () => {
       expect(actualWindowMs).toBeLessThanOrEqual(expectedWindowMs);
       expect(actualResult.invitation).toBe(expectedInvitation);
       expect(actualResult.token).toEqual(expect.any(String));
+      expect(mockMailManagerService.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'new-admin@example.com',
+          subject: expect.stringContaining('Noory'),
+          text: expect.stringContaining(actualResult.token),
+        }),
+      );
+    });
+
+    it('revokes the invitation when mail delivery fails', async () => {
+      mockUserService.findUserByEmail.mockResolvedValue(null);
+      mockAdminInvitationRepository.findPendingByEmail.mockResolvedValue(null);
+      mockAdminInvitationRepository.create.mockResolvedValue(createSampleInvitation());
+      mockMailManagerService.send.mockRejectedValue(new MailFailureException());
+      await expect(
+        adminInvitationService.createInvitation({
+          email: 'new-admin@example.com',
+          invitedByUserId: 9,
+        }),
+      ).rejects.toBeInstanceOf(MailFailureException);
+      expect(mockAdminInvitationRepository.delete).toHaveBeenCalledWith(4);
+    });
+
+    it('revokes the invitation when mail delivery fails unexpectedly', async () => {
+      mockUserService.findUserByEmail.mockResolvedValue(null);
+      mockAdminInvitationRepository.findPendingByEmail.mockResolvedValue(null);
+      mockAdminInvitationRepository.create.mockResolvedValue(createSampleInvitation());
+      mockMailManagerService.send.mockRejectedValue(new Error('smtp down'));
+      await expect(
+        adminInvitationService.createInvitation({
+          email: 'new-admin@example.com',
+          invitedByUserId: 9,
+        }),
+      ).rejects.toBeInstanceOf(MailFailureException);
+      expect(mockAdminInvitationRepository.delete).toHaveBeenCalledWith(4);
     });
 
     it('rejects inviting an email that is already an admin', async () => {
