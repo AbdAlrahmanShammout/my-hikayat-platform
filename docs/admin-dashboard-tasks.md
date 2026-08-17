@@ -24,7 +24,7 @@ CORS default includes the Vite origin, agent routing to
 | 1 | Auth session + admin shell | Complete |
 | 2 | Admin home (composed KPIs) | Complete |
 | 3 | Books review and catalog management | Complete |
-| 4 | Users | Pending |
+| 4 | Users | Complete |
 | 5 | Subscriptions | Pending |
 | 6 | Collections | Pending |
 | 7 | Category weights | Pending |
@@ -183,6 +183,14 @@ to the list.
 
 **Routes:** `/admin/users`, `/admin/users/:id`
 
+**Written:** filterable `GET /admin/users` table (`role`, `isPublisher`, exact `email`,
+`limit`/`offset`) and a detail screen at `/admin/users/:userId`. PATCH is limited to
+`role` and `isPublisher`. Reader/author publisher coupling is reflected in the form and
+still enforced by the API (`USER_INVALID_CAPABILITY`). An admin cannot change or delete
+their own account (`USER_SELF_MANAGEMENT`). The last remaining admin cannot be demoted
+or deleted (`USER_LAST_ADMIN`); 400/409 from the API still surface. Soft-delete returns
+to the list.
+
 ---
 
 ## STEP 5 — Subscriptions
@@ -320,5 +328,5 @@ events (metadata PATCH and category-weight PATCH are not required audit events).
 ## Implementation order
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
-STEP 8 must exist before STEP 9. Other feature STEPs (4–7, 10) can proceed after
-STEP 1 if needed. Users (STEP 4) is the next screen after books review.
+STEP 8 must exist before STEP 9. Other feature STEPs (5–7, 10) can proceed after
+STEP 1 if needed. Subscriptions (STEP 5) is the next screen after users.

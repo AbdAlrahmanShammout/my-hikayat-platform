@@ -36,6 +36,7 @@ export const queryKeys = {
       all: ['admin', 'users'] as const,
       list: (filters: AdminUsersListQuery) =>
         [...queryKeys.admin.users.all, 'list', filters] as const,
+      detail: (userId: number) => [...queryKeys.admin.users.all, 'detail', userId] as const,
     },
     subscriptions: {
       all: ['admin', 'subscriptions'] as const,
