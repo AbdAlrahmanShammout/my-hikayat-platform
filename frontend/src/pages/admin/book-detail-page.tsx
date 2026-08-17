@@ -11,6 +11,7 @@ import { ADMIN_CATEGORY_LOOKUP_LIMIT } from '@/config/admin-category-lookup-limi
 import { AdminBookActions } from '@/features/books/components/admin-book-actions';
 import { AdminBookDetailSummary } from '@/features/books/components/admin-book-detail-summary';
 import { AdminBookEditForm } from '@/features/books/components/admin-book-edit-form';
+import { AdminBookRejectionHistoryPanel } from '@/features/books/components/admin-book-rejection-history-panel';
 import { useAdminBook } from '@/features/books/hooks/use-admin-book';
 import { useAdminCategoriesList } from '@/features/categories/hooks/use-admin-categories-list';
 import { parsePositiveInt } from '@/lib/parse-positive-int';
@@ -74,6 +75,7 @@ function AdminBookDetailContent({ bookId }: { readonly bookId: number }): JSX.El
       <div className="space-y-6">
         <AdminBookActions book={book} />
         <AdminBookDetailSummary book={book} />
+        <AdminBookRejectionHistoryPanel bookId={book.id} />
         <AdminBookEditForm
           key={`${book.id}-${book.updatedAt}`}
           book={book}

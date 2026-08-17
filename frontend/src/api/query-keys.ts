@@ -26,6 +26,9 @@ type AdminAuditLogsListQuery = NonNullable<
 type AdminInvitationsListQuery = NonNullable<
   paths['/admin/invitations']['get']['parameters']['query']
 >;
+type AdminBookRejectionHistoryQuery = NonNullable<
+  paths['/admin/books/{id}/rejection-history']['get']['parameters']['query']
+>;
 
 /**
  * Feature-scoped TanStack Query keys. Keep mutations invalidating the smallest set.
@@ -41,6 +44,8 @@ export const queryKeys = {
       list: (filters: AdminBooksListQuery) =>
         [...queryKeys.admin.books.all, 'list', filters] as const,
       detail: (bookId: number) => [...queryKeys.admin.books.all, 'detail', bookId] as const,
+      rejectionHistory: (bookId: number, filters: AdminBookRejectionHistoryQuery) =>
+        [...queryKeys.admin.books.all, 'rejection-history', bookId, filters] as const,
     },
     categories: {
       all: ['admin', 'categories'] as const,

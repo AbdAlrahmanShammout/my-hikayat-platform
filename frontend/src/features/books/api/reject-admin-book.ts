@@ -1,14 +1,20 @@
 import { requestJson } from '@/api/request-json';
 import type { components } from '@/generated/admin';
 
+export type RejectAdminBookInput = {
+  readonly bookId: number;
+  readonly body: components['schemas']['RejectBookRequestDto'];
+};
+
 /**
- * Rejects an in-review book. The current contract accepts no reason body.
+ * Rejects an in-review book. The reason is stored on the book_rejected audit record.
  */
 export async function rejectAdminBook(
-  bookId: number,
+  input: RejectAdminBookInput,
 ): Promise<components['schemas']['BookResponse']> {
   return requestJson<components['schemas']['BookResponse']>({
-    path: `/admin/books/${bookId}/reject`,
+    path: `/admin/books/${input.bookId}/reject`,
     method: 'POST',
+    body: input.body,
   });
 }

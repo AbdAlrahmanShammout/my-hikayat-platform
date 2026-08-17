@@ -34,6 +34,7 @@ CORS default includes the Vite origin, agent routing to
 | 11 | Invite admin (pending list + email invite) | Complete |
 | 12 | Accept admin invitation (public page) | Complete |
 | 13 | Create and rename categories | Complete |
+| 14 | Reject book with required reason | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -440,6 +441,33 @@ Conflict and validation errors from the API still surface.
 
 ---
 
+## STEP 14 — Reject book with required reason
+
+**SRS:** §2.3 reject requires a non-empty `reason` on `audit.reason`; rejection
+history is the filtered audit log.
+
+**APIs**
+
+- `POST /admin/books/:id/reject` `{ reason }` — required, non-empty
+- `GET /admin/books/:id/rejection-history` — `book_rejected` audit rows;
+  `limit` / `offset`; empty list when never rejected
+
+**UI**
+
+- Reject dialog collects a reason. Do not send an empty reason. Confirm-only
+  reject is gone.
+- Book detail shows rejection history from the API. Do not invent missing
+  reasons or a second rejection store.
+- 400 `BOOK_REJECTION_REASON_REQUIRED` and other API failures still surface.
+
+**Route:** `/admin/books/:bookId`
+
+**Written:** reject posts `{ reason }`. History is
+`GET /admin/books/:id/rejection-history` on the detail page (`rejectionOffset`).
+Empty history is shown as an empty list. Reasons come from `audit.reason`.
+
+---
+
 ## Out of scope for this list
 
 - Author dashboard (books upload, author analytics/earnings)
@@ -447,12 +475,11 @@ Conflict and validation errors from the API still surface.
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
 - Admin refund
-- Reject-reason field (not on the current reject API)
 - Recalculating publisher earnings in the browser
 
 ## Implementation order
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
-STEP 8 must exist before STEP 9. STEPs 0–13 on this list are the current admin
+STEP 8 must exist before STEP 9. STEPs 0–14 on this list are the current admin
 dashboard work. Next admin UI is remaining screens for HTTP that already exists
-(reject reason, refund).
+(refund).

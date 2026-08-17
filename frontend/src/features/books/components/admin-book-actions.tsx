@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip } from '@/components/ui/tooltip';
+import { AdminBookRejectDialog } from '@/features/books/components/admin-book-reject-dialog';
 import { useApproveAdminBook } from '@/features/books/hooks/use-approve-admin-book';
 import { useDeleteAdminBook } from '@/features/books/hooks/use-delete-admin-book';
 import { useRejectAdminBook } from '@/features/books/hooks/use-reject-admin-book';
@@ -52,7 +53,8 @@ export function AdminBookActions({ book }: AdminBookActionsProps): JSX.Element {
       <CardHeader>
         <CardTitle>Review actions</CardTitle>
         <CardDescription>
-          Reject has no reason field. A 400 or 409 from the API is still shown if a rule changed.
+          Reject requires a non-empty reason stored on the book_rejected audit record. A 400 or 409
+          from the API is still shown if a rule changed.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-2">
@@ -107,7 +109,23 @@ export function AdminBookActions({ book }: AdminBookActionsProps): JSX.Element {
             setOpenAction('delete');
           }}
         />
-        {openAction !== null ? (
+        {openAction === 'reject' ? (
+          <AdminBookRejectDialog
+            open={true}
+            isPending={rejectMutation.isPending}
+            error={rejectMutation.error}
+            onOpenChange={(open: boolean) => {
+              if (!open) {
+                setOpenAction(null);
+              }
+            }}
+            onSubmit={async (reason: string) => {
+              await rejectMutation.mutateAsync({ bookId: book.id, body: { reason } });
+              setOpenAction(null);
+            }}
+          />
+        ) : null}
+        {openAction !== null && openAction !== 'reject' ? (
           <ConfirmDialog
             open={true}
             title={getActionCopy(openAction).title}
@@ -126,7 +144,6 @@ export function AdminBookActions({ book }: AdminBookActionsProps): JSX.Element {
                 action: openAction,
                 bookId: book.id,
                 approveMutation,
-                rejectMutation,
                 unpublishMutation,
                 republishMutation,
                 deleteMutation,
@@ -169,7 +186,9 @@ function ActionTrigger({
   return <Tooltip label={disabledReason}>{button}</Tooltip>;
 }
 
-function getActionCopy(action: BookReviewAction): {
+type ConfirmableBookReviewAction = Exclude<BookReviewAction, 'reject'>;
+
+function getActionCopy(action: ConfirmableBookReviewAction): {
   readonly title: string;
   readonly description: string;
   readonly confirmLabel: string;
@@ -183,18 +202,11 @@ function getActionCopy(action: BookReviewAction): {
       confirmVariant: 'default',
     };
   }
-  if (action === 'reject') {
-    return {
-      title: 'Reject this book?',
-      description: 'The current contract does not accept a rejection reason.',
-      confirmLabel: 'Reject',
-      confirmVariant: 'destructive',
-    };
-  }
   if (action === 'unpublish') {
     return {
       title: 'Unpublish this book?',
-      description: 'publishingStatus stays approved. publishedAt is cleared so the book leaves the catalog.',
+      description:
+        'publishingStatus stays approved. publishedAt is cleared so the book leaves the catalog.',
       confirmLabel: 'Unpublish',
       confirmVariant: 'default',
     };
@@ -229,9 +241,6 @@ function resolveActiveError(
   if (input.openAction === 'approve') {
     return input.approveMutation.error;
   }
-  if (input.openAction === 'reject') {
-    return input.rejectMutation.error;
-  }
   if (input.openAction === 'unpublish') {
     return input.unpublishMutation.error;
   }
@@ -244,19 +253,17 @@ function resolveActiveError(
   return null;
 }
 
-async function runBookReviewAction(
-  input: BookReviewMutations & {
-    readonly action: BookReviewAction;
-    readonly bookId: number;
-    readonly onDeleted: () => void;
-  },
-): Promise<void> {
+async function runBookReviewAction(input: {
+  readonly action: ConfirmableBookReviewAction;
+  readonly bookId: number;
+  readonly approveMutation: ReturnType<typeof useApproveAdminBook>;
+  readonly unpublishMutation: ReturnType<typeof useUnpublishAdminBook>;
+  readonly republishMutation: ReturnType<typeof useRepublishAdminBook>;
+  readonly deleteMutation: ReturnType<typeof useDeleteAdminBook>;
+  readonly onDeleted: () => void;
+}): Promise<void> {
   if (input.action === 'approve') {
     await input.approveMutation.mutateAsync(input.bookId);
-    return;
-  }
-  if (input.action === 'reject') {
-    await input.rejectMutation.mutateAsync(input.bookId);
     return;
   }
   if (input.action === 'unpublish') {

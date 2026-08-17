@@ -133,8 +133,26 @@ export interface paths {
   '/admin/books/{id}/reject': {
     post: {
       parameters: { path: { id: number } };
+      requestBody: {
+        content: { 'application/json': components['schemas']['RejectBookRequestDto'] };
+      };
       responses: {
         '200': { content: { 'application/json': components['schemas']['BookResponse'] } };
+      };
+    };
+  };
+  '/admin/books/{id}/rejection-history': {
+    get: {
+      parameters: {
+        path: { id: number };
+        query?: { limit?: number; offset?: number };
+      };
+      responses: {
+        '200': {
+          content: {
+            'application/json': components['schemas']['GetBookRejectionHistoryResponseDto'];
+          };
+        };
       };
     };
   };
@@ -548,6 +566,11 @@ export interface components {
       categories: Array<components['schemas']['CategoryResponse']>;
     };
     GetBooksResponseDto: { books: Array<components['schemas']['BookResponse']>; total: number };
+    RejectBookRequestDto: { reason: string };
+    GetBookRejectionHistoryResponseDto: {
+      rejections: Array<components['schemas']['AuditLogResponse']>;
+      total: number;
+    };
     UpdateBookRequestDto: {
       title?: string;
       description?: string;
