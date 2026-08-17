@@ -135,8 +135,8 @@ describe('Admin users (e2e)', () => {
       .patch(`/admin/users/${getReaderUserId()}`)
       .set('Authorization', `Bearer ${getAdminAccessToken()}`)
       .send({ role: UserRole.ADMIN });
-    expect(promoteResponse.status).toBe(HttpStatus.OK);
-    expect(promoteResponse.body.role).toBe(UserRole.ADMIN);
+    expect(promoteResponse.status).toBe(HttpStatus.BAD_REQUEST);
+    expect(promoteResponse.body.code).toBe('USER_ADMIN_INVITE_REQUIRED');
     const auditResponse = await request(getServer())
       .get('/admin/audit-logs')
       .query({ action: AuditAction.USER_ROLE_CHANGED, subjectId: getReaderUserId() })

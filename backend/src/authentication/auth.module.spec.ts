@@ -18,6 +18,7 @@ describe('AuthModule', () => {
         $connect: jest.fn(),
         $disconnect: jest.fn(),
         user: { create: jest.fn(), findFirst: jest.fn() },
+        adminInvitation: { create: jest.fn(), findFirst: jest.fn() },
       })
       .compile();
     expect(moduleRef.get(AuthService)).toBeDefined();

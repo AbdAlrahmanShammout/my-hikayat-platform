@@ -28,3 +28,9 @@ export type DeleteManagedUserServiceInput = {
   readonly userId: number;
   readonly actorUserId: number;
 };
+
+export type GrantInvitedAdminServiceInput = {
+  readonly email: string;
+  readonly passwordHash: string;
+  readonly actorUserId: number;
+};

@@ -9,6 +9,7 @@ import { AuthenticationFailedException } from '@/common/exceptions/authenticatio
 import { compareHashString } from '@/common/helpers/compare-hash-string.helper';
 import { hashString } from '@/common/helpers/hash-string.helper';
 import { JwtConfigService } from '@/config/jwt/jwt-config.service';
+import { AdminInvitationService } from '@/modules/user/admin-invitation.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
 import { UserEmailConflictException } from '@/modules/user/exceptions/user-email-conflict.exception';
@@ -38,6 +39,7 @@ describe('AuthService', () => {
     createUser: jest.Mock;
     findUserByEmail: jest.Mock;
   };
+  let mockAdminInvitationService: { acceptInvitation: jest.Mock };
   let mockJwtTokenService: { createToken: jest.Mock };
   let mockJwtConfigService: { accessExpiresIn: string };
   let authService: AuthService;
@@ -49,10 +51,12 @@ describe('AuthService', () => {
       createUser: jest.fn(),
       findUserByEmail: jest.fn(),
     };
+    mockAdminInvitationService = { acceptInvitation: jest.fn() };
     mockJwtTokenService = { createToken: jest.fn() };
     mockJwtConfigService = { accessExpiresIn: '15m' };
     authService = new AuthService(
       mockUserService as unknown as UserService,
+      mockAdminInvitationService as unknown as AdminInvitationService,
       mockJwtTokenService as unknown as JwtTokenService,
       mockJwtConfigService as unknown as JwtConfigService,
     );
@@ -132,6 +136,37 @@ describe('AuthService', () => {
           password: 'wrong-password',
         }),
       ).rejects.toBeInstanceOf(AuthenticationFailedException);
+    });
+  });
+
+  describe('acceptAdminInvitation', () => {
+    it('hashes the password, accepts the invitation, and issues an access token', async () => {
+      const expectedUser = new UserEntity({
+        ...createSampleUser(),
+        email: 'new-admin@example.com',
+        role: UserRole.ADMIN,
+      });
+      mockHashString.mockResolvedValue('hashed-password');
+      mockAdminInvitationService.acceptInvitation.mockResolvedValue(expectedUser);
+      mockJwtTokenService.createToken.mockReturnValue('signed.jwt');
+      const actualSession = await authService.acceptAdminInvitation({
+        token: 'raw-token',
+        password: 'correct-horse-battery',
+      });
+      expect(mockHashString).toHaveBeenCalledWith('correct-horse-battery');
+      expect(mockAdminInvitationService.acceptInvitation).toHaveBeenCalledWith({
+        token: 'raw-token',
+        passwordHash: 'hashed-password',
+      });
+      expect(mockJwtTokenService.createToken).toHaveBeenCalledWith({
+        payload: { principalId: 1, role: UserRole.ADMIN },
+        purpose: JwtTokenPurpose.ACCESS,
+      });
+      expect(actualSession).toEqual({
+        user: expectedUser,
+        accessToken: 'signed.jwt',
+        expiresIn: '15m',
+      });
     });
   });
 

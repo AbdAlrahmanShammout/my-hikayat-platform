@@ -10,6 +10,11 @@ export type LoginUserServiceInput = {
   readonly password: string;
 };
 
+export type AcceptAdminInvitationAuthInput = {
+  readonly token: string;
+  readonly password: string;
+};
+
 export type AuthSession = {
   readonly user: UserEntity;
   readonly accessToken: string;

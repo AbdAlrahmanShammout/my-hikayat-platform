@@ -12,6 +12,7 @@ export type UpdateUserRepoInput = {
   readonly id: number;
   readonly role: UserRole;
   readonly isPublisher: boolean;
+  readonly passwordHash?: string;
 };
 
 export type ListUsersRepoInput = {

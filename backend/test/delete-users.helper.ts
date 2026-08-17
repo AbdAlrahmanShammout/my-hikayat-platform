@@ -8,6 +8,11 @@ export async function deleteUsersByEmail(
   await prismaProviderService.auditLog.deleteMany({
     where: { actor: { email: { in: emails } } },
   });
+  await prismaProviderService.adminInvitation.deleteMany({
+    where: {
+      OR: [{ email: { in: emails } }, { invitedBy: { email: { in: emails } } }],
+    },
+  });
   await prismaProviderService.user.deleteMany({
     where: { email: { in: emails } },
   });

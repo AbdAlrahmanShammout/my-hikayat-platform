@@ -16,6 +16,7 @@ import { MonetizationAdminController } from '@/modules/monetization/monetization
 import { MonetizationModule } from '@/modules/monetization/monetization.module';
 import { SubscriptionAdminController } from '@/modules/subscription/subscription.admin.controller';
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
+import { AdminInvitationAdminController } from '@/modules/user/admin-invitation.admin.controller';
 import { UserAdminController } from '@/modules/user/user.admin.controller';
 import { UserModule } from '@/modules/user/user.module';
 
@@ -38,6 +39,7 @@ import { UserModule } from '@/modules/user/user.module';
     MonetizationAdminController,
     SubscriptionAdminController,
     UserAdminController,
+    AdminInvitationAdminController,
   ],
   providers: [JwtAuthGuard, LocalAuthGuard, RolesGuard],
 })

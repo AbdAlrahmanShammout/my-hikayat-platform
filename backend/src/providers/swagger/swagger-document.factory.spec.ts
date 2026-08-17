@@ -33,6 +33,7 @@ describe('createSwaggerDocument', () => {
         $connect: jest.fn(),
         $disconnect: jest.fn(),
         user: { create: jest.fn(), findFirst: jest.fn() },
+        adminInvitation: { create: jest.fn(), findFirst: jest.fn() },
       })
       .compile();
     app = moduleRef.createNestApplication();
@@ -47,5 +48,6 @@ describe('createSwaggerDocument', () => {
     expect(actualDocument.components?.securitySchemes).toHaveProperty('bearer');
     expect(actualDocument.paths).toHaveProperty('/auth/register');
     expect(actualDocument.paths).toHaveProperty('/auth/login');
+    expect(actualDocument.paths).toHaveProperty('/auth/accept-admin-invitation');
   });
 });

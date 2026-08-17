@@ -17,6 +17,7 @@ import { PublicRoute } from '@/common/decorators/route/public-route.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { LocalAuthGuard } from '@/common/guards/local-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { AcceptAdminInvitationRequestDto } from '@/modules/user/dto/request/accept-admin-invitation-request.dto';
 import { UserResponse } from '@/modules/user/dto/response/model/user.response';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 
@@ -41,6 +42,25 @@ export class AuthController {
   async register(@Body() input: RegisterRequestDto): Promise<AuthSessionResponseDto> {
     const session: AuthSession = await this.authService.register({
       email: input.email,
+      password: input.password,
+    });
+    return new AuthSessionResponseDto(session);
+  }
+
+  @PublicRoute()
+  @CredentialRoute()
+  @Throttle({
+    [DEFAULT_THROTTLE_NAME]: { ttl: CREDENTIAL_THROTTLE_TTL_MS, limit: CREDENTIAL_THROTTLE_LIMIT },
+  })
+  @Post('accept-admin-invitation')
+  @ApiOperation({ summary: 'Accept an admin invitation and start an admin session' })
+  @ApiBody({ type: AcceptAdminInvitationRequestDto })
+  @ApiResponse({ status: 201, type: AuthSessionResponseDto })
+  async acceptAdminInvitation(
+    @Body() input: AcceptAdminInvitationRequestDto,
+  ): Promise<AuthSessionResponseDto> {
+    const session: AuthSession = await this.authService.acceptAdminInvitation({
+      token: input.token,
       password: input.password,
     });
     return new AuthSessionResponseDto(session);

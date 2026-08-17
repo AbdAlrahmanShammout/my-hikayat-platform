@@ -59,6 +59,7 @@ export class UserPrismaRepository implements UserRepository {
       data: {
         role: input.role,
         isPublisher: input.isPublisher,
+        ...(input.passwordHash !== undefined ? { passwordHash: input.passwordHash } : {}),
       },
     });
     return UserMapper.toEntity(result);

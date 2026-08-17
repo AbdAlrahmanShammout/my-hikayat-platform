@@ -27,6 +27,13 @@ describe('AdminApiModule', () => {
           count: jest.fn(),
           update: jest.fn(),
         },
+        adminInvitation: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
         book: {
           create: jest.fn(),
           findFirst: jest.fn(),

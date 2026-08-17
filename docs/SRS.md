@@ -84,6 +84,25 @@ these endpoints.
 
 - Manage users
 
+Admin accounts are invitation-only:
+
+- Public register creates a reader. `PATCH /admin/users` cannot grant
+  `ADMIN` (`USER_ADMIN_INVITE_REQUIRED`). Demote and delete remain
+  allowed, including last-admin protection.
+
+- `POST /admin/invitations` `{ email }` creates a pending invitation
+  that expires in 7 days. The raw token is returned only at creation
+  and is stored hashed. A duplicate unexpired pending invitation for
+  the same email is rejected. Inviting an existing admin is rejected.
+
+- `GET /admin/invitations` lists pending unexpired invitations. The
+  raw token and token hash are never returned.
+
+- `POST /auth/accept-admin-invitation` `{ token, password }` is public
+  and credential-throttled. A valid token sets the password, grants
+  `ADMIN`, and returns an auth session. A missing email is created as
+  `ADMIN`. An existing non-admin is promoted and keeps `isPublisher`.
+
 - Manage subscriptions
 
 Admin subscription management:

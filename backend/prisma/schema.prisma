@@ -31,6 +31,29 @@ model User {
   subscription               Subscription?
   bookRevenues             BookRevenue[]
   auditLogs                AuditLog[]
+  adminInvitationsSent     AdminInvitation[]         @relation("AdminInvitationsSent")
+}
+
+enum AdminInvitationStatus {
+  pending
+  accepted
+}
+
+model AdminInvitation {
+  id              Int                   @id @default(autoincrement())
+  email           String
+  tokenHash       String                @unique
+  status          AdminInvitationStatus @default(pending)
+  expiresAt       DateTime
+  invitedByUserId Int
+  acceptedAt      DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  deletedAt       DateTime?
+  invitedBy       User                  @relation("AdminInvitationsSent", fields: [invitedByUserId], references: [id])
+
+  @@index([email, status])
+  @@index([invitedByUserId])
 }
 
 model Category {

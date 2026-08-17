@@ -3,6 +3,8 @@ import { AuditLogService } from '@/modules/audit/audit-log.service';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
+import { AdminInvitationAlreadyAdminException } from '@/modules/user/exceptions/admin-invitation-already-admin.exception';
+import { UserAdminInviteRequiredException } from '@/modules/user/exceptions/user-admin-invite-required.exception';
 import { UserEmailConflictException } from '@/modules/user/exceptions/user-email-conflict.exception';
 import { UserInvalidCapabilityException } from '@/modules/user/exceptions/user-invalid-capability.exception';
 import { UserLastAdminException } from '@/modules/user/exceptions/user-last-admin.exception';
@@ -186,42 +188,16 @@ describe('UserService', () => {
   });
 
   describe('updateManagedUser', () => {
-    it('promotes a reader to admin and records the actor', async () => {
-      const reader = createSampleUser();
-      const expectedUser = new UserEntity({
-        ...reader,
-        id: 1,
-        role: UserRole.ADMIN,
-      });
-      mockUserRepository.findById.mockResolvedValue(reader);
-      mockUserRepository.update.mockResolvedValue(expectedUser);
-      const actualUser = await userService.updateManagedUser({
-        userId: 1,
-        actorUserId: 9,
-        role: UserRole.ADMIN,
-      });
-      expect(mockUserRepository.update).toHaveBeenCalledWith(
-        {
-          id: 1,
-          role: UserRole.ADMIN,
-          isPublisher: false,
-        },
-        undefined,
-      );
-      expect(mockAuditLogService.append).toHaveBeenCalledWith(
-        {
+    it('rejects granting admin through managed-user update', async () => {
+      mockUserRepository.findById.mockResolvedValue(createSampleUser());
+      await expect(
+        userService.updateManagedUser({
+          userId: 1,
           actorUserId: 9,
-          action: AuditAction.USER_ROLE_CHANGED,
-          subjectType: AuditSubjectType.USER,
-          subjectId: 1,
-          metadata: {
-            fromRole: UserRole.READER,
-            toRole: UserRole.ADMIN,
-          },
-        },
-        undefined,
-      );
-      expect(actualUser).toBe(expectedUser);
+          role: UserRole.ADMIN,
+        }),
+      ).rejects.toBeInstanceOf(UserAdminInviteRequiredException);
+      expect(mockUserRepository.update).not.toHaveBeenCalled();
     });
 
     it('enables publisher on a reader by promoting to author', async () => {
@@ -347,6 +323,107 @@ describe('UserService', () => {
         userService.deleteManagedUser({ userId: 4, actorUserId: 9 }),
       ).rejects.toBeInstanceOf(UserLastAdminException);
       expect(mockUserRepository.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('grantInvitedAdmin', () => {
+    it('creates a new admin when the email is unknown', async () => {
+      const expectedUser = new UserEntity({
+        ...createSampleUser(),
+        role: UserRole.ADMIN,
+      });
+      mockUserRepository.findByEmail.mockResolvedValue(null);
+      mockUserRepository.create.mockResolvedValue(expectedUser);
+      const actualUser = await userService.grantInvitedAdmin({
+        email: '  New-Admin@Example.com ',
+        passwordHash: 'hashed-password',
+        actorUserId: 9,
+      });
+      expect(mockUserRepository.create).toHaveBeenCalledWith(
+        {
+          email: 'new-admin@example.com',
+          passwordHash: 'hashed-password',
+          role: UserRole.ADMIN,
+          isPublisher: false,
+        },
+        undefined,
+      );
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        {
+          actorUserId: 9,
+          action: AuditAction.USER_ROLE_CHANGED,
+          subjectType: AuditSubjectType.USER,
+          subjectId: 1,
+          metadata: {
+            fromRole: null,
+            toRole: UserRole.ADMIN,
+            grantedByInvitation: true,
+          },
+        },
+        undefined,
+      );
+      expect(actualUser).toBe(expectedUser);
+    });
+
+    it('promotes an existing non-admin and keeps publisher capability', async () => {
+      const author = new UserEntity({
+        ...createSampleUser(),
+        role: UserRole.AUTHOR,
+        isPublisher: true,
+      });
+      const expectedUser = new UserEntity({
+        ...author,
+        role: UserRole.ADMIN,
+        passwordHash: 'new-hash',
+      });
+      mockUserRepository.findByEmail.mockResolvedValue(author);
+      mockUserRepository.update.mockResolvedValue(expectedUser);
+      const actualUser = await userService.grantInvitedAdmin({
+        email: 'reader@example.com',
+        passwordHash: 'new-hash',
+        actorUserId: 9,
+      });
+      expect(mockUserRepository.update).toHaveBeenCalledWith(
+        {
+          id: 1,
+          role: UserRole.ADMIN,
+          isPublisher: true,
+          passwordHash: 'new-hash',
+        },
+        undefined,
+      );
+      expect(mockAuditLogService.append).toHaveBeenCalledWith(
+        {
+          actorUserId: 9,
+          action: AuditAction.USER_ROLE_CHANGED,
+          subjectType: AuditSubjectType.USER,
+          subjectId: 1,
+          metadata: {
+            fromRole: UserRole.AUTHOR,
+            toRole: UserRole.ADMIN,
+            grantedByInvitation: true,
+          },
+        },
+        undefined,
+      );
+      expect(actualUser).toBe(expectedUser);
+    });
+
+    it('rejects granting admin to an email that is already an admin', async () => {
+      mockUserRepository.findByEmail.mockResolvedValue(
+        new UserEntity({
+          ...createSampleUser(),
+          role: UserRole.ADMIN,
+        }),
+      );
+      await expect(
+        userService.grantInvitedAdmin({
+          email: 'reader@example.com',
+          passwordHash: 'hashed-password',
+          actorUserId: 9,
+        }),
+      ).rejects.toBeInstanceOf(AdminInvitationAlreadyAdminException);
+      expect(mockUserRepository.update).not.toHaveBeenCalled();
     });
   });
 

@@ -33,12 +33,17 @@ function createSampleSession(): AuthSession {
 
 describe('AuthController', () => {
   let authController: AuthController;
-  let mockAuthService: { register: jest.Mock; createSession: jest.Mock };
+  let mockAuthService: {
+    register: jest.Mock;
+    createSession: jest.Mock;
+    acceptAdminInvitation: jest.Mock;
+  };
 
   beforeEach(async () => {
     mockAuthService = {
       register: jest.fn(),
       createSession: jest.fn(),
+      acceptAdminInvitation: jest.fn(),
     };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
@@ -66,6 +71,31 @@ describe('AuthController', () => {
       });
       expect(actualResponse.accessToken).toBe('signed.jwt');
       expect(actualResponse.user.email).toBe('reader@example.com');
+      expect(actualResponse.user).not.toHaveProperty('passwordHash');
+    });
+  });
+
+  describe('acceptAdminInvitation', () => {
+    it('maps the token and password into a session response without leaking the password hash', async () => {
+      mockAuthService.acceptAdminInvitation.mockResolvedValue({
+        user: new UserEntity({
+          ...createSampleUser(),
+          email: 'new-admin@example.com',
+          role: UserRole.ADMIN,
+        }),
+        accessToken: 'signed.jwt',
+        expiresIn: '15m',
+      });
+      const actualResponse = await authController.acceptAdminInvitation({
+        token: 'raw-token',
+        password: 'correct-horse-battery',
+      });
+      expect(mockAuthService.acceptAdminInvitation).toHaveBeenCalledWith({
+        token: 'raw-token',
+        password: 'correct-horse-battery',
+      });
+      expect(actualResponse.accessToken).toBe('signed.jwt');
+      expect(actualResponse.user.role).toBe(UserRole.ADMIN);
       expect(actualResponse.user).not.toHaveProperty('passwordHash');
     });
   });

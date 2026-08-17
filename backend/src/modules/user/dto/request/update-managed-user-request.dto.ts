@@ -7,7 +7,7 @@ export class UpdateManagedUserRequestDto {
   @ApiPropertyOptional({
     description: 'Replacement platform role',
     enum: UserRole,
-    example: UserRole.ADMIN,
+    example: UserRole.AUTHOR,
   })
   @IsOptional()
   @IsEnum(UserRole)

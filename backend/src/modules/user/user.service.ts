@@ -11,11 +11,14 @@ import {
   CreateUserServiceInput,
   DeleteManagedUserServiceInput,
   EnablePublisherCapabilityServiceInput,
+  GrantInvitedAdminServiceInput,
   ListUsersServiceInput,
   UpdateManagedUserServiceInput,
 } from '@/modules/user/defs/user-service.defs';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
+import { AdminInvitationAlreadyAdminException } from '@/modules/user/exceptions/admin-invitation-already-admin.exception';
+import { UserAdminInviteRequiredException } from '@/modules/user/exceptions/user-admin-invite-required.exception';
 import { UserEmailConflictException } from '@/modules/user/exceptions/user-email-conflict.exception';
 import { UserInvalidCapabilityException } from '@/modules/user/exceptions/user-invalid-capability.exception';
 import { UserLastAdminException } from '@/modules/user/exceptions/user-last-admin.exception';
@@ -102,6 +105,7 @@ export class UserService {
   async updateManagedUser(input: UpdateManagedUserServiceInput): Promise<UserEntity> {
     const user: UserEntity = await this.getUserById(input.userId);
     UserService.assertNotSelf(input.actorUserId, user.id);
+    UserService.assertAdminGrantUsesInvitation(user, input.role);
     const next: ManagedUserCapability = UserService.resolveManagedCapability(user, input);
     if (next.role === user.role && next.isPublisher === user.isPublisher) {
       return user;
@@ -172,6 +176,52 @@ export class UserService {
     return user;
   }
 
+  async grantInvitedAdmin(
+    input: GrantInvitedAdminServiceInput,
+    context?: TransactionContext,
+  ): Promise<UserEntity> {
+    const email: string = UserService.normalizeEmail(input.email);
+    const existing: UserEntity | null = await this.userRepository.findByEmail(email);
+    if (existing?.role === UserRole.ADMIN) {
+      throw new AdminInvitationAlreadyAdminException();
+    }
+    const granted: UserEntity =
+      existing === null
+        ? await this.userRepository.create(
+            {
+              email,
+              passwordHash: input.passwordHash,
+              role: UserRole.ADMIN,
+              isPublisher: false,
+            },
+            context,
+          )
+        : await this.userRepository.update(
+            {
+              id: existing.id,
+              role: UserRole.ADMIN,
+              isPublisher: existing.isPublisher,
+              passwordHash: input.passwordHash,
+            },
+            context,
+          );
+    await this.auditLogService.append(
+      {
+        actorUserId: input.actorUserId,
+        action: AuditAction.USER_ROLE_CHANGED,
+        subjectType: AuditSubjectType.USER,
+        subjectId: granted.id,
+        metadata: {
+          fromRole: existing?.role ?? null,
+          toRole: UserRole.ADMIN,
+          grantedByInvitation: true,
+        },
+      },
+      context,
+    );
+    return granted;
+  }
+
   private async assertCanLeaveAdminRole(user: UserEntity, nextRole: UserRole): Promise<void> {
     if (user.role !== UserRole.ADMIN || nextRole === UserRole.ADMIN) {
       return;
@@ -224,6 +274,12 @@ export class UserService {
   private static assertNotSelf(actorUserId: number, userId: number): void {
     if (actorUserId === userId) {
       throw new UserSelfManagementException();
+    }
+  }
+
+  private static assertAdminGrantUsesInvitation(current: UserEntity, nextRole?: UserRole): void {
+    if (nextRole === UserRole.ADMIN && current.role !== UserRole.ADMIN) {
+      throw new UserAdminInviteRequiredException();
     }
   }
 

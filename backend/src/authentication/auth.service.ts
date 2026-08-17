@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import {
+  AcceptAdminInvitationAuthInput,
   AuthSession,
   LoginUserServiceInput,
   RegisterUserServiceInput,
@@ -10,6 +11,7 @@ import { AuthenticationFailedException } from '@/common/exceptions/authenticatio
 import { compareHashString } from '@/common/helpers/compare-hash-string.helper';
 import { hashString } from '@/common/helpers/hash-string.helper';
 import { JwtConfigService } from '@/config/jwt/jwt-config.service';
+import { AdminInvitationService } from '@/modules/user/admin-invitation.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserService } from '@/modules/user/user.service';
 import { JwtTokenPurpose } from '@/providers/jwt/enum/jwt-token-purpose.enum';
@@ -19,6 +21,7 @@ import { JwtTokenService } from '@/providers/jwt/jwt-token.service';
 export class AuthService {
   constructor(
     private readonly userService: UserService,
+    private readonly adminInvitationService: AdminInvitationService,
     private readonly jwtTokenService: JwtTokenService,
     private readonly jwtConfigService: JwtConfigService,
   ) {}
@@ -34,6 +37,15 @@ export class AuthService {
 
   async login(input: LoginUserServiceInput): Promise<AuthSession> {
     const user: UserEntity = await this.verifyCredentials(input);
+    return this.createSession(user);
+  }
+
+  async acceptAdminInvitation(input: AcceptAdminInvitationAuthInput): Promise<AuthSession> {
+    const passwordHash: string = await hashString(input.password);
+    const user: UserEntity = await this.adminInvitationService.acceptInvitation({
+      token: input.token,
+      passwordHash,
+    });
     return this.createSession(user);
   }
 

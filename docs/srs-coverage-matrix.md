@@ -16,18 +16,18 @@ This matrix validates the Part 1 NestJS backend against `docs/SRS.md`.
 
 Do not treat a row as Complete unless both the backend behavior and tests exist.
 
-**Validation snapshot:** 357 unit spec files, 56 e2e suites, including `test/critical-flow.e2e-spec.ts`. Snapshot after Steps 1–8 and the reflowable page-tracking decision.
+**Validation snapshot:** 372 unit spec files, 57 e2e suites, including `test/critical-flow.e2e-spec.ts`. Snapshot after Steps 1–8 and the reflowable page-tracking decision.
 
 ## Summary
 
 | Status | Count |
 | --- | ---: |
-| Complete | 72 |
+| Complete | 73 |
 | In Progress | 0 |
 | Future | 2 |
 | Blocked | 0 |
 | Not Required | 15 |
-| **Total** | **89** |
+| **Total** | **90** |
 
 ## Future / out of scope for current Part 1
 
@@ -67,7 +67,8 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §2.2 Author dashboard UI | — | — | Not Required |
 | §2.3 Review then approve or reject books | `POST /admin/books/:id/approve`, `POST /admin/books/:id/reject` (reject requires non-empty `reason` stored on `audit.reason`) | `book-admin-review.e2e-spec.ts` | Complete |
 | §2.3 Required book rejection reason | `POST /admin/books/:id/reject` body `reason`; persisted on append-only `audit.reason` for `book_rejected` | `book-admin-review.e2e-spec.ts`, `book-publishing-status.service.spec.ts`, `book.admin.controller.spec.ts` | Complete |
-| §2.3 Manage users | `GET/PATCH/DELETE /admin/users` | `admin-user.e2e-spec.ts` | Complete |
+| §2.3 Manage users | `GET/PATCH/DELETE /admin/users`; PATCH cannot grant ADMIN | `admin-user.e2e-spec.ts`, `user.service.spec.ts` | Complete |
+| §2.3 Invitation-only admin grant | `POST/GET /admin/invitations`; `POST /auth/accept-admin-invitation`; hashed 7-day token; PATCH `/admin/users` cannot grant ADMIN | `admin-invitation.e2e-spec.ts`, `admin-user.e2e-spec.ts`, `admin-invitation.service.spec.ts`, `user.service.spec.ts` | Complete |
 | §2.3 Manage subscriptions | `GET /admin/subscriptions`, `POST /admin/subscriptions/:id/cancel` | `admin-subscription.e2e-spec.ts` | Complete |
 | §2.3 / §6.2 Admin 7-day subscription refund | `POST /admin/subscriptions/:id/refund` (same eligibility and window as reader refund; clamps `currentPeriodEnd`; audited as `subscription_canceled` with `refunded: true`) | `admin-subscription-refund.e2e-spec.ts`, `subscription-billing.service.spec.ts`, `subscription.admin.controller.spec.ts` | Complete |
 | §2.3 Admin book list, metadata edit, unpublish, republish, soft-delete | `GET /admin/books` lists all statuses by default, optional `publishingStatus`; `PATCH`; `POST .../unpublish`; `POST .../republish` sets `publishedAt` to now; `DELETE` soft-deletes | `admin-book.e2e-spec.ts` | Complete |

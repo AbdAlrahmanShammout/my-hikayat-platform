@@ -65,7 +65,7 @@ export class UserAdminController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Change a user role or publisher capability' })
+  @ApiOperation({ summary: 'Change a user role or publisher capability; cannot grant ADMIN' })
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: UpdateManagedUserRequestDto })
   @ApiResponse({ status: 200, type: UserResponse })

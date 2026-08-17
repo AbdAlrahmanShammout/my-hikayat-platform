@@ -90,6 +90,29 @@ describe('UserPrismaRepository', () => {
     expect(actualEntity).toEqual(UserMapper.toEntity(updatedRow));
   });
 
+  it('updates the password hash when provided', async () => {
+    const updatedRow = {
+      ...persistenceRow,
+      passwordHash: 'new-hash',
+    };
+    mockPrismaProviderService.user.update.mockResolvedValue(updatedRow);
+    const actualEntity = await userPrismaRepository.update({
+      id: 3,
+      role: UserRole.READER,
+      isPublisher: false,
+      passwordHash: 'new-hash',
+    });
+    expect(mockPrismaProviderService.user.update).toHaveBeenCalledWith({
+      where: { id: 3 },
+      data: {
+        role: UserRole.READER,
+        isPublisher: false,
+        passwordHash: 'new-hash',
+      },
+    });
+    expect(actualEntity.passwordHash).toBe('new-hash');
+  });
+
   it('soft-deletes a user', async () => {
     const deletedRow = {
       ...persistenceRow,

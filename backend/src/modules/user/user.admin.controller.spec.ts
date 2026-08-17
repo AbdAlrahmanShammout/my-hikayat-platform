@@ -94,21 +94,22 @@ describe('UserAdminController', () => {
     it('threads the signed-in admin as actor', async () => {
       const expectedUser = new UserEntity({
         ...createSampleUser(),
-        role: UserRole.ADMIN,
+        role: UserRole.AUTHOR,
+        isPublisher: true,
       });
       mockUserService.updateManagedUser.mockResolvedValue(expectedUser);
       const actualResponse = await userAdminController.updateUser(
         1,
-        { role: UserRole.ADMIN },
+        { role: UserRole.AUTHOR },
         createSampleAdmin(),
       );
       expect(mockUserService.updateManagedUser).toHaveBeenCalledWith({
         userId: 1,
         actorUserId: 9,
-        role: UserRole.ADMIN,
+        role: UserRole.AUTHOR,
         isPublisher: undefined,
       });
-      expect(actualResponse.role).toBe(UserRole.ADMIN);
+      expect(actualResponse.role).toBe(UserRole.AUTHOR);
     });
   });
 
