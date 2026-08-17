@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router';
 
 import { AdminRouteGuard } from '@/app/admin-route-guard';
 import { AdminAuditPage } from '@/pages/admin/audit-page';
+import { AdminBookDetailPage } from '@/pages/admin/book-detail-page';
 import { AdminBooksPage } from '@/pages/admin/books-page';
 import { AdminCategoriesPage } from '@/pages/admin/categories-page';
 import { AdminCollectionsPage } from '@/pages/admin/collections-page';
@@ -27,6 +28,7 @@ export const appRouter = createBrowserRouter([
     children: [
       { index: true, element: <AdminHomePage /> },
       { path: 'books', element: <AdminBooksPage /> },
+      { path: 'books/:bookId', element: <AdminBookDetailPage /> },
       { path: 'users', element: <AdminUsersPage /> },
       { path: 'subscriptions', element: <AdminSubscriptionsPage /> },
       { path: 'collections', element: <AdminCollectionsPage /> },

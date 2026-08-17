@@ -8,6 +8,9 @@ type AdminSubscriptionsListQuery = NonNullable<
 type AdminRevenuePeriodsListQuery = NonNullable<
   paths['/admin/revenue-periods']['get']['parameters']['query']
 >;
+type AdminCategoriesListQuery = NonNullable<
+  paths['/admin/categories']['get']['parameters']['query']
+>;
 
 /**
  * Feature-scoped TanStack Query keys. Keep mutations invalidating the smallest set.
@@ -22,6 +25,12 @@ export const queryKeys = {
       all: ['admin', 'books'] as const,
       list: (filters: AdminBooksListQuery) =>
         [...queryKeys.admin.books.all, 'list', filters] as const,
+      detail: (bookId: number) => [...queryKeys.admin.books.all, 'detail', bookId] as const,
+    },
+    categories: {
+      all: ['admin', 'categories'] as const,
+      list: (filters: AdminCategoriesListQuery) =>
+        [...queryKeys.admin.categories.all, 'list', filters] as const,
     },
     users: {
       all: ['admin', 'users'] as const,

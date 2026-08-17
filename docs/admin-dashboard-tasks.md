@@ -23,7 +23,7 @@ CORS default includes the Vite origin, agent routing to
 | 0 | Frontend foundation (design system + data layer) | Complete |
 | 1 | Auth session + admin shell | Complete |
 | 2 | Admin home (composed KPIs) | Complete |
-| 3 | Books review and catalog management | Pending |
+| 3 | Books review and catalog management | Complete |
 | 4 | Users | Pending |
 | 5 | Subscriptions | Pending |
 | 6 | Collections | Pending |
@@ -153,6 +153,15 @@ the current UTC month period stays on STEP 8.
 - Disable or explain actions the backend will reject; still handle 400/409 from the API
 
 **Routes:** `/admin/books`, `/admin/books/:id`
+
+**Written:** filterable `GET /admin/books` table (optional `publishingStatus`, `limit`/`offset`)
+and a detail screen at `/admin/books/:bookId`. Detail shows publishing/processing status,
+layout, type, owner, categories, and `publishedAt`. Metadata PATCH is limited to title,
+description, bookType, and categoryIds. Approve/reject are offered only for `in_review`
+(approve also needs `processingStatus === ready`). Unpublish is offered only when the
+book is approved and catalog-visible; republish only when approved, unpublished, and
+ready. Reject sends no body. 400/409 from the API still surface. Soft-delete returns
+to the list.
 
 ---
 
@@ -311,5 +320,5 @@ events (metadata PATCH and category-weight PATCH are not required audit events).
 ## Implementation order
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
-STEP 8 must exist before STEP 9. Other feature STEPs (3–7, 10) can proceed after
-STEP 1 if needed, but home (STEP 2) is the natural next screen after the shell.
+STEP 8 must exist before STEP 9. Other feature STEPs (4–7, 10) can proceed after
+STEP 1 if needed. Users (STEP 4) is the next screen after books review.

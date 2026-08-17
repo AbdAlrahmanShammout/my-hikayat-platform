@@ -1,10 +1,10 @@
 import type { JSX } from 'react';
 
-import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/layout/page-header';
+import { AdminBooksPanel } from '@/features/books/components/admin-books-panel';
 
 /**
- * Catalog review placeholder until STEP 3.
+ * Admin books list. Filters and paging are query parameters on GET /admin/books.
  */
 export function AdminBooksPage(): JSX.Element {
   return (
@@ -13,10 +13,7 @@ export function AdminBooksPage(): JSX.Element {
         title="Books"
         description="Review publishing status, metadata, and catalog visibility."
       />
-      <EmptyState
-        title="Book review is not available yet"
-        description="STEP 3 will add the review table against GET /admin/books. Reject has no reason field."
-      />
+      <AdminBooksPanel />
     </>
   );
 }
