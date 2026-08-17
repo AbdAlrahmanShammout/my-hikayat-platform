@@ -8,6 +8,8 @@ import { BookModule } from '@/modules/book/book.module';
 import { BookReaderController } from '@/modules/book/book.reader.controller';
 import { BookAssetModule } from '@/modules/book-asset/book-asset.module';
 import { BookAssetReaderController } from '@/modules/book-asset/book-asset.reader.controller';
+import { CategoryModule } from '@/modules/category/category.module';
+import { CategoryReaderController } from '@/modules/category/category.reader.controller';
 import { CollectionModule } from '@/modules/collection/collection.module';
 import { CollectionReaderController } from '@/modules/collection/collection.reader.controller';
 import { EntitlementModule } from '@/modules/entitlement/entitlement.module';
@@ -29,6 +31,7 @@ import { UserReaderController } from '@/modules/user/user.reader.controller';
     AuthModule,
     BookModule,
     BookAssetModule,
+    CategoryModule,
     CollectionModule,
     EntitlementModule,
     ReadingIntelligenceModule,
@@ -40,6 +43,7 @@ import { UserReaderController } from '@/modules/user/user.reader.controller';
   controllers: [
     BookReaderController,
     BookAssetReaderController,
+    CategoryReaderController,
     CollectionReaderController,
     ReadingIntelligenceReaderController,
     ReadingSyncReaderController,

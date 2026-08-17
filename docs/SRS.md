@@ -33,6 +33,8 @@ The platform supports:
 
 - Browse and read books
 
+- Browse the category taxonomy
+
 - Offline reading (download encrypted books)
 
 - Sync reading progress across devices
@@ -65,6 +67,9 @@ Publishers manage their own books through the author book API:
 - `PATCH /author/books/:id` — update title, description, book type,
   and/or categories only. Publishing status, processing status, layout
   type, and owner cannot be changed on this path.
+
+- `GET /author/categories` — list the admin-owned taxonomy (read-only),
+  including `categoryWeight`. Pagination uses `limit` and `offset`.
 
 A publisher cannot retrieve or update another publisher’s book through
 these endpoints.
@@ -134,6 +139,15 @@ Picture Books, Children's, Fiction, Nonfiction, and Young Adult, each
 with `categoryWeight` 1.0, so a new database is not empty. Rows that
 already use those slugs are left unchanged. This category API does not
 delete categories.
+
+Authors and readers can list the same taxonomy (read-only):
+
+- `GET /author/categories` — AUTHOR or ADMIN.
+
+- `GET /reader/categories` — any authenticated user.
+
+Both list endpoints include `categoryWeight` and use `limit` / `offset`.
+Neither path creates, renames, or deletes categories.
 
 ## **2.4 Audit Log**
 

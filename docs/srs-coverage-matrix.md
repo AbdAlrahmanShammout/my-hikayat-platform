@@ -22,12 +22,12 @@ Do not treat a row as Complete unless both the backend behavior and tests exist.
 
 | Status | Count |
 | --- | ---: |
-| Complete | 67 |
+| Complete | 69 |
 | In Progress | 0 |
 | Future | 2 |
 | Blocked | 0 |
 | Not Required | 15 |
-| **Total** | **84** |
+| **Total** | **86** |
 
 ## Future / out of scope for current Part 1
 
@@ -53,12 +53,14 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §2.1 Create account / login | `POST /auth/register`, `POST /auth/login`, `GET /auth/me` | `auth.e2e-spec.ts` | Complete |
 | §2.1 Subscribe (single monthly model) | `POST /reader/billing/checkout`, `POST /webhooks/stripe`, `GET /reader/billing/subscription` | `subscription-billing.e2e-spec.ts` | Complete |
 | §2.1 Browse published books | `GET /reader/catalog`, `GET /reader/catalog/:id`; unpublished books are catalog 404 | `reader-catalog.e2e-spec.ts`, `admin-book.e2e-spec.ts` | Complete |
+| §2.1 Browse category taxonomy | `GET /reader/categories` (authenticated; read-only; includes `categoryWeight`) | `author-reader-category.e2e-spec.ts`, `category.reader.controller.spec.ts` | Complete |
 | §2.1 Read / download full books | Paid entitlement + `POST /reader/books/:id/delivery-grant` | `entitlement.e2e-spec.ts`, `reader-book-asset.e2e-spec.ts`, `critical-flow.e2e-spec.ts` | Complete |
 | §2.1 Sync reading progress across devices | `GET /reader/sync`, `GET /reader/books/:id/sync` | `reading-sync.e2e-spec.ts` | Complete |
 | §2.1 Customize reading experience (font, spacing, theme, zoom) | Client reader settings | — | Not Required |
 | §2.2 Any user can become a publisher | `POST /user/publisher` | `reader-user.e2e-spec.ts` | Complete |
 | §2.2 Upload books (PDF / EPUB) | `POST /author/books/:bookId/source` | `book-source.e2e-spec.ts`, `book-pdf-source-ingest.e2e-spec.ts` | Complete |
 | §2.2 Author HTTP create / list / get / update book metadata | `POST/GET/PATCH /author/books`, `GET /author/books/:id`; owner from JWT; PATCH is metadata only | `author-book.e2e-spec.ts`, `book.author.controller.spec.ts` | Complete |
+| §2.2 Author HTTP list categories | `GET /author/categories` (AUTHOR or ADMIN; read-only; includes `categoryWeight`) | `author-reader-category.e2e-spec.ts`, `category.author.controller.spec.ts` | Complete |
 | §2.2 Book status lifecycle pending → in_review → approved / rejected | Publishing status machine; submit, approve, reject | `book-submit-for-review.e2e-spec.ts`, `book-admin-review.e2e-spec.ts` | Complete |
 | §2.2 Author analytics and earnings APIs | `GET /author/analytics`, `GET /author/earnings`, trend, heatmap | `author-monetization.e2e-spec.ts` | Complete |
 | §2.2 Author dashboard UI | — | — | Not Required |
@@ -137,5 +139,5 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 - There is no complimentary paid grant and no user ban flag (soft-delete only).
 - Last-admin protection is unit-tested; it is hard to hit over HTTP because an admin cannot change themselves.
 - Author/admin book metadata PATCH and category-weight PATCH are implemented and are not listed in §2.4 as required audit events.
-- Starter categories are inserted by migration. Admin HTTP create and rename exist; delete is not part of that seed.
+- Starter categories are inserted by migration. Admin HTTP create and rename exist; author and reader lists are read-only; delete is not part of that seed.
 - Reflowable time-per-page and reading speed remain SRS requirements. They are Future / out of scope for current Part 1 because there is no stable server-side page definition. See `docs/FUTURE.md`.
