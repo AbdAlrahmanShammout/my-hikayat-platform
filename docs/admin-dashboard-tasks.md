@@ -1,5 +1,9 @@
 # Admin dashboard — implementation STEPs
 
+This file is the **delivery tracker** for the admin dashboard: what to build, in what
+order, and whether it is done. Architecture conventions live in
+`docs/FRONTEND-ARCHITECTURE.md` and must not be updated for STEP completion.
+
 Product requirements: `docs/SRS.md` §2.3, §2.4, §7.3–7.4, §12.3.
 Frontend engineering: `docs/FRONTEND-ARCHITECTURE.md`.
 Backend contracts: existing `/admin/*` and `/auth/*` HTTP APIs. Do not add backend
@@ -10,16 +14,15 @@ scope until this list is done.
 
 Status values: **Pending**, **In progress**, **Complete**.
 
-Bootstrap already done (not a UI STEP): `frontend/` workspace, Vite stub on
-`:5173`, CORS default includes the Vite origin, agent routing to
-`docs/FRONTEND-ARCHITECTURE.md`. **pnpm install of dashboard libraries is
-deferred.**
+Bootstrap already done (not a UI STEP): `frontend/` workspace, Vite on `:5173`,
+CORS default includes the Vite origin, agent routing to
+`docs/FRONTEND-ARCHITECTURE.md`.
 
 | STEP | Capability | Status |
 | --- | --- | --- |
-| 0 | Frontend foundation (design system + data layer) | Pending — install skipped |
-| 1 | Auth session + admin shell | Pending |
-| 2 | Admin home (composed KPIs) | Pending |
+| 0 | Frontend foundation (design system + data layer) | Complete |
+| 1 | Auth session + admin shell | Complete |
+| 2 | Admin home (composed KPIs) | Complete |
 | 3 | Books review and catalog management | Pending |
 | 4 | Users | Pending |
 | 5 | Subscriptions | Pending |
@@ -39,7 +42,7 @@ without re-implementing business rules.
 
 **Goal:** Make `frontend/` a real dashboard app, not a stub.
 
-Wire (do not run `pnpm install` until asked):
+Installed:
 
 - Tailwind CSS (only styling system)
 - shadcn/ui primitives needed for later STEPs (Button, Dialog, Sheet, Tabs, Select,
@@ -51,12 +54,22 @@ Wire (do not run `pnpm install` until asked):
 - Generated types from `/docs/admin-json` (and auth from that document)
 - `PageHeader`, empty/error/skeleton patterns in `components/`
 
-The Vite package already exists. Libraries are **not** installed on disk yet.
+The Vite package exists. Libraries are installed. The feature tree, Tailwind
+tokens, HTTP client, query keys, and shared `PageHeader` / empty / error /
+skeleton components are in place. Audience OpenAPI types are generated into
+`frontend/src/generated/` via `pnpm --filter frontend generate:api` (requires a
+running API). Auth types are aliases of those generated schemas.
+
+Remaining shadcn primitives (Dialog, Sheet, Tabs, Select, Form, Table, Tooltip)
+live under `components/ui`. They are hand-written so later STEPs have a surface;
+the shadcn CLI was not run because the npm registry timed out. Sonner is not
+installed yet.
 
 **APIs:** none yet.
 
-**Done when:** after install, `pnpm frontend dev` serves the shell on `:5173`, types
-are generated, and a later STEP can add a feature without inventing a second stack.
+**Done when:** `pnpm frontend dev` serves the shell on `:5173`, types
+are generated, remaining primitives exist, and a later STEP can add a
+feature without inventing a second stack.
 
 ---
 
@@ -79,7 +92,12 @@ admin routes (UX only; backend still enforces `Roles(ADMIN)`).
   buttons as security.
 - Shell: sidebar/drawer, page header, sign out.
 
-**Routes:** `/login`, `/admin` (layout).
+**Routes:** `/login`, `/admin` (layout). Sidebar links to later STEPs render empty
+states until those STEPs land.
+
+**Written:** login form (`POST /auth/login`), `GET /auth/me`, sessionStorage Bearer
+token, 401 clears the session, admin UX guard, sidebar/drawer shell, sign out.
+Non-admins see a forbidden screen. Auth wire types come from `src/generated/admin.ts`.
 
 ---
 
@@ -100,6 +118,11 @@ counts from existing list payloads’ `total` fields (limit=1 is enough for a co
 Use a Bento/KPI layout. Do not invent analytics formulas.
 
 **Route:** `/admin`
+
+**Written:** four independent KPI cards read `total` from `GET /admin/books`,
+`/admin/users`, `/admin/subscriptions`, and `/admin/revenue-periods` with
+`limit=1`. Each card has loading, error/retry, and a zero empty label. Creating
+the current UTC month period stays on STEP 8.
 
 ---
 

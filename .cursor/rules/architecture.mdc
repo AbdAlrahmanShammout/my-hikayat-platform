@@ -10,13 +10,15 @@ then consult the matching source of truth.
 
 - `docs/SRS.md` — product and business requirements
 - `ARCHITECTURE.md` — NestJS backend architecture
-- `docs/FRONTEND-ARCHITECTURE.md` — React dashboard architecture
+- `docs/FRONTEND-ARCHITECTURE.md` — React dashboard architecture (conventions only)
+- `docs/admin-dashboard-tasks.md` — admin dashboard STEP plan and delivery status
 - `docs/FUTURE.md` — deferred product work
 - `docs/srs-coverage-matrix.md` — coverage tracking
 
 Do not mix backend layering into frontend work. Do not mix React/UI rules into backend work.
 Do not modify `ARCHITECTURE.md`, `docs/FRONTEND-ARCHITECTURE.md`, or `docs/SRS.md` unless the
-user explicitly requests it.
+user explicitly requests it. Do not update `docs/FRONTEND-ARCHITECTURE.md` to record STEP
+progress, install status, or remaining bootstrap. Use `docs/admin-dashboard-tasks.md`.
 
 # How to choose
 

@@ -1,12 +1,14 @@
 # Project Engineering Instructions
 
-This repository has two engineering sources of truth. Use the document that matches the work.
+This repository has two architecture sources of truth and a separate delivery tracker.
+Use the document that matches the work.
 
 | Work | Authority |
 | --- | --- |
 | Product / business behavior | `docs/SRS.md` |
 | NestJS backend | `ARCHITECTURE.md` |
 | React dashboard / frontend | `docs/FRONTEND-ARCHITECTURE.md` |
+| Admin dashboard delivery / STEPs | `docs/admin-dashboard-tasks.md` |
 | Deferred product work | `docs/FUTURE.md` |
 | Coverage tracking | `docs/srs-coverage-matrix.md` |
 
@@ -15,7 +17,9 @@ Do not redefine backend business rules in the frontend. The backend remains auth
 permissions, entitlement, monetization, and validation.
 
 Do not modify `ARCHITECTURE.md`, `docs/FRONTEND-ARCHITECTURE.md`, or `docs/SRS.md` unless the
-user explicitly requests it.
+user explicitly requests it. Do not record STEP progress, install status, or remaining
+bootstrap in `docs/FRONTEND-ARCHITECTURE.md`. That file is architecture conventions only.
+Track delivery in `docs/admin-dashboard-tasks.md`.
 
 ## Backend work
 
@@ -51,6 +55,7 @@ Before planning, generating, modifying, refactoring, debugging, or reviewing **f
 3. Keep pages thin, features cohesive, and server state in TanStack Query.
 4. Do not duplicate monetization, entitlement, authorization, or category-weight logic in the UI.
 5. After implementation, verify the result against `docs/FRONTEND-ARCHITECTURE.md`.
+6. Update STEP status only in `docs/admin-dashboard-tasks.md`.
 
 If there is a conflict between existing frontend code, a generic React pattern, and
 `docs/FRONTEND-ARCHITECTURE.md`, follow `docs/FRONTEND-ARCHITECTURE.md` unless the user

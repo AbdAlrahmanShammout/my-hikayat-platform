@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 
 import { App } from '@/app/app';
 
+import '@/index.css';
+
 const rootElement: HTMLElement | null = document.getElementById('root');
 if (rootElement === null) {
   throw new Error('Root element #root was not found');

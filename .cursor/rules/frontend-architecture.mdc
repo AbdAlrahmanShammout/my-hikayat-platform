@@ -8,7 +8,8 @@ Before writing or modifying frontend code, consult `docs/FRONTEND-ARCHITECTURE.m
 
 # Frontend architecture authority
 
-`docs/FRONTEND-ARCHITECTURE.md` is the authoritative specification for `frontend/`.
+`docs/FRONTEND-ARCHITECTURE.md` is the authoritative specification for `frontend/`
+architecture. It is not a task list.
 
 - Feature-oriented structure: `app` → `pages` → `features` → shared `components` / `api` / `lib`
 - Tailwind CSS, shadcn/ui, Lucide, Framer Motion, TanStack Query, React Hook Form + Zod
@@ -18,6 +19,9 @@ Before writing or modifying frontend code, consult `docs/FRONTEND-ARCHITECTURE.m
 - Do not recalculate monetization, entitlement, authorization, or category weights.
 - Every async screen needs loading, empty, and error states.
 - Route guards are UX only. The backend remains the security authority.
+
+Record STEP progress only in `docs/admin-dashboard-tasks.md`. Do not edit
+`docs/FRONTEND-ARCHITECTURE.md` to mark work complete.
 
 If existing frontend code conflicts with `docs/FRONTEND-ARCHITECTURE.md`:
 

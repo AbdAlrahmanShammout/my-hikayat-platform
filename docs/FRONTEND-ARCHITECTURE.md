@@ -1,11 +1,20 @@
 # Frontend Architecture & Engineering Conventions
 
-> **Scope:** This document is the engineering source of truth for the React web dashboard.
+> **Scope:** This document is the engineering source of truth for a React web dashboard.
 > It defines layering, folder organization, naming, dependency flow, UI system, data access,
-> and implementation rules for frontend work.
+> and implementation rules.
 >
-> **How to use it:** An engineer or agent implementing dashboard screens should be able to
-> follow this file without inventing a parallel frontend architecture.
+> **How to use it:** Follow this file when implementing dashboard screens. Do not invent a
+> parallel frontend architecture.
+>
+> **What this file is not:** a product spec, a sprint board, or a STEP/task list.
+> Do not update this file to record that a screen shipped, a library was installed,
+> or a STEP finished.
+>
+> **Reuse:** stack, layering, naming, and rules are meant to transfer to other dashboard
+> projects. Product-specific routes, field names, and OpenAPI paths below are **examples**
+> of following a live HTTP contract — replace them with that project's API. Delivery
+> status belongs in the project's task document.
 
 ---
 
@@ -13,21 +22,25 @@
 
 ### 1.1 Which document governs what
 
-| Document | Governs | Does not govern |
+Keep architecture separate from product requirements and from delivery tracking.
+
+| Kind of document | Governs | Does not govern |
 | --- | --- | --- |
-| `docs/SRS.md` | Product and business requirements | How the UI is structured |
-| `ARCHITECTURE.md` | NestJS backend architecture | React, Tailwind, routing, UI state |
-| `docs/FRONTEND-ARCHITECTURE.md` | React dashboard architecture | NestJS modules, Prisma, repositories, transactions |
-| `docs/FUTURE.md` | Deferred / future product work | Current dashboard implementation rules |
-| `docs/srs-coverage-matrix.md` | Implementation coverage tracking | Architecture rules |
-| `docs/admin-dashboard-tasks.md` | Admin dashboard UI STEP plan | Backend architecture |
+| Product / SRS | What the product must do | How the UI is structured |
+| Backend architecture | API layering (NestJS or other) | React, Tailwind, routing, UI state |
+| This file | React dashboard architecture | API modules, ORM, transactions, task status |
+| Task / STEP list | What to build next and whether it is done | Architecture rules |
 
-`ARCHITECTURE.md` remains the source of truth for backend architecture. Do not rewrite it
-to include frontend concerns. Do not mix NestJS layering into this document except where
-the frontend/backend **contract** must be understood.
+Keep a product spec, a backend architecture document, this file, and a separate
+task/STEP list. Do not merge those roles.
 
-`docs/SRS.md` remains the source of truth for product behavior. Frontend implementation
-must not redefine backend business rules. Do not duplicate SRS requirements here.
+The backend architecture document remains the source of truth for the API. Do not
+rewrite it to include frontend concerns. Do not mix API layering into this document
+except where the HTTP **contract** must be understood.
+
+The product spec remains the source of truth for business behavior. Frontend
+implementation must not redefine backend business rules. Do not duplicate product
+requirements here.
 
 ### 1.2 Frontend / backend boundary
 
@@ -41,64 +54,29 @@ must not redefine backend business rules. Do not duplicate SRS requirements here
 - If a value comes from the backend, display the backend value. Do not recalculate
   critical business values in the UI.
 
-Do not copy backend implementation details (NestJS modules, Prisma repositories, domain
-services, database models, transaction patterns) into frontend code or into this document
-except to explain the contract.
-
-### 1.3 Current repository state
-
-This section records what exists **today**. Later sections that name React libraries are
-**required architectural direction**, not a description of installed packages.
-
-**What already exists**
-
-- pnpm workspace (`pnpm@11.10.0`, Node `>=24`) with packages: `backend`, `frontend`
-- NestJS API with audience-scoped OpenAPI documents (reader, author, admin)
-- JWT Bearer authentication (`Authorization` header). Login/register return
-  `accessToken`, `tokenType: "Bearer"`, `expiresIn` (default `15m`). There is **no**
-  refresh-token endpoint.
-- Canonical error JSON: `{ message, code, statusCode, validationErrorObjects?, stack? }`
-- Offset pagination: `limit` / `offset` (default page size 20). List payloads use a
-  resource-named array plus `total` (for example `books` + `total`).
-- CORS origins from `APP_CORS_ORIGINS` (default
-  `http://localhost:3000,http://localhost:5173`). Allowed methods: GET, POST, PUT,
-  PATCH, DELETE. Allowed headers: `Content-Type`, `Authorization`. `credentials: true`.
-- TypeScript `strict: true`, kebab-case files, `@/*` path alias, Prettier in `backend/`
-- Roles: `reader`, `author`, `admin`. Users also have `isPublisher`.
-- A Vite React TypeScript package at `frontend/` (port 5173). Design-system libraries
-  and the data layer are not installed yet; that is admin dashboard STEP 0.
-
-**What does not exist yet**
-
-- Tailwind, shadcn/ui, Lucide, Framer Motion, TanStack Query, React Router, React Hook
-  Form, a generated OpenAPI client, and dashboard feature screens.
-
-This document is the rulebook for dashboard implementation. Required libraries in §5
-are not all installed yet; install them in admin dashboard STEP 0.
+Do not copy backend implementation details (modules, repositories, domain services,
+database models, transaction patterns) into frontend code or into this document except
+to explain the contract.
 
 ---
 
 ## 2. Dashboard scope
 
-This architecture covers the **React web dashboard**:
-
-- **Author dashboard** — books, upload/processing status, analytics, earnings, heatmaps
-  (SRS §2.2, §12).
-- **Admin dashboard** — review, users, subscriptions, collections, categories,
-  revenue periods, audit (SRS §2.3).
-- Shared **auth** (register / login / session) and shell (layout, navigation).
+This architecture covers an **authenticated React SPA dashboard** that talks to a
+separate HTTP API: operator/admin tools, author/publisher tools, and shared auth/shell.
 
 Out of this document’s primary scope:
 
-- The dual-engine **reader runtime** (reflowable vs fixed-layout viewport, offline
-  decrypt, React Native). That is a separate client. It may later share API types, not
-  this dashboard’s feature modules.
-- Part 2 (TTS) and Part 3 (formatting), except where an admin/author screen must call
-  an already-shipped Part 1 API.
+- Native or dual-engine reader/runtime clients. They may later share generated API
+  types, not this dashboard’s feature modules.
+- Marketing sites and server-rendered content sites.
+- A second backend-for-frontend. The existing API is the server.
 
-A reader web catalog may later live in the same SPA **only** if it reuses app
-infrastructure (auth, API client, design system) without pulling reader-engine
-complexity into dashboard features.
+A public catalog may live in the same SPA **only** if it reuses app infrastructure
+(auth, API client, design system) without pulling runtime-engine complexity into
+dashboard features.
+
+Which screens exist, and in what order, is a project task-list concern.
 
 ---
 
@@ -155,84 +133,74 @@ UI → feature/application logic → API/data layer → backend API
 
 ## 5. Required frontend stack
 
-Legend: **Exists** = already in the repository. **Required** = install when the
-dashboard package is created. Do not add libraries in documentation-only tasks.
+These libraries are the architectural default. Do not treat this table as an install
+checklist or a delivery status.
 
-| Concern | Decision | Status |
-| --- | --- | --- |
-| Package manager | pnpm workspace | **Exists** (backend only today) |
-| Dashboard package | `frontend/` workspace package | **Required** |
-| UI library | React + TypeScript SPA | **Required** |
-| Bundler | Vite | **Required** |
-| Routing | React Router | **Required** |
-| Styling | Tailwind CSS only | **Required** |
-| Components | shadcn/ui | **Required** |
-| Icons | Lucide | **Required** |
-| Motion | Framer Motion (`framer-motion`) | **Required** |
-| Server state | TanStack Query (`@tanstack/react-query`) | **Required** |
-| Forms | React Hook Form + Zod + shadcn Form | **Required** |
-| API contract types | Generated from audience OpenAPI JSON | **Required** |
-| Unit/component tests | Vitest + React Testing Library | **Required** |
-| E2E | Playwright, critical journeys only | **Required** |
+| Concern | Decision |
+| --- | --- |
+| Package manager | pnpm workspace |
+| Dashboard package | `frontend/` workspace package |
+| UI library | React + TypeScript SPA |
+| Bundler | Vite |
+| Routing | React Router |
+| Styling | Tailwind CSS only |
+| Components | shadcn/ui |
+| Icons | Lucide |
+| Motion | Framer Motion (`framer-motion`) |
+| Server state | TanStack Query (`@tanstack/react-query`) |
+| Forms | React Hook Form + Zod + shadcn Form |
+| API contract types | Generated from audience OpenAPI JSON |
+| Unit/component tests | Vitest + React Testing Library |
+| E2E | Playwright, critical journeys only |
 
-**Why Vite, not Next.js:** the backend is already a separate NestJS API with JWT Bearer
-auth and CORS. The dashboard is an authenticated internal/product SPA, not a
-marketing site. Next.js would add a second server and duplicate routing/auth concerns
-without a current product need.
+**Why Vite, not Next.js:** the API is already a separate server with JWT Bearer auth
+and CORS. The dashboard is an authenticated product SPA, not a marketing site. Next.js
+would add a second server and duplicate routing/auth concerns without a current need.
 
-**Why TanStack Query:** there is no frontend data layer today. TanStack Query is the
-required server-state solution. Do not introduce Redux, Zustand, or a second fetching
-library for server cache unless a documented exception exists.
+**Why TanStack Query:** it is the required server-state solution. Do not introduce
+Redux, Zustand, or a second fetching library for server cache unless a documented
+exception exists.
 
-**Why not share backend source types:** backend response DTOs are Nest/OpenAPI classes.
-The dashboard must consume the **wire contract**, preferably generated from
-`/docs/admin-json`, `/docs/author-json`, and `/docs/reader-json`. Do not import
-`backend/src` into the frontend package.
+**Why not share backend source types:** backend response DTOs are framework/OpenAPI
+classes. The dashboard must consume the **wire contract**, preferably generated from
+audience OpenAPI documents. Do not import API source into the frontend package.
 
-Zod exists in the backend for some internal schemas. The frontend may depend on Zod
-**independently** for form UX. Do not treat backend Zod files as the UI schema source.
+The frontend may depend on Zod **independently** for form UX. Do not treat backend
+schema files as the UI schema source.
 
 ---
 
 ## 6. Monorepo placement
 
-When the dashboard is created:
-
 ```
-lib_app/
-  package.json              # pnpm workspace root; add a frontend filter script
-  pnpm-workspace.yaml       # add `frontend` next to `backend`
-  backend/                  # NestJS API — governed by ARCHITECTURE.md
-  frontend/                 # React dashboard — governed by this document
+<repo>/
+  package.json              # workspace root; frontend and backend filter scripts
+  pnpm-workspace.yaml       # `frontend` next to `backend`
+  backend/                  # HTTP API — separate architecture document
+  frontend/                 # React dashboard — this document
   docs/
-    SRS.md
     FRONTEND-ARCHITECTURE.md
-    FUTURE.md
-    srs-coverage-matrix.md
-  ARCHITECTURE.md
 ```
 
 - Keep frontend dependencies in `frontend/package.json`.
-- Do not hoist React into the backend package.
-- Match root engines: Node `>=24`, pnpm `>=11`.
-- Adopt the backend Prettier shape (`singleQuote`, `semi`, `trailingComma: all`,
+- Do not hoist React into the API package.
+- Match the workspace root engines. Do not introduce a second Node/pnpm policy in the
+  dashboard package.
+- Adopt a shared Prettier shape (`singleQuote`, `semi`, `trailingComma: all`,
   `printWidth: 100`, `tabWidth: 2`) unless a documented frontend exception exists.
 - Use `strict: true` TypeScript. Do not weaken compiler options for convenience.
-- Use a `@/*` path alias to `frontend/src/*`, matching the backend alias convention.
+- Use a `@/*` path alias to `frontend/src/*`.
 
-`pnpm-workspace.yaml` lists `backend` and `frontend`. Root scripts: `pnpm backend`,
-`pnpm frontend`.
+Root scripts typically: `pnpm backend`, `pnpm frontend`.
 
-**Dev origin / CORS:** Vite is pinned to `http://localhost:5173`. The API CORS default
-includes that origin and `http://localhost:3000`. If a local `.env` overrides
-`APP_CORS_ORIGINS`, it must still include the dashboard origin.
+**Dev origin / CORS:** pin the Vite origin and keep it on the API CORS allowlist.
+If a local `.env` overrides CORS, it must still include the dashboard origin.
 
 ---
 
 ## 7. Project structure
 
-Use a feature-oriented tree under `frontend/src/`. This is the required layout once
-the package exists. There is no existing frontend tree to preserve.
+Use a feature-oriented tree under `frontend/src/`. This is the required layout.
 
 ```
 frontend/
@@ -298,7 +266,8 @@ features/books/
 Keep related code together. Do not create a feature folder without a real capability
 boundary.
 
-Suggested first features map to existing API audiences, not to NestJS modules:
+Map features to API audiences and product capabilities, not to backend module folders.
+Example feature-to-API map (replace with the consuming project's contract):
 
 | Feature | Primary APIs (contract, not implementation) |
 | --- | --- |
@@ -313,9 +282,9 @@ Suggested first features map to existing API audiences, not to NestJS modules:
 | `revenue` | `/admin/revenue-periods` |
 | `audit` | `/admin/audit-logs` |
 
-If author and admin book screens diverge, keep shared presentational pieces in
-`features/books/components` and audience-specific hooks next to the screens. Do not
-create `features/admin-books` and `features/author-books` that duplicate table chrome.
+If two audiences share a resource, keep shared presentational pieces in
+`features/<name>/components` and audience-specific hooks next to the screens. Do not
+create duplicated feature folders that only differ by chrome.
 
 ### 7.4 `components/`
 
@@ -523,34 +492,27 @@ Centralize:
 - base URL from frontend env (`VITE_API_BASE_URL` or equivalent)
 - `Authorization: Bearer <accessToken>`
 - JSON serialization
-- mapping of `{ message, code, statusCode, validationErrorObjects }` into a typed
-  frontend error
+- mapping the API error envelope into a typed frontend error (status, code, message,
+  and field errors when the contract provides them)
 - credentials / CORS-safe defaults
 
 Do not scatter `fetch` through pages or presentational components.
 
 **Generated types:** prefer generating TypeScript types (and optionally a typed client)
-from the audience OpenAPI documents:
+from the API’s OpenAPI documents, one per audience when the API is split that way.
+Use the document that matches the screen’s audience.
 
-- Reader: `/docs/reader-json`
-- Author: `/docs/author-json`
-- Admin: `/docs/admin-json`
+Do not silently rename wire fields or change business semantics. Display backend
+values as returned.
 
-Auth is included in each audience document. Use the document that matches the screen’s
-audience. Do not silently transform backend field names or business semantics
-(`weightedEngagement`, `authorCents`, `totalReadingMinutes`, `isPublisher`, and similar
-must keep their meaning).
+Follow the live contract for money, durations, and pagination. Typical patterns:
 
-Money arrives in **integer cents**. Display formatting (divide by 100, currency) is
-presentational. Do not invent a second money model.
-
-Durations often arrive in **milliseconds** plus backend-provided minute/weighted fields.
-Display the backend-provided aggregates (`totalReadingMinutes`, `totalWeightedEngagement`,
-`authorCents`). Do not re-implement category-weight averages or pool splits in the UI.
-
-Pagination is **server-side** `limit`/`offset` + `total`. Do not client-sort or
-client-filter datasets that the API already pages unless the product explicitly wants
-a tiny in-memory list.
+- money as **integer minor units** (cents); formatting is presentational only
+- durations in **milliseconds** plus backend-provided aggregates — display those
+  aggregates; do not re-implement weighting, pooling, or entitlement math in the UI
+- server-side `limit`/`offset` + `total`; do not client-sort or client-filter
+  datasets the API already pages unless the product explicitly wants a tiny
+  in-memory list
 
 ---
 
@@ -605,7 +567,7 @@ Every async screen defines a loading experience.
 
 - Skeletons for content-heavy pages and tables
 - Button loading / disabled for mutations
-- Progress only for long uploads (book source, media)
+- Progress only for long uploads
 
 Do not replace the entire shell with a spinner when one section is loading. Preserve
 layout to reduce shift. The shell (nav, page title) should remain visible.
@@ -660,12 +622,8 @@ Honor `prefers-reduced-motion`.
 
 Route configuration belongs in `app/`. Route elements stay thin and compose features.
 
-Suggested URL shapes (adjust only with a product reason):
-
-- `/login`, `/register`
-- `/author/books`, `/author/analytics`, `/author/earnings`
-- `/admin/books`, `/admin/users`, `/admin/collections`, `/admin/categories`,
-  `/admin/subscriptions`, `/admin/revenue`, `/admin/audit`
+Keep URL shapes stable and audience-prefixed when the product has multiple dashboards
+(example: `/login`, `/author/…`, `/admin/…`). Change them only with a product reason.
 
 Frontend guards are **UX only** (redirect unauthenticated users; hide admin nav from
 authors). Authorization is enforced by the backend. Hiding a button is not security.
@@ -679,25 +637,25 @@ The backend is the security authority.
 The dashboard may:
 
 - store the access token for the API client
-- call `GET /auth/me` to hydrate the principal (`role`, `isPublisher`)
+- call the current-user endpoint to hydrate the principal
 - hide actions the current role cannot perform
 - redirect unauthorized users
-- conditionally render author vs admin areas
+- conditionally render audience areas (operator vs contributor, etc.)
 
 The dashboard must not:
 
 - assume UI hiding is security
 - reimplement complex authorization
-- mint or parse JWT claims as a substitute for `/auth/me` when the user object is needed
+- mint or parse JWT claims as a substitute for the current-user endpoint when the
+  user object is needed
 - invent a refresh-token flow that the API does not provide
 
-**Session expiry:** access tokens default to 15 minutes and there is no refresh
-endpoint. The dashboard must treat 401 as signed-out, send the user to login, and
-avoid leaving stale mutations running. A longer-lived token is a backend config
-concern (`JWT_ACCESS_EXPIRES_IN`), not a frontend workaround.
+**Session expiry:** follow the API. If there is no refresh endpoint, treat 401 as
+signed-out, send the user to login, and stop stale mutations. Token lifetime is a
+backend config concern, not a frontend workaround.
 
-Role values on the wire are `reader` | `author` | `admin`. Publisher capability is
-`isPublisher`. Do not collapse those two flags incorrectly.
+Use role and capability flags exactly as the wire contract defines them. Do not
+collapse distinct flags into one UI concept.
 
 ---
 
@@ -709,9 +667,8 @@ formatting, and display-only calculations (currency from cents, dates, percentag
 
 The frontend must **not** become the source of truth for:
 
-- monetization / publisher revenue calculation
-- category weighting (including multi-category averages)
-- subscription entitlement
+- monetization / payout calculation
+- weighting, entitlement, or eligibility formulas
 - ownership
 - authorization
 - payment status
@@ -721,8 +678,8 @@ The frontend must **not** become the source of truth for:
 Analytics visualizations must use backend-provided metrics and definitions. Do not
 invent analytics formulas in the UI.
 
-Author “top performing books” are already ranked by the API (`weightedEngagement`
-desc, `bookId` asc). Do not re-sort unless the API adds a sort contract.
+If a list is already ranked by the API, do not re-sort it unless the contract adds
+an explicit sort.
 
 ---
 
@@ -734,12 +691,12 @@ states, and a responsive strategy.
 Use API-supported filtering/pagination. Do not implement client-side sort/filter for
 server-paginated lists unless explicitly intended for a tiny, fully loaded set.
 
-No chart library is installed. Prefer KPI cards, tables, and backend-provided trend
-points first. If a chart library is introduced later, justify it (bundle size,
-accessibility, maintenance) and still plot **backend** series only.
+Prefer KPI cards, tables, and backend-provided trend points before adding a chart
+library. If a chart library is introduced, justify it (bundle size, accessibility,
+maintenance) and still plot **backend** series only.
 
-Heatmaps: render the layout-aware payload (`layoutType`, `spreads`, `chapters`).
-Do not synthesize the other layout’s cells.
+For layout-aware visualizations (heatmaps, canvases), render the payload the API
+returns. Do not synthesize cells or series the contract does not provide.
 
 ---
 
@@ -783,8 +740,8 @@ Test behavior, not implementation structure.
 | Integration | Feature workflows across hook + UI with mocked API |
 | E2E | Critical journeys (login, author book list, admin review) against a running API when valuable |
 
-Backend tests stay in `backend/` (Jest). Frontend tests stay in `frontend/` (Vitest).
-Do not run frontend tests through the Nest Jest config.
+Keep API tests in the API package and dashboard tests in the frontend package.
+Do not run frontend tests through the API test runner.
 
 Do not write tests that only assert file structure or snapshot entire pages without
 behavior.
@@ -901,33 +858,18 @@ Do not silently violate architecture rules.
 
 ---
 
-## 34. Implementation workflow (when dashboard work starts)
+## 34. Implementation workflow
 
-1. Read the relevant SRS capability (product) and this file (frontend engineering).
+1. Read the product spec for the capability and this file for frontend engineering.
 2. Identify the API contract (OpenAPI audience document + live routes). Do not guess
-   payloads from Prisma models.
+   payloads from database models.
 3. Place the work in the correct feature, route, and query keys.
 4. Implement UI with shadcn + Tailwind; hooks for server state; client state local.
 5. Cover loading, empty, error, accessibility, and responsive behavior.
 6. Add tests at the appropriate level.
 7. Review against §32 before calling the work done.
 
-Do not modify `ARCHITECTURE.md`, `docs/SRS.md`, schema, or APIs to “fit” a UI
-preference. If the contract is wrong, that is a backend change with its own review
-against `ARCHITECTURE.md`.
-
----
-
-## 35. Remaining dashboard bootstrap
-
-Already done:
-
-- `frontend/` is a pnpm workspace package
-- CORS default includes `http://localhost:5173`
-- `AGENTS.md` and `.cursor/rules/` route frontend work to this document
-
-Still required before production screens (admin dashboard STEP 0):
-
-- Install the required libraries listed in §5
-- Generate OpenAPI types from the three audience documents
-- Replace the Vite stub with the feature-oriented tree in §7
+Do not modify this file, the backend architecture document, or the product spec to
+“fit” a UI preference or to record delivery progress. Delivery status belongs in
+the project task list. If the HTTP contract is wrong, that is a backend change with
+its own review against the backend architecture document.
