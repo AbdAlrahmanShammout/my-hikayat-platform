@@ -123,7 +123,11 @@ Admin category revenue-weight management (admin only):
 - `PATCH /admin/categories/:id` — update `categoryWeight` only. The
   value must be greater than 0.
 
-This category API does not create, rename, or delete categories.
+The category taxonomy is admin-owned. Installations are seeded with
+Picture Books, Children's, Fiction, Nonfiction, and Young Adult, each
+with `categoryWeight` 1.0, so a new database is not empty. Rows that
+already use those slugs are left unchanged. This category API does not
+create, rename, or delete categories.
 
 ## **2.4 Audit Log**
 

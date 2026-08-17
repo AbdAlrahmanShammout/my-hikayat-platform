@@ -22,12 +22,12 @@ Do not treat a row as Complete unless both the backend behavior and tests exist.
 
 | Status | Count |
 | --- | ---: |
-| Complete | 64 |
+| Complete | 65 |
 | In Progress | 0 |
 | Future | 2 |
 | Blocked | 0 |
 | Not Required | 15 |
-| **Total** | **81** |
+| **Total** | **82** |
 
 ## Future / out of scope for current Part 1
 
@@ -67,6 +67,7 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §2.3 Manage subscriptions | `GET /admin/subscriptions`, `POST /admin/subscriptions/:id/cancel` | `admin-subscription.e2e-spec.ts` | Complete |
 | §2.3 Admin book list, metadata edit, unpublish, republish, soft-delete | `GET /admin/books` lists all statuses by default, optional `publishingStatus`; `PATCH`; `POST .../unpublish`; `POST .../republish` sets `publishedAt` to now; `DELETE` soft-deletes | `admin-book.e2e-spec.ts` | Complete |
 | §2.3 Admin category-weight HTTP | `GET /admin/categories`, `GET /admin/categories/:id`, `PATCH /admin/categories/:id` (`categoryWeight` > 0 only; no create/rename/delete HTTP) | `admin-category.e2e-spec.ts` | Complete |
+| §2.3 Starter category taxonomy seed | Migration INSERT of Picture Books, Children's, Fiction, Nonfiction, Young Adult at `categoryWeight` 1.0; `ON CONFLICT (slug) DO NOTHING` | `starter-categories.e2e-spec.ts`, `starter-categories.constant.spec.ts` | Complete |
 | §2.3 Curated collections CRUD, membership, display order | `admin/collections` create, title edit, delete, add, remove, reorder | `admin-collection.e2e-spec.ts` | Complete |
 | §2.3 Admin dashboard UI | — | — | Not Required |
 | §2.4 Append-only admin audit log for required mutations | `GET /admin/audit-logs`; book publish/unpublish/delete, user/publisher, subscription cancel and payment_failed, collection mutations, revenue calculate | `admin-audit.e2e-spec.ts`, `admin-collection.e2e-spec.ts`, `admin-monetization.e2e-spec.ts`, `subscription-billing.e2e-spec.ts` | Complete |
@@ -134,4 +135,5 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 - There is no complimentary paid grant and no user ban flag (soft-delete only).
 - Last-admin protection is unit-tested; it is hard to hit over HTTP because an admin cannot change themselves.
 - Author/admin book metadata PATCH and category-weight PATCH are implemented and are not listed in §2.4 as required audit events.
+- Starter categories are inserted by migration. Admin HTTP create and rename are not part of that seed.
 - Reflowable time-per-page and reading speed remain SRS requirements. They are Future / out of scope for current Part 1 because there is no stable server-side page definition. See `docs/FUTURE.md`.
