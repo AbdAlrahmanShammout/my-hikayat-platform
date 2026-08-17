@@ -1,10 +1,10 @@
 import type { JSX } from 'react';
 
-import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/layout/page-header';
+import { AdminCategoriesPanel } from '@/features/categories/components/admin-categories-panel';
 
 /**
- * Category-weight editor placeholder until STEP 7.
+ * Admin category weights. PATCH categoryWeight only; no create, rename, or delete.
  */
 export function AdminCategoriesPage(): JSX.Element {
   return (
@@ -13,10 +13,7 @@ export function AdminCategoriesPage(): JSX.Element {
         title="Categories"
         description="Adjust categoryWeight. Create, rename, and delete are not available."
       />
-      <EmptyState
-        title="Category weights are not available yet"
-        description="STEP 7 will PATCH categoryWeight greater than 0. Changing a weight does not rewrite historical payouts until a period is recalculated."
-      />
+      <AdminCategoriesPanel />
     </>
   );
 }

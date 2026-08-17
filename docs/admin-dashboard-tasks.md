@@ -27,7 +27,7 @@ CORS default includes the Vite origin, agent routing to
 | 4 | Users | Complete |
 | 5 | Subscriptions | Complete |
 | 6 | Collections | Complete |
-| 7 | Category weights | Pending |
+| 7 | Category weights | Complete |
 | 8 | Revenue periods | Pending |
 | 9 | Revenue calculate, analytics, heatmap | Pending |
 | 10 | Audit log | Pending |
@@ -262,6 +262,12 @@ revenue period is recalculated (STEP 9).
 
 **Routes:** `/admin/categories`
 
+**Written:** list + inline `categoryWeight` edit at `/admin/categories` (`limit`/`offset`).
+PATCH is limited to `categoryWeight` greater than 0. Name and slug are read-only; there is
+no create, rename, or delete. Unchanged weights are not sent. The screen states that a
+weight change does not rewrite historical payouts until a period is recalculated. 422
+from the API still surfaces.
+
 ---
 
 ## STEP 8 — Revenue periods
@@ -339,5 +345,5 @@ events (metadata PATCH and category-weight PATCH are not required audit events).
 ## Implementation order
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
-STEP 8 must exist before STEP 9. Other feature STEPs (7, 10) can proceed after
-STEP 1 if needed. Category weights (STEP 7) is the next screen after collections.
+STEP 8 must exist before STEP 9. Other feature STEPs (10) can proceed after
+STEP 1 if needed. Revenue periods (STEP 8) is the next screen after category weights.
