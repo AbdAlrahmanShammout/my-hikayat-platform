@@ -7,7 +7,7 @@ export type UpdateAdminCategoryInput = {
 };
 
 /**
- * Updates a category weight only.
+ * Updates a category name, slug, and/or weight.
  */
 export async function updateAdminCategory(
   input: UpdateAdminCategoryInput,

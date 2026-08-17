@@ -163,6 +163,14 @@ export interface paths {
         };
       };
     };
+    post: {
+      requestBody: {
+        content: { 'application/json': components['schemas']['CreateCategoryRequestDto'] };
+      };
+      responses: {
+        '201': { content: { 'application/json': components['schemas']['CategoryResponse'] } };
+      };
+    };
   };
   '/admin/categories/{id}': {
     get: {
@@ -550,7 +558,8 @@ export interface components {
       categories: Array<components['schemas']['CategoryResponse']>;
       total: number;
     };
-    UpdateCategoryRequestDto: { categoryWeight: number };
+    UpdateCategoryRequestDto: { name?: string; slug?: string; categoryWeight?: number };
+    CreateCategoryRequestDto: { name: string; slug?: string; categoryWeight?: number };
     CreateCollectionRequestDto: { title: string; bookIds?: Array<number> };
     CollectionBookResponse: {
       id: number;

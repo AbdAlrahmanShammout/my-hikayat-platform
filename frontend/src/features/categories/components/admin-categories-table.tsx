@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { AdminCategoryRenameDialog } from '@/features/categories/components/admin-category-rename-dialog';
 import { AdminCategoryWeightForm } from '@/features/categories/components/admin-category-weight-form';
 import type { components } from '@/generated/admin';
 
@@ -16,7 +17,7 @@ type AdminCategoriesTableProps = {
 };
 
 /**
- * Admin category table. Name and slug are read-only; only categoryWeight is editable.
+ * Admin category table. Weight is inline; rename is a dialog. Delete is not offered.
  */
 export function AdminCategoriesTable({ categories }: AdminCategoriesTableProps): JSX.Element {
   return (
@@ -26,6 +27,7 @@ export function AdminCategoriesTable({ categories }: AdminCategoriesTableProps):
           <TableHead>Name</TableHead>
           <TableHead>Slug</TableHead>
           <TableHead>categoryWeight</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -35,6 +37,9 @@ export function AdminCategoriesTable({ categories }: AdminCategoriesTableProps):
             <TableCell>{category.slug}</TableCell>
             <TableCell>
               <AdminCategoryWeightForm category={category} />
+            </TableCell>
+            <TableCell className="text-right">
+              <AdminCategoryRenameDialog category={category} />
             </TableCell>
           </TableRow>
         ))}

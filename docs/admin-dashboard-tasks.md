@@ -33,6 +33,7 @@ CORS default includes the Vite origin, agent routing to
 | 10 | Audit log | Complete |
 | 11 | Invite admin (pending list + email invite) | Complete |
 | 12 | Accept admin invitation (public page) | Complete |
+| 13 | Create and rename categories | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -412,12 +413,39 @@ access token, seeds `GET /auth/me`, and navigates to `/admin`.
 
 ---
 
+## STEP 13 — Create and rename categories
+
+**SRS:** §2.3 admin HTTP create and rename. No delete.
+
+**APIs**
+
+- `POST /admin/categories` `{ name }`; optional `slug` and `categoryWeight`
+- `PATCH /admin/categories/:id` `{ name?, slug?, categoryWeight? }` — omitted
+  fields are left unchanged. Rename does not change weight.
+
+**UI**
+
+- Create on `/admin/categories`. Blank slug and weight are omitted so the API
+  applies defaults. Do not derive slug or default weight in the UI.
+- Rename name and/or slug. Do not send `categoryWeight` from the rename form.
+- Keep inline `categoryWeight` edit. Do not offer delete.
+- 409 name/slug conflicts and 422 validation still surface.
+
+**Route:** `/admin/categories`
+
+**Written:** create form posts `POST /admin/categories` and omits blank slug and
+weight. Rename dialog PATCHes only changed `name`/`slug`. Weight stays on the
+existing inline form. Empty list still allows create. Delete is not shown.
+Conflict and validation errors from the API still surface.
+
+---
+
 ## Out of scope for this list
 
 - Author dashboard (books upload, author analytics/earnings)
 - Reader catalog / dual-engine reader / React Native
 - Part 2 TTS, Part 3 formatting
-- Admin create/rename/delete categories
+- Admin delete categories
 - Admin refund
 - Reject-reason field (not on the current reject API)
 - Recalculating publisher earnings in the browser
@@ -425,6 +453,6 @@ access token, seeds `GET /auth/me`, and navigates to `/admin`.
 ## Implementation order
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
-STEP 8 must exist before STEP 9. STEPs 0–12 on this list are the current admin
+STEP 8 must exist before STEP 9. STEPs 0–13 on this list are the current admin
 dashboard work. Next admin UI is remaining screens for HTTP that already exists
-(create/rename category, reject reason, refund).
+(reject reason, refund).

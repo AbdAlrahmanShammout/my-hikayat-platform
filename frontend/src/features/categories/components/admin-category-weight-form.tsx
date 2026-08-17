@@ -39,7 +39,8 @@ export function AdminCategoryWeightForm({ category }: AdminCategoryWeightFormPro
   const rootMessage: string | undefined = form.formState.errors.root?.message;
   const watchedWeight: number | undefined = form.watch('categoryWeight');
   const isUnchanged: boolean =
-    typeof watchedWeight === 'number' && isSameCategoryWeight(category.categoryWeight, watchedWeight);
+    typeof watchedWeight === 'number' &&
+    isSameCategoryWeight(category.categoryWeight, watchedWeight);
   return (
     <Form {...form}>
       <form
