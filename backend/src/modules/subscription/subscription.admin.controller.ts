@@ -76,4 +76,23 @@ export class SubscriptionAdminController {
       });
     return new SubscriptionResponse(entity);
   }
+
+  @Post(':id/refund')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Refund a subscription using the same 7-day activation window as the reader refund',
+  })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: 200, type: SubscriptionResponse })
+  async refundSubscription(
+    @Param('id', ParseIntPipe) id: number,
+    @LoggedInUser() currentUser: UserEntity,
+  ): Promise<SubscriptionResponse> {
+    const entity: SubscriptionEntity =
+      await this.subscriptionBillingService.refundManagedSubscription({
+        subscriptionId: id,
+        actorUserId: currentUser.id,
+      });
+    return new SubscriptionResponse(entity);
+  }
 }

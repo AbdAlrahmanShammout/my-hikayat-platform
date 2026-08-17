@@ -475,6 +475,84 @@ describe('SubscriptionBillingService', () => {
     });
   });
 
+  describe('refundManagedSubscription', () => {
+    it('applies the same 7-day refund policy and records an admin audit entry', async () => {
+      const expectedPeriodEnd = new Date('2026-08-16T12:00:00.000Z');
+      jest.useFakeTimers();
+      jest.setSystemTime(expectedPeriodEnd);
+      const paidSubscription = createSampleSubscription(PlanKind.MONTHLY_PAID);
+      paidSubscription.stripeSubscriptionId = 'sub_1';
+      const canceled = createSampleSubscription(PlanKind.MONTHLY_PAID, SubscriptionStatus.CANCELED);
+      mockSubscriptionService.getSubscriptionById.mockResolvedValue(paidSubscription);
+      mockStripeManagerService.refundPaidSubscription.mockResolvedValue({ refundId: 're_1' });
+      mockSubscriptionService.cancelSubscription.mockResolvedValue(canceled);
+      mockSubscriptionService.updateSubscription.mockResolvedValue(
+        new SubscriptionEntity({
+          ...canceled,
+          currentPeriodEnd: expectedPeriodEnd,
+        }),
+      );
+      try {
+        const actualSubscription = await subscriptionBillingService.refundManagedSubscription({
+          subscriptionId: 7,
+          actorUserId: 9,
+        });
+        expect(mockStripeManagerService.refundPaidSubscription).toHaveBeenCalledWith({
+          stripeSubscriptionId: 'sub_1',
+        });
+        expect(mockSubscriptionService.cancelSubscription).toHaveBeenCalledWith(7);
+        expect(mockSubscriptionService.updateSubscription).toHaveBeenCalledWith({
+          id: 7,
+          currentPeriodEnd: expectedPeriodEnd,
+        });
+        expect(mockAuditLogService.append).toHaveBeenCalledWith({
+          actorUserId: 9,
+          action: AuditAction.SUBSCRIPTION_CANCELED,
+          subjectType: AuditSubjectType.SUBSCRIPTION,
+          subjectId: 7,
+          metadata: {
+            userId: 5,
+            fromStatus: SubscriptionStatus.ACTIVE,
+            toStatus: SubscriptionStatus.CANCELED,
+            hadStripeSubscription: true,
+            refunded: true,
+          },
+        });
+        expect(actualSubscription.currentPeriodEnd).toEqual(expectedPeriodEnd);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('rejects an admin refund for a free subscription', async () => {
+      mockSubscriptionService.getSubscriptionById.mockResolvedValue(createSampleSubscription());
+      await expect(
+        subscriptionBillingService.refundManagedSubscription({
+          subscriptionId: 7,
+          actorUserId: 9,
+        }),
+      ).rejects.toBeInstanceOf(RefundNotEligibleException);
+      expect(mockStripeManagerService.refundPaidSubscription).not.toHaveBeenCalled();
+      expect(mockAuditLogService.append).not.toHaveBeenCalled();
+    });
+
+    it('rejects an admin refund after the seven-day window', async () => {
+      const paidSubscription = createSampleSubscription(PlanKind.MONTHLY_PAID);
+      paidSubscription.stripeSubscriptionId = 'sub_1';
+      paidSubscription.activatedAt = new Date(
+        Date.now() - (REFUND_WINDOW.days + 1) * REFUND_WINDOW.millisecondsPerDay,
+      );
+      mockSubscriptionService.getSubscriptionById.mockResolvedValue(paidSubscription);
+      await expect(
+        subscriptionBillingService.refundManagedSubscription({
+          subscriptionId: 7,
+          actorUserId: 9,
+        }),
+      ).rejects.toBeInstanceOf(RefundWindowExpiredException);
+      expect(mockStripeManagerService.refundPaidSubscription).not.toHaveBeenCalled();
+    });
+  });
+
   describe('cancelManagedSubscription', () => {
     it('cancels Stripe then records an admin audit entry', async () => {
       const paidSubscription = createSampleSubscription(PlanKind.MONTHLY_PAID);

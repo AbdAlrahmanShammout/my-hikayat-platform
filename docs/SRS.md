@@ -86,6 +86,23 @@ these endpoints.
 
 - Manage subscriptions
 
+Admin subscription management:
+
+- `GET /admin/subscriptions` lists subscriptions. Optional `userId`
+  and `status` filters.
+
+- `GET /admin/subscriptions/:id` returns one subscription.
+
+- `POST /admin/subscriptions/:id/cancel` cancels without a refund.
+  Paid reading continues until `currentPeriodEnd`.
+
+- `POST /admin/subscriptions/:id/refund` applies the same 7-day
+  refund policy as `POST /reader/billing/refund`. The window is
+  measured from activation. An eligible refund cancels the paid
+  subscription and closes `currentPeriodEnd` immediately. After the
+  window, the refund is rejected. An ineligible subscription is
+  rejected.
+
 - Manage books
 
 - Manage category revenue weights
@@ -554,7 +571,11 @@ checkout. After entitlement ends, checkout is allowed again.
 Noory offers a money-back guarantee.
 
 Users can request a refund within **7 days of activating their
-subscription**.
+subscription** (`POST /reader/billing/refund`). An administrator can
+issue that same refund for a subscription
+(`POST /admin/subscriptions/:id/refund`). The 7-day window and
+eligibility rules are shared; an admin cannot refund after the window
+expires.
 
 A refund granted under this policy cancels the paid subscription and
 ends paid reading immediately (the paid period end is closed at the

@@ -59,11 +59,17 @@ function createSampleAdmin(): UserEntity {
 describe('SubscriptionAdminController', () => {
   let subscriptionAdminController: SubscriptionAdminController;
   let mockSubscriptionService: { listSubscriptions: jest.Mock; getSubscriptionById: jest.Mock };
-  let mockSubscriptionBillingService: { cancelManagedSubscription: jest.Mock };
+  let mockSubscriptionBillingService: {
+    cancelManagedSubscription: jest.Mock;
+    refundManagedSubscription: jest.Mock;
+  };
 
   beforeEach(async () => {
     mockSubscriptionService = { listSubscriptions: jest.fn(), getSubscriptionById: jest.fn() };
-    mockSubscriptionBillingService = { cancelManagedSubscription: jest.fn() };
+    mockSubscriptionBillingService = {
+      cancelManagedSubscription: jest.fn(),
+      refundManagedSubscription: jest.fn(),
+    };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       controllers: [SubscriptionAdminController],
@@ -127,6 +133,28 @@ describe('SubscriptionAdminController', () => {
         actorUserId: 9,
       });
       expect(actualResponse.status).toBe(SubscriptionStatus.CANCELED);
+    });
+  });
+
+  describe('refundSubscription', () => {
+    it('threads the signed-in admin as actor', async () => {
+      const refunded = new SubscriptionEntity({
+        ...createSampleSubscription(),
+        status: SubscriptionStatus.CANCELED,
+        canceledAt: new Date('2026-08-15T00:00:00.000Z'),
+        currentPeriodEnd: new Date('2026-08-15T00:00:00.000Z'),
+      });
+      mockSubscriptionBillingService.refundManagedSubscription.mockResolvedValue(refunded);
+      const actualResponse = await subscriptionAdminController.refundSubscription(
+        7,
+        createSampleAdmin(),
+      );
+      expect(mockSubscriptionBillingService.refundManagedSubscription).toHaveBeenCalledWith({
+        subscriptionId: 7,
+        actorUserId: 9,
+      });
+      expect(actualResponse.status).toBe(SubscriptionStatus.CANCELED);
+      expect(actualResponse.currentPeriodEnd).toEqual(new Date('2026-08-15T00:00:00.000Z'));
     });
   });
 });

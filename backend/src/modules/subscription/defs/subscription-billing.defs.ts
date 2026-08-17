@@ -17,3 +17,8 @@ export type CancelManagedSubscriptionServiceInput = {
   readonly subscriptionId: number;
   readonly actorUserId: number;
 };
+
+export type RefundManagedSubscriptionServiceInput = {
+  readonly subscriptionId: number;
+  readonly actorUserId: number;
+};

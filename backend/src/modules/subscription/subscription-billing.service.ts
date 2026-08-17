@@ -10,6 +10,7 @@ import { REFUND_WINDOW } from '@/modules/subscription/consts/refund-window.const
 import {
   CancelManagedSubscriptionServiceInput,
   ReceiveWebhookServiceInput,
+  RefundManagedSubscriptionServiceInput,
   StartCheckoutResult,
   StartCheckoutServiceInput,
 } from '@/modules/subscription/defs/subscription-billing.defs';
@@ -73,29 +74,30 @@ export class SubscriptionBillingService {
   async requestRefund(userId: number): Promise<SubscriptionEntity> {
     const subscription: SubscriptionEntity =
       await this.subscriptionService.getSubscriptionByUserId(userId);
-    if (
-      !SubscriptionBillingService.isPaidMonthly(subscription) ||
-      subscription.stripeSubscriptionId === null
-    ) {
-      throw new RefundNotEligibleException();
-    }
-    const activatedAt: Date | null = subscription.activatedAt ?? subscription.currentPeriodStart;
-    if (activatedAt === null) {
-      throw new RefundNotEligibleException();
-    }
-    if (SubscriptionBillingService.isRefundWindowExpired(activatedAt)) {
-      throw new RefundWindowExpiredException();
-    }
-    await this.stripeManagerService.refundPaidSubscription({
-      stripeSubscriptionId: subscription.stripeSubscriptionId,
-    });
-    const canceled: SubscriptionEntity = await this.subscriptionService.cancelSubscription(
-      subscription.id,
+    return this.applyPaidRefundPolicy(subscription);
+  }
+
+  async refundManagedSubscription(
+    input: RefundManagedSubscriptionServiceInput,
+  ): Promise<SubscriptionEntity> {
+    const subscription: SubscriptionEntity = await this.subscriptionService.getSubscriptionById(
+      input.subscriptionId,
     );
-    return this.subscriptionService.updateSubscription({
-      id: canceled.id,
-      currentPeriodEnd: new Date(),
+    const refunded: SubscriptionEntity = await this.applyPaidRefundPolicy(subscription);
+    await this.auditLogService.append({
+      actorUserId: input.actorUserId,
+      action: AuditAction.SUBSCRIPTION_CANCELED,
+      subjectType: AuditSubjectType.SUBSCRIPTION,
+      subjectId: refunded.id,
+      metadata: {
+        userId: refunded.userId,
+        fromStatus: subscription.status,
+        toStatus: refunded.status,
+        hadStripeSubscription: true,
+        refunded: true,
+      },
     });
+    return refunded;
   }
 
   async cancelManagedSubscription(
@@ -285,6 +287,40 @@ export class SubscriptionBillingService {
       throw new CheckoutReturnUrlInvalidException();
     }
     throw new CheckoutReturnUrlInvalidException();
+  }
+
+  private async applyPaidRefundPolicy(
+    subscription: SubscriptionEntity,
+  ): Promise<SubscriptionEntity> {
+    const stripeSubscriptionId: string =
+      SubscriptionBillingService.resolveRefundStripeSubscriptionId(subscription);
+    await this.stripeManagerService.refundPaidSubscription({
+      stripeSubscriptionId,
+    });
+    const canceled: SubscriptionEntity = await this.subscriptionService.cancelSubscription(
+      subscription.id,
+    );
+    return this.subscriptionService.updateSubscription({
+      id: canceled.id,
+      currentPeriodEnd: new Date(),
+    });
+  }
+
+  private static resolveRefundStripeSubscriptionId(subscription: SubscriptionEntity): string {
+    if (
+      !SubscriptionBillingService.isPaidMonthly(subscription) ||
+      subscription.stripeSubscriptionId === null
+    ) {
+      throw new RefundNotEligibleException();
+    }
+    const activatedAt: Date | null = subscription.activatedAt ?? subscription.currentPeriodStart;
+    if (activatedAt === null) {
+      throw new RefundNotEligibleException();
+    }
+    if (SubscriptionBillingService.isRefundWindowExpired(activatedAt)) {
+      throw new RefundWindowExpiredException();
+    }
+    return subscription.stripeSubscriptionId;
   }
 
   private static isPaidMonthly(subscription: SubscriptionEntity): boolean {

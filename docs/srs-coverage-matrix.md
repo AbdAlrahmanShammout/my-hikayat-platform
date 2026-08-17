@@ -16,18 +16,18 @@ This matrix validates the Part 1 NestJS backend against `docs/SRS.md`.
 
 Do not treat a row as Complete unless both the backend behavior and tests exist.
 
-**Validation snapshot:** 357 unit spec files, 55 e2e suites, including `test/critical-flow.e2e-spec.ts`. Snapshot after Steps 1–8 and the reflowable page-tracking decision.
+**Validation snapshot:** 357 unit spec files, 56 e2e suites, including `test/critical-flow.e2e-spec.ts`. Snapshot after Steps 1–8 and the reflowable page-tracking decision.
 
 ## Summary
 
 | Status | Count |
 | --- | ---: |
-| Complete | 71 |
+| Complete | 72 |
 | In Progress | 0 |
 | Future | 2 |
 | Blocked | 0 |
 | Not Required | 15 |
-| **Total** | **88** |
+| **Total** | **89** |
 
 ## Future / out of scope for current Part 1
 
@@ -69,6 +69,7 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §2.3 Required book rejection reason | `POST /admin/books/:id/reject` body `reason`; persisted on append-only `audit.reason` for `book_rejected` | `book-admin-review.e2e-spec.ts`, `book-publishing-status.service.spec.ts`, `book.admin.controller.spec.ts` | Complete |
 | §2.3 Manage users | `GET/PATCH/DELETE /admin/users` | `admin-user.e2e-spec.ts` | Complete |
 | §2.3 Manage subscriptions | `GET /admin/subscriptions`, `POST /admin/subscriptions/:id/cancel` | `admin-subscription.e2e-spec.ts` | Complete |
+| §2.3 / §6.2 Admin 7-day subscription refund | `POST /admin/subscriptions/:id/refund` (same eligibility and window as reader refund; clamps `currentPeriodEnd`; audited as `subscription_canceled` with `refunded: true`) | `admin-subscription-refund.e2e-spec.ts`, `subscription-billing.service.spec.ts`, `subscription.admin.controller.spec.ts` | Complete |
 | §2.3 Admin book list, metadata edit, unpublish, republish, soft-delete | `GET /admin/books` lists all statuses by default, optional `publishingStatus`; `PATCH`; `POST .../unpublish`; `POST .../republish` sets `publishedAt` to now; `DELETE` soft-deletes | `admin-book.e2e-spec.ts` | Complete |
 | §2.3 Admin category-weight HTTP | `GET /admin/categories`, `GET /admin/categories/:id`, `PATCH /admin/categories/:id` (`categoryWeight` > 0 only) | `admin-category.e2e-spec.ts` | Complete |
 | §2.3 Starter category taxonomy seed | Migration INSERT of Picture Books, Children's, Fiction, Nonfiction, Young Adult at `categoryWeight` 1.0; `ON CONFLICT (slug) DO NOTHING` | `starter-categories.e2e-spec.ts`, `starter-categories.constant.spec.ts` | Complete |
@@ -99,7 +100,7 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §5.2 Reflowable chapter attribution from session activity | Recorded with the session; idle is not copied onto chapter rows | `reading-chapter-engagement.e2e-spec.ts` | Complete |
 | §6 Single subscription, monthly Stripe, automatic renewal, free tier without a card | Plans, checkout, `customer.subscription.updated`, free plan | `subscription.e2e-spec.ts`, `subscription-billing.e2e-spec.ts` | Complete |
 | §6.1 Paid entitlement (monthly paid + now < currentPeriodEnd); canceled access until period end; payment_failed audit only; checkout blocked while entitled | `hasPaidReadingEntitlement`; `invoice.payment_failed` audit; checkout uses the same entitlement check | `entitlement.e2e-spec.ts`, `subscription-billing.e2e-spec.ts`, `has-paid-reading-entitlement.helper.spec.ts` | Complete |
-| §6.2 7-day refund ends paid reading immediately | `POST /reader/billing/refund` clamps `currentPeriodEnd` to now | `subscription-refund.e2e-spec.ts`, `subscription-billing.e2e-spec.ts` | Complete |
+| §6.2 7-day refund ends paid reading immediately | `POST /reader/billing/refund` and `POST /admin/subscriptions/:id/refund` clamp `currentPeriodEnd` to now | `subscription-refund.e2e-spec.ts`, `admin-subscription-refund.e2e-spec.ts`, `subscription-billing.e2e-spec.ts` | Complete |
 | §7.1 / §7.2 Weighted engagement and book revenue formula | Reflowable: active reading ms × category weight. Fixed-layout: spread `activeDurationMs` × category weight. `visualSceneTimeMs` is stored and shown, not added to the revenue weight (matches the SRS example formula). Multi-category weight is the arithmetic mean of assigned weights. | `book-engagement.service.spec.ts`, `book-revenue.e2e-spec.ts` | Complete |
 | §7.3 Platform cut and remaining author share | `PLATFORM_CUT_PERCENT` on revenue periods | `revenue-period.service.spec.ts`, `book-revenue.e2e-spec.ts` | Complete |
 | §7.4 Admin revenue-period calculate (audited; recalculate appends another row) | `POST /admin/revenue-periods/:id/calculate` | `admin-monetization.e2e-spec.ts`, `book-revenue.service.spec.ts` | Complete |
@@ -143,4 +144,5 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 - Author/admin book metadata PATCH and category-weight PATCH are implemented and are not listed in §2.4 as required audit events.
 - Starter categories are inserted by migration. Admin HTTP create and rename exist; author and reader lists are read-only; delete is not part of that seed.
 - Book rejection requires a non-empty reason stored on the existing append-only audit row. Rejection history is that same audit log, filtered by `book_rejected` and book id.
+- Admin refund uses the same 7-day activation window and eligibility as the reader refund. It is audited as `subscription_canceled` with `refunded: true`. The admin dashboard still has no refund button.
 - Reflowable time-per-page and reading speed remain SRS requirements. They are Future / out of scope for current Part 1 because there is no stable server-side page definition. See `docs/FUTURE.md`.
