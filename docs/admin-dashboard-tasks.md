@@ -25,7 +25,7 @@ CORS default includes the Vite origin, agent routing to
 | 2 | Admin home (composed KPIs) | Complete |
 | 3 | Books review and catalog management | Complete |
 | 4 | Users | Complete |
-| 5 | Subscriptions | Pending |
+| 5 | Subscriptions | Complete |
 | 6 | Collections | Pending |
 | 7 | Category weights | Pending |
 | 8 | Revenue periods | Pending |
@@ -209,6 +209,12 @@ entitlement in the UI. There is no admin refund endpoint in Part 1.
 
 **Routes:** `/admin/subscriptions`, `/admin/subscriptions/:id`
 
+**Written:** filterable `GET /admin/subscriptions` table (`status`, `userId`, `limit`/`offset`)
+and a detail screen at `/admin/subscriptions/:subscriptionId`. The UI displays plan, status,
+and `currentPeriodEnd` from the API and does not recompute entitlement. Cancel calls
+`POST /admin/subscriptions/:id/cancel` without a refund and is disabled when status is
+already `canceled`. There is no refund action.
+
 ---
 
 ## STEP 6 — Collections
@@ -328,5 +334,5 @@ events (metadata PATCH and category-weight PATCH are not required audit events).
 ## Implementation order
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
-STEP 8 must exist before STEP 9. Other feature STEPs (5–7, 10) can proceed after
-STEP 1 if needed. Subscriptions (STEP 5) is the next screen after users.
+STEP 8 must exist before STEP 9. Other feature STEPs (6–7, 10) can proceed after
+STEP 1 if needed. Collections (STEP 6) is the next screen after subscriptions.

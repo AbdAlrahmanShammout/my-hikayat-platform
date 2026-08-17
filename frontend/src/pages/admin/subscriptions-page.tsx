@@ -1,10 +1,10 @@
 import type { JSX } from 'react';
 
-import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/layout/page-header';
+import { AdminSubscriptionsPanel } from '@/features/subscriptions/components/admin-subscriptions-panel';
 
 /**
- * Subscription management placeholder until STEP 5.
+ * Admin subscriptions list. Filters and paging are query parameters on GET /admin/subscriptions.
  */
 export function AdminSubscriptionsPage(): JSX.Element {
   return (
@@ -13,10 +13,7 @@ export function AdminSubscriptionsPage(): JSX.Element {
         title="Subscriptions"
         description="Cancel without a refund. Access lasts until currentPeriodEnd."
       />
-      <EmptyState
-        title="Subscriptions are not available yet"
-        description="STEP 5 will list subscriptions from the API. Entitlement is not recomputed in the browser."
-      />
+      <AdminSubscriptionsPanel />
     </>
   );
 }
