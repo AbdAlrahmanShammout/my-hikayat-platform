@@ -16,7 +16,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import type { AuthSession } from '@/features/auth/api/auth-session';
 import { useLogin } from '@/features/auth/hooks/use-login';
+import { getPostLoginPath } from '@/features/auth/lib/get-post-login-path';
 import { loginFormSchema, type LoginFormValues } from '@/features/auth/schemas/login-form.schema';
 
 /**
@@ -35,8 +37,11 @@ export function LoginForm(): JSX.Element {
       <form
         className="flex flex-col gap-4"
         onSubmit={form.handleSubmit((values) => {
-          void submitLogin(values, loginMutation.mutateAsync, form.setError, () => {
-            void navigate('/admin', { replace: true });
+          void submitLogin(values, loginMutation.mutateAsync, form.setError, (session) => {
+            const homePath: string | null = getPostLoginPath(session.user.role);
+            if (homePath !== null) {
+              void navigate(homePath, { replace: true });
+            }
           });
         })}
         noValidate
@@ -53,7 +58,12 @@ export function LoginForm(): JSX.Element {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input type="email" autoComplete="email" disabled={loginMutation.isPending} {...field} />
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  disabled={loginMutation.isPending}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -89,20 +99,17 @@ async function submitLogin(
   values: LoginFormValues,
   mutateAsync: ReturnType<typeof useLogin>['mutateAsync'],
   setError: UseFormSetError<LoginFormValues>,
-  onSuccess: () => void,
+  onSuccess: (session: AuthSession) => void,
 ): Promise<void> {
   try {
-    await mutateAsync(values);
-    onSuccess();
+    const session: AuthSession = await mutateAsync(values);
+    onSuccess(session);
   } catch (error: unknown) {
     applyLoginServerError(error, setError);
   }
 }
 
-function applyLoginServerError(
-  error: unknown,
-  setError: UseFormSetError<LoginFormValues>,
-): void {
+function applyLoginServerError(error: unknown, setError: UseFormSetError<LoginFormValues>): void {
   applyValidationFieldErrors(error, setError);
   setError('root', { message: getUserFacingErrorMessage(error) });
 }

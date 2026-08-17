@@ -2,15 +2,16 @@ import { motion, useReducedMotion } from 'framer-motion';
 import type { JSX } from 'react';
 import { Navigate } from 'react-router';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageSkeleton } from '@/components/page-skeleton';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ForbiddenPanel } from '@/features/auth/components/forbidden-panel';
 import { LoginForm } from '@/features/auth/components/login-form';
 import { useAccessToken } from '@/features/auth/hooks/use-access-token';
 import { useCurrentUser } from '@/features/auth/hooks/use-current-user';
-import { USER_ROLES } from '@/types/user-role';
+import { getPostLoginPath } from '@/features/auth/lib/get-post-login-path';
 
 /**
- * Public sign-in screen. Admins already in session go to /admin.
+ * Public sign-in screen. Signed-in authors and admins go to their dashboard.
  */
 export function LoginPage(): JSX.Element {
   const accessToken: string | null = useAccessToken();
@@ -23,8 +24,17 @@ export function LoginPage(): JSX.Element {
       </div>
     );
   }
-  if (currentUserQuery.data?.role === USER_ROLES.ADMIN) {
-    return <Navigate to="/admin" replace />;
+  if (currentUserQuery.data !== undefined) {
+    const homePath: string | null = getPostLoginPath(currentUserQuery.data.role);
+    if (homePath !== null) {
+      return <Navigate to={homePath} replace />;
+    }
+    return (
+      <ForbiddenPanel
+        title="This dashboard is not available"
+        description="This web app is for authors and administrators. Your account does not have those roles."
+      />
+    );
   }
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
@@ -37,7 +47,9 @@ export function LoginPage(): JSX.Element {
         <Card>
           <CardHeader>
             <CardTitle>Sign in to Noory</CardTitle>
-            <CardDescription>Admin access uses the same email and password as the API.</CardDescription>
+            <CardDescription>
+              Authors and administrators use the same email and password as the API.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <LoginForm />

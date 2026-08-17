@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { AdminRouteGuard } from '@/app/admin-route-guard';
+import { AuthorRouteGuard } from '@/app/author-route-guard';
 import { ADMIN_INVITATION_ACCEPT_PATH } from '@/config/admin-invitation-accept-path';
 import { AcceptAdminInvitationPage } from '@/pages/accept-admin-invitation-page';
 import { AdminAuditDetailPage } from '@/pages/admin/audit-detail-page';
@@ -19,13 +20,15 @@ import { AdminSubscriptionDetailPage } from '@/pages/admin/subscription-detail-p
 import { AdminSubscriptionsPage } from '@/pages/admin/subscriptions-page';
 import { AdminUserDetailPage } from '@/pages/admin/user-detail-page';
 import { AdminUsersPage } from '@/pages/admin/users-page';
+import { AuthorBooksPage } from '@/pages/author/books-page';
+import { AuthorHomePage } from '@/pages/author/home-page';
 import { LoginPage } from '@/pages/login-page';
 import { NotFoundPage } from '@/pages/not-found-page';
 
 export const appRouter = createBrowserRouter([
   {
     path: '/',
-    element: <Navigate to="/admin" replace />,
+    element: <Navigate to="/login" replace />,
   },
   {
     path: '/login',
@@ -58,6 +61,14 @@ export const appRouter = createBrowserRouter([
       },
       { path: 'audit', element: <AdminAuditPage /> },
       { path: 'audit/:auditLogId', element: <AdminAuditDetailPage /> },
+    ],
+  },
+  {
+    path: '/author',
+    element: <AuthorRouteGuard />,
+    children: [
+      { index: true, element: <AuthorHomePage /> },
+      { path: 'books', element: <AuthorBooksPage /> },
     ],
   },
   {

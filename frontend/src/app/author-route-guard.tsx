@@ -1,19 +1,18 @@
 import type { JSX } from 'react';
 import { Navigate } from 'react-router';
 
-import { AdminShell } from '@/app/admin-shell';
+import { AuthorShell } from '@/app/author-shell';
 import { PageSkeleton } from '@/components/page-skeleton';
 import { CurrentUserLoadError } from '@/features/auth/components/current-user-load-error';
 import { ForbiddenPanel } from '@/features/auth/components/forbidden-panel';
 import { useAccessToken } from '@/features/auth/hooks/use-access-token';
 import { useCurrentUser } from '@/features/auth/hooks/use-current-user';
-import { getPostLoginPath } from '@/features/auth/lib/get-post-login-path';
-import { USER_ROLES } from '@/types/user-role';
+import { canAccessAuthorDashboard } from '@/features/auth/lib/can-access-author-dashboard';
 
 /**
- * UX-only admin gate. Backend Roles(ADMIN) remains the security authority.
+ * UX-only author gate. Backend Roles(AUTHOR, ADMIN) remains the security authority.
  */
-export function AdminRouteGuard(): JSX.Element {
+export function AuthorRouteGuard(): JSX.Element {
   const accessToken: string | null = useAccessToken();
   const currentUserQuery = useCurrentUser();
   if (accessToken === null) {
@@ -36,16 +35,13 @@ export function AdminRouteGuard(): JSX.Element {
       />
     );
   }
-  if (currentUserQuery.data.role !== USER_ROLES.ADMIN) {
-    const homePath: string | null = getPostLoginPath(currentUserQuery.data.role);
+  if (!canAccessAuthorDashboard(currentUserQuery.data.role)) {
     return (
       <ForbiddenPanel
-        title="Admin access required"
-        description="This dashboard is for administrators. Your account does not have the admin role."
-        homePath={homePath ?? undefined}
-        homeLabel="Go to author home"
+        title="Author access required"
+        description="This dashboard is for authors. Administrators may also open it. Your account does not have access."
       />
     );
   }
-  return <AdminShell />;
+  return <AuthorShell />;
 }

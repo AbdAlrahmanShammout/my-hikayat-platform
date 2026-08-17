@@ -9,8 +9,8 @@ Frontend engineering: `docs/FRONTEND-ARCHITECTURE.md`.
 Backend contracts: existing `/admin/*` and `/auth/*` HTTP APIs. Do not add backend
 endpoints unless a STEP explicitly records a contract gap.
 
-This is the admin web dashboard only. Author dashboard and the reader app are out of
-scope until this list is done.
+STEPs 0–15 are the admin web dashboard. STEPs 16+ are the author dashboard in this
+same sequential tracker. The reader app remains out of scope.
 
 Status values: **Pending**, **In progress**, **Complete**.
 
@@ -36,6 +36,7 @@ CORS default includes the Vite origin, agent routing to
 | 13 | Create and rename categories | Complete |
 | 14 | Reject book with required reason | Complete |
 | 15 | Admin subscription refund | Complete |
+| 16 | Auth session + author shell | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -496,9 +497,40 @@ states the API owns the 7-day window and that a granted refund closes
 
 ---
 
+## STEP 16 — Auth session + author shell
+
+**Goal:** An author can sign in and see a protected author layout. Readers cannot
+use author routes (UX only; backend still enforces `Roles(AUTHOR, ADMIN)`).
+
+**APIs**
+
+- `POST /auth/login`
+- `GET /auth/me`
+
+**Notes**
+
+- Reuse the existing access-token session. Do not invent a second auth stack.
+- After login, `admin` goes to `/admin` and `author` goes to `/author`. Readers
+  see that this web app is not for their role.
+- Hide author nav unless the current role is `author` or `admin`, matching the
+  author HTTP Roles. Redirect others. Do not treat hidden buttons as security.
+- Do not duplicate publisher rules. Display `isPublisher` from `GET /auth/me`
+  only.
+- Shell: sidebar/drawer, page header, sign out.
+- Book list, create, upload, analytics, and earnings are later STEPs.
+
+**Routes:** `/login`, `/author` (layout). Sidebar Books link renders an empty
+state until that STEP lands.
+
+**Written:** login routes by role, `/` goes to `/login`, author UX guard,
+sidebar/drawer shell, sign out, home shows `GET /auth/me` identity. Non-authors
+see a forbidden screen. Admins may open `/author` because the API allows it.
+
+---
+
 ## Out of scope for this list
 
-- Author dashboard (books upload, author analytics/earnings)
+- Author book upload, author analytics/earnings (later STEPs)
 - Reader catalog / dual-engine reader / React Native
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
@@ -506,6 +538,7 @@ states the API owns the 7-day window and that a granted refund closes
 
 ## Implementation order
 
-Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
-STEP 8 must exist before STEP 9. STEPs 0–15 on this list are the current admin
-dashboard work. Remaining items on this list are out of scope.
+Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every admin
+screen. STEP 16 is the author-shell prerequisite for later author screens.
+STEP 8 must exist before STEP 9. STEPs 0–15 on this list are the completed admin
+dashboard work.
