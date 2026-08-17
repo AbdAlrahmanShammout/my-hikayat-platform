@@ -8,6 +8,12 @@ type AdminSubscriptionsListQuery = NonNullable<
 type AdminRevenuePeriodsListQuery = NonNullable<
   paths['/admin/revenue-periods']['get']['parameters']['query']
 >;
+type AdminPeriodEarningsQuery = NonNullable<
+  paths['/admin/revenue-periods/{id}/earnings']['get']['parameters']['query']
+>;
+type AdminPeriodAnalyticsQuery = NonNullable<
+  paths['/admin/revenue-periods/{id}/analytics']['get']['parameters']['query']
+>;
 type AdminCategoriesListQuery = NonNullable<
   paths['/admin/categories']['get']['parameters']['query']
 >;
@@ -61,6 +67,12 @@ export const queryKeys = {
         [...queryKeys.admin.revenuePeriods.all, 'list', filters] as const,
       detail: (revenuePeriodId: number) =>
         [...queryKeys.admin.revenuePeriods.all, 'detail', revenuePeriodId] as const,
+      earnings: (revenuePeriodId: number, filters: AdminPeriodEarningsQuery) =>
+        [...queryKeys.admin.revenuePeriods.all, revenuePeriodId, 'earnings', filters] as const,
+      analytics: (revenuePeriodId: number, filters: AdminPeriodAnalyticsQuery) =>
+        [...queryKeys.admin.revenuePeriods.all, revenuePeriodId, 'analytics', filters] as const,
+      heatmap: (revenuePeriodId: number, bookId: number) =>
+        [...queryKeys.admin.revenuePeriods.all, revenuePeriodId, 'heatmap', bookId] as const,
     },
   },
 } as const;

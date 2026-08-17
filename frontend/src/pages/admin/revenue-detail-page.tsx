@@ -10,12 +10,14 @@ import { Button } from '@/components/ui/button';
 import { AdminRevenuePeriodActions } from '@/features/revenue/components/admin-revenue-period-actions';
 import { AdminRevenuePeriodDetailSummary } from '@/features/revenue/components/admin-revenue-period-detail-summary';
 import { AdminRevenuePeriodPoolForm } from '@/features/revenue/components/admin-revenue-period-pool-form';
+import { AdminRevenuePeriodResults } from '@/features/revenue/components/admin-revenue-period-results';
+import { AdminRevenuePeriodShareActions } from '@/features/revenue/components/admin-revenue-period-share-actions';
 import { useAdminRevenuePeriod } from '@/features/revenue/hooks/use-admin-revenue-period';
 import { formatWireInstant } from '@/lib/format-wire-instant';
 import { parsePositiveInt } from '@/lib/parse-positive-int';
 
 /**
- * Admin revenue-period detail: pool, platform cut, and close.
+ * Admin revenue-period detail: pool, close, calculate, earnings, and analytics.
  */
 export function AdminRevenueDetailPage(): JSX.Element {
   const { revenuePeriodId: revenuePeriodIdParam } = useParams();
@@ -76,16 +78,18 @@ function AdminRevenueDetailContent({
     <>
       <PageHeader
         title={`${formatWireInstant(period.startsAt)} – ${formatWireInstant(period.endsAt)}`}
-        description="Pool amount is admin-set cents. Platform cut cannot change after close."
+        description="Pool amount is admin-set cents. Calculate writes shares from backend totals."
         actions={backToRevenueAction()}
       />
       <div className="space-y-6">
+        <AdminRevenuePeriodShareActions period={period} />
         <AdminRevenuePeriodActions period={period} />
         <AdminRevenuePeriodPoolForm
           key={`${period.id}-${period.updatedAt}-${period.status}`}
           period={period}
         />
         <AdminRevenuePeriodDetailSummary period={period} />
+        <AdminRevenuePeriodResults revenuePeriodId={period.id} />
       </div>
     </>
   );

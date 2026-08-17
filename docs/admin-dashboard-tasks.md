@@ -29,7 +29,7 @@ CORS default includes the Vite origin, agent routing to
 | 6 | Collections | Complete |
 | 7 | Category weights | Complete |
 | 8 | Revenue periods | Complete |
-| 9 | Revenue calculate, analytics, heatmap | Pending |
+| 9 | Revenue calculate, analytics, heatmap | Complete |
 | 10 | Audit log | Pending |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
@@ -321,6 +321,13 @@ and heatmap stay on STEP 9.
 
 **Routes:** `/admin/revenue/:id` (earnings/analytics tabs), `/admin/revenue/:id/books/:bookId/heatmap`
 
+**Written:** calculate and refresh-engagement on the period detail screen. Calculate is
+confirmed, requires `poolAmountCents`, and is allowed to run again. Earnings and
+analytics tabs show backend `authorCents`, `platformCutCents`, `weightedEngagement`,
+and `totalReadingMinutes` without recomputing splits. Visual scene time is labeled
+not paid. Heatmap at `/admin/revenue/:revenuePeriodId/books/:bookId/heatmap` uses
+`spreads` for fixed-layout and `chapters` for reflowable.
+
 ---
 
 ## STEP 10 — Audit log
@@ -353,5 +360,5 @@ events (metadata PATCH and category-weight PATCH are not required audit events).
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every screen.
 STEP 8 must exist before STEP 9. Other feature STEPs (10) can proceed after
-STEP 1 if needed. Calculate, analytics, and heatmap (STEP 9) is the next screen
-after revenue periods.
+STEP 1 if needed. Audit log (STEP 10) is the next screen after calculate,
+analytics, and heatmap.
