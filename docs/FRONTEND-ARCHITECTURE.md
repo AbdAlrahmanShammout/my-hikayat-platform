@@ -1,20 +1,22 @@
 # Frontend Architecture & Engineering Conventions
 
-> **Scope:** This document is the engineering source of truth for a React web dashboard.
-> It defines layering, folder organization, naming, dependency flow, UI system, data access,
-> and implementation rules.
+> **Scope:** This document describes an **engineering system** for a React web dashboard —
+> layering, folder organization, naming, dependency flow, UI system, data access, and
+> implementation rules. It deliberately excludes the business domain.
 >
-> **How to use it:** Follow this file when implementing dashboard screens. Do not invent a
-> parallel frontend architecture.
+> **How to use it:** An AI agent or developer starting an empty dashboard should be able to
+> read this file and build a *completely different* product that is structurally
+> indistinguishable from this one. Do not invent a parallel frontend architecture.
 >
 > **What this file is not:** a product spec, a sprint board, or a STEP/task list.
 > Do not update this file to record that a screen shipped, a library was installed,
-> or a STEP finished.
+> or a STEP finished. Do not record product role names, capability flags, content
+> types, or onboarding sequences here.
 >
-> **Reuse:** stack, layering, naming, and rules are meant to transfer to other dashboard
-> projects. Product-specific routes, field names, and OpenAPI paths below are **examples**
-> of following a live HTTP contract — replace them with that project's API. Delivery
-> status belongs in the project's task document.
+> **Reuse:** stack, layering, naming, and rules transfer to other dashboard projects.
+> Placeholders: `<audience>` for an API consumer group, `<feature>` / `Widget` for a
+> business resource. Live HTTP paths and field names belong in the product specification
+> and the OpenAPI contract. Delivery status belongs in the project's task document.
 
 ---
 
@@ -63,12 +65,13 @@ to explain the contract.
 ## 2. Dashboard scope
 
 This architecture covers an **authenticated React SPA dashboard** that talks to a
-separate HTTP API: operator/admin tools, author/publisher tools, and shared auth/shell.
+separate HTTP API: multiple audience shells (operator vs contributor) and shared
+auth.
 
 Out of this document’s primary scope:
 
-- Native or dual-engine reader/runtime clients. They may later share generated API
-  types, not this dashboard’s feature modules.
+- Native or content-runtime clients (for example a dual-engine reader). They may
+  later share generated API types, not this dashboard’s feature modules.
 - Marketing sites and server-rendered content sites.
 - A second backend-for-frontend. The existing API is the server.
 
@@ -209,14 +212,11 @@ frontend/
     pages/                   # route-level composition only
     features/
       auth/
-      books/
+      widgets/               # example resource; replace with the product's features
       categories/
-      collections/
       users/
-      subscriptions/
-      analytics/             # author analytics, heatmaps
-      earnings/              # author earnings / trends
-      revenue/               # admin revenue periods
+      analytics/
+      earnings/
       audit/
     components/              # reusable UI not owned by one feature
       ui/                    # shadcn/ui primitives
@@ -253,13 +253,13 @@ components. Pages must not:
 Business-oriented frontend functionality. Each feature may contain:
 
 ```
-features/books/
+features/widgets/
   components/
   hooks/
   api/                 # feature API functions using the shared client
   schemas/             # Zod schemas for forms (UX only)
   lib/                 # feature-local formatters
-  books.routes.ts      # route objects consumed by app/, if needed
+  widgets.routes.ts    # route objects consumed by app/, if needed
   *.spec.tsx
 ```
 
@@ -271,16 +271,13 @@ Example feature-to-API map (replace with the consuming project's contract):
 
 | Feature | Primary APIs (contract, not implementation) |
 | --- | --- |
-| `auth` | `POST /auth/login`, `POST /auth/register`, `GET /auth/me` |
-| `books` | `/author/books`, `/admin/books` (split UI by audience, share types) |
-| `categories` | `/admin/categories` |
-| `collections` | `/admin/collections` |
-| `users` | `/admin/users` |
-| `subscriptions` | `/admin/subscriptions` |
-| `analytics` | `/author/analytics`, heatmaps |
-| `earnings` | `/author/earnings`, trend |
-| `revenue` | `/admin/revenue-periods` |
-| `audit` | `/admin/audit-logs` |
+| `auth` | login, register, current-user; additional capability endpoints if the contract has them |
+| `widgets` | `/<audience>/widgets` (split UI by audience, share types) |
+| `categories` | operator taxonomy routes |
+| `users` | operator user-management routes |
+| `analytics` | contributor analytics and layout-aware views |
+| `earnings` | contributor payout display |
+| `audit` | operator audit-log routes |
 
 If two audiences share a resource, keep shared presentational pieces in
 `features/<name>/components` and audience-specific hooks next to the screens. Do not
@@ -311,8 +308,8 @@ wire types live in `generated/`. Do not create a global types dumping ground.
 Align with repository conventions where they do not fight React norms:
 
 - Files and directories: `kebab-case`
-- Components: `PascalCase` (`book-table.tsx` exporting `BookTable`)
-- Hooks: `camelCase` starting with `use` (`use-author-books.ts` exporting `useAuthorBooks`)
+- Components: `PascalCase` (`widget-table.tsx` exporting `WidgetTable`)
+- Hooks: `camelCase` starting with `use` (`use-audience-widgets.ts` exporting `useAudienceWidgets`)
 - One primary export per file, except shadcn-generated UI files which follow the
   generator layout
 - **No feature-level barrel `index.ts` files.** Import the exact file, matching the
@@ -433,8 +430,7 @@ Navigation should collapse to a sheet/drawer on small screens.
 
 ### 11.1 Server state
 
-Data from backend APIs: books, users, categories, collections, analytics, subscriptions,
-revenue, audit logs, the current user.
+Data from backend APIs: the resources this dashboard manages, plus the current user.
 
 Use **TanStack Query** consistently. Do not copy server data into a global client store
 unless a documented reason exists (for example an ephemeral upload progress overlay that
@@ -443,8 +439,8 @@ is not the resource itself).
 Query keys must be structured and feature-scoped, for example:
 
 ```ts
-['author', 'books', { limit, offset }]
-['admin', 'revenue-periods', periodId, 'earnings']
+['<audience>', 'widgets', { limit, offset }]
+['<audience>', 'widgets', widgetId, 'detail']
 ```
 
 Invalidate the smallest affected set after mutations. Avoid “invalidate everything.”
@@ -460,7 +456,7 @@ Do not create global state for state that only one component needs.
 URL search params are preferred for filters/pagination that users may share or refresh.
 
 The authenticated session (access token + current user) is application infrastructure
-in `app/`, not a feature store of books or earnings.
+in `app/`, not a feature store of widgets or earnings.
 
 ---
 
@@ -471,7 +467,7 @@ Components must not contain raw API implementation details.
 Preferred chain:
 
 ```
-Component → feature hook (useAuthorBooks) → api/data layer → backend
+Component → feature hook (useAudienceWidgets) → api/data layer → backend
 ```
 
 Feature hooks own loading, error, success, caching, invalidation, refetch, and
@@ -623,10 +619,11 @@ Honor `prefers-reduced-motion`.
 Route configuration belongs in `app/`. Route elements stay thin and compose features.
 
 Keep URL shapes stable and audience-prefixed when the product has multiple dashboards
-(example: `/login`, `/author/…`, `/admin/…`). Change them only with a product reason.
+(example: `/login`, `/<audience>/…`). Change them only with a product reason.
 
-Frontend guards are **UX only** (redirect unauthenticated users; hide admin nav from
-authors). Authorization is enforced by the backend. Hiding a button is not security.
+Frontend guards are **UX only** (redirect unauthenticated users; hide an audience nav
+from callers who cannot use that audience). Authorization is enforced by the backend.
+Hiding a button is not security.
 
 ---
 
@@ -656,6 +653,39 @@ backend config concern, not a frontend workaround.
 
 Use role and capability flags exactly as the wire contract defines them. Do not
 collapse distinct flags into one UI concept.
+
+**Identity vs domain capability in the UI.** The same split as the backend architecture
+applies on the dashboard:
+
+- **Identity role** is HTTP/workspace membership. UX route guards follow the same
+  audience the API `@Roles` (or equivalent) declares. Display it. Redirect callers
+  who cannot use that audience.
+- **Domain capability** is whether a business action is allowed (own a resource,
+  exercise a product capability). Display the flag the API returns. Disable the
+  action when it is false. Still surface the API error if the caller submits anyway.
+  Do not treat a capability flag as a second role or as permission to enter an
+  audience route.
+
+Do not expand a client-side “user” object with invented flags. Do not infer a
+capability from role, or a role from a capability, unless the product specification
+defines that coupling — and even then, display both fields the API returns.
+
+**Multi-step identity upgrades.** Public register may create a lesser identity. A
+later authenticated call may grant a capability and/or change the audience role and
+return a **new** session. The dashboard must:
+
+1. Call the contract in the order the API requires. Do not invent a combined register
+   endpoint.
+2. Treat every session payload as the same session type. A local name such as
+   “first session” describes account state at that moment, not a second type.
+3. Store the **new** token and principal only after the upgrade succeeds, then
+   navigate to that audience’s home.
+4. If register succeeds and the upgrade fails, persist the first session so the user
+   can retry the upgrade without registering again.
+
+Signed-in callers who already have an audience home skip the public register/sign-in
+forms. Product role names, capability names, paths, and legal pairs belong in the
+product specification, not in this file.
 
 ---
 
@@ -698,6 +728,12 @@ maintenance) and still plot **backend** series only.
 For layout-aware visualizations (heatmaps, canvases), render the payload the API
 returns. Do not synthesize cells or series the contract does not provide.
 
+When the API returns a rendering/layout discriminator, the view follows **that**
+field. Do not pick a visualization shape from a separate content-category or
+product-type field. A typical layout for a content type is a product expectation,
+not a UI rendering rule. Field names and legal values belong in the product
+specification.
+
 ---
 
 ## 24. Performance
@@ -738,7 +774,7 @@ Test behavior, not implementation structure.
 | Unit | Pure formatters, query-key helpers, error mappers |
 | Component | Important interactions and states (empty, error, disabled submit) |
 | Integration | Feature workflows across hook + UI with mocked API |
-| E2E | Critical journeys (login, author book list, admin review) against a running API when valuable |
+| E2E | Critical journeys (login, primary resource list, operator review) against a running API when valuable |
 
 Keep API tests in the API package and dashboard tests in the frontend package.
 Do not run frontend tests through the API test runner.

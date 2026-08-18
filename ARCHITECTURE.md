@@ -1070,6 +1070,11 @@ attribute the route requires. Anything that is a business invariant belongs in t
 | Operational policy | a guard injecting a domain service to assert the principal's account may act | `modules/<domain>/guards/` — it depends on a domain service |
 | Alternative token scheme | a bespoke guard extracting a custom header, validating via a domain token service, and attaching the payload to the request | `modules/<domain>/guards/`, with its parameter decorator in `modules/<domain>/decorators/` |
 
+Role authorization answers *which API audience the caller belongs to*. Domain capability,
+ownership, and eligibility answers *whether a business action is allowed*. The first belongs in a
+shared role guard against `Principal.role`. The second belongs in a domain service `assert…`
+method, or in a domain guard that injects that service — never in `common/` (see §18.8).
+
 Guards are applied per controller or per handler with `@UseGuards(...)`, and are also listed in the
 audience module's `providers` array so their dependencies resolve. There is no global guard.
 
@@ -1187,6 +1192,7 @@ Terminology inferred from actual responsibilities, not imported from a methodolo
 * validating business preconditions and throwing on violation
 * state-transition guards (assert current state before moving to the next)
 * ownership/tenancy checks (verify the resource belongs to the caller's scope)
+* domain-capability and eligibility assertions that are not identity roles (see §18.8)
 * hashing/derivation of sensitive values before persistence
 * multi-step orchestration across peer domains
 * applying default values for pagination and optional inputs
@@ -2063,7 +2069,9 @@ enum-level type inference while `common/` never learns the role names.
 1. A guard that needs more than `id` and `role` does not belong in `common/`. If it injects a domain
    service or reads a domain-specific field, it is a domain guard: put it in
    `modules/<domain>/guards/` and register it in that domain's module. `common/guards/` holds only
-   guards that are expressible against `Principal` and framework primitives.
+   guards that are expressible against `Principal` and framework primitives. Do not expand
+   `Principal` merely to expose domain-specific business state to shared authorization
+   infrastructure (see §18.8).
 2. The same applies to an alternative-token-scheme guard and its parameter decorator: if they
    validate through a domain token service, they live in that domain, not in the shared root.
 
@@ -2766,6 +2774,60 @@ the token at issuance. There is no permission table and no policy engine.
 inline `if (user.role === …)` in a controller or service. Business-state policies (as opposed to
 identity policies) belong in a domain service's `assert…` method, invoked by a policy guard.
 
+### 18.8 Identity roles vs domain capabilities
+
+Products often need two different answers about the same caller:
+
+1. **Which API audience / workspace may they use?** That is identity. It is a single `role` on the
+   principal and is evaluated by the shared role guard (§18.3, §18.7).
+2. **May they perform a particular business action** (own a resource, exercise a product capability,
+   pass an eligibility rule)? That is domain state. It is not identity.
+
+Those look similar in conversation ("they are allowed to X") and it is tempting to collapse them.
+The collapse is the architectural problem.
+
+**Why putting the capability on `Principal` is the wrong fix.** Shared authorization infrastructure
+must stay domain-agnostic (§14.4). If a generic guard can only see `{ id, role }`, the obvious
+workaround is to add the capability flag to `Principal` so `common/guards/` can read it. That
+imports a business concept into shared infrastructure, forces every product that copies this
+blueprint to carry the same field, and turns the role guard into a second policy engine. Do not
+expand a generic principal merely to expose domain-specific business state to shared guards.
+
+**Why using `role` as the capability check is also the wrong fix.** A privileged identity (an
+operator, an administrator, a staff role) may already be allowed on several HTTP audiences and still
+lack — or independently hold — a domain capability. Encoding the capability as a role change would
+either demote that privileged identity or grant the capability to every holder of that role. The
+identity field and the capability field answer different questions; they must be allowed to differ
+when the product needs that.
+
+**Where responsibility lives.**
+
+| Concern | Lives on | Enforced by |
+| --- | --- | --- |
+| HTTP / workspace identity | `Principal.role` — the one role field | the shared role guard, from `@Roles(...)` metadata |
+| Domain capability, ownership, eligibility | a field or invariant owned by the relevant domain | that domain's service `assert…` method (or a domain guard that calls it) |
+
+A shared authorization guard should only depend on generic authentication/authorization context. If
+authorization requires domain-specific state or a domain-specific service, that logic should live at
+the domain/application boundary rather than in shared infrastructure.
+
+**How the two layers interact.** Gaining a domain capability does not, by itself, grant an HTTP
+audience. Audience routes that declare `@Roles(...)` still require a matching identity role. If the
+product wants a caller both to enter an audience *and* to pass a capability check, the application
+must perform both mutations (or persist both facts). That coupling is a product invariant, not a
+reason to merge the checks. Conversely, holding an audience role does not imply the capability;
+resource-creating and ownership rules stay in the domain service.
+
+A privileged role may keep its identity when a capability is enabled. A non-privileged caller whose
+target audience is role-gated must receive that audience's role, or the shared guard will deny the
+route before the domain assertion ever runs.
+
+Do not treat a domain capability as a second HTTP role, a permission array, or a substitute for
+`@Roles`. Do not treat identity role as the ownership or eligibility check.
+
+The vocabulary of roles, the names of capabilities, and which pairs are legal are product concerns.
+They belong in the product specification, not in this file.
+
 ---
 
 ## 19. Cross-Cutting Concerns
@@ -3194,12 +3256,14 @@ Response body
 10. A cyclic runtime dependency between two services or two modules.
 11. A concrete repository implementation injected anywhere by its concrete class.
 12. Authorization logic inline in a controller or service (`if (user.role === …)`).
-13. Secrets, credentials, or connection strings in source or in documentation examples.
-14. Dead code committed as commented-out blocks or scratch files.
-15. A framework `HttpException` thrown from a service, guard, mapper, or repository.
-16. An HTTP status code assigned anywhere but the transport return handler's kind-to-status table.
-17. `total` in a list response derived from the page length instead of a count query.
-18. `enableCors()` without an explicit origin list, or a credential endpoint without a tightened rate
+13. Expanding `Principal` with domain-specific capability or eligibility fields so a shared guard
+    can read them — keep `Principal` to `{ id, role }` and assert those rules in the domain (§18.8).
+14. Secrets, credentials, or connection strings in source or in documentation examples.
+15. Dead code committed as commented-out blocks or scratch files.
+16. A framework `HttpException` thrown from a service, guard, mapper, or repository.
+17. An HTTP status code assigned anywhere but the transport return handler's kind-to-status table.
+18. `total` in a list response derived from the page length instead of a count query.
+19. `enableCors()` without an explicit origin list, or a credential endpoint without a tightened rate
     limit.
 
 ---
@@ -3900,6 +3964,10 @@ for the whole project, never file by file.
 * **RULE-061 [E]** — Role checks live in a guard, never inline in a controller or service.
 * **RULE-062 [E]** — Business-state policies are `assert…` methods on a domain service, invoked by a
   policy guard.
+* **RULE-062a [E]** — Identity role and domain capability are different concerns. Do not expand
+  `Principal` with capability or eligibility fields so a shared guard can read them. Do not treat a
+  domain capability as a second HTTP role. Audience access is `@Roles` + the role guard; ownership
+  and eligibility are domain `assert…` methods (§18.8).
 * **RULE-063 [E]** — All token signing and verification goes through the token provider service. Each
   token purpose gets its own secret, and verification is never signature-only: the verified payload's
   subject must be compared against the resource being acted on, because a valid signature proves only
@@ -4031,6 +4099,7 @@ table.
 ```
 [ ] Request DTO with @ApiProperty + class-validator on every field
 [ ] Guards applied; @Roles or the equivalent metadata declared
+[ ] Domain capability, ownership, and eligibility asserted in the domain service — not by expanding Principal (§18.8)
 [ ] @ApiOperation, @ApiParam/@ApiBody, and @ApiResponse for every documented status
 [ ] Handler destructures the DTO field by field into the service input
 [ ] Scoping derived from @LoggedInUser(), never from the client
