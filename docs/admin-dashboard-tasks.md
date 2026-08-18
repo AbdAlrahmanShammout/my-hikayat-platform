@@ -4,10 +4,10 @@ This file is the **delivery tracker** for the admin dashboard: what to build, in
 order, and whether it is done. Architecture conventions live in
 `docs/FRONTEND-ARCHITECTURE.md` and must not be updated for STEP completion.
 
-Product requirements: `docs/SRS.md` §2.3, §2.4, §7.3–7.4, §12.3.
+Product requirements: `docs/SRS.md` §2.2, §2.5, §2.3, §2.4, §7.3–7.4, §12.3.
 Frontend engineering: `docs/FRONTEND-ARCHITECTURE.md`.
-Backend contracts: existing `/admin/*` and `/auth/*` HTTP APIs. Do not add backend
-endpoints unless a STEP explicitly records a contract gap.
+Backend contracts: existing `/admin/*`, `/author/*`, `/auth/*`, and `POST /user/publisher`.
+Do not add backend endpoints unless a STEP explicitly records a contract gap.
 
 STEPs 0–15 are the admin web dashboard. STEPs 16+ are the author dashboard in this
 same sequential tracker. The reader app remains out of scope.
@@ -37,6 +37,18 @@ CORS default includes the Vite origin, agent routing to
 | 14 | Reject book with required reason | Complete |
 | 15 | Admin subscription refund | Complete |
 | 16 | Auth session + author shell | Complete |
+| 17 | Author books list | Complete |
+| 18 | Author book create | Complete |
+| 19 | Author book detail and metadata edit | Complete |
+| 20 | Author source upload | Complete |
+| 21 | Author preview image and promo video | Complete |
+| 22 | Author submit for review | Complete |
+| 23 | Author book rejection history | Complete |
+| 24 | Author category picker | Complete |
+| 25 | Author analytics | Complete |
+| 26 | Author earnings | Complete |
+| 27 | Author heatmap | Complete |
+| 28 | Author account create | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -153,7 +165,8 @@ the current UTC month period stays on STEP 8.
 
 - Filterable table + detail page
 - Show `publishingStatus`, `processingStatus`, `layoutType`, `bookType`, owner,
-  categories, `publishedAt`
+  categories, `publishedAt`. Display both fields. Do not treat `bookType` as
+  the reader engine. Engine and heatmap layout follow `layoutType`.
 - Approve/reject only when `in_review`
 - Unpublish only when catalog-visible; republish only when approved and unpublished
 - Disable or explain actions the backend will reject; still handle 400/409 from the API
@@ -192,7 +205,7 @@ to the list.
 **Written:** filterable `GET /admin/users` table (`role`, `isPublisher`, exact `email`,
 `limit`/`offset`) and a detail screen at `/admin/users/:userId`. PATCH is limited to
 `role` and `isPublisher`. Reader/author publisher coupling is reflected in the form and
-still enforced by the API (`USER_INVALID_CAPABILITY`). An admin cannot change or delete
+still enforced by the API (`USER_INVALID_CAPABILITY`; SRS §2.5). An admin cannot change or delete
 their own account (`USER_SELF_MANAGEMENT`). The last remaining admin cannot be demoted
 or deleted (`USER_LAST_ADMIN`); 400/409 from the API still surface. Soft-delete returns
 to the list.
@@ -321,7 +334,9 @@ and heatmap stay on STEP 9.
 
 - Show backend `authorCents`, `platformCutCents`, `weightedEngagement`,
   `totalReadingMinutes`. Do not recompute category-weight averages or pool splits.
-- Heatmap is layout-aware: `spreads` for fixed-layout, `chapters` for reflowable.
+- Heatmap is layout-aware from the API `layoutType`: `spreads` for
+  `fixed_layout`, `chapters` for `reflowable`. Do not choose the heatmap
+  shape from `bookType`.
 - Confirm calculate; recalculate is allowed and creates another audit row.
 - Visual scene time may be shown; it is **not** paid.
 
@@ -510,27 +525,380 @@ use author routes (UX only; backend still enforces `Roles(AUTHOR, ADMIN)`).
 **Notes**
 
 - Reuse the existing access-token session. Do not invent a second auth stack.
-- After login, `admin` goes to `/admin` and `author` goes to `/author`. Readers
-  see that this web app is not for their role.
+- After login, `admin` goes to `/admin` and `author` goes to `/author`.
 - Hide author nav unless the current role is `author` or `admin`, matching the
-  author HTTP Roles. Redirect others. Do not treat hidden buttons as security.
+  author HTTP Roles. Redirect others from `/author`. Do not treat hidden
+  buttons as security.
+- A signed-in reader on `/login` or `/register` is offered publisher enable
+  (STEP 28). A reader who opens `/author` still sees the author-route forbidden
+  screen. `isPublisher` is not an HTTP role and does not admit `/author`.
 - Do not duplicate publisher rules. Display `isPublisher` from `GET /auth/me`
   only.
 - Shell: sidebar/drawer, page header, sign out.
 - Book list, create, upload, analytics, and earnings are later STEPs.
 
-**Routes:** `/login`, `/author` (layout). Sidebar Books link renders an empty
-state until that STEP lands.
+**Routes:** `/login`, `/author` (layout). `/author/books` is STEP 17.
 
 **Written:** login routes by role, `/` goes to `/login`, author UX guard,
-sidebar/drawer shell, sign out, home shows `GET /auth/me` identity. Non-authors
-see a forbidden screen. Admins may open `/author` because the API allows it.
+sidebar/drawer shell, sign out, home shows `GET /auth/me` identity. Readers who
+open `/author` see a forbidden screen. Admins may open `/author` because the API
+allows it. Reader sign-in onboarding to publisher is STEP 28.
+
+---
+
+## STEP 17 — Author books list
+
+**Goal:** An author can list books they own. The list is owner-scoped by the API.
+The UI does not show other publishers’ books and does not re-filter ownership.
+
+**APIs**
+
+- `GET /author/books` — optional `publishingStatus` (`pending` \| `in_review` \|
+  `approved` \| `rejected`), `limit`, `offset`
+
+**Notes**
+
+- Display backend `publishingStatus`, `processingStatus`, `layoutType`, `bookType`,
+  categories, and `publishedAt`. Do not invent catalog visibility. `bookType` is
+  content metadata; `layoutType` is the detected rendering model.
+- Do not call `/admin/books` on this screen. Create, detail, upload, submit-for-review,
+  and rejection history stay on later STEPs.
+- Admins may open `/author/books` because author HTTP allows `ADMIN`; they still only
+  see books they own.
+
+**Routes:** `/author/books`
+
+**Written:** filterable `GET /author/books` table (`publishingStatus`, `limit`/`offset`)
+at `/author/books`. Empty, loading, and error states are covered. There is no create
+or detail action yet.
+
+---
+
+## STEP 18 — Author book create
+
+**Goal:** An author with publisher capability can create a book they own. The backend
+sets owner and pending publishing status. The UI does not invent publisher rules.
+
+**APIs**
+
+- `POST /author/books` `{ title, description, bookType }` — optional `categoryIds`
+  omitted until the category-picker STEP
+- `GET /auth/me` — display `isPublisher` only
+
+**Notes**
+
+- Owner is the authenticated publisher. Do not send ownerId.
+- Do not send publishing status, processing status, or layout type.
+- Disable create when displayed `isPublisher` is false. Still surface
+  `BOOK_OWNER_NOT_PUBLISHER` from the API. `isPublisher` is a book-ownership
+  capability, not an HTTP role. Author routes still require `role` `author` or
+  `admin`.
+- Category assignment stays on a later STEP.
+
+**Routes:** `/author/books`
+
+**Written:** create form posts `POST /author/books` with title, description, and
+bookType. `isPublisher` comes from `GET /auth/me`. Empty list still allows create.
+Success opens the new book detail. Upload and categories are later STEPs.
+
+---
+
+## STEP 19 — Author book detail and metadata edit
+
+**Goal:** An author can open one owned book and update title, description, and type.
+Publishing status is displayed, not patched.
+
+**APIs**
+
+- `GET /author/books/:id`
+- `PATCH /author/books/:id` `{ title?, description?, bookType? }` — omitted fields
+  unchanged. Do not send publishing status, processing status, or layout type.
+
+**Notes**
+
+- Ownership is enforced by the API (`404` when the actor is not the owner and is not
+  an admin). Do not re-filter ownership in the UI.
+- `bookType` is author-editable metadata. `layoutType` is processing-detected and
+  not patched here. Changing type does not change the reader engine.
+- Assigned categories are displayed from the GET payload. Category edit stays on the
+  picker STEP. Do not send `categoryIds`.
+- Source upload is STEP 20. Submit-for-review and rejection history stay on later
+  STEPs.
+
+**Routes:** `/author/books/:bookId`
+
+**Written:** detail at `/author/books/:bookId` loads `GET /author/books/:id`. Metadata
+PATCH is limited to title, description, and bookType. Status fields are read-only.
+List rows and a successful create open this screen.
+
+---
+
+## STEP 20 — Author source upload
+
+**Goal:** An author can upload an EPUB or PDF source for an owned book. The backend
+encrypts and stores the file. The browser does not encrypt.
+
+**APIs**
+
+- `POST /author/books/:bookId/source` — multipart field `file`
+
+**Notes**
+
+- Accept EPUB or PDF only as UX. The API remains authoritative
+  (`BOOK_ASSET_INVALID_SOURCE_TYPE`, `BOOK_ASSET_EMPTY_SOURCE`,
+  `BOOK_ASSET_SOURCE_TOO_LARGE`).
+- Do not send JSON. Do not set `Content-Type` on the multipart request.
+- Do not list historical source assets; there is no author source-list API. Show the
+  `201` `BookAssetResponse` (`originalFileName`, `contentType`, `byteSize`,
+  `isEncrypted`). Do not display `storageKey`.
+- A successful upload resets processing status on the server; invalidate the book
+  queries so the summary refreshes.
+- Preview image, promo video, and submit-for-review stay on later STEPs.
+
+**Routes:** `/author/books/:bookId`
+
+**Written:** source form posts multipart `file` to `POST /author/books/:bookId/source`.
+Client checks empty, size, and extension only. Encryption stays on the API. Success
+shows the created asset without `storageKey`.
+
+---
+
+## STEP 21 — Author preview image and promo video
+
+**Goal:** An author can upload catalog media for an owned book. Preview is JPEG/PNG/WebP.
+Promo video is optional MP4/WebM. Encryption of catalog media is not done in the
+browser; the API stores these assets unencrypted.
+
+**APIs**
+
+- `POST /author/books/:bookId/preview-image` — multipart field `file`
+- `POST /author/books/:bookId/promo-video` — multipart field `file`
+
+**Notes**
+
+- Client type/size checks are UX only. The API remains authoritative
+  (`BOOK_ASSET_INVALID_PREVIEW_TYPE`, `BOOK_ASSET_EMPTY_PREVIEW`,
+  `BOOK_ASSET_PREVIEW_TOO_LARGE`, `BOOK_ASSET_INVALID_PROMO_VIDEO_TYPE`,
+  `BOOK_ASSET_EMPTY_PROMO_VIDEO`, `BOOK_ASSET_PROMO_VIDEO_TOO_LARGE`).
+- Do not list historical media; there is no author media-list API. Show the `201`
+  `BookAssetResponse` without `storageKey`. Display `isEncrypted` from the API.
+- A promo upload replaces the stored promo video when one already exists. Do not
+  offer delete; there is no delete media HTTP.
+- Submit-for-review stays on a later STEP.
+
+**Routes:** `/author/books/:bookId`
+
+**Written:** preview and optional promo forms post multipart `file` to the matching
+author media routes. Success shows filename, content type, byte size, and
+`isEncrypted` from the API.
+
+---
+
+## STEP 22 — Author submit for review
+
+**Goal:** An author can submit an owned book for editorial review. The backend owns
+processing and the publishing-status machine. The UI does not PATCH publishing status.
+
+**APIs**
+
+- `POST /author/books/:bookId/submit-for-review` — no body; returns the book
+
+**Notes**
+
+- Enable from displayed `publishingStatus` of `pending` or `rejected` only (`pending`
+  and `rejected` can move to `in_review`). Still surface
+  `BOOK_INVALID_PUBLISHING_TRANSITION` and `BOOK_NOT_READY_FOR_REVIEW`.
+- Do not require `processingStatus === ready` in the UI. The API may process the
+  source first.
+- Do not send publishing status, processing status, or layout type.
+
+**Routes:** `/author/books/:bookId`
+
+**Written:** confirm action posts `POST /author/books/:bookId/submit-for-review`.
+Disabled from displayed `in_review` and `approved`. Success refreshes the book
+record so `publishingStatus` updates.
+
+---
+
+## STEP 23 — Author book rejection history
+
+**Goal:** An author can read rejection reasons for an owned book from the existing
+audit log. An empty list means the book was never rejected.
+
+**APIs**
+
+- `GET /author/books/:id/rejection-history` — `book_rejected` audit rows;
+  `limit` / `offset`
+
+**Notes**
+
+- History is the append-only audit log filtered by action and subject. Do not invent
+  a second rejection store or missing reasons.
+- Do not link to admin audit or admin user screens from this table.
+- Display `createdAt`, `actorUserId`, and `audit.reason` from the API.
+
+**Routes:** `/author/books/:bookId`
+
+**Written:** history panel on the detail page is `GET /author/books/:id/rejection-history`
+(`rejectionOffset`). Empty history is shown as an empty list. Reasons come from
+`audit.reason`.
+
+---
+
+## STEP 24 — Author category picker
+
+**Goal:** An author can assign admin-owned categories when creating or editing a book.
+The taxonomy is read-only. The author app does not create, rename, or delete
+categories.
+
+**APIs**
+
+- `GET /author/categories` — read-only taxonomy, including `categoryWeight`;
+  `limit` / `offset`
+- `POST /author/books` `{ title, description, bookType, categoryIds? }`
+- `PATCH /author/books/:id` `{ title?, description?, bookType?, categoryIds? }`
+
+**Notes**
+
+- Do not add a category-management screen or create form on the author app.
+- Empty taxonomy is an empty list from the API, not invented options.
+- Do not recompute category weights. Display names from `GET /author/categories`.
+- Assigned categories on GET remain visible even if they fall outside the lookup page.
+
+**Routes:** `/author/books`, `/author/books/:bookId`
+
+**Written:** create and metadata forms load `GET /author/categories` and send
+`categoryIds`. There is no author category create path.
+
+---
+
+## STEP 25 — Author analytics
+
+**Goal:** An author can read engagement totals and per-book rows for one revenue
+period. The UI displays backend values. It does not recompute weighted engagement.
+
+**APIs**
+
+- `GET /author/analytics` — `revenuePeriodId` required; `limit` / `offset`;
+  totals and `bookEngagements` ranked by the API
+- `GET /author/earnings/trend` — period lookup for `revenuePeriodId` only
+  (dates and status). Do not display `authorCents` on this screen.
+
+**Notes**
+
+- There is no author `GET /author/revenue-periods`. Trend points are the period list.
+- Empty engagement is an empty list from the API, not invented rows.
+- Visual scene time is displayed and is not paid.
+- Heatmap stays on a later STEP. Do not link to a heatmap screen yet.
+- Do not re-sort API-ranked rows.
+
+**Routes:** `/author/analytics`
+
+**Written:** analytics page loads `GET /author/analytics` for the selected
+`revenuePeriodId`. Totals are shown as returned. Period options come from
+`GET /author/earnings/trend` without showing cents.
+
+---
+
+## STEP 26 — Author earnings
+
+**Goal:** An author can read payout cents by revenue period and per owned book. The UI
+displays backend cents. It does not recalculate pool shares or platform cut.
+
+**APIs**
+
+- `GET /author/earnings/trend` — `limit` / `offset`; `authorCents` per period
+- `GET /author/earnings` — `revenuePeriodId` required; `limit` / `offset`;
+  `authorCents` total and `bookRevenues`
+
+**Notes**
+
+- Do not sum row cents in the browser. Display `authorCents` from each endpoint.
+- Do not re-sort API-ranked rows.
+- Empty earnings is an empty list from the API, not invented shares.
+- Heatmap stays on a later STEP. Do not link to admin revenue or user screens.
+
+**Routes:** `/author/earnings`
+
+**Written:** earnings page shows trend cents from `GET /author/earnings/trend` and
+per-book shares from `GET /author/earnings` for the selected `revenuePeriodId`.
+
+---
+
+## STEP 27 — Author heatmap
+
+**Goal:** An author can view layout-aware engagement cells for an owned book in a
+revenue period. The UI renders the payload the API returns. It does not invent cells.
+
+**APIs**
+
+- `GET /author/analytics/books/:bookId/heatmap` — `revenuePeriodId` required;
+  `layoutType`, `spreads`, `chapters`
+
+**Notes**
+
+- Fixed-layout uses `spreads`. Reflowable uses `chapters`. Unknown `layoutType`
+  shows empty, not synthesized cells. Choose the view from heatmap `layoutType`,
+  not from `bookType`.
+- Do not re-sort API-ordered cells (hottest first).
+- Missing reflowable titles are labeled, not invented.
+- Visual scene time is displayed and is not paid.
+- Ownership is enforced by the API (`404`). Do not re-filter ownership in the UI.
+
+**Routes:** `/author/analytics/books/:bookId/heatmap`
+
+**Written:** heatmap page loads `GET /author/analytics/books/:bookId/heatmap`.
+Analytics rows open this screen with `revenuePeriodId`.
+
+---
+
+## STEP 28 — Author account create
+
+**Goal:** A visitor can start Author / Publisher onboarding from this dashboard.
+Public register still creates a reader. The UI then enables publisher capability.
+There is no author-only register API. `/register` is part of the existing
+author onboarding flow, not a separate product.
+
+**Product flow**
+
+1. Visitor opens `/register` (Create an author account), or follows the link
+   from `/login`.
+2. `POST /auth/register` creates a reader (`role = reader`,
+   `isPublisher = false`) and returns a normal `AuthSession`. A local name such
+   as `readerSession` is not a second session type.
+3. `POST /user/publisher` uses that reader token, sets `isPublisher = true`,
+   promotes `reader → author`, and returns a **new** `AuthSession`.
+4. The client stores the new author session and navigates to `/author`.
+5. If step 3 fails after step 2 succeeded, the reader session is stored so the
+   become-publisher panel can retry.
+
+Signed-in authors and admins who open `/register` or `/login` go to their
+dashboard. A signed-in reader sees become-publisher instead of a dead-end
+forbidden screen. `isPublisher` is a book-ownership capability. It is not an
+HTTP role and does not by itself admit `/author`.
+
+**APIs**
+
+- `POST /auth/register` — `{ email, password }`; always creates a reader
+- `POST /user/publisher` — authenticated; a reader becomes `author` with
+  `isPublisher: true`; an admin stays `admin` with `isPublisher: true`
+
+**Notes**
+
+- Do not invent `POST /auth/register-as-author`.
+- Client password bounds are UX only (`8`–`72`). The API remains authoritative.
+- Login links to `/register`. Register links to `/login`.
+- SRS: §2.2, §2.5.
+
+**Routes:** `/register`. `/login` remains the sign-in screen.
+
+**Written:** public `/register` form, register-then-publisher mutation, become-
+publisher panel for signed-in readers, login link to create an author account.
 
 ---
 
 ## Out of scope for this list
 
-- Author book upload, author analytics/earnings (later STEPs)
 - Reader catalog / dual-engine reader / React Native
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
@@ -540,5 +908,8 @@ see a forbidden screen. Admins may open `/author` because the API allows it.
 
 Implement STEPs in order. STEP 0 and STEP 1 are prerequisites for every admin
 screen. STEP 16 is the author-shell prerequisite for later author screens.
-STEP 8 must exist before STEP 9. STEPs 0–15 on this list are the completed admin
-dashboard work.
+STEP 17 depends on STEP 16. STEP 18 depends on STEP 17. STEP 19 depends on
+STEP 17. STEP 20 depends on STEP 19. STEP 21 depends on STEP 19. STEP 22 depends on STEP 19. STEP 23 depends on STEP 19. STEP 24 depends on
+STEP 18 and STEP 19. STEP 25 depends on STEP 16. STEP 26 depends on STEP 16. STEP 27 depends on
+STEP 25. STEP 28 depends on STEP 16. STEP 8 must exist before STEP 9.
+STEPs 0–15 on this list are the completed admin dashboard work.

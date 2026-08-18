@@ -27,7 +27,9 @@ The platform supports:
 
 ## **2.1 Reader (User)**
 
-- Create account / login
+- Create account / login. Public `POST /auth/register` always creates a
+  reader (`role = reader`, `isPublisher = false`). It does not create an
+  author.
 
 - Subscribe to platform (single subscription model)
 
@@ -43,7 +45,8 @@ The platform supports:
 
 ## **2.2 Author / Publisher**
 
-- Any user can become a publisher
+- Any user can become a publisher. Public register does not create an
+  author. There is no author-only register API.
 
 - Upload books (PDF / EPUB)
 
@@ -77,6 +80,39 @@ Publishers manage their own books through the author book API:
 
 A publisher cannot retrieve or update another publisher’s book through
 these endpoints.
+
+Becoming a publisher is a two-stage authenticated flow. It is not a
+single register call. Dashboard UX for multi-step identity upgrades is
+generic (`docs/FRONTEND-ARCHITECTURE.md` §21). This section is the
+product mapping:
+
+1. `POST /auth/register` `{ email, password }` creates a normal reader
+   (`role = reader`, `isPublisher = false`) and returns an auth session.
+   That response is a normal `AuthSession`. A name such as
+   `readerSession` only describes the account at that moment; it is not
+   a second session type.
+
+2. `POST /user/publisher` uses that authenticated reader token, enables
+   publisher capability, promotes `reader → author`, and returns a new
+   `AuthSession` (`role = author`, `isPublisher = true`). An admin who
+   calls this path keeps `role = admin` and gets `isPublisher = true`.
+
+3. The author dashboard stores the new session and opens `/author`.
+
+4. If publisher activation fails after register succeeded, the reader
+   session is persisted so the user can retry `POST /user/publisher`
+   later.
+
+The author dashboard onboarding page is `/register` (Create an author
+account). It is part of this Author / Publisher flow, not a separate
+product. The visitor submits email and password; the page calls register
+then publisher enable; on success the user enters `/author`. A signed-in
+reader who opens `/login` or `/register` can retry publisher enable
+without registering again. `/login` remains the sign-in screen.
+
+`isPublisher` is a business capability (whether the account may own
+books). It is not an HTTP role and does not by itself authorize
+`/author/*`. See §2.5.
 
 ## **2.3 Admin / Moderator**
 
@@ -236,6 +272,63 @@ updates are not audited as revenue calculation. Recalculating the same
 revenue period produces another audit record on each successful
 calculation.
 
+## **2.5 `role` and `isPublisher`**
+
+`role` and `isPublisher` are two different fields on the user. They are
+not two names for the same fact, and `isPublisher` is not an alternative
+HTTP role. The reusable architectural split (HTTP identity vs domain
+capability, and why the shared principal stays `{ id, role }`) is
+`ARCHITECTURE.md` §18.8. Dashboard UX follows the same split
+(`docs/FRONTEND-ARCHITECTURE.md` §21) without naming these fields.
+This section is the product mapping, including `/register` onboarding.
+
+- `role` is HTTP/API identity and workspace authorization:
+  `reader`, `author`, or `admin`. It is enforced by `RolesGuard` and
+  `@Roles(...)`. Author HTTP (`/author/*`) requires `author` or
+  `admin`. Admin HTTP (`/admin/*`) requires `admin`. Reader HTTP does
+  not declare `@Roles`; any authenticated user may call it.
+
+- `isPublisher` is a business capability: whether the account may own
+  books. It is enforced by the book domain when creating a book
+  (`BOOK_OWNER_NOT_PUBLISHER`). It is not read by `RolesGuard`.
+
+Valid combinations:
+
+| role   | isPublisher | Valid | Meaning                                    |
+| ------ | ----------- | ----- | ------------------------------------------ |
+| reader | false       | Yes   | Normal reader                              |
+| reader | true        | No    | Invalid capability state                   |
+| author | true        | Yes   | Publisher / author                         |
+| author | false       | No    | Invalid capability state                   |
+| admin  | false       | Yes   | Admin who does not publish their own books |
+| admin  | true        | Yes   | Admin who can also own/publish books       |
+
+`PATCH /admin/users` rejects the invalid pairs
+(`USER_INVALID_CAPABILITY`). Enabling publisher on a reader also
+promotes `role` to `author`. Disabling publisher on an author also
+demotes `role` to `reader`.
+
+Important distinctions:
+
+- A reader with `isPublisher = true` (if it could be stored) would still
+  not be authorized to access `/author/*`, because those routes check
+  `role`, not the publisher flag.
+
+- An author with `isPublisher = false` (if it could be stored) would
+  have access to the author API but would not be allowed to create or
+  own books.
+
+- Therefore a normal reader becoming a publisher must transition from
+  `role = reader`, `isPublisher = false` to `role = author`,
+  `isPublisher = true`. Both fields change. See §2.2 for the HTTP
+  sequence.
+
+- Admins are the exception: an admin keeps `role = admin` when
+  publisher capability is enabled and may independently have
+  `isPublisher = true`. An admin without publisher capability may still
+  call `/author/*` because `@Roles` includes `admin`, but cannot create
+  a book they own.
+
 # **3. Book Management System**
 
 Each book contains:
@@ -260,22 +353,66 @@ Each book contains:
 
 - Published date
 
-- Layout type:
+- Layout type (`layoutType`):
 
-  - Reflowable
+  - Reflowable (`reflowable`)
 
-  - Fixed-Layout
+  - Fixed-Layout (`fixed_layout`)
 
-- Book type:
+- Book type (`bookType`):
 
-  - Standard Chapter Book
+  - Standard Chapter Book (`standard_chapter`)
 
-  - Picture Book
+  - Picture Book (`picture_book`)
 
-  - Fixed-Layout Illustrated Chapter Book
+  - Illustrated Chapter Book (`illustrated_chapter`)
 
-The system must detect the EPUB layout type and automatically use the
-appropriate reading engine.
+`bookType` and `layoutType` are different fields. They are not
+interchangeable.
+
+- `bookType` describes **what kind of book it is** from a
+  product/content perspective. The author selects it on create or
+  metadata edit. It is stored and displayed as book metadata. It must
+  not select the reader engine.
+
+- `layoutType` describes **how the book should be rendered and read**.
+  Book processing detects it from the source/EPUB structure and
+  persists it. The reader engine, reading-engagement model, heatmaps,
+  and revenue calculations follow `layoutType`, not `bookType`.
+  Dashboard visualizations follow the API layout discriminator
+  (`docs/FRONTEND-ARCHITECTURE.md` §23) without naming these fields.
+
+| Book type           | API value             | Meaning                                                   | Typical layout |
+| ------------------- | --------------------- | --------------------------------------------------------- | -------------- |
+| Standard chapter    | `standard_chapter`    | Normal text-based novel/chapter book                      | Reflowable     |
+| Picture book        | `picture_book`        | Visual book where the page itself is artwork              | Fixed-layout   |
+| Illustrated chapter | `illustrated_chapter` | Chapter book whose pages combine text with locked artwork | Fixed-layout   |
+
+Intended product meaning:
+
+- `standard_chapter` is a normal text book. Its text is expected to
+  reflow, so readers can use font size, spacing, and margins.
+
+- `picture_book` is page-as-artwork. The designed page must remain
+  visually intact, so it is typically produced as a fixed-layout EPUB
+  and read with the canvas reader and zoom rather than text reflow.
+
+- `illustrated_chapter` is a chapter-based book where artwork is part
+  of the page composition. It is typically a fixed-layout visual book,
+  not a normal reflowable novel.
+
+Typical layout is the expected/common case, not a technical guarantee.
+Do not assume a `bookType` implies a `layoutType`. Processing stores
+whatever layout the source actually has. For example:
+
+- `bookType = standard_chapter` and `layoutType = fixed_layout` must
+  open in the fixed-layout/canvas reader.
+
+- `bookType = picture_book` and `layoutType = reflowable` must open in
+  the reflowable reader.
+
+The system must detect the EPUB `layoutType` and automatically use the
+matching reading engine from that field.
 
 A book’s publishing status is one of: pending, in review, approved, or
 rejected. Unpublished is not a publishing status.
@@ -291,9 +428,11 @@ author/admin lists.
 
 ## **3.1 Fixed-Layout Books**
 
-Picture Books and Illustrated Chapter Books that rely heavily on
-integrated artwork, doodles, hand-drawn fonts, or specific page artwork
-must use a Fixed-Layout presentation.
+Books whose detected `layoutType` is `fixed_layout` must use a
+Fixed-Layout presentation. Picture books and illustrated chapter books
+are typically produced this way when they rely heavily on integrated
+artwork, doodles, hand-drawn fonts, or specific page artwork. The
+engine still follows the stored `layoutType`, not `bookType`.
 
 The original page composition, artwork, typography, and text alignment
 must be preserved.
@@ -305,13 +444,14 @@ be reflowed.
 
 ## **4.1 Reader Features**
 
-The platform must implement a **Dual Reader Engine** that automatically
-detects the book's layout type and selects the appropriate reading
-experience.
+The platform must implement a **Dual Reader Engine** that selects the
+reading experience from the book's stored `layoutType`. It must not
+select the engine from `bookType`.
 
 ### **Reflowable Books**
 
-For standard chapter books using a reflowable layout:
+For books whose `layoutType` is `reflowable` (typically a standard
+chapter book):
 
 - Built-in reader (EPUB/PDF)
 
@@ -331,7 +471,8 @@ For standard chapter books using a reflowable layout:
 
 ### **Fixed-Layout Books**
 
-For Picture Books and Fixed-Layout Illustrated Chapter Books:
+For books whose `layoutType` is `fixed_layout` (typically a picture book
+or illustrated chapter book):
 
 - Use a Fixed-Layout Canvas Viewport
 
@@ -358,8 +499,8 @@ For Picture Books and Fixed-Layout Illustrated Chapter Books:
 - Support Zoom In / Zoom Out
 
 The application must automatically switch to **Fixed-Layout Canvas
-Mode** for Picture Books and Illustrated Chapter Books to preserve
-artwork integrity and text alignment.
+Mode** when `layoutType` is `fixed_layout`, to preserve artwork
+integrity and text alignment. Do not switch engines from `bookType`.
 
 ### **Aspect Ratio**
 
@@ -421,8 +562,7 @@ User can resume:
 
 ### **Fixed-Layout Books**
 
-For Picture Books and Fixed-Layout Illustrated Chapter Books, Smart
-Resume must save:
+For books whose `layoutType` is `fixed_layout`, Smart Resume must save:
 
 - Last Spread ID
 
@@ -448,6 +588,8 @@ System tracks deep reading behavior.
 ## **5.1 Metrics per user / book**
 
 ### **Reflowable Books**
+
+For books whose `layoutType` is `reflowable`:
 
 - Time per page
 
@@ -486,7 +628,7 @@ not the chapter ledger.
 
 ### **Fixed-Layout Books**
 
-For Picture Books and Fixed-Layout Illustrated Chapter Books:
+For books whose `layoutType` is `fixed_layout`:
 
 - Time per page
 
@@ -511,9 +653,9 @@ relying on scrolling text or reading speed.
 **Visual Scene Time** represents the amount of active reading time spent
 by a user viewing a specific page or spread in a Fixed-Layout book.
 
-This metric is used to measure engagement for Picture Books and
-Illustrated Chapter Books where traditional scrolling and reading-speed
-metrics are not applicable.
+This metric measures visual engagement on a `fixed_layout` book, where
+traditional scrolling and reading-speed metrics are not applicable. It
+follows `layoutType`, not `bookType`.
 
 ## **5.2 Session Tracking Model**
 
@@ -625,11 +767,12 @@ For a book assigned to multiple categories, the effective category weight
 is the arithmetic mean of the configured category weights of all
 assigned categories.
 
-For Reflowable Books, engagement can be measured using active reading
-time and reading activity.
+For books whose `layoutType` is `reflowable`, engagement is measured
+using active reading time and reading activity. Chapter/spine
+attribution applies where supported.
 
-For Picture Books and Fixed-Layout Illustrated Chapter Books, the
-backend must calculate engagement primarily based on:
+For books whose `layoutType` is `fixed_layout`, the backend must
+calculate engagement primarily based on:
 
 - Active Time Spent on Spread
 
@@ -637,12 +780,13 @@ backend must calculate engagement primarily based on:
 
 - Category Weight
 
-Picture Books may generate fewer words per minute than standard chapter
-books but require significant visual engagement.
+Fixed-layout titles (typically picture books and illustrated chapter
+books) may generate fewer words per minute than a reflowable standard
+chapter book but require significant visual engagement.
 
-Therefore, monetization for Picture Books and other Fixed-Layout books
-must not depend on reading speed, word count, sentence count, or
-scrolling activity alone.
+Therefore, monetization for `fixed_layout` books must not depend on
+reading speed, word count, sentence count, or scrolling activity alone.
+Do not choose the engagement model from `bookType`.
 
 The backend must treat active visual engagement with a spread or page as
 a valid reading engagement signal.
@@ -917,7 +1061,7 @@ empty chapter list.
 
 - React Native (Mobile + Tablet)
 
-- Dual Reader Engine:
+- Dual Reader Engine (selected from stored `layoutType`, not `bookType`):
 
   - Reflowable Reader Engine
 

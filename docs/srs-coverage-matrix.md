@@ -22,12 +22,12 @@ Do not treat a row as Complete unless both the backend behavior and tests exist.
 
 | Status | Count |
 | --- | ---: |
-| Complete | 74 |
+| Complete | 78 |
 | In Progress | 0 |
 | Future | 2 |
 | Blocked | 0 |
 | Not Required | 15 |
-| **Total** | **91** |
+| **Total** | **95** |
 
 ## Future / out of scope for current Part 1
 
@@ -50,24 +50,24 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §1 AES content protection | Encryption provider; source uploads stored encrypted; reader grant does not decrypt | `book-source.e2e-spec.ts`, `reader-book-asset.e2e-spec.ts`, encryption provider specs | Complete |
 | §1 Reflowable and fixed-layout domain models | `BookLayoutType`, chapters vs pages/spreads/text layers | `book-epub-layout.e2e-spec.ts`, `book-epub-chapters.e2e-spec.ts`, `book-epub-fixed-layout.e2e-spec.ts` | Complete |
 | §1 Visual canvas reading experience | Reader viewport / artwork rendering | — | Not Required |
-| §2.1 Create account / login | `POST /auth/register`, `POST /auth/login`, `GET /auth/me` | `auth.e2e-spec.ts` | Complete |
+| §2.1 Create account / login | `POST /auth/register` creates a reader (`role = reader`, `isPublisher = false`), not an author; `POST /auth/login`; `GET /auth/me` | `auth.e2e-spec.ts` | Complete |
 | §2.1 Subscribe (single monthly model) | `POST /reader/billing/checkout`, `POST /webhooks/stripe`, `GET /reader/billing/subscription` | `subscription-billing.e2e-spec.ts` | Complete |
 | §2.1 Browse published books | `GET /reader/catalog`, `GET /reader/catalog/:id`; unpublished books are catalog 404 | `reader-catalog.e2e-spec.ts`, `admin-book.e2e-spec.ts` | Complete |
 | §2.1 Browse category taxonomy | `GET /reader/categories` (authenticated; read-only; includes `categoryWeight`) | `author-reader-category.e2e-spec.ts`, `category.reader.controller.spec.ts` | Complete |
 | §2.1 Read / download full books | Paid entitlement + `POST /reader/books/:id/delivery-grant` | `entitlement.e2e-spec.ts`, `reader-book-asset.e2e-spec.ts`, `critical-flow.e2e-spec.ts` | Complete |
 | §2.1 Sync reading progress across devices | `GET /reader/sync`, `GET /reader/books/:id/sync` | `reading-sync.e2e-spec.ts` | Complete |
 | §2.1 Customize reading experience (font, spacing, theme, zoom) | Client reader settings | — | Not Required |
-| §2.2 Any user can become a publisher | `POST /user/publisher` | `reader-user.e2e-spec.ts` | Complete |
+| §2.2 Any user can become a publisher | `POST /user/publisher` after authenticated register; reader is promoted to `author` with `isPublisher = true`; admin keeps `admin` and gets `isPublisher = true`; publisher flag alone does not grant `/author/*` | `reader-user.e2e-spec.ts`, `user.service.spec.ts` | Complete |
 | §2.2 Upload books (PDF / EPUB) | `POST /author/books/:bookId/source` | `book-source.e2e-spec.ts`, `book-pdf-source-ingest.e2e-spec.ts` | Complete |
-| §2.2 Author HTTP create / list / get / update book metadata | `POST/GET/PATCH /author/books`, `GET /author/books/:id`; owner from JWT; PATCH is metadata only | `author-book.e2e-spec.ts`, `book.author.controller.spec.ts` | Complete |
+| §2.2 Author HTTP create / list / get / update book metadata | `POST/GET/PATCH /author/books`, `GET /author/books/:id`; `@Roles(AUTHOR, ADMIN)`; owner from principal; PATCH is metadata only; create asserts `isPublisher` | `author-book.e2e-spec.ts`, `book.author.controller.spec.ts`, `book.service.spec.ts` | Complete |
 | §2.2 / §2.3 Book rejection-history read APIs | `GET /admin/books/:id/rejection-history`, `GET /author/books/:id/rejection-history` (owner-scoped; `book_rejected` audit rows; empty list when never rejected) | `book-rejection-history.e2e-spec.ts`, `book.service.spec.ts`, `book.admin.controller.spec.ts`, `book.author.controller.spec.ts` | Complete |
 | §2.2 Author HTTP list categories | `GET /author/categories` (AUTHOR or ADMIN; read-only; includes `categoryWeight`) | `author-reader-category.e2e-spec.ts`, `category.author.controller.spec.ts` | Complete |
 | §2.2 Book status lifecycle pending → in_review → approved / rejected | Publishing status machine; submit, approve, reject | `book-submit-for-review.e2e-spec.ts`, `book-admin-review.e2e-spec.ts` | Complete |
 | §2.2 Author analytics and earnings APIs | `GET /author/analytics`, `GET /author/earnings`, trend, heatmap | `author-monetization.e2e-spec.ts` | Complete |
-| §2.2 Author dashboard UI | — | — | Not Required |
+| §2.2 Author dashboard UI | Author dashboard STEPs including `/register` onboarding. Backend coverage is the rows above. | — | Not Required |
 | §2.3 Review then approve or reject books | `POST /admin/books/:id/approve`, `POST /admin/books/:id/reject` (reject requires non-empty `reason` stored on `audit.reason`) | `book-admin-review.e2e-spec.ts` | Complete |
 | §2.3 Required book rejection reason | `POST /admin/books/:id/reject` body `reason`; persisted on append-only `audit.reason` for `book_rejected` | `book-admin-review.e2e-spec.ts`, `book-publishing-status.service.spec.ts`, `book.admin.controller.spec.ts` | Complete |
-| §2.3 Manage users | `GET/PATCH/DELETE /admin/users`; PATCH cannot grant ADMIN | `admin-user.e2e-spec.ts`, `user.service.spec.ts` | Complete |
+| §2.3 Manage users | `GET/PATCH/DELETE /admin/users`; PATCH cannot grant ADMIN; `role` + `isPublisher` pairs follow SRS §2.5 (`USER_INVALID_CAPABILITY`) | `admin-user.e2e-spec.ts`, `user.service.spec.ts` | Complete |
 | §2.3 Invitation-only admin grant | `POST/GET /admin/invitations`; `POST /auth/accept-admin-invitation`; hashed 7-day token; PATCH `/admin/users` cannot grant ADMIN | `admin-invitation.e2e-spec.ts`, `admin-user.e2e-spec.ts`, `admin-invitation.service.spec.ts`, `user.service.spec.ts` | Complete |
 | §2.3 Official admin invitation email | Mail provider; create invitation sends a Noory-branded accept link with expiry; mail failure revokes the invitation (`MAIL_FAILURE`) | `admin-invitation.e2e-spec.ts`, `admin-invitation.service.spec.ts`, `admin-invitation-mail.helper.spec.ts`, mail provider specs | Complete |
 | §2.3 Manage subscriptions | `GET /admin/subscriptions`, `POST /admin/subscriptions/:id/cancel` | `admin-subscription.e2e-spec.ts` | Complete |
@@ -80,13 +80,17 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §2.3 Curated collections CRUD, membership, display order | `admin/collections` create, title edit, delete, add, remove, reorder | `admin-collection.e2e-spec.ts` | Complete |
 | §2.3 Admin dashboard UI | — | — | Not Required |
 | §2.4 Append-only admin audit log for required mutations | `GET /admin/audit-logs`; book publish/unpublish/delete, user/publisher, subscription cancel and payment_failed, collection mutations, revenue calculate | `admin-audit.e2e-spec.ts`, `admin-collection.e2e-spec.ts`, `admin-monetization.e2e-spec.ts`, `subscription-billing.e2e-spec.ts` | Complete |
-| §3 Book metadata (title, description, owner, categories, dates, statuses, layout, type) | `Book` Prisma model and `BookResponse` | `book.service.spec.ts`, catalog/review e2e | Complete |
+| §2.5 `role` is HTTP identity; `isPublisher` is book-ownership capability | `RolesGuard` / `@Roles` vs book `assertOwnerCanOwnBook`; `isPublisher` is not an HTTP role | `user.service.spec.ts`, `book.service.spec.ts`, `author-book.e2e-spec.ts` | Complete |
+| §2.5 Valid/invalid `role` + `isPublisher` combinations | Reader/author are coupled; `reader`+publisher and `author` without publisher are `USER_INVALID_CAPABILITY`; admin may have either publisher flag | `user.service.spec.ts`, `admin-user.e2e-spec.ts` | Complete |
+| §2.5 Publisher capability does not grant `/author/*` | Author controllers `@Roles(AUTHOR, ADMIN)`; a reader session receives `ACCESS_DENIED` on author HTTP | `author-book.e2e-spec.ts`, `author-reader-category.e2e-spec.ts` | Complete |
+| §3 Book metadata (title, description, owner, categories, dates, statuses, layout, type) | `Book` Prisma model and `BookResponse`; `bookType` is author metadata; `layoutType` is processing-detected | `book.service.spec.ts`, catalog/review e2e | Complete |
+| §3 `bookType` vs `layoutType` (engine and engagement follow layout, not type) | Processing persists `layoutType` from the EPUB. Reader position, sessions, chapter vs visual engagement, heatmaps, and revenue branch on `layoutType`. `bookType` is not consulted for those paths. Typical layout per type is product expectation only. | `book-epub-layout.e2e-spec.ts`, `reading-session.e2e-spec.ts`, `reading-chapter-engagement.e2e-spec.ts`, `reading-visual-engagement.e2e-spec.ts`, `book-heatmap.service.spec.ts`, `book-engagement.service.spec.ts` | Complete |
 | §3 Catalog visibility (approved + processed + published timestamp); unpublish/republish/soft-delete | Catalog and full-book access require `publishedAt`; unpublish clears it and keeps `approved` | `admin-book.e2e-spec.ts`, `reader-catalog.e2e-spec.ts` | Complete |
 | §3 Encrypted source file (PDF / EPUB) | Encrypted `BookAsset` kind `source` | `book-source.e2e-spec.ts`, `book-pdf-source-ingest.e2e-spec.ts` | Complete |
 | §3 Preview images | `POST /author/books/:bookId/preview-image` | `book-catalog-media.e2e-spec.ts` | Complete |
 | §3 Optional promo video | `POST /author/books/:bookId/promo-video` | `book-catalog-media.e2e-spec.ts` | Complete |
-| §3 EPUB layout detection (reflowable vs fixed-layout) | Book-processing layout detection | `book-epub-layout.e2e-spec.ts` | Complete |
-| §3 Dual reader-engine selection in the client | Client chooses engine from `layoutType` | — | Not Required |
+| §3 EPUB layout detection (reflowable vs fixed-layout) | Book-processing layout detection; result stored as `layoutType`, independent of `bookType` | `book-epub-layout.e2e-spec.ts` | Complete |
+| §3 Dual reader-engine selection in the client | Client chooses engine from `layoutType`, not `bookType` | — | Not Required |
 | §3.1 Persist fixed-layout as locked visual structure (no reflow conversion) | Pages, spreads, dimensions, text layer | `book-epub-fixed-layout.e2e-spec.ts`, `book-epub-fixed-layout-text.e2e-spec.ts` | Complete |
 | §4.1 Dual reader engine UI (fonts, margins, dark/light, zoom, pinch, magnifier, aspect-fit, letterboxing, RTL chrome) | Client viewport | — | Not Required |
 | §4.1 Layout-discriminated reading position APIs | `ReadingProgress` reflowable vs spread/page | `reading-progress.e2e-spec.ts` | Complete |
@@ -103,12 +107,12 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §6 Single subscription, monthly Stripe, automatic renewal, free tier without a card | Plans, checkout, `customer.subscription.updated`, free plan | `subscription.e2e-spec.ts`, `subscription-billing.e2e-spec.ts` | Complete |
 | §6.1 Paid entitlement (monthly paid + now < currentPeriodEnd); canceled access until period end; payment_failed audit only; checkout blocked while entitled | `hasPaidReadingEntitlement`; `invoice.payment_failed` audit; checkout uses the same entitlement check | `entitlement.e2e-spec.ts`, `subscription-billing.e2e-spec.ts`, `has-paid-reading-entitlement.helper.spec.ts` | Complete |
 | §6.2 7-day refund ends paid reading immediately | `POST /reader/billing/refund` and `POST /admin/subscriptions/:id/refund` clamp `currentPeriodEnd` to now | `subscription-refund.e2e-spec.ts`, `admin-subscription-refund.e2e-spec.ts`, `subscription-billing.e2e-spec.ts` | Complete |
-| §7.1 / §7.2 Weighted engagement and book revenue formula | Reflowable: active reading ms × category weight. Fixed-layout: spread `activeDurationMs` × category weight. `visualSceneTimeMs` is stored and shown, not added to the revenue weight (matches the SRS example formula). Multi-category weight is the arithmetic mean of assigned weights. | `book-engagement.service.spec.ts`, `book-revenue.e2e-spec.ts` | Complete |
+| §7.1 / §7.2 Weighted engagement and book revenue formula | Follows `layoutType`: reflowable uses active reading ms × category weight; fixed-layout uses spread `activeDurationMs` × category weight. `visualSceneTimeMs` is stored and shown, not added to the revenue weight. Multi-category weight is the arithmetic mean of assigned weights. Not derived from `bookType`. | `book-engagement.service.spec.ts`, `book-revenue.e2e-spec.ts` | Complete |
 | §7.3 Platform cut and remaining author share | `PLATFORM_CUT_PERCENT` on revenue periods | `revenue-period.service.spec.ts`, `book-revenue.e2e-spec.ts` | Complete |
 | §7.4 Admin revenue-period calculate (audited; recalculate appends another row) | `POST /admin/revenue-periods/:id/calculate` | `admin-monetization.e2e-spec.ts`, `book-revenue.service.spec.ts` | Complete |
 | §8.1 AES encryption, encrypted blobs, downloads stay encrypted | Encryption provider; `isEncrypted`; grant URL has no `storageKey` and is not decrypted | `reader-book-asset.e2e-spec.ts`, `critical-flow.e2e-spec.ts` | Complete |
 | §8.2 Client-only anti-piracy (no open outside app, no file-manager access, decrypt only in app runtime) | Client runtime | — | Not Required |
-| §8 JWT auth, authorization, validation, upload checks, webhook verification, rate limits | Auth module, guards, validation pipe, Stripe signature, throttling | `auth.e2e-spec.ts`, `http-surface.e2e-spec.ts`, `auth-throttle.e2e-spec.ts`, `subscription-billing.e2e-spec.ts` | Complete |
+| §8 JWT auth, authorization, validation, upload checks, webhook verification, rate limits | Auth module, `RolesGuard` on `role`, validation pipe, Stripe signature, throttling. `isPublisher` is not a guard input (book domain). | `auth.e2e-spec.ts`, `http-surface.e2e-spec.ts`, `auth-throttle.e2e-spec.ts`, `subscription-billing.e2e-spec.ts` | Complete |
 | §9 Encrypted download for offline | `POST /reader/books/:id/delivery-grant` | `reader-book-asset.e2e-spec.ts` | Complete |
 | §9 Full offline reading experience | Client cache + reader | — | Not Required |
 | §10 Metadata search (title, author, publisher) | `GET /reader/search` | `reader-search.e2e-spec.ts` | Complete |
@@ -121,7 +125,7 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §11 Sync fixed-layout spread/page and bookmarks | Same sync APIs, layout-discriminated fields | `reading-sync.e2e-spec.ts` | Complete |
 | §12.1 Author analytics APIs (total minutes, per book, ranking) | `GET /author/analytics` returns totals and per-book rows ordered by weighted engagement descending (ties by `bookId`). No separate Top-N endpoint. | `author-monetization.e2e-spec.ts`, `book-engagement-prisma.repository.spec.ts` | Complete |
 | §12.2 Author earnings APIs (per book, total, trend) | `GET /author/earnings`, `GET /author/earnings/trend` | `author-monetization.e2e-spec.ts` | Complete |
-| §12.3 Layout-aware heatmap (fixed-layout spreads; reflowable chapters; unmatched title null; hottest first) | `GET /author/analytics/books/:bookId/heatmap`, `GET /admin/revenue-periods/:id/books/:bookId/heatmap` | `author-monetization.e2e-spec.ts`, `admin-monetization.e2e-spec.ts`, `book-heatmap.service.spec.ts` | Complete |
+| §12.3 Layout-aware heatmap (fixed-layout spreads; reflowable chapters; unmatched title null; hottest first) | Heatmap payload `layoutType` selects `spreads` vs `chapters`. Do not choose the view from `bookType`. | `author-monetization.e2e-spec.ts`, `admin-monetization.e2e-spec.ts`, `book-heatmap.service.spec.ts` | Complete |
 | §12 Author dashboard UI | — | — | Not Required |
 | §13 JWT authentication | JWT provider + guards | `auth.e2e-spec.ts` | Complete |
 | §13 Modular NestJS + Prisma + PostgreSQL | `ARCHITECTURE.md` layout, Prisma provider | `app.e2e-spec.ts`, `health.e2e-spec.ts` | Complete |
@@ -139,6 +143,7 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 - Catalog popularity is a progress-row count, not weighted engagement.
 - Fixed-layout revenue weight uses spread `activeDurationMs` only; `visualSceneTimeMs` is persisted and returned on analytics, matching the SRS example formula.
 - Registration does not insert a free subscription row. Missing subscription is treated as unpaid. Checkout calls `ensureFreeSubscription`.
+- Public register creates a reader. Becoming a publisher is `POST /user/publisher`; `isPublisher` is a book-ownership capability, not an HTTP role. See SRS §2.5.
 - Delivery grants are signed URLs, not persisted rows.
 - PDF sources are stored encrypted; deep PDF structure extraction is not part of Part 1.
 - There is no complimentary paid grant and no user ban flag (soft-delete only).
@@ -148,3 +153,4 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 - Book rejection requires a non-empty reason stored on the existing append-only audit row. Rejection history is that same audit log, filtered by `book_rejected` and book id.
 - Admin refund uses the same 7-day activation window and eligibility as the reader refund. It is audited as `subscription_canceled` with `refunded: true`. The admin dashboard still has no refund button.
 - Reflowable time-per-page and reading speed remain SRS requirements. They are Future / out of scope for current Part 1 because there is no stable server-side page definition. See `docs/FUTURE.md`.
+- `bookType` is author-selected content metadata. `layoutType` is detected from the source. Reader engine, engagement, heatmaps, and revenue follow `layoutType`. Typical layout per book type is not a technical guarantee. See SRS §3.
