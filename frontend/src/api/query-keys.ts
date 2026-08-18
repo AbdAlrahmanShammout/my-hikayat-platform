@@ -1,4 +1,5 @@
 import type { paths } from '@/generated/admin';
+import type { paths as AuthorPaths } from '@/generated/author';
 
 type AdminBooksListQuery = NonNullable<paths['/admin/books']['get']['parameters']['query']>;
 type AdminUsersListQuery = NonNullable<paths['/admin/users']['get']['parameters']['query']>;
@@ -28,6 +29,22 @@ type AdminInvitationsListQuery = NonNullable<
 >;
 type AdminBookRejectionHistoryQuery = NonNullable<
   paths['/admin/books/{id}/rejection-history']['get']['parameters']['query']
+>;
+type AuthorBooksListQuery = NonNullable<AuthorPaths['/author/books']['get']['parameters']['query']>;
+type AuthorBookRejectionHistoryQuery = NonNullable<
+  AuthorPaths['/author/books/{id}/rejection-history']['get']['parameters']['query']
+>;
+type AuthorCategoriesListQuery = NonNullable<
+  AuthorPaths['/author/categories']['get']['parameters']['query']
+>;
+type AuthorAnalyticsQuery = NonNullable<
+  AuthorPaths['/author/analytics']['get']['parameters']['query']
+>;
+type AuthorEarningsTrendQuery = NonNullable<
+  AuthorPaths['/author/earnings/trend']['get']['parameters']['query']
+>;
+type AuthorEarningsQuery = NonNullable<
+  AuthorPaths['/author/earnings']['get']['parameters']['query']
 >;
 
 /**
@@ -96,6 +113,35 @@ export const queryKeys = {
         [...queryKeys.admin.auditLogs.all, 'list', filters] as const,
       detail: (auditLogId: number) =>
         [...queryKeys.admin.auditLogs.all, 'detail', auditLogId] as const,
+    },
+  },
+  author: {
+    books: {
+      all: ['author', 'books'] as const,
+      list: (filters: AuthorBooksListQuery) =>
+        [...queryKeys.author.books.all, 'list', filters] as const,
+      detail: (bookId: number) => [...queryKeys.author.books.all, 'detail', bookId] as const,
+      rejectionHistory: (bookId: number, filters: AuthorBookRejectionHistoryQuery) =>
+        [...queryKeys.author.books.all, 'rejection-history', bookId, filters] as const,
+    },
+    categories: {
+      all: ['author', 'categories'] as const,
+      list: (filters: AuthorCategoriesListQuery) =>
+        [...queryKeys.author.categories.all, 'list', filters] as const,
+    },
+    analytics: {
+      all: ['author', 'analytics'] as const,
+      list: (filters: AuthorAnalyticsQuery) =>
+        [...queryKeys.author.analytics.all, 'list', filters] as const,
+      heatmap: (bookId: number, revenuePeriodId: number) =>
+        [...queryKeys.author.analytics.all, 'heatmap', bookId, revenuePeriodId] as const,
+    },
+    earnings: {
+      all: ['author', 'earnings'] as const,
+      trend: (filters: AuthorEarningsTrendQuery) =>
+        [...queryKeys.author.earnings.all, 'trend', filters] as const,
+      list: (filters: AuthorEarningsQuery) =>
+        [...queryKeys.author.earnings.all, 'list', filters] as const,
     },
   },
 } as const;

@@ -11,7 +11,7 @@ export function AuthorHomePage(): JSX.Element {
     <>
       <PageHeader
         title="Overview"
-        description="This is the author workspace. Book management is a later screen."
+        description="This is the author workspace. Owned books are listed under Books."
       />
       <AuthorSessionSummary />
     </>

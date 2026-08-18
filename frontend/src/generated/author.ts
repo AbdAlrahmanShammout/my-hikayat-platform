@@ -12,6 +12,14 @@ export interface paths {
       };
     };
   };
+  "/auth/accept-admin-invitation": {
+    post: {
+      requestBody: { content: { 'application/json': components['schemas']['AcceptAdminInvitationRequestDto'] } };
+      responses: {
+        "201": { content: { 'application/json': components['schemas']['AuthSessionResponseDto'] } };
+      };
+    };
+  };
   "/auth/login": {
     post: {
       requestBody: { content: { 'application/json': components['schemas']['LoginRequestDto'] } };
@@ -65,6 +73,14 @@ export interface paths {
       };
     };
   };
+  "/author/books/{id}/rejection-history": {
+    get: {
+      parameters: { query?: { limit?: number; offset?: number }; path: { id: number } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['GetBookRejectionHistoryResponseDto'] } };
+      };
+    };
+  };
   "/author/books/{id}": {
     get: {
       parameters: { path: { id: number } };
@@ -85,6 +101,14 @@ export interface paths {
       parameters: { path: { bookId: number } };
       responses: {
         "200": { content: { 'application/json': components['schemas']['BookResponse'] } };
+      };
+    };
+  };
+  "/author/categories": {
+    get: {
+      parameters: { query?: { limit?: number; offset?: number } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['GetCategoriesResponseDto'] } };
       };
     };
   };
@@ -127,13 +151,17 @@ export interface components {
     RegisterRequestDto: { email: string; password: string };
     UserResponse: { id: number; createdAt: string; updatedAt: string; email: string; role: "reader" | "author" | "admin"; isPublisher: boolean };
     AuthSessionResponseDto: { accessToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
+    AcceptAdminInvitationRequestDto: { token: string; password: string };
     LoginRequestDto: { email: string; password: string };
     BookAssetResponse: { id: number; createdAt: string; updatedAt: string; bookId: number; kind: "source" | "processed" | "preview_image" | "promo_video" | "audio"; storageKey: string; contentType: string; byteSize: number; checksumSha256?: unknown | null; originalFileName?: unknown | null; sortOrder: number; isEncrypted: boolean };
     CreateBookRequestDto: { title: string; description: string; bookType: "standard_chapter" | "picture_book" | "illustrated_chapter"; categoryIds?: Array<number> };
     CategoryResponse: { id: number; createdAt: string; updatedAt: string; name: string; slug: string; categoryWeight: number };
     BookResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string; layoutType?: "reflowable" | "fixed_layout" | null; bookType: "standard_chapter" | "picture_book" | "illustrated_chapter"; publishingStatus: "pending" | "in_review" | "approved" | "rejected"; processingStatus: "not_started" | "processing" | "ready" | "failed"; publishedAt?: unknown | null; ownerId: number; owner?: components['schemas']['UserResponse']; categories: Array<components['schemas']['CategoryResponse']> };
     GetBooksResponseDto: { books: Array<components['schemas']['BookResponse']>; total: number };
+    AuditLogResponse: { id: number; createdAt: string; updatedAt: string; actorUserId: number; action: "book_submitted_for_review" | "book_approved" | "book_rejected" | "book_unpublished" | "book_republished" | "book_deleted" | "publisher_enabled" | "publisher_disabled" | "user_role_changed" | "user_deleted" | "subscription_canceled" | "subscription_payment_failed" | "collection_created" | "collection_updated" | "collection_deleted" | "collection_book_added" | "collection_book_removed" | "collection_reordered" | "revenue_calculated"; subjectType: "book" | "user" | "subscription" | "collection" | "revenue_period"; subjectId: number; reason?: unknown | null; metadata?: unknown | null };
+    GetBookRejectionHistoryResponseDto: { rejections: Array<components['schemas']['AuditLogResponse']>; total: number };
     UpdateBookRequestDto: { title?: string; description?: string; bookType?: "standard_chapter" | "picture_book" | "illustrated_chapter"; categoryIds?: Array<number> };
+    GetCategoriesResponseDto: { categories: Array<components['schemas']['CategoryResponse']>; total: number };
     AuthorEarningsTrendPointResponse: { revenuePeriodId: number; startsAt: string; endsAt: string; status: "open" | "closed"; authorCents: number };
     GetAuthorEarningsTrendResponseDto: { points: Array<components['schemas']['AuthorEarningsTrendPointResponse']>; total: number };
     BookRevenueResponse: { id: number; createdAt: string; updatedAt: string; revenuePeriodId: number; bookId: number; ownerId: number; weightedEngagement: number; poolShareCents: number; platformCutCents: number; authorCents: number };

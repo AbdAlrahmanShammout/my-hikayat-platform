@@ -1,22 +1,37 @@
 import type { JSX } from 'react';
 
-import { EmptyState } from '@/components/empty-state';
 import { PageHeader } from '@/components/layout/page-header';
+import { AUTHOR_CATEGORY_LOOKUP_LIMIT } from '@/config/author-category-lookup-limit';
+import { useCurrentUser } from '@/features/auth/hooks/use-current-user';
+import { AuthorBookCreateForm } from '@/features/books/components/author-book-create-form';
+import { AuthorBooksPanel } from '@/features/books/components/author-books-panel';
+import { useAuthorCategoriesList } from '@/features/categories/hooks/use-author-categories-list';
 
 /**
- * Placeholder until the author books list STEP. Does not call GET /author/books yet.
+ * Author books list and create. List filters are query parameters on GET /author/books.
  */
 export function AuthorBooksPage(): JSX.Element {
+  const currentUserQuery = useCurrentUser();
+  const categoriesQuery = useAuthorCategoriesList({ limit: AUTHOR_CATEGORY_LOOKUP_LIMIT });
+  const isPublisher: boolean = currentUserQuery.data?.isPublisher === true;
   return (
     <>
       <PageHeader
         title="Books"
-        description="Your owned books will load from GET /author/books in a later STEP."
+        description="Books you own, with publishing and processing status from the API."
       />
-      <EmptyState
-        title="Books list is next"
-        description="This screen does not list or create books yet. Upload, review history, and publishing stay on later STEPs."
-      />
+      <div className="space-y-6">
+        <AuthorBookCreateForm
+          isPublisher={isPublisher}
+          categories={categoriesQuery.data?.categories ?? []}
+          isCategoriesPending={categoriesQuery.isPending}
+          categoriesError={categoriesQuery.error}
+          onRetryCategories={() => {
+            void categoriesQuery.refetch();
+          }}
+        />
+        <AuthorBooksPanel />
+      </div>
     </>
   );
 }

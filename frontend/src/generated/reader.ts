@@ -28,6 +28,14 @@ export interface paths {
       };
     };
   };
+  "/reader/categories": {
+    get: {
+      parameters: { query?: { limit?: number; offset?: number } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['GetCategoriesResponseDto'] } };
+      };
+    };
+  };
   "/reader/collections": {
     get: {
       parameters: { query?: { limit?: number; offset?: number } };
@@ -208,6 +216,14 @@ export interface paths {
       };
     };
   };
+  "/auth/accept-admin-invitation": {
+    post: {
+      requestBody: { content: { 'application/json': components['schemas']['AcceptAdminInvitationRequestDto'] } };
+      responses: {
+        "201": { content: { 'application/json': components['schemas']['AuthSessionResponseDto'] } };
+      };
+    };
+  };
   "/auth/login": {
     post: {
       requestBody: { content: { 'application/json': components['schemas']['LoginRequestDto'] } };
@@ -232,6 +248,7 @@ export interface components {
     BookResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string; layoutType?: "reflowable" | "fixed_layout" | null; bookType: "standard_chapter" | "picture_book" | "illustrated_chapter"; publishingStatus: "pending" | "in_review" | "approved" | "rejected"; processingStatus: "not_started" | "processing" | "ready" | "failed"; publishedAt?: unknown | null; ownerId: number; owner?: components['schemas']['UserResponse']; categories: Array<components['schemas']['CategoryResponse']> };
     GetBooksResponseDto: { books: Array<components['schemas']['BookResponse']>; total: number };
     CreateBookAssetDeliveryGrantResponseDto: { bookId: number; bookAssetId: number; kind: "source" | "processed" | "preview_image" | "promo_video" | "audio"; url: string; expiresAt: string; contentType: string; byteSize: number; checksumSha256?: unknown | null; isEncrypted: boolean };
+    GetCategoriesResponseDto: { categories: Array<components['schemas']['CategoryResponse']>; total: number };
     CollectionDiscoveryResponse: { id: number; createdAt: string; updatedAt: string; title: string; books: Array<components['schemas']['BookResponse']> };
     GetDiscoveryCollectionsResponseDto: { collections: Array<components['schemas']['CollectionDiscoveryResponse']>; total: number };
     StartReadingSessionRequestDto: { spineIndex?: number; scrollOffset?: number; spreadIndex?: number; pageNumber?: number };
@@ -258,6 +275,7 @@ export interface components {
     StripeWebhookReceivedResponseDto: { received: boolean };
     AuthSessionResponseDto: { accessToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
     RegisterRequestDto: { email: string; password: string };
+    AcceptAdminInvitationRequestDto: { token: string; password: string };
     LoginRequestDto: { email: string; password: string };
   };
 }

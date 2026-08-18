@@ -20,7 +20,11 @@ import { AdminSubscriptionDetailPage } from '@/pages/admin/subscription-detail-p
 import { AdminSubscriptionsPage } from '@/pages/admin/subscriptions-page';
 import { AdminUserDetailPage } from '@/pages/admin/user-detail-page';
 import { AdminUsersPage } from '@/pages/admin/users-page';
+import { AuthorAnalyticsPage } from '@/pages/author/analytics-page';
+import { AuthorBookDetailPage } from '@/pages/author/book-detail-page';
+import { AuthorBookHeatmapPage } from '@/pages/author/book-heatmap-page';
 import { AuthorBooksPage } from '@/pages/author/books-page';
+import { AuthorEarningsPage } from '@/pages/author/earnings-page';
 import { AuthorHomePage } from '@/pages/author/home-page';
 import { LoginPage } from '@/pages/login-page';
 import { NotFoundPage } from '@/pages/not-found-page';
@@ -69,6 +73,10 @@ export const appRouter = createBrowserRouter([
     children: [
       { index: true, element: <AuthorHomePage /> },
       { path: 'books', element: <AuthorBooksPage /> },
+      { path: 'books/:bookId', element: <AuthorBookDetailPage /> },
+      { path: 'analytics', element: <AuthorAnalyticsPage /> },
+      { path: 'analytics/books/:bookId/heatmap', element: <AuthorBookHeatmapPage /> },
+      { path: 'earnings', element: <AuthorEarningsPage /> },
     ],
   },
   {
