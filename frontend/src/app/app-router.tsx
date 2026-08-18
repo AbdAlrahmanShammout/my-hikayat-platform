@@ -28,6 +28,7 @@ import { AuthorEarningsPage } from '@/pages/author/earnings-page';
 import { AuthorHomePage } from '@/pages/author/home-page';
 import { LoginPage } from '@/pages/login-page';
 import { NotFoundPage } from '@/pages/not-found-page';
+import { RegisterPage } from '@/pages/register-page';
 
 export const appRouter = createBrowserRouter([
   {
@@ -37,6 +38,10 @@ export const appRouter = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/register',
+    element: <RegisterPage />,
   },
   {
     path: ADMIN_INVITATION_ACCEPT_PATH,

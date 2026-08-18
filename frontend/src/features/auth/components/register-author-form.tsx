@@ -10,26 +10,31 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { PASSWORD_LENGTH } from '@/config/password-length';
 import type { AuthSession } from '@/features/auth/api/auth-session';
-import { useLogin } from '@/features/auth/hooks/use-login';
+import { useRegisterAsAuthor } from '@/features/auth/hooks/use-register-as-author';
 import { getPostLoginPath } from '@/features/auth/lib/get-post-login-path';
-import { loginFormSchema, type LoginFormValues } from '@/features/auth/schemas/login-form.schema';
+import {
+  registerAuthorFormSchema,
+  type RegisterAuthorFormValues,
+} from '@/features/auth/schemas/register-author-form.schema';
 
 /**
- * Email/password form for POST /auth/login.
+ * Public register then POST /user/publisher. There is no author-only register API.
  */
-export function LoginForm(): JSX.Element {
+export function RegisterAuthorForm(): JSX.Element {
   const navigate = useNavigate();
-  const loginMutation = useLogin();
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginFormSchema),
-    defaultValues: { email: '', password: '' },
+  const registerMutation = useRegisterAsAuthor();
+  const form = useForm<RegisterAuthorFormValues>({
+    resolver: zodResolver(registerAuthorFormSchema),
+    defaultValues: { email: '', password: '', confirmPassword: '' },
   });
   const rootMessage: string | undefined = form.formState.errors.root?.message;
   return (
@@ -37,7 +42,7 @@ export function LoginForm(): JSX.Element {
       <form
         className="flex flex-col gap-4"
         onSubmit={form.handleSubmit((values) => {
-          void submitLogin(values, loginMutation.mutateAsync, form.setError, (session) => {
+          void submitRegister(values, registerMutation.mutateAsync, form.setError, (session) => {
             const homePath: string | null = getPostLoginPath(session.user.role);
             if (homePath !== null) {
               void navigate(homePath, { replace: true });
@@ -61,7 +66,7 @@ export function LoginForm(): JSX.Element {
                 <Input
                   type="email"
                   autoComplete="email"
-                  disabled={loginMutation.isPending}
+                  disabled={registerMutation.isPending}
                   {...field}
                 />
               </FormControl>
@@ -78,8 +83,29 @@ export function LoginForm(): JSX.Element {
               <FormControl>
                 <Input
                   type="password"
-                  autoComplete="current-password"
-                  disabled={loginMutation.isPending}
+                  autoComplete="new-password"
+                  disabled={registerMutation.isPending}
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>
+                Use {PASSWORD_LENGTH.min}–{PASSWORD_LENGTH.max} characters.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm password</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  disabled={registerMutation.isPending}
                   {...field}
                 />
               </FormControl>
@@ -87,39 +113,45 @@ export function LoginForm(): JSX.Element {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={loginMutation.isPending}>
-          {loginMutation.isPending ? 'Signing in…' : 'Sign in'}
+        <Button type="submit" disabled={registerMutation.isPending}>
+          {registerMutation.isPending ? 'Creating account…' : 'Create author account'}
         </Button>
         <Button asChild variant="outline">
-          <Link to="/register">Create an author account</Link>
+          <Link to="/login">Already have an account? Sign in</Link>
         </Button>
       </form>
     </Form>
   );
 }
 
-async function submitLogin(
-  values: LoginFormValues,
-  mutateAsync: ReturnType<typeof useLogin>['mutateAsync'],
-  setError: UseFormSetError<LoginFormValues>,
+async function submitRegister(
+  values: RegisterAuthorFormValues,
+  mutateAsync: ReturnType<typeof useRegisterAsAuthor>['mutateAsync'],
+  setError: UseFormSetError<RegisterAuthorFormValues>,
   onSuccess: (session: AuthSession) => void,
 ): Promise<void> {
   try {
-    const session: AuthSession = await mutateAsync(values);
+    const session: AuthSession = await mutateAsync({
+      email: values.email,
+      password: values.password,
+    });
     onSuccess(session);
   } catch (error: unknown) {
-    applyLoginServerError(error, setError);
+    applyRegisterServerError(error, setError);
   }
 }
 
-function applyLoginServerError(error: unknown, setError: UseFormSetError<LoginFormValues>): void {
+function applyRegisterServerError(
+  error: unknown,
+  setError: UseFormSetError<RegisterAuthorFormValues>,
+): void {
   applyValidationFieldErrors(error, setError);
   setError('root', { message: getUserFacingErrorMessage(error) });
 }
 
 function applyValidationFieldErrors(
   error: unknown,
-  setError: UseFormSetError<LoginFormValues>,
+  setError: UseFormSetError<RegisterAuthorFormValues>,
 ): void {
   if (!(error instanceof ApiError)) {
     return;

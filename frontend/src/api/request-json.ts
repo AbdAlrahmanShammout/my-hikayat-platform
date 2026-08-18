@@ -9,6 +9,7 @@ export type RequestJsonInput = {
   readonly path: string;
   readonly method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   readonly body?: unknown;
+  readonly accessToken?: string;
 };
 
 /**
@@ -17,7 +18,7 @@ export type RequestJsonInput = {
 export async function requestJson<TResponse>(input: RequestJsonInput): Promise<TResponse> {
   const response: Response = await fetch(`${getApiBaseUrl()}${input.path}`, {
     method: input.method,
-    headers: buildRequestHeaders(input.body !== undefined),
+    headers: buildRequestHeaders(input.body !== undefined, input.accessToken),
     body: input.body === undefined ? undefined : JSON.stringify(input.body),
     credentials: 'omit',
   });
@@ -27,10 +28,10 @@ export async function requestJson<TResponse>(input: RequestJsonInput): Promise<T
   return parseSuccessJson<TResponse>(response);
 }
 
-function buildRequestHeaders(hasJsonBody: boolean): Headers {
+function buildRequestHeaders(hasJsonBody: boolean, accessTokenOverride?: string): Headers {
   const headers: Headers = new Headers();
   headers.set('Accept', 'application/json');
-  const accessToken: string | null = readAccessToken();
+  const accessToken: string | null = accessTokenOverride ?? readAccessToken();
   if (accessToken !== null) {
     headers.set('Authorization', `Bearer ${accessToken}`);
   }
