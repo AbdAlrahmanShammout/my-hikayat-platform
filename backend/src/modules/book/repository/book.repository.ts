@@ -1,6 +1,7 @@
 import { TransactionContext } from '@/common/base/transaction-context';
 import {
   BookPage,
+  CountCatalogVisibleBooksRepoInput,
   CreateBookRepoInput,
   ListBooksRepoInput,
   ListCatalogBooksByIdsRepoInput,
@@ -17,4 +18,5 @@ export abstract class BookRepository {
   abstract list(input: ListBooksRepoInput): Promise<BookPage>;
   abstract listCatalog(input: ListCatalogBooksRepoInput): Promise<BookPage>;
   abstract listCatalogByIds(input: ListCatalogBooksByIdsRepoInput): Promise<BookEntity[]>;
+  abstract countCatalogVisible(input: CountCatalogVisibleBooksRepoInput): Promise<number>;
 }

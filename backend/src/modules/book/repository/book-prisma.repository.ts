@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { TransactionContext } from '@/common/base/transaction-context';
 import {
   BookPage,
+  CountCatalogVisibleBooksRepoInput,
   CreateBookRepoInput,
   ListBooksRepoInput,
   ListCatalogBooksByIdsRepoInput,
@@ -142,6 +143,16 @@ export class BookPrismaRepository implements BookRepository {
       entities: rows.map((row) => BookMapper.toEntity(row)),
       total,
     };
+  }
+
+  async countCatalogVisible(input: CountCatalogVisibleBooksRepoInput): Promise<number> {
+    const where: Prisma.BookWhereInput = {
+      ...BookPrismaRepository.buildCatalogVisibilityWhere(),
+    };
+    if (input.ownerId !== undefined) {
+      where.ownerId = input.ownerId;
+    }
+    return this.prismaProviderService.book.count({ where });
   }
 
   async listCatalogByIds(input: ListCatalogBooksByIdsRepoInput): Promise<BookEntity[]> {

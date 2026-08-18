@@ -83,9 +83,12 @@ export class BookRevenuePrismaRepository implements BookRevenueRepository {
 
   async sumAuthorCents(input: SumAuthorCentsRepoInput): Promise<number> {
     const where: Prisma.BookRevenueWhereInput = {
-      revenuePeriodId: input.revenuePeriodId,
       deletedAt: null,
+      book: { deletedAt: null },
     };
+    if (input.revenuePeriodId !== undefined) {
+      where.revenuePeriodId = input.revenuePeriodId;
+    }
     if (input.ownerId !== undefined) {
       where.ownerId = input.ownerId;
     }

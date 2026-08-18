@@ -85,9 +85,21 @@ describe('BookRevenuePrismaRepository', () => {
       revenuePeriodId: 4,
     });
     expect(mockPrismaProviderService.bookRevenue.aggregate).toHaveBeenCalledWith({
-      where: { revenuePeriodId: 4, deletedAt: null },
+      where: { revenuePeriodId: 4, deletedAt: null, book: { deletedAt: null } },
       _sum: { authorCents: true },
     });
     expect(actualTotal).toBe(7000);
+  });
+
+  it('sums author cents across every period for an owner', async () => {
+    mockPrismaProviderService.bookRevenue.aggregate.mockResolvedValue({
+      _sum: { authorCents: 4500 },
+    });
+    const actualTotal = await bookRevenuePrismaRepository.sumAuthorCents({ ownerId: 3 });
+    expect(mockPrismaProviderService.bookRevenue.aggregate).toHaveBeenCalledWith({
+      where: { deletedAt: null, book: { deletedAt: null }, ownerId: 3 },
+      _sum: { authorCents: true },
+    });
+    expect(actualTotal).toBe(4500);
   });
 });

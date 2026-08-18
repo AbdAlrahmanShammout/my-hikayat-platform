@@ -112,6 +112,13 @@ export interface paths {
       };
     };
   };
+  "/author/dashboard/summary": {
+    get: {
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['GetAuthorDashboardSummaryResponseDto'] } };
+      };
+    };
+  };
   "/author/earnings/trend": {
     get: {
       parameters: { query?: { limit?: number; offset?: number } };
@@ -171,5 +178,6 @@ export interface components {
     AuthorBookHeatmapCellResponse: { spreadIndex: number; pageNumber: number; activeDurationMs: number; visualSceneTimeMs: number };
     AuthorBookChapterHeatmapCellResponse: { spineIndex: number; title?: unknown | null; activeDurationMs: number };
     GetAuthorBookHeatmapResponseDto: { bookId: number; revenuePeriodId: number; layoutType: "reflowable" | "fixed_layout" | null; spreads: Array<components['schemas']['AuthorBookHeatmapCellResponse']>; chapters: Array<components['schemas']['AuthorBookChapterHeatmapCellResponse']> };
+    GetAuthorDashboardSummaryResponseDto: { totalBooks: number; publishedBooks: number; pendingReviewBooks: number; totalReadingMinutes: number; authorCents: number };
   };
 }

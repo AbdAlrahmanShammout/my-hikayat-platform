@@ -34,7 +34,7 @@ export type ListAllBookEngagementsRepoInput = {
 };
 
 export type SummarizeOwnerBookEngagementsRepoInput = {
-  readonly revenuePeriodId: number;
+  readonly revenuePeriodId?: number;
   readonly ownerId?: number;
 };
 

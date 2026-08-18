@@ -12,6 +12,7 @@ import { CategoryAdminController } from '@/modules/category/category.admin.contr
 import { CategoryModule } from '@/modules/category/category.module';
 import { CollectionAdminController } from '@/modules/collection/collection.admin.controller';
 import { CollectionModule } from '@/modules/collection/collection.module';
+import { DashboardAdminController } from '@/modules/monetization/dashboard.admin.controller';
 import { MonetizationAdminController } from '@/modules/monetization/monetization.admin.controller';
 import { MonetizationModule } from '@/modules/monetization/monetization.module';
 import { SubscriptionAdminController } from '@/modules/subscription/subscription.admin.controller';
@@ -36,6 +37,7 @@ import { UserModule } from '@/modules/user/user.module';
     BookAdminController,
     CategoryAdminController,
     CollectionAdminController,
+    DashboardAdminController,
     MonetizationAdminController,
     SubscriptionAdminController,
     UserAdminController,

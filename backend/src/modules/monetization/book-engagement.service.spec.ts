@@ -317,6 +317,26 @@ describe('BookEngagementService', () => {
     });
   });
 
+  describe('summarizeOwnerEngagement', () => {
+    it('skips period lookup when summarizing every period', async () => {
+      mockBookEngagementRepository.summarizeByOwner.mockResolvedValue({
+        totalActiveReadingMs: 90000,
+        totalActiveSpreadMs: 0,
+        totalVisualSceneTimeMs: 45000,
+        totalWeightedEngagement: 1.5,
+      });
+      const actualSummary = await bookEngagementService.summarizeOwnerEngagement({
+        ownerId: 3,
+      });
+      expect(mockRevenuePeriodService.getRevenuePeriodById).not.toHaveBeenCalled();
+      expect(mockBookEngagementRepository.summarizeByOwner).toHaveBeenCalledWith({
+        revenuePeriodId: undefined,
+        ownerId: 3,
+      });
+      expect(actualSummary.totalActiveReadingMs).toBe(90000);
+    });
+  });
+
   describe('getBookEngagementById', () => {
     it('throws when the engagement row is missing', async () => {
       mockBookEngagementRepository.findById.mockResolvedValue(null);

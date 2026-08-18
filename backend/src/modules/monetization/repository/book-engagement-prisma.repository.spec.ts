@@ -116,7 +116,7 @@ describe('BookEngagementPrismaRepository', () => {
       revenuePeriodId: 4,
     });
     expect(mockPrismaProviderService.bookEngagement.aggregate).toHaveBeenCalledWith({
-      where: { revenuePeriodId: 4, deletedAt: null },
+      where: { revenuePeriodId: 4, deletedAt: null, book: { deletedAt: null } },
       _sum: {
         activeReadingMs: true,
         activeSpreadMs: true,
@@ -125,6 +125,30 @@ describe('BookEngagementPrismaRepository', () => {
       },
     });
     expect(actualSummary.totalWeightedEngagement).toBe(7);
+  });
+
+  it('summarizes engagement totals across every period when no period is provided', async () => {
+    mockPrismaProviderService.bookEngagement.aggregate.mockResolvedValue({
+      _sum: {
+        activeReadingMs: 90000,
+        activeSpreadMs: 0,
+        visualSceneTimeMs: 45000,
+        weightedEngagement: 1.5,
+      },
+    });
+    const actualSummary = await bookEngagementPrismaRepository.summarizeByOwner({
+      ownerId: 3,
+    });
+    expect(mockPrismaProviderService.bookEngagement.aggregate).toHaveBeenCalledWith({
+      where: { deletedAt: null, book: { deletedAt: null, ownerId: 3 } },
+      _sum: {
+        activeReadingMs: true,
+        activeSpreadMs: true,
+        visualSceneTimeMs: true,
+        weightedEngagement: true,
+      },
+    });
+    expect(actualSummary.totalActiveReadingMs).toBe(90000);
   });
 
   it('lists book engagements ordered by weighted engagement descending', async () => {
@@ -136,7 +160,7 @@ describe('BookEngagementPrismaRepository', () => {
     });
     expect(mockPrismaProviderService.bookEngagement.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { revenuePeriodId: 4, deletedAt: null },
+        where: { revenuePeriodId: 4, deletedAt: null, book: { deletedAt: null } },
         orderBy: [{ weightedEngagement: 'desc' }, { bookId: 'asc' }],
       }),
     );

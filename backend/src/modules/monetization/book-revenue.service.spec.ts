@@ -218,4 +218,17 @@ describe('BookRevenueService', () => {
       expect(actualTotal).toBe(2500);
     });
   });
+
+  describe('sumAuthorCents', () => {
+    it('sums persisted author cents across every period without a period lookup', async () => {
+      mockBookRevenueRepository.sumAuthorCents.mockResolvedValue(7000);
+      const actualTotal = await bookRevenueService.sumAuthorCents({ ownerId: 3 });
+      expect(mockRevenuePeriodService.getRevenuePeriodById).not.toHaveBeenCalled();
+      expect(mockBookRevenueRepository.sumAuthorCents).toHaveBeenCalledWith({
+        revenuePeriodId: undefined,
+        ownerId: 3,
+      });
+      expect(actualTotal).toBe(7000);
+    });
+  });
 });

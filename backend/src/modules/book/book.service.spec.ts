@@ -96,6 +96,7 @@ describe('BookService', () => {
     list: jest.Mock;
     listCatalog: jest.Mock;
     listCatalogByIds: jest.Mock;
+    countCatalogVisible: jest.Mock;
   };
   let mockCategoryService: { getCategoryById: jest.Mock };
   let mockUserService: { getUserById: jest.Mock };
@@ -112,6 +113,7 @@ describe('BookService', () => {
       list: jest.fn(),
       listCatalog: jest.fn(),
       listCatalogByIds: jest.fn(),
+      countCatalogVisible: jest.fn(),
     };
     mockCategoryService = { getCategoryById: jest.fn() };
     mockUserService = { getUserById: jest.fn() };
@@ -340,6 +342,22 @@ describe('BookService', () => {
         ownerId: undefined,
         processingStatus: BookProcessingStatus.READY,
       });
+    });
+  });
+
+  describe('countCatalogVisibleBooks', () => {
+    it('counts catalog-visible books for an optional owner', async () => {
+      mockBookRepository.countCatalogVisible.mockResolvedValue(2);
+      const actualCount = await bookService.countCatalogVisibleBooks({ ownerId: 4 });
+      expect(mockBookRepository.countCatalogVisible).toHaveBeenCalledWith({ ownerId: 4 });
+      expect(actualCount).toBe(2);
+    });
+
+    it('counts catalog-visible books across owners when no owner is provided', async () => {
+      mockBookRepository.countCatalogVisible.mockResolvedValue(0);
+      const actualCount = await bookService.countCatalogVisibleBooks();
+      expect(mockBookRepository.countCatalogVisible).toHaveBeenCalledWith({ ownerId: undefined });
+      expect(actualCount).toBe(0);
     });
   });
 

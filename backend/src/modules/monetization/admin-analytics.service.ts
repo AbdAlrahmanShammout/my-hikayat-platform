@@ -5,7 +5,6 @@ import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookEngagementService } from '@/modules/monetization/book-engagement.service';
 import { BookHeatmapService } from '@/modules/monetization/book-heatmap.service';
 import { BookRevenueService } from '@/modules/monetization/book-revenue.service';
-import { ENGAGEMENT_MS_PER_MINUTE } from '@/modules/monetization/consts/engagement-ms-per-minute.constant';
 import {
   AdminPeriodAnalyticsPage,
   AdminPeriodBookHeatmap,
@@ -20,6 +19,7 @@ import { OwnerBookEngagementSummary } from '@/modules/monetization/defs/book-eng
 import { RevenuePeriodEntity } from '@/modules/monetization/entity/revenue-period.entity';
 import { computePlatformCutCents } from '@/modules/monetization/platform-cut-cents.helper';
 import { RevenuePeriodService } from '@/modules/monetization/revenue-period.service';
+import { toReadingMinutes } from '@/modules/monetization/to-reading-minutes.helper';
 
 @Injectable()
 export class AdminAnalyticsService {
@@ -79,7 +79,7 @@ export class AdminAnalyticsService {
       totalActiveSpreadMs: summary.totalActiveSpreadMs,
       totalVisualSceneTimeMs: summary.totalVisualSceneTimeMs,
       totalWeightedEngagement: summary.totalWeightedEngagement,
-      totalReadingMinutes: AdminAnalyticsService.toReadingMinutes(summary),
+      totalReadingMinutes: toReadingMinutes(summary),
     };
   }
 
@@ -120,9 +120,5 @@ export class AdminAnalyticsService {
       poolAmountCents: period.poolAmountCents,
       platformCutPercent: period.platformCutPercent,
     });
-  }
-
-  private static toReadingMinutes(summary: OwnerBookEngagementSummary): number {
-    return (summary.totalActiveReadingMs + summary.totalActiveSpreadMs) / ENGAGEMENT_MS_PER_MINUTE;
   }
 }

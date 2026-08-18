@@ -107,15 +107,19 @@ export class BookEngagementPrismaRepository implements BookEngagementRepository 
   }
 
   private static buildOwnerPeriodWhere(input: {
-    readonly revenuePeriodId: number;
+    readonly revenuePeriodId?: number;
     readonly ownerId?: number;
   }): Prisma.BookEngagementWhereInput {
-    const where: Prisma.BookEngagementWhereInput = {
-      revenuePeriodId: input.revenuePeriodId,
-      deletedAt: null,
-    };
+    const bookWhere: Prisma.BookWhereInput = { deletedAt: null };
     if (input.ownerId !== undefined) {
-      where.book = { ownerId: input.ownerId, deletedAt: null };
+      bookWhere.ownerId = input.ownerId;
+    }
+    const where: Prisma.BookEngagementWhereInput = {
+      deletedAt: null,
+      book: bookWhere,
+    };
+    if (input.revenuePeriodId !== undefined) {
+      where.revenuePeriodId = input.revenuePeriodId;
     }
     return where;
   }

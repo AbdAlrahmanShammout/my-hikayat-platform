@@ -23,7 +23,7 @@ export type ListBookRevenuesRepoInput = {
 };
 
 export type SumAuthorCentsRepoInput = {
-  readonly revenuePeriodId: number;
+  readonly revenuePeriodId?: number;
   readonly ownerId?: number;
 };
 

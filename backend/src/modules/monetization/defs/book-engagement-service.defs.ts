@@ -15,6 +15,6 @@ export type FindBookEngagementByPeriodAndBookServiceInput = {
 };
 
 export type SummarizeOwnerEngagementServiceInput = {
-  readonly revenuePeriodId: number;
+  readonly revenuePeriodId?: number;
   readonly ownerId?: number;
 };

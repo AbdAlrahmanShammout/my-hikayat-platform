@@ -6,7 +6,6 @@ import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookEngagementService } from '@/modules/monetization/book-engagement.service';
 import { BookHeatmapService } from '@/modules/monetization/book-heatmap.service';
 import { BookRevenueService } from '@/modules/monetization/book-revenue.service';
-import { ENGAGEMENT_MS_PER_MINUTE } from '@/modules/monetization/consts/engagement-ms-per-minute.constant';
 import {
   AuthorAnalyticsPage,
   AuthorBookHeatmap,
@@ -22,6 +21,7 @@ import { OwnerBookEngagementSummary } from '@/modules/monetization/defs/book-eng
 import { RevenuePeriodEntity } from '@/modules/monetization/entity/revenue-period.entity';
 import { RevenuePeriodPage } from '@/modules/monetization/defs/revenue-period-repository.defs';
 import { RevenuePeriodService } from '@/modules/monetization/revenue-period.service';
+import { toReadingMinutes } from '@/modules/monetization/to-reading-minutes.helper';
 
 @Injectable()
 export class AuthorAnalyticsService {
@@ -84,7 +84,7 @@ export class AuthorAnalyticsService {
       totalActiveSpreadMs: summary.totalActiveSpreadMs,
       totalVisualSceneTimeMs: summary.totalVisualSceneTimeMs,
       totalWeightedEngagement: summary.totalWeightedEngagement,
-      totalReadingMinutes: AuthorAnalyticsService.toReadingMinutes(summary),
+      totalReadingMinutes: toReadingMinutes(summary),
     };
   }
 
@@ -102,9 +102,5 @@ export class AuthorAnalyticsService {
       throw new ResourceNotFoundException('Book', bookId);
     }
     return book;
-  }
-
-  private static toReadingMinutes(summary: OwnerBookEngagementSummary): number {
-    return (summary.totalActiveReadingMs + summary.totalActiveSpreadMs) / ENGAGEMENT_MS_PER_MINUTE;
   }
 }

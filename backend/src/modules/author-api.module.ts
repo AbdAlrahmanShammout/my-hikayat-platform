@@ -11,6 +11,7 @@ import { BookAssetAuthorController } from '@/modules/book-asset/book-asset.autho
 import { BookProcessingModule } from '@/modules/book-processing/book-processing.module';
 import { CategoryAuthorController } from '@/modules/category/category.author.controller';
 import { CategoryModule } from '@/modules/category/category.module';
+import { DashboardAuthorController } from '@/modules/monetization/dashboard.author.controller';
 import { MonetizationAuthorController } from '@/modules/monetization/monetization.author.controller';
 import { MonetizationModule } from '@/modules/monetization/monetization.module';
 
@@ -27,6 +28,7 @@ import { MonetizationModule } from '@/modules/monetization/monetization.module';
     BookAssetAuthorController,
     BookAuthorController,
     CategoryAuthorController,
+    DashboardAuthorController,
     MonetizationAuthorController,
   ],
   providers: [JwtAuthGuard, LocalAuthGuard, RolesGuard],

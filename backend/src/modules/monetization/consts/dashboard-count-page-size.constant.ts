@@ -1,0 +1,1 @@
+export const DASHBOARD_COUNT_PAGE_SIZE = 1;

@@ -114,6 +114,10 @@ export const queryKeys = {
       detail: (auditLogId: number) =>
         [...queryKeys.admin.auditLogs.all, 'detail', auditLogId] as const,
     },
+    dashboard: {
+      all: ['admin', 'dashboard'] as const,
+      summary: () => [...queryKeys.admin.dashboard.all, 'summary'] as const,
+    },
   },
   author: {
     books: {
@@ -142,6 +146,10 @@ export const queryKeys = {
         [...queryKeys.author.earnings.all, 'trend', filters] as const,
       list: (filters: AuthorEarningsQuery) =>
         [...queryKeys.author.earnings.all, 'list', filters] as const,
+    },
+    dashboard: {
+      all: ['author', 'dashboard'] as const,
+      summary: () => [...queryKeys.author.dashboard.all, 'summary'] as const,
     },
   },
 } as const;

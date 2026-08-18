@@ -16,6 +16,6 @@ export type FindBookRevenueByPeriodAndBookServiceInput = {
 };
 
 export type SumAuthorCentsServiceInput = {
-  readonly revenuePeriodId: number;
+  readonly revenuePeriodId?: number;
   readonly ownerId?: number;
 };

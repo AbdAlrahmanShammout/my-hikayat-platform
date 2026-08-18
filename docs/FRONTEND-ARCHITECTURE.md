@@ -409,6 +409,14 @@ best communicates the information.
 
 Prefer `PageHeader` + content sections over ad-hoc headings.
 
+**Home is a summary contract.** When an audience has a dashboard Home,
+that screen displays backend-provided KPI fields from **one** summary
+response. Do not assemble Home by firing many unrelated list or
+period-scoped analytics requests. Do not hide a KPI because the value
+is zero; `0` is a valid empty state. Detailed tables, heatmaps, and
+breakdowns stay on their own routes. Which KPIs exist, and how each is
+defined, belongs in the product specification.
+
 ---
 
 ## 10. Responsive design

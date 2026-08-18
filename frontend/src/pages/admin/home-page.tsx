@@ -2,13 +2,10 @@ import { motion, useReducedMotion } from 'framer-motion';
 import type { JSX } from 'react';
 
 import { PageHeader } from '@/components/layout/page-header';
-import { AdminBooksTotalCard } from '@/features/books/components/admin-books-total-card';
-import { AdminRevenuePeriodsTotalCard } from '@/features/revenue/components/admin-revenue-periods-total-card';
-import { AdminSubscriptionsTotalCard } from '@/features/subscriptions/components/admin-subscriptions-total-card';
-import { AdminUsersTotalCard } from '@/features/users/components/admin-users-total-card';
+import { AdminDashboardSummaryCards } from '@/features/dashboard/components/admin-dashboard-summary-cards';
 
 /**
- * Admin home. KPI values are backend list `total` fields, not computed metrics.
+ * Admin home. KPI values come from GET /admin/dashboard/summary.
  */
 export function AdminHomePage(): JSX.Element {
   const shouldReduceMotion: boolean | null = useReducedMotion();
@@ -16,18 +13,15 @@ export function AdminHomePage(): JSX.Element {
     <>
       <PageHeader
         title="Overview"
-        description="Counts come from existing admin list totals. This screen does not invent analytics."
+        description="Platform totals come from the admin dashboard summary. This screen does not invent analytics."
       />
       <motion.div
-        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
         initial={shouldReduceMotion === true ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: shouldReduceMotion === true ? 0 : 0.2 }}
       >
-        <AdminBooksTotalCard />
-        <AdminUsersTotalCard />
-        <AdminSubscriptionsTotalCard />
-        <AdminRevenuePeriodsTotalCard />
+        <AdminDashboardSummaryCards />
       </motion.div>
     </>
   );

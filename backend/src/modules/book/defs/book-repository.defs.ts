@@ -56,3 +56,7 @@ export type BookPage = {
 export type ListCatalogBooksByIdsRepoInput = {
   readonly ids: readonly number[];
 };
+
+export type CountCatalogVisibleBooksRepoInput = {
+  readonly ownerId?: number;
+};

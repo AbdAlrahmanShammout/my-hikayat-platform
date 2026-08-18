@@ -20,7 +20,20 @@ describe('AuthorApiModule', () => {
         $connect: jest.fn(),
         $disconnect: jest.fn(),
         $transaction: jest.fn(),
-        user: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+        user: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
+        adminInvitation: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
         book: {
           create: jest.fn(),
           findFirst: jest.fn(),

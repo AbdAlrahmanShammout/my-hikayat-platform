@@ -4,10 +4,11 @@ This file is the **delivery tracker** for the admin dashboard: what to build, in
 order, and whether it is done. Architecture conventions live in
 `docs/FRONTEND-ARCHITECTURE.md` and must not be updated for STEP completion.
 
-Product requirements: `docs/SRS.md` §2.2, §2.5, §2.3, §2.4, §7.3–7.4, §12.3.
+Product requirements: `docs/SRS.md` §2.2, §2.3, §2.5, §2.4, §7.3–7.4, §12.0–§12.3.
 Frontend engineering: `docs/FRONTEND-ARCHITECTURE.md`.
 Backend contracts: existing `/admin/*`, `/author/*`, `/auth/*`, and `POST /user/publisher`.
-Do not add backend endpoints unless a STEP explicitly records a contract gap.
+Dedicated Home summary endpoints are required by STEPs 29–30; do not add
+other backend endpoints unless a STEP explicitly records a contract gap.
 
 STEPs 0–15 are the admin web dashboard. STEPs 16+ are the author dashboard in this
 same sequential tracker. The reader app remains out of scope.
@@ -49,6 +50,8 @@ CORS default includes the Vite origin, agent routing to
 | 26 | Author earnings | Complete |
 | 27 | Author heatmap | Complete |
 | 28 | Author account create | Complete |
+| 29 | Admin home KPI summary | Complete |
+| 30 | Author home KPI summary | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -121,17 +124,17 @@ Non-admins see a forbidden screen. Auth wire types come from `src/generated/admi
 
 ## STEP 2 — Admin home
 
-**Goal:** A calm overview. There is **no** dedicated admin dashboard API. Compose
-counts from existing list payloads’ `total` fields (limit=1 is enough for a count).
+**Goal:** A calm overview. The original STEP shipped four composed list
+`total` cards (books, users, subscriptions, revenue periods). That Home
+metric set is **replaced by STEP 29**. Keep this STEP Complete as the
+historical composed-totals work. Do not add more list-fan-out cards here.
 
-**APIs (read-only totals)**
+**APIs (read-only totals, superseded for Home by STEP 29)**
 
 - `GET /admin/books?limit=1`
 - `GET /admin/users?limit=1`
 - `GET /admin/subscriptions?limit=1`
 - `GET /admin/revenue-periods?limit=1`
-- Optional: `POST /admin/revenue-periods/current` only if the product wants a
-  one-click “ensure this UTC month” from home (otherwise keep it on STEP 8).
 
 Use a Bento/KPI layout. Do not invent analytics formulas.
 
@@ -139,8 +142,10 @@ Use a Bento/KPI layout. Do not invent analytics formulas.
 
 **Written:** four independent KPI cards read `total` from `GET /admin/books`,
 `/admin/users`, `/admin/subscriptions`, and `/admin/revenue-periods` with
-`limit=1`. Each card has loading, error/retry, and a zero empty label. Creating
-the current UTC month period stays on STEP 8.
+`limit=1`. Each card has loading, error/retry, and a zero empty label.
+STEP 29 replaces this set with the SRS §2.3 Home KPIs and a dedicated
+summary API. Subscription and revenue-period counts remain on their
+dedicated pages.
 
 ---
 
@@ -542,7 +547,8 @@ use author routes (UX only; backend still enforces `Roles(AUTHOR, ADMIN)`).
 **Written:** login routes by role, `/` goes to `/login`, author UX guard,
 sidebar/drawer shell, sign out, home shows `GET /auth/me` identity. Readers who
 open `/author` see a forbidden screen. Admins may open `/author` because the API
-allows it. Reader sign-in onboarding to publisher is STEP 28.
+allows it. Reader sign-in onboarding to publisher is STEP 28. Home KPI cards are
+STEP 30.
 
 ---
 
@@ -897,6 +903,150 @@ publisher panel for signed-in readers, login link to create an author account.
 
 ---
 
+## STEP 29 — Admin home KPI summary
+
+**SRS:** §2.3 Admin dashboard Home. Frontend Home contract:
+`docs/FRONTEND-ARCHITECTURE.md` §9.
+
+**Goal:** `/admin` answers “how is the platform doing?” with six backend
+KPIs. It stays a summary. Users, books, analytics, and revenue details
+remain on existing pages.
+
+**Contract gap:** existing list endpoints cannot produce a correct
+Published Books total (`publishingStatus=approved` includes unpublished
+approved books; catalog visibility also requires processing `ready` and
+`publishedAt`). Period-scoped analytics cannot produce lifetime reading
+minutes without the UI summing pages. There is no dashboard-summary
+pattern yet. Add one purpose-built response.
+
+**API**
+
+- `GET /admin/dashboard/summary` — `@Roles(ADMIN)`; platform-wide; no
+  query filters
+
+Returned fields (required; `0` when empty; never null):
+
+- `totalUsers` — integer count
+- `totalPublishers` — integer count; `isPublisher = true` (§2.5), including
+  admin publishers. Not `role = author`
+- `totalBooks` — integer count
+- `publishedBooks` — integer count; catalog-visible (§3)
+- `pendingReviewBooks` — integer count; `publishingStatus = in_review`
+- `totalReadingMinutes` — number minutes; same division as analytics
+  (`(sum(activeReadingMs) + sum(activeSpreadMs)) / 60000`). No extra
+  rounding. Idle and `visualSceneTimeMs` excluded. Do not return ms.
+
+Do not return individual earnings or private user fields. DTO:
+`GetAdminDashboardSummaryResponseDto`. OpenAPI: `@ApiTags('Admin - Dashboard')`,
+`@ApiOperation`, `@ApiBearerAuth`, `@ApiResponse({ status: 200, type: … })`.
+
+**Backend**
+
+- Thin controller on the admin audience module. Orchestrate in a summary
+  service that calls existing `UserService`, `BookService`, and
+  `BookEngagementService` (same home as `AdminAnalyticsService` is
+  acceptable; do not duplicate formulas).
+- Reuse `UserService` list totals (all users; `isPublisher=true`).
+- Reuse `BookService.listBooks` totals (all books; `in_review`).
+- Add an owner-optional **catalog-visible count** on `BookService` that
+  uses the existing catalog predicate (`approved` + `ready` +
+  `publishedAt`), not a new published definition.
+- Extend engagement summarize so `revenuePeriodId` may be omitted for an
+  all-period rollup of the same columns. Do not sum live reading
+  sessions as a second total.
+- Display minutes the API returns. Do not convert ms in the UI if the
+  summary already returns minutes.
+
+**UI**
+
+- Replace STEP 2’s four composed list cards with these six KPIs.
+- Loading, error/retry, and visible `0` empty states on every card.
+- Do not link this screen into a full analytics dashboard.
+
+**Route:** `/admin`
+
+**Tests (required with the HTTP):** admin 200 with zeros and with seeded
+counts; reader and author 403; unauthenticated 401; `publishedBooks`
+ignores approved-but-unpublished; `totalPublishers` counts `isPublisher`
+not `role`; `totalReadingMinutes` matches
+`(activeReadingMs + activeSpreadMs) / 60000` and ignores idle /
+`visualSceneTimeMs`; soft-deleted users/books excluded.
+
+**Done when:** the summary API is tested; Home displays only backend
+fields; zeros stay visible; no frontend aggregation of list pages.
+
+---
+
+## STEP 30 — Author home KPI summary
+
+**SRS:** §12.0. Frontend Home contract: `docs/FRONTEND-ARCHITECTURE.md` §9.
+
+**Goal:** `/author` answers “how is my publishing activity doing?” with
+five owner-scoped KPIs. Identity from `GET /auth/me` may remain
+secondary. Analytics, heatmap, earnings, and book management stay on
+existing pages.
+
+**Contract gap:** same as STEP 29 for published count and lifetime
+rollups. Author list `total` is owner-scoped and can support Total Books
+and Pending Review, but Home must still be one summary response so the
+UI does not fan out requests or sum paginated earnings trend rows.
+
+**API**
+
+- `GET /author/dashboard/summary` — `@Roles(AUTHOR, ADMIN)`; scoped to
+  the authenticated user’s `ownerId`. An admin caller still only sees
+  books they own
+
+Returned fields (required; `0` when empty; never null):
+
+- `totalBooks` — integer count
+- `publishedBooks` — catalog-visible and owned by the caller
+- `pendingReviewBooks` — integer count
+- `totalReadingMinutes` — number minutes; same division as
+  `GET /author/analytics` `totalReadingMinutes`, all periods, that owner
+  only. No extra rounding. Do not return ms
+- `authorCents` — integer cents; sum of `BookRevenue.authorCents` for
+  that owner across all periods (same cents as `GET /author/earnings`,
+  rolled up)
+
+DTO: `GetAuthorDashboardSummaryResponseDto`. OpenAPI:
+`@ApiTags('Author - Dashboard')`, `@ApiOperation`, `@ApiBearerAuth`,
+`@ApiResponse({ status: 200, type: … })`. No `ownerId` query parameter.
+
+**Backend**
+
+- Thin controller on the author audience module. Orchestrate through
+  existing `BookService`, `BookEngagementService`, and
+  `BookRevenueService` (same home as `AuthorAnalyticsService` is
+  acceptable).
+- Owner is the principal. Never accept another user’s id from the query
+  string.
+- Catalog-visible count with `ownerId`.
+- All-period engagement summarize with `ownerId`.
+- All-period `sumAuthorCents` with `ownerId`. Do not invent a live
+  payout from engagement. Uncalculated periods contribute `0`.
+
+**UI**
+
+- One TanStack Query for the summary. Format cents for display only.
+- Loading, error/retry, visible `0` on every KPI.
+- Do not duplicate the analytics or earnings pages.
+
+**Route:** `/author`
+
+**Tests (required with the HTTP):** author 200 scoped to principal;
+second author’s books/minutes/cents do not leak; admin 200 for **their
+own** books only; reader 403; unauthenticated 401; no `ownerId` query
+accepted; `publishedBooks` uses catalog visibility; `pendingReviewBooks`
+is `in_review` only; minutes and `authorCents` match all-period
+aggregates of the existing analytics/earnings sources; empty owner
+returns zeros.
+
+**Done when:** the summary API is tested for owner isolation; Home
+displays only backend fields; a second author’s data never appears.
+
+---
+
 ## Out of scope for this list
 
 - Reader catalog / dual-engine reader / React Native
@@ -912,4 +1062,7 @@ STEP 17 depends on STEP 16. STEP 18 depends on STEP 17. STEP 19 depends on
 STEP 17. STEP 20 depends on STEP 19. STEP 21 depends on STEP 19. STEP 22 depends on STEP 19. STEP 23 depends on STEP 19. STEP 24 depends on
 STEP 18 and STEP 19. STEP 25 depends on STEP 16. STEP 26 depends on STEP 16. STEP 27 depends on
 STEP 25. STEP 28 depends on STEP 16. STEP 8 must exist before STEP 9.
-STEPs 0–15 on this list are the completed admin dashboard work.
+STEP 29 replaces Admin Home KPIs and depends on STEP 1. STEP 30 depends
+on STEP 16. Implement the summary HTTP in each STEP before the Home UI.
+STEPs 0–15 on this list are the completed admin dashboard work except
+the Home metric replacement in STEP 29.

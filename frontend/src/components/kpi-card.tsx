@@ -15,6 +15,7 @@ type KpiCardProps = {
   readonly isError: boolean;
   readonly error: unknown;
   readonly onRetry: () => void;
+  readonly formattedValue?: string;
   readonly action: ReactNode;
 };
 
@@ -30,6 +31,7 @@ export function KpiCard({
   isError,
   error,
   onRetry,
+  formattedValue,
   action,
 }: KpiCardProps): JSX.Element {
   return (
@@ -46,6 +48,7 @@ export function KpiCard({
           isError={isError}
           error={error}
           onRetry={onRetry}
+          formattedValue={formattedValue}
         />
         {action}
       </CardContent>
@@ -60,6 +63,7 @@ function KpiCardValue({
   isError,
   error,
   onRetry,
+  formattedValue,
 }: Omit<KpiCardProps, 'title' | 'description' | 'action'>): JSX.Element {
   if (isPending) {
     return (
@@ -82,9 +86,10 @@ function KpiCardValue({
     );
   }
   const displayTotal: number = total ?? 0;
+  const displayValue: string = formattedValue ?? displayTotal.toLocaleString();
   return (
     <div>
-      <p className="text-3xl font-semibold tracking-tight">{displayTotal.toLocaleString()}</p>
+      <p className="text-3xl font-semibold tracking-tight">{displayValue}</p>
       {displayTotal === 0 ? (
         <p className="mt-1 text-sm text-muted-foreground">{emptyLabel}</p>
       ) : null}

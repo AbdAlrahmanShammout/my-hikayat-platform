@@ -102,14 +102,22 @@ export class BookEngagementService {
     return engagement;
   }
 
-  async summarizeOwnerEngagementForPeriod(
+  async summarizeOwnerEngagement(
     input: SummarizeOwnerEngagementServiceInput,
   ): Promise<OwnerBookEngagementSummary> {
-    await this.revenuePeriodService.getRevenuePeriodById(input.revenuePeriodId);
+    if (input.revenuePeriodId !== undefined) {
+      await this.revenuePeriodService.getRevenuePeriodById(input.revenuePeriodId);
+    }
     return this.bookEngagementRepository.summarizeByOwner({
       revenuePeriodId: input.revenuePeriodId,
       ownerId: input.ownerId,
     });
+  }
+
+  async summarizeOwnerEngagementForPeriod(
+    input: SummarizeOwnerEngagementServiceInput & { readonly revenuePeriodId: number },
+  ): Promise<OwnerBookEngagementSummary> {
+    return this.summarizeOwnerEngagement(input);
   }
 
   private async buildRow(

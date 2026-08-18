@@ -7,7 +7,9 @@ import { RevenuePeriodRepository } from '@/modules/monetization/repository/reven
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { AdminAnalyticsService } from './admin-analytics.service';
+import { AdminDashboardSummaryService } from './admin-dashboard-summary.service';
 import { AuthorAnalyticsService } from './author-analytics.service';
+import { AuthorDashboardSummaryService } from './author-dashboard-summary.service';
 import { BookEngagementService } from './book-engagement.service';
 import { BookHeatmapService } from './book-heatmap.service';
 import { BookRevenueService } from './book-revenue.service';
@@ -153,7 +155,20 @@ describe('MonetizationModule', () => {
           count: jest.fn(),
           update: jest.fn(),
         },
-        user: { create: jest.fn(), findFirst: jest.fn(), update: jest.fn() },
+        user: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
+        adminInvitation: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          count: jest.fn(),
+          update: jest.fn(),
+        },
         auditLog: {
           create: jest.fn(),
           findFirst: jest.fn(),
@@ -181,6 +196,8 @@ describe('MonetizationModule', () => {
     expect(moduleRef.get(BookHeatmapService)).toBeDefined();
     expect(moduleRef.get(AuthorAnalyticsService)).toBeDefined();
     expect(moduleRef.get(AdminAnalyticsService)).toBeDefined();
+    expect(moduleRef.get(AuthorDashboardSummaryService)).toBeDefined();
+    expect(moduleRef.get(AdminDashboardSummaryService)).toBeDefined();
     expect(moduleRef.get(RevenuePeriodRepository)).toBeDefined();
     expect(moduleRef.get(BookEngagementRepository)).toBeDefined();
     expect(moduleRef.get(BookRevenueRepository)).toBeDefined();

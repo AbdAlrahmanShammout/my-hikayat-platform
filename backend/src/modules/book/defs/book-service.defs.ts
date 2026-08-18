@@ -59,6 +59,10 @@ export type ListCatalogBooksServiceInput = {
   readonly sort?: CatalogSort;
 };
 
+export type CountCatalogVisibleBooksServiceInput = {
+  readonly ownerId?: number;
+};
+
 export type TransitionBookProcessingStatusInput = {
   readonly bookId: number;
   readonly to: BookProcessingStatus;

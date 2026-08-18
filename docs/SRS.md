@@ -56,6 +56,8 @@ The platform supports:
 
 - View analytics and earnings
 
+- View a Home KPI summary of owned publishing activity (§12.0)
+
 Publishers manage their own books through the author book API:
 
 - `POST /author/books` — create a book. The owner is the authenticated
@@ -237,6 +239,47 @@ Authors and readers can list the same taxonomy (read-only):
 
 Both list endpoints include `categoryWeight` and use `limit` / `offset`.
 Neither path creates, renames, or deletes categories.
+
+Admin dashboard Home (`/admin`) is a platform-wide KPI summary, not a
+second analytics, users, or books page. `GET /admin/dashboard/summary`
+returns the JSON object below. There is no query string and no
+`revenuePeriodId`. The dashboard must display those backend fields. It
+must not assemble Home by issuing many unrelated list requests, and it
+must not invent catalog, publisher, reading-time, or earnings formulas
+in the UI. Every field is present even when the value is `0`. Soft-
+deleted users and books are excluded, matching existing admin lists.
+Home does not expose individual author earnings or private user
+fields. `@Roles(ADMIN)` only. Unauthenticated callers receive the same
+401 as other admin HTTP. Author and reader sessions receive
+`ACCESS_DENIED` (403).
+
+Wire contract (`GetAdminDashboardSummaryResponseDto`), all fields
+required, never `null`, never omitted:
+
+```json
+{
+  "totalUsers": 0,
+  "totalPublishers": 0,
+  "totalBooks": 0,
+  "publishedBooks": 0,
+  "pendingReviewBooks": 0,
+  "totalReadingMinutes": 0
+}
+```
+
+| Field | JSON type | Unit | Source of truth |
+| --- | --- | --- | --- |
+| `totalUsers` | integer ≥ 0 | count | `UserService` list `total` (`deletedAt` null). Same population as `GET /admin/users` |
+| `totalPublishers` | integer ≥ 0 | count | Same list with `isPublisher = true` (§2.5), including admin publishers. Not `role = author`. Same as `GET /admin/users?isPublisher=true` |
+| `totalBooks` | integer ≥ 0 | count | `BookService.listBooks` `total` (no status filter, `deletedAt` null). Same as `GET /admin/books` |
+| `publishedBooks` | integer ≥ 0 | count | Catalog visibility (§3): `approved` + processing `ready` + `publishedAt` set + `deletedAt` null. Not `approved` alone |
+| `pendingReviewBooks` | integer ≥ 0 | count | `publishingStatus = in_review`, `deletedAt` null. Same as `GET /admin/books?publishingStatus=in_review` |
+| `totalReadingMinutes` | number ≥ 0 | minutes | Same formula as period analytics `totalReadingMinutes`: (`sum(activeReadingMs)` + `sum(activeSpreadMs)`) / 60000 from stored `BookEngagement` rows with `deletedAt` null whose book is not soft-deleted, across all revenue periods. Idle session time is not in those columns. `visualSceneTimeMs` and `weightedEngagement` are excluded. No extra rounding beyond that division (same as `GET /author/analytics`). Live unread-calculated sessions are not included |
+
+Counts are Prisma `Int` aggregates serialized as JSON numbers. Minutes
+are the existing JS division (so 90000 ms is `1.5`, 0 ms is `0`). Do
+not return milliseconds on this endpoint. Do not create a
+`DashboardStats` table.
 
 ## **2.4 Audit Log**
 
@@ -998,9 +1041,53 @@ Page Number.
 
 Authors can view:
 
+## **12.0 Home**
+
+Author dashboard Home (`/author`) is a small KPI overview of **that
+author’s** publishing activity, not a second analytics, heatmap, or
+earnings page. `GET /author/dashboard/summary` returns the JSON object
+below for the authenticated principal. There is no query string, no
+`ownerId` parameter, and no `revenuePeriodId`. An admin who calls this
+path is still scoped to `currentUser.id`, matching other author HTTP.
+The dashboard must display the backend fields. It must not fan out list
+or period-scoped analytics requests to assemble Home, and it must not
+recalculate earnings or reading time in the UI. Every field is present
+even when the value is `0`. Soft-deleted books are excluded, matching
+`GET /author/books`. `@Roles(AUTHOR, ADMIN)`. Unauthenticated callers
+receive 401. Reader sessions receive `ACCESS_DENIED` (403).
+
+Wire contract (`GetAuthorDashboardSummaryResponseDto`), all fields
+required, never `null`, never omitted:
+
+```json
+{
+  "totalBooks": 0,
+  "publishedBooks": 0,
+  "pendingReviewBooks": 0,
+  "totalReadingMinutes": 0,
+  "authorCents": 0
+}
+```
+
+| Field | JSON type | Unit | Source of truth |
+| --- | --- | --- | --- |
+| `totalBooks` | integer ≥ 0 | count | `BookService.listBooks` with `ownerId =` principal, no status filter. Same as `GET /author/books` `total` |
+| `publishedBooks` | integer ≥ 0 | count | Catalog visibility (§3) and `ownerId =` principal. Not `approved` alone |
+| `pendingReviewBooks` | integer ≥ 0 | count | `publishingStatus = in_review` and `ownerId =` principal. Same as `GET /author/books?publishingStatus=in_review` |
+| `totalReadingMinutes` | number ≥ 0 | minutes | Same formula as `GET /author/analytics` `totalReadingMinutes`: (`sum(activeReadingMs)` + `sum(activeSpreadMs)`) / 60000 from stored `BookEngagement` rows for books owned by the principal, all periods, engagement and book `deletedAt` null. Idle time is not stored on those columns. `visualSceneTimeMs` and `weightedEngagement` are excluded. No extra rounding. Live unread-calculated sessions are not included |
+| `authorCents` | integer ≥ 0 | integer cents | Sum of `BookRevenue.authorCents` for `ownerId =` principal across all periods (`BookRevenue.deletedAt` null, book not soft-deleted). Same cents as `GET /author/earnings` `authorCents`, rolled up. Uncalculated periods contribute `0`. Subscription refunds do not rewrite this unless the period is recalculated. Do not invent a live payout from engagement |
+
+`GET /author/analytics` and `GET /author/earnings` remain
+**period-scoped** (a `revenuePeriodId` is required). Home is the
+all-period rollup of those same fields. The UI must not sum paginated
+trend rows. Do not return milliseconds on this endpoint. Do not create
+a `DashboardStats` table. The earnings field is `authorCents`, not a
+new currency type.
+
 ## **12.1 Analytics**
 
-- Total reading minutes
+- Total reading minutes (for the selected revenue period; Home §12.0
+  is the all-period rollup of the same definition)
 
 - Reading per book
 
@@ -1015,7 +1102,8 @@ endpoint.
 
 - Revenue per book
 
-- Total earnings
+- Total earnings (for the selected revenue period; Home §12.0 is the
+  all-period sum of the same `authorCents`)
 
 - Trend over time
 

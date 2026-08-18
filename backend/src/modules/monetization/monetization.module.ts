@@ -4,10 +4,13 @@ import { AuditModule } from '@/modules/audit/audit.module';
 import { BookModule } from '@/modules/book/book.module';
 import { BookProcessingModule } from '@/modules/book-processing/book-processing.module';
 import { ReadingIntelligenceModule } from '@/modules/reading-intelligence/reading-intelligence.module';
+import { UserModule } from '@/modules/user/user.module';
 import { DatabaseProviderModule } from '@/providers/database/database-provider.module';
 
 import { AdminAnalyticsService } from './admin-analytics.service';
+import { AdminDashboardSummaryService } from './admin-dashboard-summary.service';
 import { AuthorAnalyticsService } from './author-analytics.service';
+import { AuthorDashboardSummaryService } from './author-dashboard-summary.service';
 import { BookEngagementService } from './book-engagement.service';
 import { BookHeatmapService } from './book-heatmap.service';
 import { BookRevenueService } from './book-revenue.service';
@@ -26,6 +29,7 @@ import { RevenuePeriodService } from './revenue-period.service';
     BookProcessingModule,
     ReadingIntelligenceModule,
     AuditModule,
+    UserModule,
   ],
   providers: [
     RevenuePeriodService,
@@ -34,6 +38,8 @@ import { RevenuePeriodService } from './revenue-period.service';
     BookHeatmapService,
     AuthorAnalyticsService,
     AdminAnalyticsService,
+    AuthorDashboardSummaryService,
+    AdminDashboardSummaryService,
     { provide: RevenuePeriodRepository, useClass: RevenuePeriodPrismaRepository },
     { provide: BookEngagementRepository, useClass: BookEngagementPrismaRepository },
     { provide: BookRevenueRepository, useClass: BookRevenuePrismaRepository },
@@ -44,6 +50,8 @@ import { RevenuePeriodService } from './revenue-period.service';
     BookRevenueService,
     AuthorAnalyticsService,
     AdminAnalyticsService,
+    AuthorDashboardSummaryService,
+    AdminDashboardSummaryService,
   ],
 })
 export class MonetizationModule {}

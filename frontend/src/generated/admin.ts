@@ -211,6 +211,13 @@ export interface paths {
       };
     };
   };
+  "/admin/dashboard/summary": {
+    get: {
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['GetAdminDashboardSummaryResponseDto'] } };
+      };
+    };
+  };
   "/admin/revenue-periods": {
     get: {
       parameters: { query?: { limit?: number; offset?: number } };
@@ -417,5 +424,6 @@ export interface components {
     GetAdminInvitationsResponseDto: { invitations: Array<components['schemas']['AdminInvitationResponse']>; total: number };
     CreateAdminInvitationRequestDto: { email: string };
     CreateAdminInvitationResponseDto: { invitation: components['schemas']['AdminInvitationResponse']; token: string };
+    GetAdminDashboardSummaryResponseDto: { totalUsers: number; totalPublishers: number; totalBooks: number; publishedBooks: number; pendingReviewBooks: number; totalReadingMinutes: number };
   };
 }

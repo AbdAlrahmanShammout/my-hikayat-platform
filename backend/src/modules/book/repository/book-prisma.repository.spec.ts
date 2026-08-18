@@ -245,4 +245,32 @@ describe('BookPrismaRepository', () => {
     });
     expect(actualBooks).toEqual([BookMapper.toEntity(persistenceRow)]);
   });
+
+  it('counts catalog-visible books using the same visibility predicate', async () => {
+    mockPrismaProviderService.book.count.mockResolvedValue(2);
+    const actualCount = await bookPrismaRepository.countCatalogVisible({});
+    expect(mockPrismaProviderService.book.count).toHaveBeenCalledWith({
+      where: {
+        deletedAt: null,
+        publishingStatus: BookPublishingStatus.APPROVED,
+        processingStatus: BookProcessingStatus.READY,
+        publishedAt: { not: null },
+      },
+    });
+    expect(actualCount).toBe(2);
+  });
+
+  it('counts catalog-visible books for one owner', async () => {
+    mockPrismaProviderService.book.count.mockResolvedValue(1);
+    await bookPrismaRepository.countCatalogVisible({ ownerId: 4 });
+    expect(mockPrismaProviderService.book.count).toHaveBeenCalledWith({
+      where: {
+        deletedAt: null,
+        publishingStatus: BookPublishingStatus.APPROVED,
+        processingStatus: BookProcessingStatus.READY,
+        publishedAt: { not: null },
+        ownerId: 4,
+      },
+    });
+  });
 });

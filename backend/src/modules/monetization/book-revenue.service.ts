@@ -123,12 +123,20 @@ export class BookRevenueService {
     return revenue;
   }
 
-  async sumAuthorCentsForPeriod(input: SumAuthorCentsServiceInput): Promise<number> {
-    await this.revenuePeriodService.getRevenuePeriodById(input.revenuePeriodId);
+  async sumAuthorCents(input: SumAuthorCentsServiceInput): Promise<number> {
+    if (input.revenuePeriodId !== undefined) {
+      await this.revenuePeriodService.getRevenuePeriodById(input.revenuePeriodId);
+    }
     return this.bookRevenueRepository.sumAuthorCents({
       revenuePeriodId: input.revenuePeriodId,
       ownerId: input.ownerId,
     });
+  }
+
+  async sumAuthorCentsForPeriod(
+    input: SumAuthorCentsServiceInput & { readonly revenuePeriodId: number },
+  ): Promise<number> {
+    return this.sumAuthorCents(input);
   }
 
   private async buildRows(

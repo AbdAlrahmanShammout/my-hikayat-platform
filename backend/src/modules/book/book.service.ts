@@ -10,6 +10,7 @@ import { AuditLogPage } from '@/modules/audit/defs/audit-log-repository.defs';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { BookPage } from '@/modules/book/defs/book-repository.defs';
 import {
+  CountCatalogVisibleBooksServiceInput,
   CreateBookServiceInput,
   DeleteBookServiceInput,
   GetManagedBookServiceInput,
@@ -114,6 +115,12 @@ export class BookService {
       ownerId: input.ownerId,
       processingStatus: input.processingStatus,
     });
+  }
+
+  async countCatalogVisibleBooks(
+    input: CountCatalogVisibleBooksServiceInput = {},
+  ): Promise<number> {
+    return this.bookRepository.countCatalogVisible({ ownerId: input.ownerId });
   }
 
   async listCatalogBooks(input: ListCatalogBooksServiceInput = {}): Promise<BookPage> {

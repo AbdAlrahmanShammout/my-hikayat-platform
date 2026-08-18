@@ -22,12 +22,12 @@ Do not treat a row as Complete unless both the backend behavior and tests exist.
 
 | Status | Count |
 | --- | ---: |
-| Complete | 78 |
+| Complete | 80 |
 | In Progress | 0 |
 | Future | 2 |
 | Blocked | 0 |
 | Not Required | 15 |
-| **Total** | **95** |
+| **Total** | **97** |
 
 ## Future / out of scope for current Part 1
 
@@ -64,7 +64,7 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §2.2 Author HTTP list categories | `GET /author/categories` (AUTHOR or ADMIN; read-only; includes `categoryWeight`) | `author-reader-category.e2e-spec.ts`, `category.author.controller.spec.ts` | Complete |
 | §2.2 Book status lifecycle pending → in_review → approved / rejected | Publishing status machine; submit, approve, reject | `book-submit-for-review.e2e-spec.ts`, `book-admin-review.e2e-spec.ts` | Complete |
 | §2.2 Author analytics and earnings APIs | `GET /author/analytics`, `GET /author/earnings`, trend, heatmap | `author-monetization.e2e-spec.ts` | Complete |
-| §2.2 Author dashboard UI | Author dashboard STEPs including `/register` onboarding. Backend coverage is the rows above. | — | Not Required |
+| §2.2 Author dashboard UI | Author dashboard STEPs including `/register` onboarding and Home KPIs (STEP 30). Backend coverage is the rows above plus §12.0. | — | Not Required |
 | §2.3 Review then approve or reject books | `POST /admin/books/:id/approve`, `POST /admin/books/:id/reject` (reject requires non-empty `reason` stored on `audit.reason`) | `book-admin-review.e2e-spec.ts` | Complete |
 | §2.3 Required book rejection reason | `POST /admin/books/:id/reject` body `reason`; persisted on append-only `audit.reason` for `book_rejected` | `book-admin-review.e2e-spec.ts`, `book-publishing-status.service.spec.ts`, `book.admin.controller.spec.ts` | Complete |
 | §2.3 Manage users | `GET/PATCH/DELETE /admin/users`; PATCH cannot grant ADMIN; `role` + `isPublisher` pairs follow SRS §2.5 (`USER_INVALID_CAPABILITY`) | `admin-user.e2e-spec.ts`, `user.service.spec.ts` | Complete |
@@ -78,7 +78,8 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §2.3 Admin HTTP create category | `POST /admin/categories` (`name` required; optional `slug` and `categoryWeight`, default weight 1.0) | `admin-category.e2e-spec.ts`, `category.admin.controller.spec.ts` | Complete |
 | §2.3 Admin HTTP rename category | `PATCH /admin/categories/:id` (`name` and/or `slug`; omitted `categoryWeight` is left unchanged) | `admin-category.e2e-spec.ts`, `category.admin.controller.spec.ts`, `category.service.spec.ts` | Complete |
 | §2.3 Curated collections CRUD, membership, display order | `admin/collections` create, title edit, delete, add, remove, reorder | `admin-collection.e2e-spec.ts` | Complete |
-| §2.3 Admin dashboard UI | — | — | Not Required |
+| §2.3 Admin dashboard Home KPI summary API | `GET /admin/dashboard/summary` (`GetAdminDashboardSummaryResponseDto`): `totalUsers`, `totalPublishers` (`isPublisher`), `totalBooks`, `publishedBooks` (catalog-visible), `pendingReviewBooks`, `totalReadingMinutes` (all-period engagement division, no extra rounding). ADMIN only. | `admin-dashboard.e2e-spec.ts`, `admin-dashboard-summary.service.spec.ts`, `dashboard.admin.controller.spec.ts` | Complete |
+| §2.3 Admin dashboard UI | Admin dashboard STEPs including Home KPIs (STEP 29). | — | Not Required |
 | §2.4 Append-only admin audit log for required mutations | `GET /admin/audit-logs`; book publish/unpublish/delete, user/publisher, subscription cancel and payment_failed, collection mutations, revenue calculate | `admin-audit.e2e-spec.ts`, `admin-collection.e2e-spec.ts`, `admin-monetization.e2e-spec.ts`, `subscription-billing.e2e-spec.ts` | Complete |
 | §2.5 `role` is HTTP identity; `isPublisher` is book-ownership capability | `RolesGuard` / `@Roles` vs book `assertOwnerCanOwnBook`; `isPublisher` is not an HTTP role | `user.service.spec.ts`, `book.service.spec.ts`, `author-book.e2e-spec.ts` | Complete |
 | §2.5 Valid/invalid `role` + `isPublisher` combinations | Reader/author are coupled; `reader`+publisher and `author` without publisher are `USER_INVALID_CAPABILITY`; admin may have either publisher flag | `user.service.spec.ts`, `admin-user.e2e-spec.ts` | Complete |
@@ -123,10 +124,11 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §10.2 Unpublished books excluded from reader-facing collections | Discovery hydrates via catalog-visible books only; membership is unchanged for admins | `reader-collection.e2e-spec.ts`, `collection-discovery.service.spec.ts` | Complete |
 | §11 Sync reflowable position and bookmarks | Sync snapshot includes progress + bookmarks | `reading-sync.e2e-spec.ts`, `reading-bookmarks.e2e-spec.ts` | Complete |
 | §11 Sync fixed-layout spread/page and bookmarks | Same sync APIs, layout-discriminated fields | `reading-sync.e2e-spec.ts` | Complete |
-| §12.1 Author analytics APIs (total minutes, per book, ranking) | `GET /author/analytics` returns totals and per-book rows ordered by weighted engagement descending (ties by `bookId`). No separate Top-N endpoint. | `author-monetization.e2e-spec.ts`, `book-engagement-prisma.repository.spec.ts` | Complete |
+| §12.0 Author dashboard Home KPI summary API | `GET /author/dashboard/summary` (`GetAuthorDashboardSummaryResponseDto`): owner-scoped `totalBooks`, `publishedBooks`, `pendingReviewBooks`, all-period `totalReadingMinutes`, all-period `authorCents`. AUTHOR or ADMIN; no `ownerId` query. | `author-dashboard.e2e-spec.ts`, `author-dashboard-summary.service.spec.ts`, `dashboard.author.controller.spec.ts` | Complete |
+| §12.1 Author analytics APIs (total minutes, per book, ranking) | `GET /author/analytics` returns totals and per-book rows ordered by weighted engagement descending (ties by `bookId`). No separate Top-N endpoint. Period-scoped; Home §12.0 is the all-period rollup of the same minute definition. | `author-monetization.e2e-spec.ts`, `book-engagement-prisma.repository.spec.ts` | Complete |
 | §12.2 Author earnings APIs (per book, total, trend) | `GET /author/earnings`, `GET /author/earnings/trend` | `author-monetization.e2e-spec.ts` | Complete |
 | §12.3 Layout-aware heatmap (fixed-layout spreads; reflowable chapters; unmatched title null; hottest first) | Heatmap payload `layoutType` selects `spreads` vs `chapters`. Do not choose the view from `bookType`. | `author-monetization.e2e-spec.ts`, `admin-monetization.e2e-spec.ts`, `book-heatmap.service.spec.ts` | Complete |
-| §12 Author dashboard UI | — | — | Not Required |
+| §12 Author dashboard UI | Author Home KPIs are STEP 30. Period analytics, heatmap, and earnings remain dedicated pages. | — | Not Required |
 | §13 JWT authentication | JWT provider + guards | `auth.e2e-spec.ts` | Complete |
 | §13 Modular NestJS + Prisma + PostgreSQL | `ARCHITECTURE.md` layout, Prisma provider | `app.e2e-spec.ts`, `health.e2e-spec.ts` | Complete |
 | §13 Stripe payments | Stripe provider + billing services | `subscription-billing.e2e-spec.ts` | Complete |
@@ -154,3 +156,4 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 - Admin refund uses the same 7-day activation window and eligibility as the reader refund. It is audited as `subscription_canceled` with `refunded: true`. The admin dashboard still has no refund button.
 - Reflowable time-per-page and reading speed remain SRS requirements. They are Future / out of scope for current Part 1 because there is no stable server-side page definition. See `docs/FUTURE.md`.
 - `bookType` is author-selected content metadata. `layoutType` is detected from the source. Reader engine, engagement, heatmaps, and revenue follow `layoutType`. Typical layout per book type is not a technical guarantee. See SRS §3.
+- Dashboard Home KPIs reuse catalog visibility, `isPublisher`, `BookEngagement` active-ms totals, and `BookRevenue.authorCents`. They are not live session sums and not a second payout formula. See SRS §2.3 and §12.0.
