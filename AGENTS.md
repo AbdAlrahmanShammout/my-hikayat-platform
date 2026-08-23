@@ -75,7 +75,7 @@ code under `mobile/`:
 4. Keep the app Expo + React Native + TypeScript, env-driven, and Replit-portable.
 5. Do not hardcode localhost, secrets, or machine-only paths.
 6. Do not duplicate monetization, entitlement, or authorization rules in the client.
-7. Do not start R2+ reader features until STEP 32 (R1) is Complete.
+7. Do not start R3+ reader features until STEP 33 (R2) is Complete.
 8. Update STEP status only in `docs/admin-dashboard-tasks.md`.
 
 If there is a conflict between existing mobile code, a generic React Native/Expo pattern, and

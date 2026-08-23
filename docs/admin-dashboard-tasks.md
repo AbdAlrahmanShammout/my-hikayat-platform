@@ -57,6 +57,7 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 30 | Author home KPI summary | Complete |
 | 31 | Mobile reader bootstrap (Expo RN+TS, Replit-portable) | Complete |
 | 32 | Mobile auth session + kids-friendly tab shell | Complete |
+| 33 | Mobile catalog browse + book detail (R2) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1110,9 +1111,39 @@ shows auth; login/register write the session; tabs are navigable; typecheck/lint
 
 ---
 
+## STEP 33 — Mobile catalog browse + book detail (R2)
+
+**Goal:** Signed-in readers can browse catalog-visible books on Home (newest /
+popularity, optional category) and open a book detail screen. No reading engines yet.
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md`.
+**APIs (existing only):**
+
+- `GET /reader/catalog?limit&offset&categoryId&sort=` → `{ books, total }`
+- `GET /reader/catalog/:id` → `BookResponse` (404 when not catalog-visible)
+- `GET /reader/categories?limit&offset` → `{ categories, total }` (filter chips)
+
+**In scope:**
+
+- `features/catalog` API functions + TanStack Query hooks + query keys
+- Home tab: list with loading / empty / error / pull-to-refresh
+- Sort: newest | popularity (backend values only)
+- Optional category filter from `/reader/categories`
+- Thin Expo Router detail route → book detail screen
+- Kids-friendly targets and plain language; display backend fields only
+
+**Out of scope:** delivery grants, reading sessions, Smart Resume, offline, search,
+collections, subscriptions UI, dual engines, preview-image fetch.
+
+**Done when:** Home lists catalog books from the API; filters/sort work; detail loads
+a published book and shows a clear not-found/error for unavailable ids;
+typecheck/lint/tests pass.
+
+---
+
 ## Out of scope for this list
 
-- Reader R2+ features (catalog, dual engines, offline, subscriptions UI)
+- Reader R3+ features (dual engines, offline, subscriptions UI, search, collections)
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
 - Recalculating publisher earnings in the browser
@@ -1130,4 +1161,5 @@ on STEP 16. Implement the summary HTTP in each STEP before the Home UI.
 STEPs 0–15 on this list are the completed admin dashboard work except
 the Home metric replacement in STEP 29.
 STEP 31 (R0) is the mobile reader bootstrap and must complete before any
-later reader mobile STEPs. STEP 32 (R1) depends on STEP 31.
+later reader mobile STEPs. STEP 32 (R1) depends on STEP 31. STEP 33 (R2)
+depends on STEP 32.

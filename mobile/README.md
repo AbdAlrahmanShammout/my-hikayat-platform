@@ -26,12 +26,13 @@ mobile/
   src/
     app/                 # Expo Router routes + layouts only
     screens/             # thin route-level composition
-    features/            # product capabilities (auth, …)
+    features/            # product capabilities (auth, catalog, …)
     api/                 # HTTP client, ApiError, query client
     session/             # session provider + token store
     storage/             # SecureStore adapter
     config/              # validated public env
     theme/               # colors, spacing, typography
+    generated/           # OpenAPI wire types (do not edit by hand)
   assets/
   app.json
   .env.example
