@@ -10,14 +10,14 @@ Backend contracts: existing `/admin/*`, `/author/*`, `/auth/*`, and `POST /user/
 Dedicated Home summary endpoints are required by STEPs 29–30; do not add
 other backend endpoints unless a STEP explicitly records a contract gap.
 
-STEPs 0–15 are the admin web dashboard. STEPs 16+ are the author dashboard in this
-same sequential tracker. The reader app remains out of scope.
+STEPs 0–15 are the admin web dashboard. STEPs 16–30 are the author dashboard in this
+same sequential tracker. STEPs 31+ are the reader mobile app (Expo + React Native).
 
 Status values: **Pending**, **In progress**, **Complete**.
 
 Bootstrap already done (not a UI STEP): `frontend/` workspace, Vite on `:5173`,
 CORS default includes the Vite origin, agent routing to
-`docs/FRONTEND-ARCHITECTURE.md`.
+`docs/FRONTEND-ARCHITECTURE.md`. Mobile bootstrap is STEP 31 (R0) under `mobile/`.
 
 | STEP | Capability | Status |
 | --- | --- | --- |
@@ -52,6 +52,7 @@ CORS default includes the Vite origin, agent routing to
 | 28 | Author account create | Complete |
 | 29 | Admin home KPI summary | Complete |
 | 30 | Author home KPI summary | Complete |
+| 31 | Mobile reader bootstrap (Expo RN+TS, Replit-portable) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1047,9 +1048,38 @@ displays only backend fields; a second author’s data never appears.
 
 ---
 
+## STEP 31 — Mobile reader bootstrap (R0)
+
+**Goal:** Create a production-shaped, Replit-portable Expo + React Native +
+TypeScript package under `mobile/` that installs, typechecks, lints, tests, and
+starts. Empty foundation only — same role as admin STEP 0.
+
+**Stack:** Expo managed workflow, React Native, TypeScript (strict), Jest
+(`jest-expo`), ESLint (`eslint-config-expo`).
+
+**In scope:**
+
+- Workspace package `mobile/` wired in `pnpm-workspace.yaml`
+- Folders: `src/root`, `src/config`, `src/features`, `src/shared`
+- `EXPO_PUBLIC_API_BASE_URL` via `.env.example` (real `.env` gitignored)
+- Scripts: `start`, `typecheck`, `lint`, `test`, `build`
+- Smoke screen showing brand + configured API base URL
+- `mobile/README.md` for Cursor develop / Replit test
+
+**Out of scope:** auth, catalog, dual engines, Smart Resume, offline DRM,
+subscriptions UI, audiobooks, kids visual system.
+
+**Done when:** fresh install works; `typecheck` / `lint` / `test` / `build` pass;
+app starts; API config comes from env; no secrets committed; no machine-only
+deps. Develop in Cursor; Replit is a test host only.
+
+**Next:** R1+ reader features must not start until this STEP is Complete.
+
+---
+
 ## Out of scope for this list
 
-- Reader catalog / dual-engine reader / React Native
+- Reader R1+ features (auth shell, catalog, dual engines, offline, subscriptions UI)
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
 - Recalculating publisher earnings in the browser
@@ -1066,3 +1096,5 @@ STEP 29 replaces Admin Home KPIs and depends on STEP 1. STEP 30 depends
 on STEP 16. Implement the summary HTTP in each STEP before the Home UI.
 STEPs 0–15 on this list are the completed admin dashboard work except
 the Home metric replacement in STEP 29.
+STEP 31 (R0) is the mobile reader bootstrap and must complete before any
+later reader mobile STEPs (R1+).

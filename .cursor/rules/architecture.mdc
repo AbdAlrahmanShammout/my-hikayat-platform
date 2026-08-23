@@ -11,7 +11,8 @@ then consult the matching source of truth.
 - `docs/SRS.md` — product and business requirements
 - `ARCHITECTURE.md` — NestJS backend architecture
 - `docs/FRONTEND-ARCHITECTURE.md` — React dashboard architecture (conventions only)
-- `docs/admin-dashboard-tasks.md` — admin dashboard STEP plan and delivery status
+- `docs/admin-dashboard-tasks.md` — admin / author / mobile STEP plan and delivery status
+- `mobile/README.md` — Expo React Native reader package conventions
 - `docs/FUTURE.md` — deferred product work
 - `docs/srs-coverage-matrix.md` — coverage tracking
 
@@ -24,6 +25,7 @@ progress, install status, or remaining bootstrap. Use `docs/admin-dashboard-task
 
 - Changes under `backend/` or `ARCHITECTURE.md` → follow `ARCHITECTURE.md`
 - Changes under `frontend/` or `docs/FRONTEND-ARCHITECTURE.md` → follow `docs/FRONTEND-ARCHITECTURE.md`
+- Changes under `mobile/` → follow `mobile/README.md` and STEP notes in `docs/admin-dashboard-tasks.md`
 - Shared repo files (`pnpm-workspace.yaml`, root `package.json`, Cursor rules) → keep both
   documents consistent; do not invent a third architecture
 
