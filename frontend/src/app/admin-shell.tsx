@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
 
 import { ADMIN_NAV_ITEMS, type AdminNavItem } from '@/app/admin-nav-items';
+import { ConstrainedContent } from '@/components/layout/constrained-content';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUser } from '@/features/auth/hooks/use-current-user';
@@ -43,7 +44,9 @@ export function AdminShell(): JSX.Element {
           <AdminSessionActions />
         </header>
         <main className="flex-1 p-4 md:p-8">
-          <Outlet />
+          <ConstrainedContent>
+            <Outlet />
+          </ConstrainedContent>
         </main>
       </div>
     </div>

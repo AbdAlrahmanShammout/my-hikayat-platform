@@ -34,7 +34,9 @@ type AdminRevenuePeriodPoolFormProps = {
 /**
  * PATCH /admin/revenue-periods/:id. Pool cents always; platform cut only while open.
  */
-export function AdminRevenuePeriodPoolForm({ period }: AdminRevenuePeriodPoolFormProps): JSX.Element {
+export function AdminRevenuePeriodPoolForm({
+  period,
+}: AdminRevenuePeriodPoolFormProps): JSX.Element {
   const updateMutation = useUpdateAdminRevenuePeriod();
   const availability = getAdminRevenuePeriodActionAvailability(period);
   const form = useForm<AdminUpdateRevenuePeriodFormValues>({
@@ -62,7 +64,12 @@ export function AdminRevenuePeriodPoolForm({ period }: AdminRevenuePeriodPoolFor
           <form
             className="flex flex-col gap-4"
             onSubmit={form.handleSubmit((values) => {
-              void submitRevenuePeriodUpdate(period, values, updateMutation.mutateAsync, form.setError);
+              void submitRevenuePeriodUpdate(
+                period,
+                values,
+                updateMutation.mutateAsync,
+                form.setError,
+              );
             })}
             noValidate
           >

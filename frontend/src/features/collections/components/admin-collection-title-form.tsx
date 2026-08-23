@@ -50,7 +50,12 @@ export function AdminCollectionTitleForm({
           <form
             className="flex flex-col gap-4"
             onSubmit={form.handleSubmit((values) => {
-              void submitTitleEdit(collection.id, values, updateMutation.mutateAsync, form.setError);
+              void submitTitleEdit(
+                collection.id,
+                values,
+                updateMutation.mutateAsync,
+                form.setError,
+              );
             })}
             noValidate
           >

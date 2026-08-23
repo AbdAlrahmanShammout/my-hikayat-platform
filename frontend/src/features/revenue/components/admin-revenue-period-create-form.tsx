@@ -146,7 +146,9 @@ export function AdminRevenuePeriodCreateForm(): JSX.Element {
                       value={field.value === undefined ? '' : String(field.value)}
                     />
                   </FormControl>
-                  <FormDescription>Optional integer cents. Not derived from Stripe.</FormDescription>
+                  <FormDescription>
+                    Optional integer cents. Not derived from Stripe.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

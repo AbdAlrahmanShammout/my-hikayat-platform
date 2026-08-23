@@ -198,7 +198,11 @@ export function AdminCollectionMembership({
                     <Input
                       inputMode="numeric"
                       disabled={isBusy}
-                      value={field.value === undefined || Number.isNaN(field.value) ? '' : String(field.value)}
+                      value={
+                        field.value === undefined || Number.isNaN(field.value)
+                          ? ''
+                          : String(field.value)
+                      }
                       onChange={(event) => {
                         field.onChange(event.target.value);
                       }}
