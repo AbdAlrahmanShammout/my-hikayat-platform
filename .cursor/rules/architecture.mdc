@@ -3,31 +3,33 @@ description: Route engineering work to the correct architecture document
 alwaysApply: true
 ---
 
-Before writing or modifying code, identify whether the task is backend, frontend, or product,
-then consult the matching source of truth.
+Before writing or modifying code, identify whether the task is backend, frontend, mobile, or
+product, then consult the matching source of truth.
 
 # Documentation authority
 
 - `docs/SRS.md` — product and business requirements
 - `ARCHITECTURE.md` — NestJS backend architecture
 - `docs/FRONTEND-ARCHITECTURE.md` — React dashboard architecture (conventions only)
+- `docs/MOBILE-ARCHITECTURE.md` — Expo React Native mobile architecture (conventions only)
 - `docs/admin-dashboard-tasks.md` — admin / author / mobile STEP plan and delivery status
-- `mobile/README.md` — Expo React Native reader package conventions
+- `mobile/README.md` — mobile package runbook (commands, env, Replit); not architecture
 - `docs/FUTURE.md` — deferred product work
 - `docs/srs-coverage-matrix.md` — coverage tracking
 
-Do not mix backend layering into frontend work. Do not mix React/UI rules into backend work.
-Do not modify `ARCHITECTURE.md`, `docs/FRONTEND-ARCHITECTURE.md`, or `docs/SRS.md` unless the
-user explicitly requests it. Do not update `docs/FRONTEND-ARCHITECTURE.md` to record STEP
-progress, install status, or remaining bootstrap. Use `docs/admin-dashboard-tasks.md`.
+Do not mix backend layering into frontend or mobile work. Do not mix React dashboard rules into
+backend or mobile work. Do not modify `ARCHITECTURE.md`, `docs/FRONTEND-ARCHITECTURE.md`,
+`docs/MOBILE-ARCHITECTURE.md`, or `docs/SRS.md` unless the user explicitly requests it. Do not
+update architecture documents to record STEP progress, install status, or remaining bootstrap.
+Use `docs/admin-dashboard-tasks.md`.
 
 # How to choose
 
 - Changes under `backend/` or `ARCHITECTURE.md` → follow `ARCHITECTURE.md`
 - Changes under `frontend/` or `docs/FRONTEND-ARCHITECTURE.md` → follow `docs/FRONTEND-ARCHITECTURE.md`
-- Changes under `mobile/` → follow `mobile/README.md` and STEP notes in `docs/admin-dashboard-tasks.md`
-- Shared repo files (`pnpm-workspace.yaml`, root `package.json`, Cursor rules) → keep both
-  documents consistent; do not invent a third architecture
+- Changes under `mobile/` or `docs/MOBILE-ARCHITECTURE.md` → follow `docs/MOBILE-ARCHITECTURE.md`
+- Shared repo files (`pnpm-workspace.yaml`, root `package.json`, Cursor rules) → keep architecture
+  documents consistent; do not invent a fourth architecture
 
 If a user request conflicts with the governing architecture document:
 

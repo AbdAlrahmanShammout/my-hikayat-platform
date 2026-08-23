@@ -1,6 +1,6 @@
 # Project Engineering Instructions
 
-This repository has two architecture sources of truth and a separate delivery tracker.
+This repository has three architecture sources of truth and a separate delivery tracker.
 Use the document that matches the work.
 
 | Work | Authority |
@@ -8,19 +8,20 @@ Use the document that matches the work.
 | Product / business behavior | `docs/SRS.md` |
 | NestJS backend | `ARCHITECTURE.md` |
 | React dashboard / frontend | `docs/FRONTEND-ARCHITECTURE.md` |
+| Mobile reader (Expo RN) | `docs/MOBILE-ARCHITECTURE.md` |
 | Admin / author / mobile delivery STEPs | `docs/admin-dashboard-tasks.md` |
-| Mobile reader package (Expo RN) | `mobile/README.md` + STEP tracker |
+| Mobile package runbook (commands, env, Replit) | `mobile/README.md` |
 | Deferred product work | `docs/FUTURE.md` |
 | Coverage tracking | `docs/srs-coverage-matrix.md` |
 
-Do not mix backend layering into frontend work. Do not mix React/UI rules into backend work.
-Do not redefine backend business rules in the frontend. The backend remains authoritative for
-permissions, entitlement, monetization, and validation.
+Do not mix backend layering into frontend work. Do not mix React/UI rules into backend or
+mobile work. Do not redefine backend business rules in any client. The backend remains
+authoritative for permissions, entitlement, monetization, and validation.
 
-Do not modify `ARCHITECTURE.md`, `docs/FRONTEND-ARCHITECTURE.md`, or `docs/SRS.md` unless the
-user explicitly requests it. Do not record STEP progress, install status, or remaining
-bootstrap in `docs/FRONTEND-ARCHITECTURE.md`. That file is architecture conventions only.
-Track delivery in `docs/admin-dashboard-tasks.md`.
+Do not modify `ARCHITECTURE.md`, `docs/FRONTEND-ARCHITECTURE.md`, `docs/MOBILE-ARCHITECTURE.md`,
+or `docs/SRS.md` unless the user explicitly requests it. Do not record STEP progress, install
+status, or remaining bootstrap in architecture documents. Track delivery in
+`docs/admin-dashboard-tasks.md`.
 
 ## Backend work
 
@@ -67,12 +68,19 @@ explicitly instructs otherwise.
 Before planning, generating, modifying, refactoring, debugging, or reviewing **mobile**
 code under `mobile/`:
 
-1. Follow `mobile/README.md` and the STEP notes in `docs/admin-dashboard-tasks.md`.
-2. Keep the app Expo + React Native + TypeScript, env-driven, and Replit-portable.
-3. Do not hardcode localhost, secrets, or machine-only paths.
-4. Do not duplicate monetization, entitlement, or authorization rules in the client.
-5. Do not start R1+ reader features until STEP 31 (R0) is Complete.
-6. Update STEP status only in `docs/admin-dashboard-tasks.md`.
+1. Read and follow `docs/MOBILE-ARCHITECTURE.md`.
+2. Use `mobile/README.md` for package commands, env, and Replit checklist only — not as a
+   substitute for architecture.
+3. Follow STEP notes in `docs/admin-dashboard-tasks.md` for delivery scope and order.
+4. Keep the app Expo + React Native + TypeScript, env-driven, and Replit-portable.
+5. Do not hardcode localhost, secrets, or machine-only paths.
+6. Do not duplicate monetization, entitlement, or authorization rules in the client.
+7. Do not start R2+ reader features until STEP 32 (R1) is Complete.
+8. Update STEP status only in `docs/admin-dashboard-tasks.md`.
+
+If there is a conflict between existing mobile code, a generic React Native/Expo pattern, and
+`docs/MOBILE-ARCHITECTURE.md`, follow `docs/MOBILE-ARCHITECTURE.md` unless the user
+explicitly instructs otherwise.
 
 ## Working Procedure
 
@@ -80,7 +88,8 @@ For every substantial implementation:
 
 1. Read the relevant architecture sections for that side of the repo.
 2. Inspect the existing affected code.
-3. Identify the boundaries involved (backend domains/modules, or frontend features/routes/APIs).
+3. Identify the boundaries involved (backend domains/modules, or frontend/mobile
+   features/routes/APIs).
 4. Produce a short implementation plan.
 5. Implement according to the governing architecture document.
 6. Run or update the appropriate tests.

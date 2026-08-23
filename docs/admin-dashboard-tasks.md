@@ -2,10 +2,12 @@
 
 This file is the **delivery tracker** for the admin dashboard: what to build, in what
 order, and whether it is done. Architecture conventions live in
-`docs/FRONTEND-ARCHITECTURE.md` and must not be updated for STEP completion.
+`docs/FRONTEND-ARCHITECTURE.md` (admin/author web) and `docs/MOBILE-ARCHITECTURE.md`
+(reader mobile). Do not update architecture documents for STEP completion.
 
 Product requirements: `docs/SRS.md` §2.2, §2.3, §2.5, §2.4, §7.3–7.4, §12.0–§12.3.
 Frontend engineering: `docs/FRONTEND-ARCHITECTURE.md`.
+Mobile engineering: `docs/MOBILE-ARCHITECTURE.md` (package runbook: `mobile/README.md`).
 Backend contracts: existing `/admin/*`, `/author/*`, `/auth/*`, and `POST /user/publisher`.
 Dedicated Home summary endpoints are required by STEPs 29–30; do not add
 other backend endpoints unless a STEP explicitly records a contract gap.
@@ -17,7 +19,8 @@ Status values: **Pending**, **In progress**, **Complete**.
 
 Bootstrap already done (not a UI STEP): `frontend/` workspace, Vite on `:5173`,
 CORS default includes the Vite origin, agent routing to
-`docs/FRONTEND-ARCHITECTURE.md`. Mobile bootstrap is STEP 31 (R0) under `mobile/`.
+`docs/FRONTEND-ARCHITECTURE.md`. Mobile bootstrap is STEP 31 (R0) under `mobile/`,
+governed by `docs/MOBILE-ARCHITECTURE.md`.
 
 | STEP | Capability | Status |
 | --- | --- | --- |
@@ -53,6 +56,7 @@ CORS default includes the Vite origin, agent routing to
 | 29 | Admin home KPI summary | Complete |
 | 30 | Author home KPI summary | Complete |
 | 31 | Mobile reader bootstrap (Expo RN+TS, Replit-portable) | Complete |
+| 32 | Mobile auth session + kids-friendly tab shell | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1054,17 +1058,18 @@ displays only backend fields; a second author’s data never appears.
 TypeScript package under `mobile/` that installs, typechecks, lints, tests, and
 starts. Empty foundation only — same role as admin STEP 0.
 
-**Stack:** Expo managed workflow, React Native, TypeScript (strict), Jest
-(`jest-expo`), ESLint (`eslint-config-expo`).
+**Stack:** Expo managed workflow, Expo Router, React Native (New Architecture),
+TypeScript (strict), TanStack Query, Jest (`jest-expo`), ESLint (`eslint-config-expo`).
+Conventions: `docs/MOBILE-ARCHITECTURE.md`.
 
 **In scope:**
 
 - Workspace package `mobile/` wired in `pnpm-workspace.yaml`
-- Folders: `src/root`, `src/config`, `src/features`, `src/shared`
+- Folders per mobile architecture: `src/app`, `src/screens`, `src/features`,
+  `src/api`, `src/session`, `src/storage`, `src/config`, `src/theme`
 - `EXPO_PUBLIC_API_BASE_URL` via `.env.example` (real `.env` gitignored)
 - Scripts: `start`, `typecheck`, `lint`, `test`, `build`
-- Smoke screen showing brand + configured API base URL
-- `mobile/README.md` for Cursor develop / Replit test
+- `mobile/README.md` for Cursor develop / Replit test (runbook only)
 
 **Out of scope:** auth, catalog, dual engines, Smart Resume, offline DRM,
 subscriptions UI, audiobooks, kids visual system.
@@ -1077,9 +1082,37 @@ deps. Develop in Cursor; Replit is a test host only.
 
 ---
 
+## STEP 32 — Mobile auth session + kids-friendly tab shell (R1)
+
+**Goal:** Sign-in / register against existing auth HTTP, restore via `GET /auth/me`,
+and land in a calm tab shell (Home / My books / Me) with large tap targets.
+
+**APIs (existing only):**
+
+- `POST /auth/register` — `{ email, password }` → `AuthSession` (always `role = reader`)
+- `POST /auth/login` — `{ email, password }` → `AuthSession`
+- `GET /auth/me` — Bearer → `User`
+
+**In scope:**
+
+- Secure token persistence via `src/storage` + `src/session` (`expo-secure-store`;
+  web `localStorage` fallback)
+- Shared mobile HTTP client (`src/api/client.ts`) + NestJS `ApiError` mapping;
+  clear token on 401
+- Expo Router public routes + thin screens; React Hook Form + Zod for auth UX
+- Bottom tabs: Home, My books, Me (placeholders — no catalog yet)
+- Profile shows email/role from session and Sign out
+
+**Out of scope:** catalog, engines, offline, subscriptions UI, kids illustration system.
+
+**Done when:** cold start restores a valid token via `/auth/me`; invalid/missing token
+shows auth; login/register write the session; tabs are navigable; typecheck/lint/tests pass.
+
+---
+
 ## Out of scope for this list
 
-- Reader R1+ features (auth shell, catalog, dual engines, offline, subscriptions UI)
+- Reader R2+ features (catalog, dual engines, offline, subscriptions UI)
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
 - Recalculating publisher earnings in the browser
@@ -1097,4 +1130,4 @@ on STEP 16. Implement the summary HTTP in each STEP before the Home UI.
 STEPs 0–15 on this list are the completed admin dashboard work except
 the Home metric replacement in STEP 29.
 STEP 31 (R0) is the mobile reader bootstrap and must complete before any
-later reader mobile STEPs (R1+).
+later reader mobile STEPs. STEP 32 (R1) depends on STEP 31.
