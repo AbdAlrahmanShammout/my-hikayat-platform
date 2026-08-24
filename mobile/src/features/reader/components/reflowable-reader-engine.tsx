@@ -15,6 +15,17 @@ import type { ReadingSession } from '@/features/reader/api/start-reading-session
 import { buildReflowableChapterHtml } from '@/features/reader/lib/build-reflowable-chapter-html';
 import { loadReflowableEpubBook } from '@/features/reader/lib/load-reflowable-epub-book';
 import type { ParsedEpubBook, ParsedEpubChapter } from '@/features/reader/lib/parse-epub-book';
+import {
+  decreaseFontScale,
+  decreaseLineHeight,
+  decreaseMargin,
+  DEFAULT_REFLOWABLE_READER_SETTINGS,
+  increaseFontScale,
+  increaseLineHeight,
+  increaseMargin,
+  toggleReaderTheme,
+  type ReflowableReaderSettings,
+} from '@/features/reader/lib/reflowable-reader-settings';
 import { theme } from '@/theme/theme';
 
 type ReflowableReaderEngineProps = {
@@ -30,7 +41,6 @@ type LoadState =
   | { readonly status: 'ready'; readonly epub: ParsedEpubBook };
 
 const ACTIVITY_TICK_MS = 15_000;
-const DEFAULT_FONT_SCALE_PERCENT = 110;
 
 /**
  * Reflowable EPUB engine: decrypt in memory, parse spine, render chapter HTML in an isolated WebView.
@@ -51,6 +61,9 @@ export function ReflowableReaderEngine({
   );
   const [scrollOffset, setScrollOffset] = useState<number>(
     coerceNonNegativeInt(session.scrollOffset, 0),
+  );
+  const [readerSettings, setReaderSettings] = useState<ReflowableReaderSettings>(
+    DEFAULT_REFLOWABLE_READER_SETTINGS,
   );
   const [reloadToken, setReloadToken] = useState<number>(0);
   const epubRef = useRef<ParsedEpubBook | null>(null);
@@ -182,10 +195,14 @@ export function ReflowableReaderEngine({
   const html: string = buildReflowableChapterHtml({
     title: chapter.title,
     htmlDocument: chapter.htmlDocument,
-    fontScalePercent: DEFAULT_FONT_SCALE_PERCENT,
+    fontScalePercent: readerSettings.fontScalePercent,
+    lineHeight: readerSettings.lineHeight,
+    marginPx: readerSettings.marginPx,
+    theme: readerSettings.theme,
   });
   const canGoPrevious: boolean = spineIndex > 0;
   const canGoNext: boolean = spineIndex < loadState.epub.chapters.length - 1;
+  const webBackground: string = readerSettings.theme === 'dark' ? '#1a1714' : '#f7f3ea';
 
   return (
     <View style={styles.container} testID="reader-reflowable-engine">
@@ -201,8 +218,66 @@ export function ReflowableReaderEngine({
           {`Chapter ${spineIndex + 1} of ${loadState.epub.chapters.length}`}
         </Text>
       </View>
+      <View style={styles.settingsRow} testID="reader-reflowable-settings">
+        <SettingsButton
+          label="A−"
+          accessibilityLabel="Decrease font size"
+          testID="reader-font-decrease"
+          onPress={() => {
+            setReaderSettings((current) => decreaseFontScale(current));
+          }}
+        />
+        <SettingsButton
+          label="A+"
+          accessibilityLabel="Increase font size"
+          testID="reader-font-increase"
+          onPress={() => {
+            setReaderSettings((current) => increaseFontScale(current));
+          }}
+        />
+        <SettingsButton
+          label="Line −"
+          accessibilityLabel="Decrease line spacing"
+          testID="reader-line-decrease"
+          onPress={() => {
+            setReaderSettings((current) => decreaseLineHeight(current));
+          }}
+        />
+        <SettingsButton
+          label="Line +"
+          accessibilityLabel="Increase line spacing"
+          testID="reader-line-increase"
+          onPress={() => {
+            setReaderSettings((current) => increaseLineHeight(current));
+          }}
+        />
+        <SettingsButton
+          label="Margin −"
+          accessibilityLabel="Decrease margin"
+          testID="reader-margin-decrease"
+          onPress={() => {
+            setReaderSettings((current) => decreaseMargin(current));
+          }}
+        />
+        <SettingsButton
+          label="Margin +"
+          accessibilityLabel="Increase margin"
+          testID="reader-margin-increase"
+          onPress={() => {
+            setReaderSettings((current) => increaseMargin(current));
+          }}
+        />
+        <SettingsButton
+          label={readerSettings.theme === 'light' ? 'Dark' : 'Light'}
+          accessibilityLabel="Toggle reading theme"
+          testID="reader-theme-toggle"
+          onPress={() => {
+            setReaderSettings((current) => toggleReaderTheme(current));
+          }}
+        />
+      </View>
       <WebView
-        style={styles.webview}
+        style={[styles.webview, { backgroundColor: webBackground }]}
         originWhitelist={['about:blank']}
         source={{ html, baseUrl: 'about:blank' }}
         javaScriptEnabled={false}
@@ -250,6 +325,25 @@ export function ReflowableReaderEngine({
         <CloseButton onClose={onClose} />
       </View>
     </View>
+  );
+}
+
+function SettingsButton(input: {
+  readonly label: string;
+  readonly accessibilityLabel: string;
+  readonly testID: string;
+  readonly onPress: () => void;
+}): JSX.Element {
+  return (
+    <Pressable
+      style={styles.settingsButton}
+      onPress={input.onPress}
+      accessibilityRole="button"
+      accessibilityLabel={input.accessibilityLabel}
+      testID={input.testID}
+    >
+      <Text style={styles.settingsLabel}>{input.label}</Text>
+    </Pressable>
   );
 }
 
@@ -355,6 +449,28 @@ const styles = StyleSheet.create({
     ...theme.typography.body,
     color: theme.colors.danger,
     textAlign: 'center',
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.sm,
+  },
+  settingsButton: {
+    minHeight: 40,
+    borderRadius: theme.radii.control,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.sm,
+  },
+  settingsLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.primary,
   },
   webview: {
     flex: 1,

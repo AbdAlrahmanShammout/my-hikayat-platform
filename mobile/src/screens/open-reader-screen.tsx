@@ -9,7 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
-import { FixedLayoutReaderPlaceholder } from '@/features/reader/components/fixed-layout-reader-placeholder';
+import { FixedLayoutReaderEngine } from '@/features/reader/components/fixed-layout-reader-engine';
 import { ReflowableReaderEngine } from '@/features/reader/components/reflowable-reader-engine';
 import { endReadingSession } from '@/features/reader/api/end-reading-session';
 import { useOpenReadingShell } from '@/features/reader/hooks/use-open-reading-shell';
@@ -135,10 +135,10 @@ export function OpenReaderScreen(): JSX.Element {
       edges={['top', 'left', 'right', 'bottom']}
       testID="reader-shell-screen"
     >
-      <FixedLayoutReaderPlaceholder
+      <FixedLayoutReaderEngine
         book={opened.book}
         session={opened.session}
-        hasDeliveryGrant={opened.deliveryGrant !== null}
+        deliveryGrant={opened.deliveryGrant}
         onClose={() => {
           void executeClose();
         }}

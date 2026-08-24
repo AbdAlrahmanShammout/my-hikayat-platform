@@ -64,6 +64,8 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 37 | Mobile open-book shell + dual-engine routing (R3) | Complete |
 | 38 | Backend per-book content key + reader key-access (R3) | Complete |
 | 39 | Mobile reflowable EPUB engine (R3) | Complete |
+| 40 | Mobile fixed-layout EPUB canvas engine (R3) | Complete |
+| 41 | Mobile reflowable reading controls (R3) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1345,9 +1347,66 @@ chapters with navigation and activity; typecheck/lint/unit tests pass.
 
 ---
 
+## STEP 40 — Mobile fixed-layout EPUB canvas engine (R3)
+
+**Goal:** Load an authorized fixed-layout EPUB on device: grant → download →
+checksum → content key → in-memory decrypt → parse pages/spreads → aspect-fit
+canvas render with zoom and spread navigation, plus activity / visual engagement.
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md`. Depends on STEP 38 (content key)
+and STEP 37 (shell routing). Completes the dual-engine pair with STEP 39.
+
+**APIs (existing):** delivery-grant, content-key, sessions, activity,
+visual-engagement.
+
+**In scope:**
+
+- Reuse in-memory decrypt pipeline (shared with reflowable)
+- Parse fixed-layout pages, viewports, and spreads
+- Aspect-fit canvas with letterboxing
+- Zoom in / zoom out (aspect-preserving)
+- Spread previous / next navigation
+- `spreadIndex` / `pageNumber` activity + visual-engagement ingest
+- Loading / error / retry / corrupt-source handling
+- Clear plaintext on leave (no SecureStore / no disk plaintext)
+
+**Out of scope:** Smart Resume UI, bookmarks, sync UI, offline, R6, PDF-only
+fixed-layout path, pinch-zoom polish, in-book search overlay, Maestro/E2E,
+subscription UI.
+
+**Done when:** a paid reader can open a fixed-layout book and view decrypted
+spreads with navigation, zoom, and engagement reporting; typecheck/lint/unit
+tests pass.
+
+---
+
+## STEP 41 — Mobile reflowable reading controls (R3)
+
+**Goal:** Complete SRS §4.1 reflowable presentation controls on the STEP 39
+engine: font size, line spacing, margins, and light/dark theme.
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md`. Depends on STEP 39.
+
+**In scope:**
+
+- Font size increase / decrease
+- Line spacing increase / decrease
+- Margin increase / decrease
+- Light / dark reading theme
+- Controls apply immediately to the current chapter WebView
+
+**Out of scope:** Smart Resume, bookmarks, sync UI, offline, RTL polish,
+persisted preference sync across devices, Maestro/E2E, fixed-layout theme.
+
+**Done when:** reflowable readers can adjust typography/theme while reading;
+typecheck/lint/unit tests pass.
+
+---
+
 ## Out of scope for this list
 
-- Reader R3+ features (dual engines, offline, subscriptions UI)
+- Reader R4+ features (Smart Resume UI, bookmarks, sync UX), R6 offline,
+  subscriptions UI
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
 - Recalculating publisher earnings in the browser
@@ -1376,3 +1435,7 @@ reuse catalog book detail. It must not wait on STEP 36.
 STEP 38 (backend per-book content key) depends on STEP 37 session semantics and
 must complete before mobile decrypt/render.
 STEP 39 (mobile reflowable EPUB engine) depends on STEP 38.
+STEP 40 (mobile fixed-layout EPUB canvas engine) depends on STEP 38 and STEP 37;
+it completes the R3 dual-engine pair with STEP 39.
+STEP 41 (mobile reflowable reading controls) depends on STEP 39 and finishes
+SRS §4.1 reflowable presentation controls within R3.
