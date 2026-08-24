@@ -28,6 +28,15 @@ export interface paths {
       };
     };
   };
+  "/reader/books/{bookId}/content-key": {
+    post: {
+      parameters: { path: { bookId: number } };
+      requestBody: { content: { 'application/json': components['schemas']['CreateBookAssetContentKeyRequestDto'] } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['CreateBookAssetContentKeyResponseDto'] } };
+      };
+    };
+  };
   "/reader/categories": {
     get: {
       parameters: { query?: { limit?: number; offset?: number } };
@@ -248,6 +257,8 @@ export interface components {
     BookResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string; layoutType?: "reflowable" | "fixed_layout" | null; bookType: "standard_chapter" | "picture_book" | "illustrated_chapter"; publishingStatus: "pending" | "in_review" | "approved" | "rejected"; processingStatus: "not_started" | "processing" | "ready" | "failed"; publishedAt?: unknown | null; ownerId: number; owner?: components['schemas']['UserResponse']; categories: Array<components['schemas']['CategoryResponse']> };
     GetBooksResponseDto: { books: Array<components['schemas']['BookResponse']>; total: number };
     CreateBookAssetDeliveryGrantResponseDto: { bookId: number; bookAssetId: number; kind: "source" | "processed" | "preview_image" | "promo_video" | "audio"; url: string; expiresAt: string; contentType: string; byteSize: number; checksumSha256?: unknown | null; isEncrypted: boolean };
+    CreateBookAssetContentKeyRequestDto: { sessionId: number };
+    CreateBookAssetContentKeyResponseDto: { bookId: number; bookAssetId: number; sessionId: number; keyId: string; algorithm: "aes-256-gcm"; keyDelivery: "plain"; key: string; expiresAt: string };
     GetCategoriesResponseDto: { categories: Array<components['schemas']['CategoryResponse']>; total: number };
     CollectionDiscoveryResponse: { id: number; createdAt: string; updatedAt: string; title: string; books: Array<components['schemas']['BookResponse']> };
     GetDiscoveryCollectionsResponseDto: { collections: Array<components['schemas']['CollectionDiscoveryResponse']>; total: number };

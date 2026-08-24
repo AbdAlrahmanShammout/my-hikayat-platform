@@ -46,6 +46,7 @@ export class BookAssetService {
       originalFileName,
       sortOrder: input.sortOrder ?? 0,
       isEncrypted: input.isEncrypted ?? BookAssetService.defaultIsEncrypted(input.kind),
+      wrappedContentKey: input.wrappedContentKey ?? null,
     });
   }
 
@@ -91,6 +92,7 @@ export class BookAssetService {
       originalFileName,
       sortOrder: input.sortOrder,
       isEncrypted: input.isEncrypted,
+      wrappedContentKey: input.wrappedContentKey,
     });
   }
 

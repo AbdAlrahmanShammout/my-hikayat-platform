@@ -99,6 +99,7 @@ describe('BookAssetService', () => {
         originalFileName: 'the-last-lighthouse.epub',
         sortOrder: 0,
         isEncrypted: true,
+        wrappedContentKey: null,
       });
       expect(actualAsset).toBe(expectedAsset);
     });

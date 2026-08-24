@@ -105,4 +105,53 @@ describe('NodeEncryptionManagerService', () => {
       nodeEncryptionManagerService.decrypt({ ciphertext: actualEncrypted.ciphertext }),
     ).toThrow(EncryptionFailureException);
   });
+
+  it('round-trips a data key through wrap and unwrap with the master KEK', () => {
+    const generated = nodeEncryptionManagerService.generateDataKey();
+    expect(generated.dataKey.byteLength).toBe(AES_256_GCM.dataKeyLength);
+    const wrapped = nodeEncryptionManagerService.wrapDataKey({ dataKey: generated.dataKey });
+    expect(wrapped.keyId).toBe('v2');
+    expect(wrapped.wrappedKey.equals(generated.dataKey)).toBe(false);
+    const unwrapped = nodeEncryptionManagerService.unwrapDataKey({
+      wrappedKey: wrapped.wrappedKey,
+    });
+    expect(unwrapped.keyId).toBe('v2');
+    expect(unwrapped.dataKey.equals(generated.dataKey)).toBe(true);
+  });
+
+  it('round-trips book content through a DEK content envelope', () => {
+    const inputPlaintext = Buffer.from('epub-zip-bytes');
+    const { dataKey } = nodeEncryptionManagerService.generateDataKey();
+    const actualEncrypted = nodeEncryptionManagerService.encryptWithDataKey({
+      plaintext: inputPlaintext,
+      dataKey,
+    });
+    expect(
+      actualEncrypted.ciphertext
+        .subarray(0, ENCRYPTION_ENVELOPE.magic.byteLength)
+        .equals(ENCRYPTION_ENVELOPE.magic),
+    ).toBe(true);
+    expect(actualEncrypted.ciphertext[ENCRYPTION_ENVELOPE.magic.byteLength]).toBe(
+      ENCRYPTION_ENVELOPE.contentVersion,
+    );
+    expect(() =>
+      nodeEncryptionManagerService.decrypt({ ciphertext: actualEncrypted.ciphertext }),
+    ).toThrow(EncryptionFailureException);
+    const actualDecrypted = nodeEncryptionManagerService.decryptWithDataKey({
+      ciphertext: actualEncrypted.ciphertext,
+      dataKey,
+    });
+    expect(actualDecrypted.plaintext.equals(inputPlaintext)).toBe(true);
+  });
+
+  it('rejects decryptWithDataKey for master-KEK envelopes', () => {
+    const { dataKey } = nodeEncryptionManagerService.generateDataKey();
+    const wrapped = nodeEncryptionManagerService.encrypt({ plaintext: Buffer.from('not-content') });
+    expect(() =>
+      nodeEncryptionManagerService.decryptWithDataKey({
+        ciphertext: wrapped.ciphertext,
+        dataKey,
+      }),
+    ).toThrow(EncryptionFailureException);
+  });
 });

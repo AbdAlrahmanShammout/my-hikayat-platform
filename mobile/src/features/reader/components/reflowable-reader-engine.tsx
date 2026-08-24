@@ -1,0 +1,415 @@
+import { useEffect, useRef, useState, type JSX } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { WebView } from 'react-native-webview';
+
+import type { CatalogBook } from '@/features/catalog/api/get-catalog-book';
+import type { BookAssetDeliveryGrant } from '@/features/reader/api/create-delivery-grant';
+import { ingestReadingActivity } from '@/features/reader/api/ingest-reading-activity';
+import type { ReadingSession } from '@/features/reader/api/start-reading-session';
+import { buildReflowableChapterHtml } from '@/features/reader/lib/build-reflowable-chapter-html';
+import { loadReflowableEpubBook } from '@/features/reader/lib/load-reflowable-epub-book';
+import type { ParsedEpubBook, ParsedEpubChapter } from '@/features/reader/lib/parse-epub-book';
+import { theme } from '@/theme/theme';
+
+type ReflowableReaderEngineProps = {
+  readonly book: CatalogBook;
+  readonly session: ReadingSession;
+  readonly deliveryGrant: BookAssetDeliveryGrant | null;
+  readonly onClose: () => void;
+};
+
+type LoadState =
+  | { readonly status: 'loading' }
+  | { readonly status: 'error'; readonly message: string }
+  | { readonly status: 'ready'; readonly epub: ParsedEpubBook };
+
+const ACTIVITY_TICK_MS = 15_000;
+const DEFAULT_FONT_SCALE_PERCENT = 110;
+
+/**
+ * Reflowable EPUB engine: decrypt in memory, parse spine, render chapter HTML in an isolated WebView.
+ *
+ * WebView rationale: EPUB chapters are XHTML/HTML with inline assets. A sandboxed WebView is the
+ * appropriate Expo viewport for that markup. It is not used for privileged app flows, receives no
+ * native bridge methods, and only loads injected HTML (`originWhitelist` limited to about:blank).
+ */
+export function ReflowableReaderEngine({
+  book,
+  session,
+  deliveryGrant,
+  onClose,
+}: ReflowableReaderEngineProps): JSX.Element {
+  const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' });
+  const [spineIndex, setSpineIndex] = useState<number>(
+    coerceNonNegativeInt(session.spineIndex, 0),
+  );
+  const [scrollOffset, setScrollOffset] = useState<number>(
+    coerceNonNegativeInt(session.scrollOffset, 0),
+  );
+  const [reloadToken, setReloadToken] = useState<number>(0);
+  const epubRef = useRef<ParsedEpubBook | null>(null);
+  const spineIndexRef = useRef<number>(spineIndex);
+  const scrollOffsetRef = useRef<number>(scrollOffset);
+  const activeStartedAtRef = useRef<number>(Date.now());
+
+  useEffect(() => {
+    spineIndexRef.current = spineIndex;
+  }, [spineIndex]);
+
+  useEffect(() => {
+    scrollOffsetRef.current = scrollOffset;
+  }, [scrollOffset]);
+
+  useEffect(() => {
+    let isCancelled = false;
+    async function executeLoad(): Promise<void> {
+      if (deliveryGrant === null) {
+        setLoadState({
+          status: 'error',
+          message: 'This book file is not ready to open yet.',
+        });
+        return;
+      }
+      setLoadState({ status: 'loading' });
+      try {
+        const epub: ParsedEpubBook = await loadReflowableEpubBook({
+          bookId: book.id,
+          sessionId: session.id,
+          deliveryGrant,
+        });
+        if (isCancelled) {
+          epubRef.current = null;
+          return;
+        }
+        epubRef.current = epub;
+        const initialSpine: number = clampSpineIndex(
+          coerceNonNegativeInt(session.spineIndex, 0),
+          epub.chapters.length,
+        );
+        setSpineIndex(initialSpine);
+        setScrollOffset(coerceNonNegativeInt(session.scrollOffset, 0));
+        setLoadState({ status: 'ready', epub });
+        activeStartedAtRef.current = Date.now();
+      } catch (error: unknown) {
+        if (isCancelled) {
+          return;
+        }
+        epubRef.current = null;
+        setLoadState({
+          status: 'error',
+          message: mapLoadError(error),
+        });
+      }
+    }
+    void executeLoad();
+    return () => {
+      isCancelled = true;
+      epubRef.current = null;
+    };
+  }, [book.id, deliveryGrant, reloadToken, session.id, session.scrollOffset, session.spineIndex]);
+
+  useEffect(() => {
+    if (loadState.status !== 'ready') {
+      return;
+    }
+    const timer: ReturnType<typeof setInterval> = setInterval(() => {
+      void reportActivity({
+        bookId: book.id,
+        sessionId: session.id,
+        activeStartedAtRef,
+        spineIndexRef,
+        scrollOffsetRef,
+      });
+    }, ACTIVITY_TICK_MS);
+    return () => {
+      clearInterval(timer);
+      void reportActivity({
+        bookId: book.id,
+        sessionId: session.id,
+        activeStartedAtRef,
+        spineIndexRef,
+        scrollOffsetRef,
+      });
+    };
+  }, [book.id, loadState.status, session.id]);
+
+  if (loadState.status === 'loading') {
+    return (
+      <View style={styles.centered} testID="reader-reflowable-loading">
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={styles.body}>Loading book…</Text>
+        <CloseButton onClose={onClose} />
+      </View>
+    );
+  }
+
+  if (loadState.status === 'error') {
+    return (
+      <View style={styles.centered} testID="reader-reflowable-error">
+        <Text style={styles.error}>{loadState.message}</Text>
+        <Pressable
+          style={styles.primaryButton}
+          onPress={() => {
+            setReloadToken((token) => token + 1);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Try again"
+          testID="reader-reflowable-retry"
+        >
+          <Text style={styles.primaryLabel}>Try again</Text>
+        </Pressable>
+        <CloseButton onClose={onClose} />
+      </View>
+    );
+  }
+
+  const chapter: ParsedEpubChapter | undefined = loadState.epub.chapters[spineIndex];
+  if (chapter === undefined) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.error}>That chapter could not be found.</Text>
+        <CloseButton onClose={onClose} />
+      </View>
+    );
+  }
+
+  const html: string = buildReflowableChapterHtml({
+    title: chapter.title,
+    htmlDocument: chapter.htmlDocument,
+    fontScalePercent: DEFAULT_FONT_SCALE_PERCENT,
+  });
+  const canGoPrevious: boolean = spineIndex > 0;
+  const canGoNext: boolean = spineIndex < loadState.epub.chapters.length - 1;
+
+  return (
+    <View style={styles.container} testID="reader-reflowable-engine">
+      <View style={styles.header}>
+        <Text style={styles.engineLabel}>Reflowable reader</Text>
+        <Text style={styles.title} accessibilityRole="header" numberOfLines={2}>
+          {book.title}
+        </Text>
+        <Text style={styles.meta} testID="reader-chapter-title">
+          {chapter.title}
+        </Text>
+        <Text style={styles.meta} testID="reader-spine-index">
+          {`Chapter ${spineIndex + 1} of ${loadState.epub.chapters.length}`}
+        </Text>
+      </View>
+      <WebView
+        style={styles.webview}
+        originWhitelist={['about:blank']}
+        source={{ html, baseUrl: 'about:blank' }}
+        javaScriptEnabled={false}
+        domStorageEnabled={false}
+        allowFileAccess={false}
+        allowFileAccessFromFileURLs={false}
+        allowUniversalAccessFromFileURLs={false}
+        setSupportMultipleWindows={false}
+        startInLoadingState
+        testID="reader-reflowable-webview"
+        onScroll={(event) => {
+          const nextOffset: number = Math.max(0, Math.round(event.nativeEvent.contentOffset.y));
+          setScrollOffset(nextOffset);
+        }}
+      />
+      <View style={styles.footer}>
+        <Pressable
+          style={[styles.navButton, !canGoPrevious ? styles.navButtonDisabled : null]}
+          disabled={!canGoPrevious}
+          onPress={() => {
+            setSpineIndex((current) => Math.max(0, current - 1));
+            setScrollOffset(0);
+            activeStartedAtRef.current = Date.now();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Previous chapter"
+          testID="reader-prev-chapter"
+        >
+          <Text style={styles.navLabel}>Previous</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.navButton, !canGoNext ? styles.navButtonDisabled : null]}
+          disabled={!canGoNext}
+          onPress={() => {
+            setSpineIndex((current) => Math.min(loadState.epub.chapters.length - 1, current + 1));
+            setScrollOffset(0);
+            activeStartedAtRef.current = Date.now();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Next chapter"
+          testID="reader-next-chapter"
+        >
+          <Text style={styles.navLabel}>Next</Text>
+        </Pressable>
+        <CloseButton onClose={onClose} />
+      </View>
+    </View>
+  );
+}
+
+function CloseButton({ onClose }: { readonly onClose: () => void }): JSX.Element {
+  return (
+    <Pressable
+      style={styles.closeButton}
+      onPress={onClose}
+      accessibilityRole="button"
+      accessibilityLabel="Close reader"
+      testID="reader-close-button"
+    >
+      <Text style={styles.closeLabel}>Close</Text>
+    </Pressable>
+  );
+}
+
+async function reportActivity(input: {
+  readonly bookId: number;
+  readonly sessionId: number;
+  readonly activeStartedAtRef: { current: number };
+  readonly spineIndexRef: { current: number };
+  readonly scrollOffsetRef: { current: number };
+}): Promise<void> {
+  const now: number = Date.now();
+  const activeDurationMs: number = Math.max(0, now - input.activeStartedAtRef.current);
+  input.activeStartedAtRef.current = now;
+  if (activeDurationMs === 0) {
+    return;
+  }
+  try {
+    await ingestReadingActivity({
+      bookId: input.bookId,
+      sessionId: input.sessionId,
+      body: {
+        activeDurationMs,
+        idleDurationMs: 0,
+        spineIndex: input.spineIndexRef.current,
+        scrollOffset: input.scrollOffsetRef.current,
+      },
+    });
+  } catch {
+    // Activity ingest is best-effort; reading continues if it fails.
+  }
+}
+
+function coerceNonNegativeInt(value: unknown, fallback: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    return fallback;
+  }
+  return Math.floor(value);
+}
+
+function clampSpineIndex(value: number, chapterCount: number): number {
+  if (chapterCount <= 0) {
+    return 0;
+  }
+  return Math.min(chapterCount - 1, Math.max(0, value));
+}
+
+function mapLoadError(error: unknown): string {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+  return 'Could not open this book right now.';
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+  },
+  header: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.sm,
+    gap: 4,
+  },
+  engineLabel: {
+    ...theme.typography.label,
+    color: theme.colors.primaryMuted,
+  },
+  title: {
+    ...theme.typography.title,
+    color: theme.colors.textPrimary,
+  },
+  body: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+  },
+  meta: {
+    fontSize: 16,
+    color: theme.colors.textMuted,
+  },
+  error: {
+    ...theme.typography.body,
+    color: theme.colors.danger,
+    textAlign: 'center',
+  },
+  webview: {
+    flex: 1,
+    backgroundColor: '#f7f3ea',
+  },
+  footer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+  },
+  navButton: {
+    minHeight: theme.controlMinHeight,
+    borderRadius: theme.radii.control,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.md,
+  },
+  navButtonDisabled: {
+    opacity: 0.45,
+  },
+  navLabel: {
+    ...theme.typography.button,
+    color: theme.colors.primary,
+  },
+  primaryButton: {
+    minHeight: theme.controlMinHeight,
+    minWidth: 160,
+    borderRadius: theme.radii.control,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.lg,
+  },
+  primaryLabel: {
+    ...theme.typography.button,
+    color: theme.colors.onPrimary,
+  },
+  closeButton: {
+    minHeight: theme.controlMinHeight,
+    borderRadius: theme.radii.control,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.lg,
+    marginLeft: 'auto',
+  },
+  closeLabel: {
+    ...theme.typography.button,
+    color: theme.colors.onPrimary,
+  },
+});

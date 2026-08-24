@@ -76,6 +76,7 @@ function createSourceAsset(
     originalFileName,
     sortOrder: 0,
     isEncrypted: true,
+    wrappedContentKey: Buffer.from('wrapped-dek'),
   });
 }
 
@@ -286,7 +287,7 @@ describe('BookProcessingService', () => {
   let mockBookPageTextLayerRepository: { replaceByBookId: jest.Mock };
   let mockBookService: { updateBook: jest.Mock; getBookById: jest.Mock };
   let mockStorageManagerService: { getObject: jest.Mock };
-  let mockEncryptionManagerService: { decrypt: jest.Mock };
+  let mockEncryptionManagerService: { unwrapDataKey: jest.Mock; decryptWithDataKey: jest.Mock };
   let bookProcessingService: BookProcessingService;
 
   beforeEach(() => {
@@ -298,10 +299,13 @@ describe('BookProcessingService', () => {
     };
     mockBookChapterRepository = { replaceByBookId: jest.fn(), listByBookId: jest.fn() };
     mockBookPageRepository = { replaceByBookId: jest.fn(), listByBookId: jest.fn() };
-    mockBookPageTextLayerRepository = { replaceByBookId: jest.fn() };
+    mockBookPageTextLayerRepository = { replaceByBookId: jest.fn(), listByBookId: jest.fn() };
     mockBookService = { updateBook: jest.fn(), getBookById: jest.fn() };
     mockStorageManagerService = { getObject: jest.fn() };
-    mockEncryptionManagerService = { decrypt: jest.fn() };
+    mockEncryptionManagerService = {
+      unwrapDataKey: jest.fn().mockReturnValue({ dataKey: Buffer.alloc(32, 7), keyId: 'v1' }),
+      decryptWithDataKey: jest.fn(),
+    };
     bookProcessingService = new BookProcessingService(
       mockBookAssetService as unknown as BookAssetService,
       mockBookSourceMetadataRepository,
@@ -325,14 +329,18 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: inputCiphertext.byteLength,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({ plaintext: inputPlaintext });
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({ plaintext: inputPlaintext });
       await bookProcessingService.validateEpubSource(8);
       expect(mockBookAssetService.findLatestBookAsset).toHaveBeenCalledWith({
         bookId: 8,
         kind: BookAssetKind.SOURCE,
       });
-      expect(mockEncryptionManagerService.decrypt).toHaveBeenCalledWith({
+      expect(mockEncryptionManagerService.unwrapDataKey).toHaveBeenCalledWith({
+        wrappedKey: Buffer.from('wrapped-dek'),
+      });
+      expect(mockEncryptionManagerService.decryptWithDataKey).toHaveBeenCalledWith({
         ciphertext: inputCiphertext,
+        dataKey: Buffer.alloc(32, 7),
       });
     });
 
@@ -362,7 +370,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 9,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({ plaintext: Buffer.from('%PDF-1.4') });
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({ plaintext: Buffer.from('%PDF-1.4') });
       await expect(bookProcessingService.validateEpubSource(8)).rejects.toBeInstanceOf(
         BookProcessingInvalidEpubException,
       );
@@ -391,14 +399,18 @@ describe('BookProcessingService', () => {
         contentType: 'application/pdf',
         byteSize: inputCiphertext.byteLength,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({ plaintext: inputPlaintext });
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({ plaintext: inputPlaintext });
       await bookProcessingService.ingestPdfSource(8);
       expect(mockBookAssetService.findLatestBookAsset).toHaveBeenCalledWith({
         bookId: 8,
         kind: BookAssetKind.SOURCE,
       });
-      expect(mockEncryptionManagerService.decrypt).toHaveBeenCalledWith({
+      expect(mockEncryptionManagerService.unwrapDataKey).toHaveBeenCalledWith({
+        wrappedKey: Buffer.from('wrapped-dek'),
+      });
+      expect(mockEncryptionManagerService.decryptWithDataKey).toHaveBeenCalledWith({
         ciphertext: inputCiphertext,
+        dataKey: Buffer.alloc(32, 7),
       });
       expect(mockBookService.updateBook).not.toHaveBeenCalled();
       expect(mockBookPageRepository.replaceByBookId).not.toHaveBeenCalled();
@@ -431,7 +443,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/pdf',
         byteSize: 9,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createMinimalEpubBytes(),
       });
       await expect(bookProcessingService.ingestPdfSource(8)).rejects.toBeInstanceOf(
@@ -450,7 +462,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createMinimalEpubBytes(),
       });
       mockBookSourceMetadataRepository.findByBookId.mockResolvedValue(null);
@@ -480,7 +492,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createMinimalEpubBytes(),
       });
       mockBookSourceMetadataRepository.findByBookId.mockResolvedValue(createSourceMetadata());
@@ -507,7 +519,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createMinimalEpubBytes(),
       });
       mockBookService.updateBook.mockResolvedValue(expectedBook);
@@ -528,7 +540,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createFixedLayoutEpubBytes(),
       });
       mockBookService.updateBook.mockResolvedValue(expectedBook);
@@ -551,7 +563,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createReflowableChapterEpubBytes(),
       });
       mockBookChapterRepository.replaceByBookId.mockResolvedValue(expectedChapters);
@@ -579,7 +591,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createFixedLayoutEpubBytes(),
       });
       await expect(bookProcessingService.extractEpubChapters(8)).rejects.toBeInstanceOf(
@@ -619,7 +631,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createFixedLayoutPagesEpubBytes(),
       });
       mockBookPageRepository.replaceByBookId.mockResolvedValue(expectedStructure);
@@ -666,7 +678,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createReflowableChapterEpubBytes(),
       });
       await expect(bookProcessingService.extractEpubFixedLayout(8)).rejects.toBeInstanceOf(
@@ -686,7 +698,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createFixedLayoutTextEpubBytes(),
       });
       mockBookPageRepository.listByBookId.mockResolvedValue([createSamplePage()]);
@@ -722,7 +734,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createFixedLayoutTextEpubBytes(),
       });
       mockBookPageRepository.listByBookId.mockResolvedValue([]);
@@ -740,7 +752,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createReflowableChapterEpubBytes(),
       });
       await expect(bookProcessingService.extractEpubFixedLayoutText(8)).rejects.toBeInstanceOf(
@@ -758,7 +770,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createFixedLayoutTextEpubBytes(),
       });
       mockBookPageRepository.listByBookId.mockResolvedValue([
@@ -786,7 +798,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/pdf',
         byteSize: 13,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: Buffer.from('%PDF-1.4 source'),
       });
       await bookProcessingService.processSource(8);
@@ -804,7 +816,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createReflowableChapterEpubBytes(),
       });
       mockBookSourceMetadataRepository.findByBookId.mockResolvedValue(null);
@@ -824,7 +836,7 @@ describe('BookProcessingService', () => {
         contentType: 'application/epub+zip',
         byteSize: 14,
       });
-      mockEncryptionManagerService.decrypt.mockReturnValue({
+      mockEncryptionManagerService.decryptWithDataKey.mockReturnValue({
         plaintext: createFixedLayoutTextEpubBytes(),
       });
       mockBookSourceMetadataRepository.findByBookId.mockResolvedValue(null);

@@ -137,20 +137,22 @@ enum BookAssetKind {
 }
 
 model BookAsset {
-  id               Int           @id @default(autoincrement())
-  bookId           Int
-  kind             BookAssetKind
-  storageKey       String        @unique
-  contentType      String
-  byteSize         Int
-  checksumSha256   String?
-  originalFileName String?
-  sortOrder        Int           @default(0)
-  isEncrypted      Boolean       @default(false)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  deletedAt        DateTime?
-  book             Book          @relation(fields: [bookId], references: [id])
+  id                Int           @id @default(autoincrement())
+  bookId            Int
+  kind              BookAssetKind
+  storageKey        String        @unique
+  contentType       String
+  byteSize          Int
+  checksumSha256    String?
+  originalFileName  String?
+  sortOrder         Int           @default(0)
+  isEncrypted       Boolean       @default(false)
+  /// Master-KEK-wrapped per-asset DEK (envelope v1). Null for non-source / legacy assets.
+  wrappedContentKey Bytes?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  deletedAt         DateTime?
+  book              Book          @relation(fields: [bookId], references: [id])
 
   @@index([bookId])
   @@index([bookId, kind])
@@ -535,6 +537,7 @@ enum AuditAction {
   book_unpublished
   book_republished
   book_deleted
+  book_content_key_issued
   publisher_enabled
   publisher_disabled
   user_role_changed

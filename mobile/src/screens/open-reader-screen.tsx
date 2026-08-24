@@ -10,14 +10,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
 import { FixedLayoutReaderPlaceholder } from '@/features/reader/components/fixed-layout-reader-placeholder';
-import { ReflowableReaderPlaceholder } from '@/features/reader/components/reflowable-reader-placeholder';
+import { ReflowableReaderEngine } from '@/features/reader/components/reflowable-reader-engine';
 import { endReadingSession } from '@/features/reader/api/end-reading-session';
 import { useOpenReadingShell } from '@/features/reader/hooks/use-open-reading-shell';
 import { mapOpenReaderError } from '@/features/reader/lib/map-open-reader-error';
 import { theme } from '@/theme/theme';
 
 /**
- * Opens a reading session and routes to a layout-specific placeholder engine.
+ * Opens a reading session and routes to a layout-specific engine.
  */
 export function OpenReaderScreen(): JSX.Element {
   const params = useLocalSearchParams<{ bookId: string }>();
@@ -87,7 +87,6 @@ export function OpenReaderScreen(): JSX.Element {
 
   const openedBookId: number = opened.book.id;
   const openedSessionId: number = opened.session.id;
-  const hasDeliveryGrant: boolean = opened.deliveryGrant !== null;
 
   async function executeClose(): Promise<void> {
     if (isClosing) {
@@ -118,10 +117,10 @@ export function OpenReaderScreen(): JSX.Element {
         edges={['top', 'left', 'right', 'bottom']}
         testID="reader-shell-screen"
       >
-        <ReflowableReaderPlaceholder
+        <ReflowableReaderEngine
           book={opened.book}
           session={opened.session}
-          hasDeliveryGrant={hasDeliveryGrant}
+          deliveryGrant={opened.deliveryGrant}
           onClose={() => {
             void executeClose();
           }}
@@ -139,7 +138,7 @@ export function OpenReaderScreen(): JSX.Element {
       <FixedLayoutReaderPlaceholder
         book={opened.book}
         session={opened.session}
-        hasDeliveryGrant={hasDeliveryGrant}
+        hasDeliveryGrant={opened.deliveryGrant !== null}
         onClose={() => {
           void executeClose();
         }}

@@ -11,6 +11,7 @@ export type CreateBookAssetServiceInput = {
   readonly originalFileName?: string | null;
   readonly sortOrder?: number;
   readonly isEncrypted?: boolean;
+  readonly wrappedContentKey?: Buffer | null;
 };
 
 export type UpdateBookAssetServiceInput = {
@@ -22,6 +23,7 @@ export type UpdateBookAssetServiceInput = {
   readonly originalFileName?: string | null;
   readonly sortOrder?: number;
   readonly isEncrypted?: boolean;
+  readonly wrappedContentKey?: Buffer | null;
 };
 
 export type ListBookAssetsServiceInput = {
@@ -75,4 +77,21 @@ export type BookAssetDeliveryGrant = {
   readonly byteSize: number;
   readonly checksumSha256: string | null;
   readonly isEncrypted: boolean;
+};
+
+export type CreateBookAssetContentKeyServiceInput = {
+  readonly bookId: number;
+  readonly userId: number;
+  readonly sessionId: number;
+};
+
+export type BookAssetContentKey = {
+  readonly bookId: number;
+  readonly bookAssetId: number;
+  readonly sessionId: number;
+  readonly keyId: string;
+  readonly algorithm: 'aes-256-gcm';
+  readonly keyDelivery: 'plain';
+  readonly key: string;
+  readonly expiresAt: Date;
 };

@@ -195,9 +195,16 @@ describe('Reader encrypted delivery grants (e2e)', () => {
       .get(StorageManagerService)
       .getObject({ key: decodeURIComponent(encodedKey) });
     expect(stored.body.equals(pdfBytes)).toBe(false);
+    const asset = await getRunningApp()
+      .get(PrismaProviderService)
+      .bookAsset.findFirstOrThrow({ where: { bookId: publishedBook.id, kind: 'source' } });
+    expect(asset.wrappedContentKey).not.toBeNull();
+    const unwrapped = getRunningApp()
+      .get(EncryptionManagerService)
+      .unwrapDataKey({ wrappedKey: Buffer.from(asset.wrappedContentKey as Uint8Array) });
     const decrypted = getRunningApp()
       .get(EncryptionManagerService)
-      .decrypt({ ciphertext: stored.body });
+      .decryptWithDataKey({ ciphertext: stored.body, dataKey: unwrapped.dataKey });
     expect(decrypted.plaintext.equals(pdfBytes)).toBe(true);
   });
 });

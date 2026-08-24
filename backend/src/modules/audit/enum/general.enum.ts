@@ -5,6 +5,7 @@ export enum AuditAction {
   BOOK_UNPUBLISHED = 'book_unpublished',
   BOOK_REPUBLISHED = 'book_republished',
   BOOK_DELETED = 'book_deleted',
+  BOOK_CONTENT_KEY_ISSUED = 'book_content_key_issued',
   PUBLISHER_ENABLED = 'publisher_enabled',
   PUBLISHER_DISABLED = 'publisher_disabled',
   USER_ROLE_CHANGED = 'user_role_changed',

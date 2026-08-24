@@ -1,7 +1,9 @@
 import { ENCRYPTION_KEY_ID_PATTERN } from '@/config/encryption/encryption-config.schema';
 import { AES_256_GCM } from '@/providers/encryption/consts';
 import {
+  ContentEncryptionEnvelope,
   LegacyEncryptionEnvelope,
+  PackContentEncryptionEnvelopeInput,
   PackEncryptionEnvelopeInput,
   UnpackedEncryptionEnvelope,
   VersionedEncryptionEnvelope,
@@ -25,6 +27,22 @@ export class EncryptionEnvelope {
     ]);
   }
 
+  /**
+   * Packs content ciphertext encrypted with an external DEK (envelope version 2).
+   * No key id is embedded; the DEK is delivered separately after authorization.
+   */
+  static packContent(input: PackContentEncryptionEnvelopeInput): Buffer {
+    EncryptionEnvelope.assertExactLength(input.iv, AES_256_GCM.ivLength);
+    EncryptionEnvelope.assertExactLength(input.authTag, AES_256_GCM.authTagLength);
+    return Buffer.concat([
+      ENCRYPTION_ENVELOPE.magic,
+      Buffer.from([ENCRYPTION_ENVELOPE.contentVersion, 0]),
+      input.iv,
+      input.authTag,
+      input.encrypted,
+    ]);
+  }
+
   static unpack(ciphertext: Buffer): UnpackedEncryptionEnvelope {
     if (EncryptionEnvelope.hasMagic(ciphertext)) {
       return EncryptionEnvelope.unpackVersioned(ciphertext);
@@ -32,7 +50,7 @@ export class EncryptionEnvelope {
     return EncryptionEnvelope.unpackLegacy(ciphertext);
   }
 
-  private static unpackVersioned(ciphertext: Buffer): VersionedEncryptionEnvelope {
+  private static unpackVersioned(ciphertext: Buffer): UnpackedEncryptionEnvelope {
     const magicLength: number = ENCRYPTION_ENVELOPE.magic.byteLength;
     if (ciphertext.byteLength < magicLength + 2) {
       throw new EncryptionFailureException();
@@ -40,9 +58,15 @@ export class EncryptionEnvelope {
     const version: number = ciphertext.readUInt8(magicLength);
     const keyIdLength: number = ciphertext.readUInt8(magicLength + 1);
     const keyIdStart: number = magicLength + 2;
+    if (version === ENCRYPTION_ENVELOPE.contentVersion) {
+      return EncryptionEnvelope.unpackContent(ciphertext, keyIdLength, keyIdStart);
+    }
+    if (version !== ENCRYPTION_ENVELOPE.version) {
+      throw new EncryptionFailureException();
+    }
     const headerLength: number =
       keyIdStart + keyIdLength + AES_256_GCM.ivLength + AES_256_GCM.authTagLength;
-    if (version !== ENCRYPTION_ENVELOPE.version || ciphertext.byteLength < headerLength) {
+    if (ciphertext.byteLength < headerLength) {
       throw new EncryptionFailureException();
     }
     const keyId: string = ciphertext
@@ -51,11 +75,34 @@ export class EncryptionEnvelope {
     EncryptionEnvelope.assertValidKeyId(keyId, keyIdLength);
     const ivStart: number = keyIdStart + keyIdLength;
     const authTagStart: number = ivStart + AES_256_GCM.ivLength;
-    return {
+    const envelope: VersionedEncryptionEnvelope = {
       format: 'versioned',
       version,
       keyId,
       iv: ciphertext.subarray(ivStart, authTagStart),
+      authTag: ciphertext.subarray(authTagStart, headerLength),
+      encrypted: ciphertext.subarray(headerLength),
+    };
+    return envelope;
+  }
+
+  private static unpackContent(
+    ciphertext: Buffer,
+    keyIdLength: number,
+    keyIdStart: number,
+  ): ContentEncryptionEnvelope {
+    if (keyIdLength !== 0) {
+      throw new EncryptionFailureException();
+    }
+    const headerLength: number = keyIdStart + AES_256_GCM.ivLength + AES_256_GCM.authTagLength;
+    if (ciphertext.byteLength < headerLength) {
+      throw new EncryptionFailureException();
+    }
+    const authTagStart: number = keyIdStart + AES_256_GCM.ivLength;
+    return {
+      format: 'content',
+      version: ENCRYPTION_ENVELOPE.contentVersion,
+      iv: ciphertext.subarray(keyIdStart, authTagStart),
       authTag: ciphertext.subarray(authTagStart, headerLength),
       encrypted: ciphertext.subarray(headerLength),
     };

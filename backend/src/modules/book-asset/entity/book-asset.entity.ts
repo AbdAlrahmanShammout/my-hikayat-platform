@@ -12,9 +12,13 @@ export class BookAssetEntity extends BaseEntity {
   originalFileName!: string | null;
   sortOrder!: number;
   isEncrypted!: boolean;
+  wrappedContentKey!: Buffer | null;
 
   constructor(data: BookAssetZodType) {
     super();
     Object.assign(this, data);
+    if (this.wrappedContentKey === undefined) {
+      this.wrappedContentKey = null;
+    }
   }
 }

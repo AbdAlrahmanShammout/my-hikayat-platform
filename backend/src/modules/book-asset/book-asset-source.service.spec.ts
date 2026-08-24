@@ -61,7 +61,11 @@ describe('BookAssetSourceService', () => {
   let mockBookAssetService: { createBookAsset: jest.Mock };
   let mockBookProcessingStatusService: { resetProcessingStatus: jest.Mock };
   let mockStorageManagerService: { putObject: jest.Mock };
-  let mockEncryptionManagerService: { encrypt: jest.Mock };
+  let mockEncryptionManagerService: {
+    generateDataKey: jest.Mock;
+    encryptWithDataKey: jest.Mock;
+    wrapDataKey: jest.Mock;
+  };
   let bookAssetSourceService: BookAssetSourceService;
 
   beforeEach(() => {
@@ -69,7 +73,14 @@ describe('BookAssetSourceService', () => {
     mockBookAssetService = { createBookAsset: jest.fn() };
     mockBookProcessingStatusService = { resetProcessingStatus: jest.fn() };
     mockStorageManagerService = { putObject: jest.fn() };
-    mockEncryptionManagerService = { encrypt: jest.fn() };
+    mockEncryptionManagerService = {
+      generateDataKey: jest.fn().mockReturnValue({ dataKey: Buffer.alloc(32, 3) }),
+      encryptWithDataKey: jest.fn(),
+      wrapDataKey: jest.fn().mockReturnValue({
+        wrappedKey: Buffer.from('wrapped-dek'),
+        keyId: 'v1',
+      }),
+    };
     bookAssetSourceService = new BookAssetSourceService(
       mockBookService as unknown as BookService,
       mockBookAssetService as unknown as BookAssetService,
@@ -80,12 +91,14 @@ describe('BookAssetSourceService', () => {
   });
 
   describe('uploadSourceFile', () => {
-    it('encrypts the source, stores ciphertext, and records a source asset for the owner', async () => {
+    it('encrypts the source with a DEK, stores ciphertext, and records the wrapped key', async () => {
       const inputPlaintext = Buffer.from('%PDF-1.4 source');
       const inputCiphertext = Buffer.from('encrypted-source');
       const expectedAsset = createSampleAsset();
       mockBookService.getBookById.mockResolvedValue(createSampleBook());
-      mockEncryptionManagerService.encrypt.mockReturnValue({ ciphertext: inputCiphertext });
+      mockEncryptionManagerService.encryptWithDataKey.mockReturnValue({
+        ciphertext: inputCiphertext,
+      });
       mockStorageManagerService.putObject.mockResolvedValue({
         key: 'books/8/source/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
         byteSize: inputCiphertext.byteLength,
@@ -99,8 +112,13 @@ describe('BookAssetSourceService', () => {
         contentType: 'application/pdf',
         originalFileName: 'the-last-lighthouse.pdf',
       });
-      expect(mockEncryptionManagerService.encrypt).toHaveBeenCalledWith({
+      expect(mockEncryptionManagerService.generateDataKey).toHaveBeenCalled();
+      expect(mockEncryptionManagerService.encryptWithDataKey).toHaveBeenCalledWith({
         plaintext: inputPlaintext,
+        dataKey: Buffer.alloc(32, 3),
+      });
+      expect(mockEncryptionManagerService.wrapDataKey).toHaveBeenCalledWith({
+        dataKey: Buffer.alloc(32, 3),
       });
       expect(mockStorageManagerService.putObject).toHaveBeenCalledWith({
         key: expect.stringMatching(/^books\/8\/source\/[0-9a-f-]{36}$/),
@@ -118,6 +136,7 @@ describe('BookAssetSourceService', () => {
         checksumSha256: createHash('sha256').update(inputCiphertext).digest('hex'),
         originalFileName: 'the-last-lighthouse.pdf',
         isEncrypted: true,
+        wrappedContentKey: Buffer.from('wrapped-dek'),
       });
       expect(mockBookProcessingStatusService.resetProcessingStatus).toHaveBeenCalledWith(8);
       expect(actualAsset).toBe(expectedAsset);
@@ -126,7 +145,9 @@ describe('BookAssetSourceService', () => {
     it('accepts an EPUB content type and normalizes it', async () => {
       const inputCiphertext = Buffer.from('encrypted-epub');
       mockBookService.getBookById.mockResolvedValue(createSampleBook());
-      mockEncryptionManagerService.encrypt.mockReturnValue({ ciphertext: inputCiphertext });
+      mockEncryptionManagerService.encryptWithDataKey.mockReturnValue({
+        ciphertext: inputCiphertext,
+      });
       mockStorageManagerService.putObject.mockResolvedValue({
         key: 'books/8/source/uuid',
         byteSize: inputCiphertext.byteLength,
@@ -150,7 +171,9 @@ describe('BookAssetSourceService', () => {
     it('infers PDF type from the filename when the client sends octet-stream', async () => {
       const inputCiphertext = Buffer.from('encrypted-pdf');
       mockBookService.getBookById.mockResolvedValue(createSampleBook());
-      mockEncryptionManagerService.encrypt.mockReturnValue({ ciphertext: inputCiphertext });
+      mockEncryptionManagerService.encryptWithDataKey.mockReturnValue({
+        ciphertext: inputCiphertext,
+      });
       mockStorageManagerService.putObject.mockResolvedValue({
         key: 'books/8/source/uuid',
         byteSize: inputCiphertext.byteLength,
@@ -174,7 +197,9 @@ describe('BookAssetSourceService', () => {
     it('allows an admin to upload a source file for another owner', async () => {
       const inputCiphertext = Buffer.from('encrypted-source');
       mockBookService.getBookById.mockResolvedValue(createSampleBook(4));
-      mockEncryptionManagerService.encrypt.mockReturnValue({ ciphertext: inputCiphertext });
+      mockEncryptionManagerService.encryptWithDataKey.mockReturnValue({
+        ciphertext: inputCiphertext,
+      });
       mockStorageManagerService.putObject.mockResolvedValue({
         key: 'books/8/source/uuid',
         byteSize: inputCiphertext.byteLength,
@@ -203,7 +228,7 @@ describe('BookAssetSourceService', () => {
           originalFileName: 'book.pdf',
         }),
       ).rejects.toBeInstanceOf(ResourceNotFoundException);
-      expect(mockEncryptionManagerService.encrypt).not.toHaveBeenCalled();
+      expect(mockEncryptionManagerService.encryptWithDataKey).not.toHaveBeenCalled();
       expect(mockBookProcessingStatusService.resetProcessingStatus).not.toHaveBeenCalled();
     });
 

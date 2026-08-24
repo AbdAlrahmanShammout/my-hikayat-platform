@@ -60,8 +60,10 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 33 | Mobile catalog browse + book detail (R2) | Complete |
 | 34 | Mobile catalog metadata search (R2) | Complete |
 | 35 | Mobile curated collections discovery (R2) | Complete |
-| 36 | R2 Mobile Discovery E2E (Maestro) — testing phase | Deferred |
+|| 36 | R2 Mobile Discovery E2E (Maestro) — testing phase | Deferred |
 | 37 | Mobile open-book shell + dual-engine routing (R3) | Complete |
+| 38 | Backend per-book content key + reader key-access (R3) | Complete |
+| 39 | Mobile reflowable EPUB engine (R3) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1281,6 +1283,68 @@ fake engine; typecheck/lint/unit tests pass.
 
 ---
 
+## STEP 38 — Backend per-book content key + reader key-access (R3)
+
+**Goal:** Replace master-key-only content encryption with per-asset DEKs wrapped
+by the server master KEK, and expose an authorized reader content-key contract
+for on-device decryption.
+
+**Architecture:** `ARCHITECTURE.md` encryption provider + book-asset domain.
+**APIs:**
+
+- Existing `POST /reader/books/:bookId/delivery-grant` (unchanged contract)
+- New `POST /reader/books/:bookId/content-key` with `{ sessionId }`
+
+**In scope:**
+
+- DEK generate / wrap / unwrap on `EncryptionManagerService`
+- Content envelope version 2 (external DEK; no embedded master key)
+- `BookAsset.wrappedContentKey` schema + migration
+- New uploads encrypt with DEK and store wrapped key
+- Book processing unwraps DEK to read plaintext server-side
+- Content-key endpoint: auth, catalog visibility, paid entitlement, open owned
+  session, fail-closed without wrapped key, throttling, audit
+  (`book_content_key_issued`)
+- Never return the master KEK
+
+**Out of scope:** Mobile decrypt/render, backfill of legacy assets, device-bound
+keys, offline storage, revocation lists, R6, Maestro, Delivery Grant contract
+changes.
+
+**Done when:** new source uploads use DEK architecture; entitled open sessions
+can obtain the per-asset DEK; unpaid/closed-session/missing-key fail closed;
+unit + relevant backend tests pass.
+
+---
+
+## STEP 39 — Mobile reflowable EPUB engine (R3)
+
+**Goal:** Load an authorized reflowable EPUB on device: grant → download →
+checksum → content key → in-memory decrypt → parse → render → spine navigation
+and activity updates.
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md`. Depends on STEP 38.
+**APIs (existing + STEP 38):** delivery-grant, content-key, sessions, activity.
+
+**In scope:**
+
+- Download encrypted source from grant URL
+- Verify `checksumSha256` before decrypt
+- Request content key for the open session
+- In-memory AES-GCM decrypt + EPUB/ZIP parse
+- Reflowable render with spine/chapter navigation
+- `spineIndex` / `scrollOffset` activity updates
+- Loading / error / retry / corrupt-source handling
+- Clear DEK and plaintext on leave (no SecureStore / no disk plaintext)
+
+**Out of scope:** Fixed-layout canvas, Smart Resume UI, bookmarks, offline, R6,
+subscription UI, in-book search, Maestro/E2E.
+
+**Done when:** a paid reader can open a reflowable book and read decrypted
+chapters with navigation and activity; typecheck/lint/unit tests pass.
+
+---
+
 ## Out of scope for this list
 
 - Reader R3+ features (dual engines, offline, subscriptions UI)
@@ -1309,3 +1373,6 @@ depends on STEPs 33–35. Resume it later; do not invent a duplicate R2 E2E STEP
 Do not block product STEPs on Maestro/E2E unless testing is explicitly requested.
 STEP 37 (R3 open-book shell + dual-engine routing) depends on STEP 33 and may
 reuse catalog book detail. It must not wait on STEP 36.
+STEP 38 (backend per-book content key) depends on STEP 37 session semantics and
+must complete before mobile decrypt/render.
+STEP 39 (mobile reflowable EPUB engine) depends on STEP 38.

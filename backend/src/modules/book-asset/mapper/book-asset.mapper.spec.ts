@@ -21,6 +21,7 @@ describe('BookAssetMapper', () => {
       originalFileName: 'the-last-lighthouse.epub',
       sortOrder: 0,
       isEncrypted: true,
+      wrappedContentKey: null,
     };
     const actualEntity = BookAssetMapper.toEntity(inputSchema);
     expect(actualEntity.kind).toBe(BookAssetKind.SOURCE);

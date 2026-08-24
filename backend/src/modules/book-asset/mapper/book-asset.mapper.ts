@@ -18,6 +18,14 @@ export class BookAssetMapper {
       originalFileName: schema.originalFileName,
       sortOrder: schema.sortOrder,
       isEncrypted: schema.isEncrypted,
+      wrappedContentKey: BookAssetMapper.toBufferOrNull(schema.wrappedContentKey),
     });
+  }
+
+  private static toBufferOrNull(value: Uint8Array | null | undefined): Buffer | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    return Buffer.from(value);
   }
 }

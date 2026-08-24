@@ -13,7 +13,7 @@ describe('BookAssetPrismaRepository', () => {
     updatedAt,
     deletedAt: null,
     bookId: 8,
-    kind: 'source',
+    kind: 'source' as const,
     storageKey: 'books/8/source/original.epub',
     contentType: 'application/epub+zip',
     byteSize: 1048576,
@@ -21,6 +21,7 @@ describe('BookAssetPrismaRepository', () => {
     originalFileName: 'the-last-lighthouse.epub',
     sortOrder: 0,
     isEncrypted: true,
+    wrappedContentKey: null,
   };
   let mockPrismaProviderService: {
     $transaction: jest.Mock;
@@ -62,6 +63,7 @@ describe('BookAssetPrismaRepository', () => {
       originalFileName: 'the-last-lighthouse.epub',
       sortOrder: 0,
       isEncrypted: true,
+      wrappedContentKey: null,
     });
     expect(mockPrismaProviderService.bookAsset.create).toHaveBeenCalledWith(
       expect.objectContaining({

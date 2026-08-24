@@ -196,11 +196,7 @@ export class BookProcessingService {
     const stored: GetStorageObjectResult = await this.storageManagerService.getObject({
       key: source.storageKey,
     });
-    return BookProcessingService.readPlaintext(
-      stored.body,
-      source.isEncrypted,
-      this.encryptionManagerService,
-    );
+    return BookProcessingService.readPlaintext(stored.body, source, this.encryptionManagerService);
   }
 
   private static toTextLayerInput(
@@ -242,13 +238,24 @@ export class BookProcessingService {
 
   private static readPlaintext(
     body: Buffer,
-    isEncrypted: boolean,
+    source: BookAssetEntity,
     encryptionManagerService: EncryptionManagerService,
   ): Buffer {
-    if (!isEncrypted) {
+    if (!source.isEncrypted) {
       return body;
     }
-    const decrypted: DecryptBufferResult = encryptionManagerService.decrypt({ ciphertext: body });
+    if (source.wrappedContentKey === null) {
+      throw new BookProcessingInvalidSourceException(
+        'encrypted source is missing a wrapped content key',
+      );
+    }
+    const unwrapped = encryptionManagerService.unwrapDataKey({
+      wrappedKey: source.wrappedContentKey,
+    });
+    const decrypted: DecryptBufferResult = encryptionManagerService.decryptWithDataKey({
+      ciphertext: body,
+      dataKey: unwrapped.dataKey,
+    });
     return decrypted.plaintext;
   }
 }

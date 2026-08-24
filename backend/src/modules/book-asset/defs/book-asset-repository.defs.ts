@@ -11,6 +11,7 @@ export type CreateBookAssetRepoInput = {
   readonly originalFileName: string | null;
   readonly sortOrder: number;
   readonly isEncrypted: boolean;
+  readonly wrappedContentKey: Buffer | null;
 };
 
 export type UpdateBookAssetRepoInput = {
@@ -22,6 +23,7 @@ export type UpdateBookAssetRepoInput = {
   readonly originalFileName?: string | null;
   readonly sortOrder?: number;
   readonly isEncrypted?: boolean;
+  readonly wrappedContentKey?: Buffer | null;
 };
 
 export type ListBookAssetsRepoInput = {

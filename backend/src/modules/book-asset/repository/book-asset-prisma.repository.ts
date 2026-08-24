@@ -35,6 +35,8 @@ export class BookAssetPrismaRepository implements BookAssetRepository {
         originalFileName: input.originalFileName,
         sortOrder: input.sortOrder,
         isEncrypted: input.isEncrypted,
+        wrappedContentKey:
+          input.wrappedContentKey === null ? null : new Uint8Array(input.wrappedContentKey),
       },
     });
     return BookAssetMapper.toEntity(result);
@@ -66,6 +68,10 @@ export class BookAssetPrismaRepository implements BookAssetRepository {
     }
     if (input.isEncrypted !== undefined) {
       data.isEncrypted = input.isEncrypted;
+    }
+    if (input.wrappedContentKey !== undefined) {
+      data.wrappedContentKey =
+        input.wrappedContentKey === null ? null : new Uint8Array(input.wrappedContentKey);
     }
     const result = await client.bookAsset.update({
       where: { id: input.id },

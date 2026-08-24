@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
 
+import { AuditModule } from '@/modules/audit/audit.module';
 import { BookModule } from '@/modules/book/book.module';
 import { EntitlementModule } from '@/modules/entitlement/entitlement.module';
+import { ReadingModule } from '@/modules/reading/reading.module';
 import { DatabaseProviderModule } from '@/providers/database/database-provider.module';
 import { EncryptionProviderModule } from '@/providers/encryption/encryption-provider.module';
 import { StorageProviderModule } from '@/providers/storage/storage-provider.module';
 
 import { BookAssetCatalogMediaService } from './book-asset-catalog-media.service';
+import { BookAssetContentKeyService } from './book-asset-content-key.service';
 import { BookAssetDeliveryService } from './book-asset-delivery.service';
 import { BookAssetSourceService } from './book-asset-source.service';
 import { BookAssetService } from './book-asset.service';
@@ -18,6 +21,8 @@ import { BookAssetRepository } from './repository/book-asset.repository';
     DatabaseProviderModule,
     BookModule,
     EntitlementModule,
+    ReadingModule,
+    AuditModule,
     StorageProviderModule,
     EncryptionProviderModule,
   ],
@@ -26,6 +31,7 @@ import { BookAssetRepository } from './repository/book-asset.repository';
     BookAssetSourceService,
     BookAssetCatalogMediaService,
     BookAssetDeliveryService,
+    BookAssetContentKeyService,
     { provide: BookAssetRepository, useClass: BookAssetPrismaRepository },
   ],
   exports: [
@@ -33,6 +39,7 @@ import { BookAssetRepository } from './repository/book-asset.repository';
     BookAssetSourceService,
     BookAssetCatalogMediaService,
     BookAssetDeliveryService,
+    BookAssetContentKeyService,
   ],
 })
 export class BookAssetModule {}

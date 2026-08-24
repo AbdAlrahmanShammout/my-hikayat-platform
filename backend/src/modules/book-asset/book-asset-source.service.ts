@@ -14,7 +14,11 @@ import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
 import { BookAssetInvalidSourceTypeException } from '@/modules/book-asset/exceptions/book-asset-invalid-source-type.exception';
 import { SOURCE_FILE_UPLOAD } from '@/modules/book-asset/source-file-upload.constant';
 import { UserRole } from '@/modules/user/enum/general.enum';
-import { EncryptBufferResult } from '@/providers/encryption/defs/encryption-manager.defs';
+import {
+  EncryptBufferResult,
+  GenerateDataKeyResult,
+  WrapDataKeyResult,
+} from '@/providers/encryption/defs/encryption-manager.defs';
 import { EncryptionManagerService } from '@/providers/encryption/encryption-manager.service';
 import { PutStorageObjectResult } from '@/providers/storage/defs/storage-manager.defs';
 import { StorageManagerService } from '@/providers/storage/storage-manager.service';
@@ -40,8 +44,13 @@ export class BookAssetSourceService {
     const originalFileName: string | null = BookAssetSourceService.normalizeOriginalFileName(
       input.originalFileName,
     );
-    const encrypted: EncryptBufferResult = this.encryptionManagerService.encrypt({
+    const generated: GenerateDataKeyResult = this.encryptionManagerService.generateDataKey();
+    const encrypted: EncryptBufferResult = this.encryptionManagerService.encryptWithDataKey({
       plaintext: input.body,
+      dataKey: generated.dataKey,
+    });
+    const wrapped: WrapDataKeyResult = this.encryptionManagerService.wrapDataKey({
+      dataKey: generated.dataKey,
     });
     const storageKey: string = `books/${book.id}/source/${randomUUID()}`;
     const stored: PutStorageObjectResult = await this.storageManagerService.putObject({
@@ -59,6 +68,7 @@ export class BookAssetSourceService {
       checksumSha256,
       originalFileName,
       isEncrypted: true,
+      wrappedContentKey: wrapped.wrappedKey,
     });
     await this.bookProcessingStatusService.resetProcessingStatus(book.id);
     return asset;

@@ -27,6 +27,22 @@ describe('EncryptionEnvelope', () => {
     });
   });
 
+  it('packs and unpacks a content envelope without a key id', () => {
+    const actualPacked = EncryptionEnvelope.packContent({
+      iv,
+      authTag,
+      encrypted,
+    });
+    const actualUnpacked = EncryptionEnvelope.unpack(actualPacked);
+    expect(actualUnpacked).toEqual({
+      format: 'content',
+      version: ENCRYPTION_ENVELOPE.contentVersion,
+      iv,
+      authTag,
+      encrypted,
+    });
+  });
+
   it('unpacks a legacy header as iv, auth tag, and ciphertext', () => {
     const actualUnpacked = EncryptionEnvelope.unpack(Buffer.concat([iv, authTag, encrypted]));
     expect(actualUnpacked).toEqual({
@@ -46,5 +62,17 @@ describe('EncryptionEnvelope', () => {
         encrypted,
       }),
     ).toThrow(EncryptionFailureException);
+  });
+
+  it('rejects a content envelope that embeds a key id', () => {
+    const invalidContent = Buffer.concat([
+      ENCRYPTION_ENVELOPE.magic,
+      Buffer.from([ENCRYPTION_ENVELOPE.contentVersion, 2]),
+      Buffer.from('v1'),
+      iv,
+      authTag,
+      encrypted,
+    ]);
+    expect(() => EncryptionEnvelope.unpack(invalidContent)).toThrow(EncryptionFailureException);
   });
 });
