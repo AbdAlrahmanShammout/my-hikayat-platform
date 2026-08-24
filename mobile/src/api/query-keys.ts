@@ -16,4 +16,18 @@ export const queryKeys = {
     categories: (input: { readonly limit?: number; readonly offset?: number }) =>
       ['reader', 'catalog', 'categories', input] as const,
   },
+  search: {
+    books: (input: {
+      readonly limit?: number;
+      readonly offset?: number;
+      readonly title?: string;
+      readonly author?: string;
+      readonly publisher?: string;
+    }) => ['reader', 'search', 'books', input] as const,
+  },
+  collections: {
+    list: (input: { readonly limit?: number; readonly offset?: number }) =>
+      ['reader', 'collections', 'list', input] as const,
+    detail: (collectionId: number) => ['reader', 'collections', 'detail', collectionId] as const,
+  },
 } as const;

@@ -58,6 +58,8 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 31 | Mobile reader bootstrap (Expo RN+TS, Replit-portable) | Complete |
 | 32 | Mobile auth session + kids-friendly tab shell | Complete |
 | 33 | Mobile catalog browse + book detail (R2) | Complete |
+| 34 | Mobile catalog metadata search (R2) | Complete |
+| 35 | Mobile curated collections discovery (R2) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1141,9 +1143,66 @@ typecheck/lint/tests pass.
 
 ---
 
+## STEP 34 — Mobile catalog metadata search (R2)
+
+**Goal:** Signed-in readers can search catalog-visible books by title, author, or
+publisher metadata and open an existing book detail screen. No collections or
+in-book search.
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md`.
+**APIs (existing only):**
+
+- `GET /reader/search?limit&offset&title&author&publisher` → `{ books, total }`
+
+**In scope:**
+
+- `features/search` API function + TanStack Query hook + query keys
+- Kids-friendly search screen (loading / empty / error / results / clear)
+- Search entry from Home; results open existing `/(app)/books/[bookId]`
+- Display backend fields only; reuse catalog book row where practical
+- Stable `testID`s for E2E later
+
+**Out of scope:** collections, in-book / full-text search, highlights, dual engines,
+Library entitlement list, delivery grants, preview-image fetch, Maestro R2 suite.
+
+**Done when:** a reader can search by title, author, or publisher against
+`GET /reader/search`, see empty/error/success states, open an existing book
+detail route, and typecheck/lint/tests pass.
+
+---
+
+## STEP 35 — Mobile curated collections discovery (R2)
+
+**Goal:** Signed-in readers can browse curated collections, open a collection,
+and open an existing book detail screen. Editorial order and catalog visibility
+stay on the backend.
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md`.
+**APIs (existing only):**
+
+- `GET /reader/collections?limit&offset` → `{ collections, total }`
+- `GET /reader/collections/:id` → `CollectionDiscoveryResponse`
+
+**In scope:**
+
+- `features/collections` API functions + TanStack Query hooks + query keys
+- Collections list screen (loading / empty / error / retry / success)
+- Collection detail screen with books in backend editorial order
+- Entry from Home; books open existing `/(app)/books/[bookId]`
+- Stable `testID`s for E2E later
+
+**Out of scope:** Library entitlement list, search changes, in-book search,
+dual engines, offline, subscriptions, delivery grants, Maestro R2 suite,
+backend collection API changes.
+
+**Done when:** a reader can open Collections from Home, see list and detail
+states, open a book via the existing detail route, and typecheck/lint/tests pass.
+
+---
+
 ## Out of scope for this list
 
-- Reader R3+ features (dual engines, offline, subscriptions UI, search, collections)
+- Reader R3+ features (dual engines, offline, subscriptions UI)
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
 - Recalculating publisher earnings in the browser
@@ -1161,5 +1220,6 @@ on STEP 16. Implement the summary HTTP in each STEP before the Home UI.
 STEPs 0–15 on this list are the completed admin dashboard work except
 the Home metric replacement in STEP 29.
 STEP 31 (R0) is the mobile reader bootstrap and must complete before any
-later reader mobile STEPs. STEP 32 (R1) depends on STEP 31. STEP 33 (R2)
-depends on STEP 32.
+later reader mobile STEPs. STEP 32 (R1) depends on STEP 31. STEP 33 (R2
+browse) depends on STEP 32. STEP 34 (R2 metadata search) depends on STEP 33.
+STEP 35 (R2 curated collections) depends on STEP 33.

@@ -1,6 +1,6 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import type { JSX } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CatalogBookList } from '@/features/catalog/components/catalog-book-list';
@@ -20,6 +20,28 @@ export function HomeScreen(): JSX.Element {
       <Text style={styles.body}>
         Hello{user !== null ? `, ${user.email}` : ''}. Pick a book to learn more.
       </Text>
+      <Pressable
+        style={styles.searchButton}
+        onPress={() => {
+          router.push('/(app)/search');
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Search books"
+        testID="home-search-button"
+      >
+        <Text style={styles.searchButtonLabel}>Search books</Text>
+      </Pressable>
+      <Pressable
+        style={styles.searchButton}
+        onPress={() => {
+          router.push('/(app)/collections' as Href);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Browse collections"
+        testID="home-collections-button"
+      >
+        <Text style={styles.searchButtonLabel}>Collections</Text>
+      </Pressable>
       <CatalogBookList
         onOpenBook={(bookId) => {
           router.push(`/(app)/books/${bookId}`);
@@ -43,5 +65,19 @@ const styles = StyleSheet.create({
   body: {
     ...theme.typography.body,
     color: theme.colors.textSecondary,
+  },
+  searchButton: {
+    minHeight: theme.controlMinHeight,
+    borderRadius: theme.radii.control,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.md,
+  },
+  searchButtonLabel: {
+    ...theme.typography.button,
+    color: theme.colors.primary,
   },
 });
