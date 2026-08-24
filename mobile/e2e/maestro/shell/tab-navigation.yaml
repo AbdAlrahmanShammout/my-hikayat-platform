@@ -1,0 +1,34 @@
+appId: host.exp.exponent
+---
+# Flow B — Tab navigation after authentication (does not assert catalog content).
+- launchApp:
+    clearState: true
+- runFlow: ../shared/open-app.yaml
+- runFlow: ../shared/wait-for-sign-in.yaml
+- runFlow: ../shared/login.yaml
+- assertVisible:
+    id: "shell-home-screen"
+- tapOn:
+    id: "tab-library"
+- extendedWaitUntil:
+    visible:
+      id: "shell-library-screen"
+    timeout: 15000
+- assertVisible:
+    id: "shell-library-title"
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible:
+      id: "shell-profile-screen"
+    timeout: 15000
+- assertVisible:
+    id: "shell-profile-title"
+- tapOn:
+    id: "tab-home"
+- extendedWaitUntil:
+    visible:
+      id: "shell-home-screen"
+    timeout: 15000
+- assertVisible:
+    id: "shell-home-title"

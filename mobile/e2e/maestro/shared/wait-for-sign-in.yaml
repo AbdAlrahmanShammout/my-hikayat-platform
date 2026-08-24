@@ -1,0 +1,7 @@
+appId: host.exp.exponent
+---
+# Asserts the signed-out authentication screen is ready.
+- extendedWaitUntil:
+    visible:
+      id: "auth-sign-in-screen"
+    timeout: 60000

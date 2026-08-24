@@ -17,7 +17,10 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/jest/bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed": "prisma db seed"
+    "seed": "prisma db seed",
+    "e2e:db:prepare": "./scripts/e2e/prepare-db.sh",
+    "e2e:api": "./scripts/e2e/start-api.sh",
+    "e2e:seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed-e2e-reader.ts"
   },
   "prisma": {
     "schema": "prisma/schema.prisma",

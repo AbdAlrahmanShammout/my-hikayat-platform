@@ -1,0 +1,17 @@
+appId: host.exp.exponent
+---
+# Opens the Expo project in Expo Go on the Android Emulator.
+# Requires Metro bundler listening on the host (port 8081).
+# Does not assume signed-in or signed-out — callers assert the expected state.
+- openLink: ${EXPO_DEV_CLIENT_URL}
+# Expo Go may show a one-time developer menu over the app.
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+# Wait until the RN app surface is ready (auth or authenticated shell).
+- extendedWaitUntil:
+    visible:
+      id: "auth-sign-in-screen|shell-home-screen"
+    timeout: 60000

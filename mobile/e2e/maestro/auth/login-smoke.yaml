@@ -1,0 +1,10 @@
+appId: host.exp.exponent
+---
+# Flow A — Login smoke against the real E2E NestJS API.
+- launchApp:
+    clearState: true
+- runFlow: ../shared/open-app.yaml
+- runFlow: ../shared/wait-for-sign-in.yaml
+- runFlow: ../shared/login.yaml
+- assertVisible:
+    id: "shell-home-title"

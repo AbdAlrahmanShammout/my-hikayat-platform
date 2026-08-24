@@ -1,0 +1,38 @@
+appId: host.exp.exponent
+---
+# Flow E — Invalid login remains signed out.
+- launchApp:
+    clearState: true
+- runFlow: ../shared/open-app.yaml
+- runFlow: ../shared/wait-for-sign-in.yaml
+- waitForAnimationToEnd
+- tapOn:
+    id: "auth-email-input"
+- evalScript: ${output.typeIndex = 0}
+- evalScript: ${output.typeText = E2E_READER_EMAIL}
+- repeat:
+    times: 80
+    while:
+      true: ${output.typeIndex < output.typeText.length}
+    commands:
+      - evalScript: ${output.typeChar = output.typeText.charAt(output.typeIndex); output.typeIndex = output.typeIndex + 1}
+      - inputText: ${output.typeChar}
+- assertVisible:
+    id: "auth-email-input"
+    text: ${E2E_READER_EMAIL}
+- tapOn:
+    id: "auth-password-input"
+- inputText: "definitely-wrong-password"
+- assertVisible:
+    id: "auth-email-input"
+    text: ${E2E_READER_EMAIL}
+- tapOn:
+    id: "auth-sign-in-button"
+- extendedWaitUntil:
+    visible:
+      id: "auth-form-error"
+    timeout: 20000
+- assertVisible:
+    id: "auth-sign-in-screen"
+- assertNotVisible:
+    id: "shell-home-screen"

@@ -1,0 +1,22 @@
+appId: host.exp.exponent
+---
+# Flow D — Session restore after terminate/relaunch (SecureStore + /auth/me).
+- launchApp:
+    clearState: true
+- runFlow: ../shared/open-app.yaml
+- runFlow: ../shared/wait-for-sign-in.yaml
+- runFlow: ../shared/login.yaml
+- assertVisible:
+    id: "shell-home-screen"
+- stopApp
+- launchApp:
+    clearState: false
+- runFlow: ../shared/open-app.yaml
+- extendedWaitUntil:
+    visible:
+      id: "shell-home-screen"
+    timeout: 60000
+- assertNotVisible:
+    id: "auth-sign-in-screen"
+- assertVisible:
+    id: "shell-home-title"

@@ -1,0 +1,44 @@
+appId: host.exp.exponent
+---
+# Signs in with seeded E2E reader credentials (passed via Maestro -e env).
+# Do not call hideKeyboard between email and password on Expo Go Android: Maestro
+# hideKeyboard sends BACK and can leave the RN experience for the Expo Go launcher.
+# Type credentials one character at a time. Maestro clipboard-pastes strings that
+# contain '@', which often skips React Hook Form onChangeText on Expo Go.
+- waitForAnimationToEnd
+- tapOn:
+    id: "auth-email-input"
+- evalScript: ${output.typeIndex = 0}
+- evalScript: ${output.typeText = E2E_READER_EMAIL}
+- repeat:
+    times: 80
+    while:
+      true: ${output.typeIndex < output.typeText.length}
+    commands:
+      - evalScript: ${output.typeChar = output.typeText.charAt(output.typeIndex); output.typeIndex = output.typeIndex + 1}
+      - inputText: ${output.typeChar}
+- assertVisible:
+    id: "auth-email-input"
+    text: ${E2E_READER_EMAIL}
+- tapOn:
+    id: "auth-password-input"
+- evalScript: ${output.typeIndex = 0}
+- evalScript: ${output.typeText = E2E_READER_PASSWORD}
+- repeat:
+    times: 80
+    while:
+      true: ${output.typeIndex < output.typeText.length}
+    commands:
+      - evalScript: ${output.typeChar = output.typeText.charAt(output.typeIndex); output.typeIndex = output.typeIndex + 1}
+      - inputText: ${output.typeChar}
+- assertVisible:
+    id: "auth-email-input"
+    text: ${E2E_READER_EMAIL}
+- tapOn:
+    id: "auth-sign-in-button"
+- extendedWaitUntil:
+    visible:
+      id: "shell-home-screen"
+    timeout: 30000
+- assertNotVisible:
+    id: "auth-sign-in-screen"

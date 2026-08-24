@@ -1,0 +1,24 @@
+appId: host.exp.exponent
+---
+# Flow C — Logout returns to authentication.
+- launchApp:
+    clearState: true
+- runFlow: ../shared/open-app.yaml
+- runFlow: ../shared/wait-for-sign-in.yaml
+- runFlow: ../shared/login.yaml
+- tapOn:
+    id: "tab-profile"
+- extendedWaitUntil:
+    visible:
+      id: "shell-profile-screen"
+    timeout: 15000
+- tapOn:
+    id: "shell-sign-out-button"
+- extendedWaitUntil:
+    visible:
+      id: "auth-sign-in-screen"
+    timeout: 20000
+- assertNotVisible:
+    id: "shell-home-screen"
+- assertNotVisible:
+    id: "shell-profile-screen"

@@ -1,0 +1,8 @@
+appId: host.exp.exponent
+---
+# Phase 1 R1 smoke suite (ordered).
+- runFlow: auth/login-smoke.yaml
+- runFlow: shell/tab-navigation.yaml
+- runFlow: auth/logout.yaml
+- runFlow: auth/session-restore.yaml
+- runFlow: auth/invalid-login.yaml
