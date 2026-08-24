@@ -60,6 +60,8 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 33 | Mobile catalog browse + book detail (R2) | Complete |
 | 34 | Mobile catalog metadata search (R2) | Complete |
 | 35 | Mobile curated collections discovery (R2) | Complete |
+| 36 | R2 Mobile Discovery E2E (Maestro) — testing phase | Deferred |
+| 37 | Mobile open-book shell + dual-engine routing (R3) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1200,6 +1202,85 @@ states, open a book via the existing detail route, and typecheck/lint/tests pass
 
 ---
 
+## STEP 36 — R2 Mobile Discovery E2E (Maestro) — DEFERRED testing phase
+
+**Status:** **Deferred — Testing phase** (intentionally paused; **not** cancelled;
+**not** complete).
+
+**Goal (when resumed):** Maestro E2E coverage for R2 discovery features already
+implemented in STEPs **33**, **34**, and **35**:
+
+1. Catalog discovery
+2. Catalog filters / sorting
+3. Book detail
+4. Metadata search
+5. Collections list
+6. Collection detail
+7. Navigation between these screens
+8. Relevant negative / error cases
+
+Reuse Phase 1 Maestro + Nest E2E infrastructure (`open-app`, `wait-for-sign-in`,
+`login`, Android Emulator, Expo Go, `lib_app_e2e`).
+
+**Why deferred:** E2E needs deterministic discovery seed data, additional
+`testID`s, environment setup, and Maestro flows. Product implementation is
+prioritized; testing is a dedicated later phase.
+
+**Do not treat as complete.** Do not invent a duplicate R2 discovery E2E STEP
+later — **resume STEP 36** for that work.
+
+**When resumed (dedicated testing phase):**
+
+- Add deterministic E2E discovery seed data
+- Add any missing stable `testID`s
+- Implement Maestro flows + R2 suite
+- Run flows, fix failures, re-verify
+- Then mark STEP 36 **Complete**
+
+**Out of scope for STEP 36:** R3 engines, in-book search, offline, subscriptions,
+Library entitlements, CI, iOS, Detox, product feature work.
+
+**Execution rule (project-wide from 2026-08-25):** Prefer implementation STEPs
+over Maestro/E2E unless the user explicitly requests testing. Lightweight
+typecheck/lint/unit checks remain OK for development STEPs.
+
+---
+
+## STEP 37 — Mobile open-book shell + dual-engine routing (R3)
+
+**Goal:** From book detail, open a reading shell that proves paid entitlement,
+starts (or resumes) a reading session, and routes to a **placeholder** engine
+selected only by backend `layoutType` (`reflowable` | `fixed_layout`).
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md`, SRS dual-engine selection.
+**APIs (existing only):**
+
+- `GET /reader/catalog/:id` (layoutType + metadata)
+- `POST /reader/books/:id/sessions` (+ `GET .../sessions/current` if already open)
+- `POST /reader/books/:id/sessions/:sessionId/end` (close shell)
+- `POST /reader/books/:bookId/delivery-grant` (best-effort; missing source does not
+  invent entitlement)
+
+**In scope:**
+
+- `features/reader` API helpers + hooks + query keys
+- Book detail **Read** entry
+- Route `/(app)/books/read/[bookId]`
+- Open orchestration: entitlement/session errors → kids-friendly deny/retry
+- Engine router by `layoutType` only (never `bookType`)
+- Separate placeholder UIs for reflowable vs fixed-layout
+- Default layout-correct session start position
+
+**Out of scope:** Real EPUB/PDF/canvas renderers, fonts/zoom/RTL, Smart Resume
+progress UI, bookmarks, activity ingest, offline decrypt, subscription purchase
+UI, in-book search, Maestro/E2E, backend API changes, STEP 36 work.
+
+**Done when:** a paid reader can open Read and see the correct placeholder by
+`layoutType` with a live session; unpaid/denied gets a clear message without a
+fake engine; typecheck/lint/unit tests pass.
+
+---
+
 ## Out of scope for this list
 
 - Reader R3+ features (dual engines, offline, subscriptions UI)
@@ -1223,3 +1304,8 @@ STEP 31 (R0) is the mobile reader bootstrap and must complete before any
 later reader mobile STEPs. STEP 32 (R1) depends on STEP 31. STEP 33 (R2
 browse) depends on STEP 32. STEP 34 (R2 metadata search) depends on STEP 33.
 STEP 35 (R2 curated collections) depends on STEP 33.
+STEP 36 (R2 discovery Maestro E2E) is a **deferred testing-phase** STEP that
+depends on STEPs 33–35. Resume it later; do not invent a duplicate R2 E2E STEP.
+Do not block product STEPs on Maestro/E2E unless testing is explicitly requested.
+STEP 37 (R3 open-book shell + dual-engine routing) depends on STEP 33 and may
+reuse catalog book detail. It must not wait on STEP 36.

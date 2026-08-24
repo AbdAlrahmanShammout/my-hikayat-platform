@@ -30,4 +30,8 @@ export const queryKeys = {
       ['reader', 'collections', 'list', input] as const,
     detail: (collectionId: number) => ['reader', 'collections', 'detail', collectionId] as const,
   },
+  reader: {
+    openShell: (bookId: number) => ['reader', 'reading', 'open-shell', bookId] as const,
+    currentSession: (bookId: number) => ['reader', 'reading', 'session', 'current', bookId] as const,
+  },
 } as const;

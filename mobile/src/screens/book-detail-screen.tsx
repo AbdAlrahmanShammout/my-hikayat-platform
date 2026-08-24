@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import type { JSX } from 'react';
 import {
   ActivityIndicator,
@@ -15,7 +15,7 @@ import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
 import { theme } from '@/theme/theme';
 
 /**
- * Catalog book detail. Reading engines arrive in a later STEP.
+ * Catalog book detail. Opens the R3 reading shell when the reader taps Read.
  */
 export function BookDetailScreen(): JSX.Element {
   const params = useLocalSearchParams<{ bookId: string }>();
@@ -69,6 +69,12 @@ export function BookDetailScreen(): JSX.Element {
   }
 
   const categoryNames: string = book.categories.map((category) => category.name).join(', ');
+  const layoutLabel: string =
+    book.layoutType === 'reflowable'
+      ? 'Reflowable'
+      : book.layoutType === 'fixed_layout'
+        ? 'Fixed layout'
+        : 'Layout not ready';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -80,8 +86,24 @@ export function BookDetailScreen(): JSX.Element {
       {book.owner?.email !== undefined ? (
         <Text style={styles.meta}>{`By ${book.owner.email}`}</Text>
       ) : null}
+      <Text style={styles.meta} testID="book-detail-layout-type">
+        {layoutLabel}
+      </Text>
       <Text style={styles.body}>{book.description}</Text>
-      <Text style={styles.note}>Reading this book in the app comes in a later update.</Text>
+      <Pressable
+        style={styles.primaryButton}
+        onPress={() => {
+          router.push(`/(app)/books/read/${book.id}` as Href);
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="Read book"
+        testID="book-detail-read-button"
+      >
+        <Text style={styles.primaryLabel}>Read</Text>
+      </Pressable>
+      <Text style={styles.note}>
+        Reading opens a placeholder engine in this STEP. Full page rendering comes next.
+      </Text>
     </ScrollView>
   );
 }
@@ -170,6 +192,19 @@ const styles = StyleSheet.create({
   backLabel: {
     ...theme.typography.link,
     color: theme.colors.primaryMuted,
+  },
+  primaryButton: {
+    marginTop: theme.spacing.md,
+    minHeight: theme.controlMinHeight,
+    borderRadius: theme.radii.control,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.lg,
+  },
+  primaryLabel: {
+    ...theme.typography.button,
+    color: theme.colors.onPrimary,
   },
   secondaryButton: {
     minHeight: theme.controlMinHeight,
