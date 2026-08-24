@@ -1,19 +1,20 @@
 import { router } from 'expo-router';
 import type { JSX } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CatalogBookList } from '@/features/catalog/components/catalog-book-list';
 import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
 
 /**
- * Signed-in home tab: catalog browse.
+ * Signed-in home tab: catalog browse (partial R2 present; not an R1 completion criterion).
  */
 export function HomeScreen(): JSX.Element {
   const { user } = useSession();
   return (
-    <View style={styles.container}>
-      <Text style={styles.title} accessibilityRole="header">
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']} testID="shell-home-screen">
+      <Text style={styles.title} accessibilityRole="header" testID="shell-home-title">
         Home
       </Text>
       <Text style={styles.body}>
@@ -24,7 +25,7 @@ export function HomeScreen(): JSX.Element {
           router.push(`/(app)/books/${bookId}`);
         }}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -33,7 +34,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
     paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.xxxl,
     gap: theme.spacing.sm,
   },
   title: {

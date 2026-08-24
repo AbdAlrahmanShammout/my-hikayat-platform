@@ -169,6 +169,7 @@ export interface components {
     GetBookRejectionHistoryResponseDto: { rejections: Array<components['schemas']['AuditLogResponse']>; total: number };
     UpdateBookRequestDto: { title?: string; description?: string; bookType?: "standard_chapter" | "picture_book" | "illustrated_chapter"; categoryIds?: Array<number> };
     GetCategoriesResponseDto: { categories: Array<components['schemas']['CategoryResponse']>; total: number };
+    GetAuthorDashboardSummaryResponseDto: { totalBooks: number; publishedBooks: number; pendingReviewBooks: number; totalReadingMinutes: number; authorCents: number };
     AuthorEarningsTrendPointResponse: { revenuePeriodId: number; startsAt: string; endsAt: string; status: "open" | "closed"; authorCents: number };
     GetAuthorEarningsTrendResponseDto: { points: Array<components['schemas']['AuthorEarningsTrendPointResponse']>; total: number };
     BookRevenueResponse: { id: number; createdAt: string; updatedAt: string; revenuePeriodId: number; bookId: number; ownerId: number; weightedEngagement: number; poolShareCents: number; platformCutCents: number; authorCents: number };
@@ -178,6 +179,5 @@ export interface components {
     AuthorBookHeatmapCellResponse: { spreadIndex: number; pageNumber: number; activeDurationMs: number; visualSceneTimeMs: number };
     AuthorBookChapterHeatmapCellResponse: { spineIndex: number; title?: unknown | null; activeDurationMs: number };
     GetAuthorBookHeatmapResponseDto: { bookId: number; revenuePeriodId: number; layoutType: "reflowable" | "fixed_layout" | null; spreads: Array<components['schemas']['AuthorBookHeatmapCellResponse']>; chapters: Array<components['schemas']['AuthorBookChapterHeatmapCellResponse']> };
-    GetAuthorDashboardSummaryResponseDto: { totalBooks: number; publishedBooks: number; pendingReviewBooks: number; totalReadingMinutes: number; authorCents: number };
   };
 }

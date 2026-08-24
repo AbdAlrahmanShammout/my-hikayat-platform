@@ -404,6 +404,7 @@ export interface components {
     UpdateCollectionRequestDto: { title?: string };
     AddCollectionBookRequestDto: { bookId: number };
     ReorderCollectionBooksRequestDto: { bookIds: Array<number> };
+    GetAdminDashboardSummaryResponseDto: { totalUsers: number; totalPublishers: number; totalBooks: number; publishedBooks: number; pendingReviewBooks: number; totalReadingMinutes: number };
     RevenuePeriodResponse: { id: number; createdAt: string; updatedAt: string; startsAt: string; endsAt: string; status: "open" | "closed"; platformCutPercent: number; poolAmountCents?: unknown | null };
     GetRevenuePeriodsResponseDto: { revenuePeriods: Array<components['schemas']['RevenuePeriodResponse']>; total: number };
     CreateRevenuePeriodRequestDto: { startsAt: string; endsAt: string; platformCutPercent?: number; poolAmountCents?: number };
@@ -424,6 +425,5 @@ export interface components {
     GetAdminInvitationsResponseDto: { invitations: Array<components['schemas']['AdminInvitationResponse']>; total: number };
     CreateAdminInvitationRequestDto: { email: string };
     CreateAdminInvitationResponseDto: { invitation: components['schemas']['AdminInvitationResponse']; token: string };
-    GetAdminDashboardSummaryResponseDto: { totalUsers: number; totalPublishers: number; totalBooks: number; publishedBooks: number; pendingReviewBooks: number; totalReadingMinutes: number };
   };
 }

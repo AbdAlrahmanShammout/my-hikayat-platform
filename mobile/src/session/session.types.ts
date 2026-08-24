@@ -12,7 +12,7 @@ export type User = {
   readonly isPublisher: boolean;
 };
 
-export type SessionStatus = 'loading' | 'signedOut' | 'signedIn';
+export type SessionStatus = 'loading' | 'signedOut' | 'signedIn' | 'restoreFailed';
 
 export type SessionValue = {
   readonly status: SessionStatus;
@@ -21,5 +21,7 @@ export type SessionValue = {
   readonly signIn: (input: { readonly email: string; readonly password: string }) => Promise<void>;
   readonly signUp: (input: { readonly email: string; readonly password: string }) => Promise<void>;
   readonly signOut: () => Promise<void>;
+  readonly retryRestore: () => Promise<void>;
+  readonly abandonRestore: () => Promise<void>;
   readonly clearError: () => void;
 };

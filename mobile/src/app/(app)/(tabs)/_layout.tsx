@@ -30,6 +30,8 @@ export default function TabsLayout(): JSX.Element {
         name="home"
         options={{
           title: 'Home',
+          tabBarButtonTestID: 'tab-home',
+          tabBarAccessibilityLabel: 'Home tab',
           tabBarIcon: ({ color }) => <TabIcon label="H" color={color} />,
         }}
       />
@@ -37,6 +39,8 @@ export default function TabsLayout(): JSX.Element {
         name="library"
         options={{
           title: 'My books',
+          tabBarButtonTestID: 'tab-library',
+          tabBarAccessibilityLabel: 'Library tab',
           tabBarIcon: ({ color }) => <TabIcon label="B" color={color} />,
         }}
       />
@@ -44,6 +48,8 @@ export default function TabsLayout(): JSX.Element {
         name="profile"
         options={{
           title: 'Me',
+          tabBarButtonTestID: 'tab-profile',
+          tabBarAccessibilityLabel: 'Profile tab',
           tabBarIcon: ({ color }) => <TabIcon label="M" color={color} />,
         }}
       />

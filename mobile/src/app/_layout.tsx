@@ -1,12 +1,17 @@
 import { QueryClientProvider } from '@tanstack/react-query';
+import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useState, type JSX } from 'react';
+import { useEffect, useState, type JSX, type ReactNode } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { createQueryClient } from '@/api/query-client';
+import { AppErrorBoundary } from '@/root/app-error-boundary';
 import { SessionProvider } from '@/session/session-provider';
+import { useSession } from '@/session/use-session';
+
+void SplashScreen.preventAutoHideAsync();
 
 /**
  * Root layout: providers + route stack. No feature workflows here.
@@ -15,14 +20,36 @@ export default function RootLayout(): JSX.Element {
   const [queryClient] = useState(() => createQueryClient());
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
-          <SessionProvider>
-            <Stack screenOptions={{ headerShown: false }} />
-            <StatusBar style="dark" />
-          </SessionProvider>
-        </QueryClientProvider>
-      </SafeAreaProvider>
+      <AppErrorBoundary>
+        <SafeAreaProvider>
+          <QueryClientProvider client={queryClient}>
+            <SessionProvider>
+              <SplashVisibilityGate>
+                <Stack screenOptions={{ headerShown: false }} />
+                <StatusBar style="dark" />
+              </SplashVisibilityGate>
+            </SessionProvider>
+          </QueryClientProvider>
+        </SafeAreaProvider>
+      </AppErrorBoundary>
     </GestureHandlerRootView>
   );
+}
+
+type SplashVisibilityGateProps = {
+  readonly children: ReactNode;
+};
+
+/**
+ * Keeps the native splash visible until the first session routing decision is stable.
+ */
+function SplashVisibilityGate({ children }: SplashVisibilityGateProps): JSX.Element {
+  const { status } = useSession();
+  useEffect(() => {
+    if (status === 'loading') {
+      return;
+    }
+    void SplashScreen.hideAsync();
+  }, [status]);
+  return <>{children}</>;
 }

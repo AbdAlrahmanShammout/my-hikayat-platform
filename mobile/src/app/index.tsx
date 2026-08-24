@@ -1,9 +1,9 @@
 import { Redirect } from 'expo-router';
 import type { JSX } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
+import { SessionRestoreScreen } from '@/session/session-restore-screen';
 import { useSession } from '@/session/use-session';
-import { theme } from '@/theme/theme';
 
 /**
  * Entry redirect after session bootstrap is stable.
@@ -11,23 +11,13 @@ import { theme } from '@/theme/theme';
 export default function IndexRoute(): JSX.Element {
   const { status } = useSession();
   if (status === 'loading') {
-    return (
-      <View style={styles.loading} accessibilityLabel="Loading">
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <View style={{ flex: 1 }} accessibilityLabel="Loading" />;
+  }
+  if (status === 'restoreFailed') {
+    return <SessionRestoreScreen />;
   }
   if (status === 'signedIn') {
     return <Redirect href="/(app)/(tabs)/home" />;
   }
   return <Redirect href="/(public)/sign-in" />;
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.background,
-  },
-});

@@ -13,7 +13,9 @@
     "lint": "eslint .",
     "test": "jest",
     "test:watch": "jest --watch",
-    "build": "tsc --noEmit"
+    "build": "tsc --noEmit",
+    "e2e:metro": "./e2e/start-metro.sh",
+    "e2e:maestro": "./e2e/run-maestro.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.0",
@@ -23,6 +25,7 @@
     "expo-linking": "~8.0.12",
     "expo-router": "~6.0.24",
     "expo-secure-store": "~15.0.8",
+    "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.8",
     "react": "19.1.0",
     "react-dom": "19.1.0",

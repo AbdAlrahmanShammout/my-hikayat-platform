@@ -1,5 +1,6 @@
 import { useState, type JSX } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
@@ -21,20 +22,25 @@ export function ProfileScreen(): JSX.Element {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title} accessibilityRole="header">
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']} testID="shell-profile-screen">
+      <Text style={styles.title} accessibilityRole="header" testID="shell-profile-title">
         Me
       </Text>
       <Text style={styles.label}>Email</Text>
-      <Text style={styles.value}>{user?.email ?? '—'}</Text>
+      <Text style={styles.value} testID="shell-profile-email">
+        {user?.email ?? '—'}
+      </Text>
       <Text style={styles.label}>Role</Text>
-      <Text style={styles.value}>{user?.role ?? '—'}</Text>
+      <Text style={styles.value} testID="shell-profile-role">
+        {user?.role ?? '—'}
+      </Text>
       <Pressable
         style={[styles.button, isSigningOut ? styles.buttonDisabled : null]}
         onPress={() => {
           void handleSignOut();
         }}
         disabled={isSigningOut}
+        testID="shell-sign-out-button"
         accessibilityRole="button"
         accessibilityLabel="Sign out"
       >
@@ -44,7 +50,7 @@ export function ProfileScreen(): JSX.Element {
           <Text style={styles.buttonLabel}>Sign out</Text>
         )}
       </Pressable>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -53,7 +59,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
     paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.xxxl,
     gap: theme.spacing.xs,
   },
   title: {

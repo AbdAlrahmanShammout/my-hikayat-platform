@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
   useCallback,
@@ -32,15 +33,26 @@ type SessionProviderProps = {
  * Owns hydrate → /auth/me gate, login/register session writes, and sign-out.
  */
 export function SessionProvider({ children }: SessionProviderProps): JSX.Element {
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<SessionStatus>('loading');
   const [user, setUser] = useState<User | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const clearAuthenticatedCache = useCallback((): void => {
+    queryClient.clear();
+  }, [queryClient]);
+
+  const applySignedOut = useCallback((): void => {
+    setUser(null);
+    setStatus('signedOut');
+    clearAuthenticatedCache();
+  }, [clearAuthenticatedCache]);
+
   const refreshFromToken = useCallback(async (): Promise<void> => {
     const accessToken: string | null = readAccessToken();
     if (accessToken === null) {
-      setUser(null);
-      setStatus('signedOut');
+      applySignedOut();
+      setErrorMessage(null);
       return;
     }
     try {
@@ -49,13 +61,18 @@ export function SessionProvider({ children }: SessionProviderProps): JSX.Element
       setStatus('signedIn');
       setErrorMessage(null);
     } catch (error: unknown) {
-      setUser(null);
-      setStatus('signedOut');
-      if (!(error instanceof ApiError && error.isUnauthenticated)) {
-        setErrorMessage(error instanceof Error ? error.message : 'Could not restore your session.');
+      if (error instanceof ApiError && error.isUnauthenticated) {
+        applySignedOut();
+        setErrorMessage(null);
+        return;
       }
+      setUser(null);
+      setStatus('restoreFailed');
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Could not restore your session. Check your connection.',
+      );
     }
-  }, []);
+  }, [applySignedOut]);
 
   useEffect(() => {
     let isMounted = true;
@@ -70,13 +87,14 @@ export function SessionProvider({ children }: SessionProviderProps): JSX.Element
       if (readAccessToken() === null) {
         setUser(null);
         setStatus('signedOut');
+        clearAuthenticatedCache();
       }
     });
     return () => {
       isMounted = false;
       unsubscribe();
     };
-  }, [refreshFromToken]);
+  }, [refreshFromToken, clearAuthenticatedCache]);
 
   const applySession = useCallback(async (session: AuthSession): Promise<void> => {
     await writeAccessToken(session.accessToken);
@@ -88,13 +106,8 @@ export function SessionProvider({ children }: SessionProviderProps): JSX.Element
   const signIn = useCallback(
     async (input: { readonly email: string; readonly password: string }): Promise<void> => {
       setErrorMessage(null);
-      try {
-        const session: AuthSession = await login(input);
-        await applySession(session);
-      } catch (error: unknown) {
-        setErrorMessage(toUserFacingMessage(error, 'Could not sign in. Check your email and password.'));
-        throw error;
-      }
+      const session: AuthSession = await login(input);
+      await applySession(session);
     },
     [applySession],
   );
@@ -102,23 +115,29 @@ export function SessionProvider({ children }: SessionProviderProps): JSX.Element
   const signUp = useCallback(
     async (input: { readonly email: string; readonly password: string }): Promise<void> => {
       setErrorMessage(null);
-      try {
-        const session: AuthSession = await register(input);
-        await applySession(session);
-      } catch (error: unknown) {
-        setErrorMessage(toUserFacingMessage(error, 'Could not create your account.'));
-        throw error;
-      }
+      const session: AuthSession = await register(input);
+      await applySession(session);
     },
     [applySession],
   );
 
   const signOut = useCallback(async (): Promise<void> => {
     await clearAccessToken();
-    setUser(null);
-    setStatus('signedOut');
+    applySignedOut();
     setErrorMessage(null);
-  }, []);
+  }, [applySignedOut]);
+
+  const retryRestore = useCallback(async (): Promise<void> => {
+    setStatus('loading');
+    setErrorMessage(null);
+    await refreshFromToken();
+  }, [refreshFromToken]);
+
+  const abandonRestore = useCallback(async (): Promise<void> => {
+    await clearAccessToken();
+    applySignedOut();
+    setErrorMessage(null);
+  }, [applySignedOut]);
 
   const clearError = useCallback((): void => {
     setErrorMessage(null);
@@ -132,20 +151,12 @@ export function SessionProvider({ children }: SessionProviderProps): JSX.Element
       signIn,
       signUp,
       signOut,
+      retryRestore,
+      abandonRestore,
       clearError,
     }),
-    [status, user, errorMessage, signIn, signUp, signOut, clearError],
+    [status, user, errorMessage, signIn, signUp, signOut, retryRestore, abandonRestore, clearError],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
-}
-
-function toUserFacingMessage(error: unknown, fallback: string): string {
-  if (error instanceof ApiError) {
-    return error.message;
-  }
-  if (error instanceof Error && error.message.trim() !== '') {
-    return error.message;
-  }
-  return fallback;
 }
