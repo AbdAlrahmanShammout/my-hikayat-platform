@@ -1,5 +1,6 @@
 import * as WebBrowser from 'expo-web-browser';
 
+import { ApiError } from '@/api/api-error';
 import { startReaderCheckout } from '@/features/billing/api/start-reader-checkout';
 import {
   CHECKOUT_CANCEL_URL,
@@ -54,6 +55,17 @@ export async function executeStripeCheckoutFlow(): Promise<StartCheckoutFlowResu
 }
 
 function mapCheckoutStartError(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.code === 'SUBSCRIPTION_ALREADY_PAID') {
+      return 'This plan is already active. Full-book reading follows the server.';
+    }
+    if (error.code === 'CHECKOUT_RETURN_URL_INVALID') {
+      return 'Checkout return links are not configured correctly.';
+    }
+    if (error.message.trim().length > 0) {
+      return error.message;
+    }
+  }
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
   }

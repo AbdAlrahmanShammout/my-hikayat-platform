@@ -72,6 +72,7 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 45 | Mobile Smart Resume/sync reliability + Continue CTA (R4) | Complete |
 | 46 | Mobile subscription status + refund (R5) | Complete |
 | 47 | Mobile Stripe Checkout + checkout return allowlist (R5) | Complete |
+| 48 | Mobile entitlement-denied → Subscribe path (R5) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1566,6 +1567,28 @@ subscription status refreshes from the API; typecheck/lint/unit tests pass.
 
 ---
 
+## STEP 48 — Mobile entitlement-denied → Subscribe path (R5)
+
+**Goal:** When open-book is denied for missing paid access, guide the reader to
+Profile Subscribe (Stripe Checkout) without inventing client entitlement rules.
+
+**Architecture:** Backend remains source of truth (`FULL_BOOK_ACCESS_DENIED` /
+403). Mobile only routes to Profile billing UI from STEP 46–47.
+
+**In scope:**
+
+- Entitlement-denied CTA → Profile tab
+- Clearer checkout “already paid” messaging from backend conflict codes
+- Kids-friendly copy (ask a grown-up)
+
+**Out of scope:** Client entitlement math, cancel-without-refund, R6,
+Maestro/E2E, FR-* polish.
+
+**Done when:** denied open-book offers a path to Profile Subscribe;
+typecheck/lint/unit tests pass.
+
+---
+
 ## Future reader improvements (backlog — not scheduled STEPs)
 
 Recorded after STEP 40/41 so they are not forgotten. These are **future**
@@ -1585,7 +1608,7 @@ explicitly pulls one in. Do not invent duplicate STEPs for completed 37–41 wor
 
 ## Out of scope for this list
 
-- Remaining R5 polish if any, R6 offline
+- R6 offline (after R5 STEPs 46–48)
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
 - Recalculating publisher earnings in the browser
@@ -1632,3 +1655,5 @@ STEP 46 (mobile subscription status + refund) starts R5 using existing billing
 APIs. Stripe Checkout return-URL strategy is a separate decision before STEP 47.
 STEP 47 (mobile Stripe Checkout + checkout return allowlist) depends on STEP 46
 and uses `APP_CHECKOUT_RETURN_ORIGINS` with `reader://` deep links.
+STEP 48 (entitlement-denied → Subscribe) depends on STEPs 46–47 and finishes
+the R5 subscribe loop from open-book denials.

@@ -20,7 +20,8 @@ export function mapOpenReaderError(error: unknown): MappedOpenReaderError {
     if (error.code === 'FULL_BOOK_ACCESS_DENIED' || error.statusCode === 403) {
       return {
         kind: 'entitlement_denied',
-        message: 'You need an active subscription to read this book.',
+        message:
+          'You need an active subscription to read this book. Ask a grown-up to Subscribe on Profile.',
       };
     }
     if (error.code === 'READING_SESSION_ALREADY_OPEN') {

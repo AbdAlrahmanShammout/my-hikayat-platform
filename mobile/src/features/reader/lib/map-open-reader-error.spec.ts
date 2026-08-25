@@ -12,6 +12,7 @@ describe('mapOpenReaderError', () => {
       }),
     );
     expect(actual.kind).toBe('entitlement_denied');
+    expect(actual.message).toContain('Subscribe on Profile');
   });
 
   it('maps layout unavailable', () => {

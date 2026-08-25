@@ -69,7 +69,19 @@ export function OpenReaderScreen(): JSX.Element {
         <Text style={styles.error} testID="reader-open-error">
           {mapped.message}
         </Text>
-        {mapped.kind !== 'entitlement_denied' ? (
+        {mapped.kind === 'entitlement_denied' ? (
+          <Pressable
+            style={styles.primaryButton}
+            onPress={() => {
+              router.replace('/(app)/(tabs)/profile' as Href);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Go to subscription on Profile"
+            testID="reader-subscribe-profile-button"
+          >
+            <Text style={styles.primaryLabel}>Go to Subscribe</Text>
+          </Pressable>
+        ) : (
           <Pressable
             style={styles.primaryButton}
             onPress={() => {
@@ -81,7 +93,7 @@ export function OpenReaderScreen(): JSX.Element {
           >
             <Text style={styles.primaryLabel}>Try again</Text>
           </Pressable>
-        ) : null}
+        )}
         <CloseWithoutSession />
       </SafeAreaView>
     );
