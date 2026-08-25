@@ -17,6 +17,10 @@ export class AppConfigService extends BaseConfigService {
     return this.getValue<string[]>('app.allowedOrigins');
   }
 
+  get checkoutReturnOrigins(): string[] {
+    return this.getValue<string[]>('app.checkoutReturnOrigins');
+  }
+
   get publicOrigin(): string {
     return this.getValue<string>('app.publicOrigin');
   }

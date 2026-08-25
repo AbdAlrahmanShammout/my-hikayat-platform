@@ -95,7 +95,7 @@ describe('SubscriptionBillingService', () => {
     refundPaidSubscription: jest.Mock;
     cancelPaidSubscription: jest.Mock;
   };
-  let mockAppConfigService: { allowedOrigins: string[] };
+  let mockAppConfigService: { allowedOrigins: string[]; checkoutReturnOrigins: string[] };
   let mockAuditLogService: { append: jest.Mock };
   let mockTransactionRunner: { run: jest.Mock };
   let subscriptionBillingService: SubscriptionBillingService;
@@ -122,7 +122,10 @@ describe('SubscriptionBillingService', () => {
       refundPaidSubscription: jest.fn(),
       cancelPaidSubscription: jest.fn(),
     };
-    mockAppConfigService = { allowedOrigins: ['http://localhost:3000'] };
+    mockAppConfigService = {
+      allowedOrigins: ['http://localhost:3000'],
+      checkoutReturnOrigins: ['http://localhost:3000', 'reader://'],
+    };
     mockAuditLogService = { append: jest.fn() };
     mockTransactionRunner = {
       run: jest.fn(async (work: (context: undefined) => Promise<unknown>) => work(undefined)),
@@ -266,6 +269,31 @@ describe('SubscriptionBillingService', () => {
           cancelUrl: 'http://localhost:3000/cancel',
         }),
       ).rejects.toBeInstanceOf(CheckoutReturnUrlInvalidException);
+    });
+
+    it('allows reader deep-link return URLs from the checkout allowlist', async () => {
+      mockUserService.getUserById.mockResolvedValue(createSampleUser());
+      mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
+        createSampleSubscription(),
+      );
+      mockStripeManagerService.createCustomer.mockResolvedValue({ customerId: 'cus_1' });
+      mockSubscriptionService.updateSubscription.mockResolvedValue(createSampleSubscription());
+      mockStripeManagerService.createCheckoutSession.mockResolvedValue({
+        checkoutSessionId: 'cs_reader',
+        url: 'https://checkout.stripe.test/cs_reader',
+      });
+      const actualResult = await subscriptionBillingService.startCheckout({
+        userId: 5,
+        successUrl: 'reader://billing/success',
+        cancelUrl: 'reader://billing/cancel',
+      });
+      expect(actualResult).toEqual({ url: 'https://checkout.stripe.test/cs_reader' });
+      expect(mockStripeManagerService.createCheckoutSession).toHaveBeenCalledWith(
+        expect.objectContaining({
+          successUrl: 'reader://billing/success',
+          cancelUrl: 'reader://billing/cancel',
+        }),
+      );
     });
   });
 

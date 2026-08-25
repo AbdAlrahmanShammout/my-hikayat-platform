@@ -90,6 +90,7 @@ npm run build
 | --- | --- |
 | `expo-router` | File-based navigation and deep links |
 | `expo-secure-store` | Persist Bearer access token off the JS heap on native |
+| `expo-web-browser` | Stripe Checkout auth session (`openAuthSessionAsync`) |
 | `react-native-screens` | Native screen primitives (Expo Router peer) |
 | `react-native-safe-area-context` | Safe areas for tab shell |
 | `react-native-gesture-handler` | Gesture root for navigation |

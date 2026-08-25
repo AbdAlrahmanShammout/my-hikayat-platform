@@ -37,6 +37,7 @@ export async function createTestingApp(
       env: input.env,
       port: 3000,
       allowedOrigins: ['http://localhost:3000'],
+      checkoutReturnOrigins: ['reader://', 'http://localhost:3000'],
       publicOrigin: 'http://localhost:5173',
     });
   }

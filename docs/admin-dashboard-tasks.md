@@ -71,6 +71,7 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 44 | Mobile Continue Reading + sync pull (R4) | Complete |
 | 45 | Mobile Smart Resume/sync reliability + Continue CTA (R4) | Complete |
 | 46 | Mobile subscription status + refund (R5) | Complete |
+| 47 | Mobile Stripe Checkout + checkout return allowlist (R5) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1538,6 +1539,33 @@ applicable; typecheck/lint/unit tests pass.
 
 ---
 
+## STEP 47 — Mobile Stripe Checkout + checkout return allowlist (R5)
+
+**Goal:** Start Stripe-hosted Checkout from mobile with deep-link returns
+`reader://billing/success|cancel`, using a dedicated
+`APP_CHECKOUT_RETURN_ORIGINS` allowlist separate from CORS.
+
+**Architecture:** Existing `POST /reader/billing/checkout` + Stripe Checkout
+Session. Mobile uses `WebBrowser.openAuthSessionAsync`. Backend remains
+source of truth for entitlement (webhooks); deep links never grant access.
+
+**In scope:**
+
+- `APP_CHECKOUT_RETURN_ORIGINS` (default includes `reader://` + local web
+  origins for Checkout returns); keep `APP_CORS_ORIGINS` separate
+- Scheme-aware return URL validation (`reader://` origins are opaque/`null`)
+- Mobile Subscribe → Checkout Session → auth session → refetch subscription
+- Success / cancel / dismiss / session-create failure messaging
+- Unit tests for allowlist helper and checkout return mapping
+
+**Out of scope:** Stripe Elements / PaymentSheet, cancel-without-refund,
+R6, Maestro/E2E, FR-* polish.
+
+**Done when:** mobile can open Checkout and return via `reader://` while
+subscription status refreshes from the API; typecheck/lint/unit tests pass.
+
+---
+
 ## Future reader improvements (backlog — not scheduled STEPs)
 
 Recorded after STEP 40/41 so they are not forgotten. These are **future**
@@ -1557,7 +1585,7 @@ explicitly pulls one in. Do not invent duplicate STEPs for completed 37–41 wor
 
 ## Out of scope for this list
 
-- Remaining R5 checkout (blocked on return-URL decision), R6 offline
+- Remaining R5 polish if any, R6 offline
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
 - Recalculating publisher earnings in the browser
@@ -1602,3 +1630,5 @@ STEP 45 (Smart Resume/sync reliability + Continue CTA) depends on STEPs 42–44
 and finishes online R4 resume/sync UX gaps.
 STEP 46 (mobile subscription status + refund) starts R5 using existing billing
 APIs. Stripe Checkout return-URL strategy is a separate decision before STEP 47.
+STEP 47 (mobile Stripe Checkout + checkout return allowlist) depends on STEP 46
+and uses `APP_CHECKOUT_RETURN_ORIGINS` with `reader://` deep links.

@@ -18,6 +18,7 @@ import { PlanEntity } from '@/modules/subscription/entity/plan.entity';
 import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.entity';
 import { PlanKind, SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
 import { CheckoutReturnUrlInvalidException } from '@/modules/subscription/exceptions/checkout-return-url-invalid.exception';
+import { isCheckoutReturnUrlAllowed } from '@/modules/subscription/checkout-return-url.helper';
 import { RefundNotEligibleException } from '@/modules/subscription/exceptions/refund-not-eligible.exception';
 import { RefundWindowExpiredException } from '@/modules/subscription/exceptions/refund-window-expired.exception';
 import { SubscriptionAlreadyPaidException } from '@/modules/subscription/exceptions/subscription-already-paid.exception';
@@ -278,13 +279,10 @@ export class SubscriptionBillingService {
   }
 
   private assertCheckoutReturnUrl(urlValue: string): void {
-    try {
-      const parsed: URL = new URL(urlValue);
-      if (this.appConfigService.allowedOrigins.includes(parsed.origin)) {
-        return;
-      }
-    } catch {
-      throw new CheckoutReturnUrlInvalidException();
+    if (
+      isCheckoutReturnUrlAllowed(urlValue, this.appConfigService.checkoutReturnOrigins)
+    ) {
+      return;
     }
     throw new CheckoutReturnUrlInvalidException();
   }

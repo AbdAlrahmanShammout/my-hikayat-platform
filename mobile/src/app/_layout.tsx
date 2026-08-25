@@ -11,8 +11,10 @@ import { createQueryClient } from '@/api/query-client';
 import { AppErrorBoundary } from '@/root/app-error-boundary';
 import { SessionProvider } from '@/session/session-provider';
 import { useSession } from '@/session/use-session';
+import * as WebBrowser from 'expo-web-browser';
 
 void SplashScreen.preventAutoHideAsync();
+WebBrowser.maybeCompleteAuthSession();
 
 /**
  * Root layout: providers + route stack. No feature workflows here.

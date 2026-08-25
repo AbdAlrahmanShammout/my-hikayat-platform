@@ -8,6 +8,9 @@ process.env.APP_ENV = process.env.APP_ENV ?? Environment.TEST;
 process.env.APP_PORT = process.env.APP_PORT ?? '3000';
 process.env.APP_CORS_ORIGINS =
   process.env.APP_CORS_ORIGINS ?? 'http://localhost:3000,http://localhost:5173';
+process.env.APP_CHECKOUT_RETURN_ORIGINS =
+  process.env.APP_CHECKOUT_RETURN_ORIGINS ??
+  'reader://,http://localhost:3000,http://localhost:5173';
 process.env.APP_PUBLIC_ORIGIN = process.env.APP_PUBLIC_ORIGIN ?? 'http://localhost:5173';
 process.env.DATABASE_URL = process.env.DATABASE_URL ?? DEFAULT_TEST_DATABASE_URL;
 process.env.JWT_ACCESS_SECRET =

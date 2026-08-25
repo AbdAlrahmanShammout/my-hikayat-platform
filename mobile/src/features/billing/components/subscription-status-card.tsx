@@ -12,11 +12,12 @@ import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subsc
 import { theme } from '@/theme/theme';
 
 /**
- * Profile billing card: plan/status from the backend, refund action when plan is monthly.
+ * Profile billing card: plan/status, Stripe Checkout, and refund (server-authoritative).
  */
 export function SubscriptionStatusCard(): JSX.Element {
   const billing = useReaderSubscription();
   const [confirmRefund, setConfirmRefund] = useState<boolean>(false);
+  const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
 
   if (billing.isLoading) {
     return (
@@ -36,13 +37,27 @@ export function SubscriptionStatusCard(): JSX.Element {
         </Text>
         <Pressable
           style={styles.secondaryButton}
-          onPress={billing.refetch}
+          onPress={() => {
+            void billing.refetch();
+          }}
           accessibilityRole="button"
           accessibilityLabel="Retry subscription"
           testID="billing-subscription-retry"
         >
           <Text style={styles.secondaryLabel}>Try again</Text>
         </Pressable>
+        <SubscribeButton
+          isCheckingOut={billing.isCheckingOut}
+          onPress={async () => {
+            const message: string | null = await billing.startCheckout();
+            setCheckoutMessage(message);
+          }}
+        />
+        {checkoutMessage !== null ? (
+          <Text style={styles.note} testID="billing-checkout-message">
+            {checkoutMessage}
+          </Text>
+        ) : null}
       </View>
     );
   }
@@ -72,6 +87,18 @@ export function SubscriptionStatusCard(): JSX.Element {
         Full-book reading follows your plan on the server. Ask a grown-up before
         changing billing.
       </Text>
+      <SubscribeButton
+        isCheckingOut={billing.isCheckingOut}
+        onPress={async () => {
+          const message: string | null = await billing.startCheckout();
+          setCheckoutMessage(message);
+        }}
+      />
+      {checkoutMessage !== null ? (
+        <Text style={styles.note} testID="billing-checkout-message">
+          {checkoutMessage}
+        </Text>
+      ) : null}
       {display.canOfferRefundAction ? (
         confirmRefund ? (
           <View style={styles.confirmBlock}>
@@ -87,11 +114,14 @@ export function SubscriptionStatusCard(): JSX.Element {
               style={[styles.primaryButton, billing.isRefunding ? styles.disabled : null]}
               disabled={billing.isRefunding}
               onPress={() => {
-                void billing.requestRefund().then(() => {
-                  setConfirmRefund(false);
-                }).catch(() => {
-                  // Error surfaces via refundErrorMessage.
-                });
+                void billing
+                  .requestRefund()
+                  .then(() => {
+                    setConfirmRefund(false);
+                  })
+                  .catch(() => {
+                    // Error surfaces via refundErrorMessage.
+                  });
               }}
               accessibilityRole="button"
               accessibilityLabel="Confirm refund request"
@@ -128,12 +158,32 @@ export function SubscriptionStatusCard(): JSX.Element {
             <Text style={styles.secondaryLabel}>Request refund</Text>
           </Pressable>
         )
-      ) : (
-        <Text style={styles.note} testID="billing-subscribe-placeholder">
-          Subscribe checkout comes next. Paid reading still follows the server.
-        </Text>
-      )}
+      ) : null}
     </View>
+  );
+}
+
+function SubscribeButton(input: {
+  readonly isCheckingOut: boolean;
+  readonly onPress: () => Promise<void>;
+}): JSX.Element {
+  return (
+    <Pressable
+      style={[styles.primaryButton, input.isCheckingOut ? styles.disabled : null]}
+      disabled={input.isCheckingOut}
+      onPress={() => {
+        void input.onPress();
+      }}
+      accessibilityRole="button"
+      accessibilityLabel="Subscribe with Stripe Checkout"
+      testID="billing-subscribe-button"
+    >
+      {input.isCheckingOut ? (
+        <ActivityIndicator color={theme.colors.onPrimary} />
+      ) : (
+        <Text style={styles.primaryLabel}>Subscribe</Text>
+      )}
+    </Pressable>
   );
 }
 
@@ -177,6 +227,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.sm,
   },
   primaryLabel: {
     ...theme.typography.button,

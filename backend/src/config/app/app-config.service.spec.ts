@@ -45,6 +45,16 @@ describe('AppConfigService', () => {
     });
   });
 
+  describe('checkoutReturnOrigins', () => {
+    it('returns the dedicated checkout return allowlist', () => {
+      const expectedOrigins: string[] = ['reader://'];
+      mockConfigService.get.mockReturnValue(expectedOrigins);
+      const actualOrigins: string[] = appConfigService.checkoutReturnOrigins;
+      expect(actualOrigins).toEqual(expectedOrigins);
+      expect(mockConfigService.get).toHaveBeenCalledWith('app.checkoutReturnOrigins');
+    });
+  });
+
   describe('publicOrigin', () => {
     it('returns the configured public origin for outbound links', () => {
       mockConfigService.get.mockReturnValue('http://localhost:5173');
