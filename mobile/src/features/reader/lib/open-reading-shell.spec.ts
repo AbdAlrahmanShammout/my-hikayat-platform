@@ -2,6 +2,7 @@ import { ApiError } from '@/api/api-error';
 import { getCatalogBook } from '@/features/catalog/api/get-catalog-book';
 import { createBookAssetDeliveryGrant } from '@/features/reader/api/create-delivery-grant';
 import { getCurrentReadingSession } from '@/features/reader/api/get-current-reading-session';
+import { getReadingProgress } from '@/features/reader/api/get-reading-progress';
 import { startReadingSession } from '@/features/reader/api/start-reading-session';
 
 import { openReadingShell } from './open-reading-shell';
@@ -15,6 +16,9 @@ jest.mock('@/features/reader/api/create-delivery-grant', () => ({
 jest.mock('@/features/reader/api/get-current-reading-session', () => ({
   getCurrentReadingSession: jest.fn(),
 }));
+jest.mock('@/features/reader/api/get-reading-progress', () => ({
+  getReadingProgress: jest.fn(),
+}));
 jest.mock('@/features/reader/api/start-reading-session', () => ({
   startReadingSession: jest.fn(),
 }));
@@ -27,6 +31,7 @@ const mockStartSession = startReadingSession as jest.MockedFunction<typeof start
 const mockGetCurrentSession = getCurrentReadingSession as jest.MockedFunction<
   typeof getCurrentReadingSession
 >;
+const mockGetProgress = getReadingProgress as jest.MockedFunction<typeof getReadingProgress>;
 
 describe('openReadingShell', () => {
   beforeEach(() => {
@@ -34,6 +39,14 @@ describe('openReadingShell', () => {
     mockCreateGrant.mockReset();
     mockStartSession.mockReset();
     mockGetCurrentSession.mockReset();
+    mockGetProgress.mockReset();
+    mockGetProgress.mockRejectedValue(
+      new ApiError({
+        message: 'missing',
+        code: 'RESOURCE_NOT_FOUND',
+        statusCode: 404,
+      }),
+    );
   });
 
   it('opens a reflowable shell and tolerates missing source assets', async () => {
@@ -79,6 +92,66 @@ describe('openReadingShell', () => {
     expect(mockStartSession).toHaveBeenCalledWith({
       bookId: 8,
       body: { spineIndex: 0, scrollOffset: 0 },
+    });
+  });
+
+  it('seeds a new session from saved Smart Resume progress', async () => {
+    mockGetCatalogBook.mockResolvedValue({
+      id: 8,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      title: 'Harbor',
+      description: 'Story',
+      layoutType: 'reflowable',
+      bookType: 'standard_chapter',
+      publishingStatus: 'approved',
+      processingStatus: 'ready',
+      publishedAt: '2026-01-01T00:00:00.000Z',
+      ownerId: 1,
+      categories: [],
+    });
+    mockGetProgress.mockResolvedValue({
+      id: 1,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      userId: 2,
+      bookId: 8,
+      layoutType: 'reflowable',
+      spineIndex: 2,
+      scrollOffset: 180,
+      spreadIndex: null,
+      pageNumber: null,
+      lastSessionAt: '2026-01-02T00:00:00.000Z',
+    });
+    mockStartSession.mockResolvedValue({
+      id: 45,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      userId: 2,
+      bookId: 8,
+      layoutType: 'reflowable',
+      startedAt: '2026-01-01T00:00:00.000Z',
+      endedAt: null,
+      activeDurationMs: 0,
+      idleDurationMs: 0,
+      spineIndex: 2,
+      scrollOffset: 180,
+    });
+    mockCreateGrant.mockResolvedValue({
+      bookId: 8,
+      bookAssetId: 1,
+      kind: 'source',
+      url: 'https://example.test/a',
+      expiresAt: '2026-08-15T16:05:00.000Z',
+      contentType: 'application/epub+zip',
+      byteSize: 10,
+      checksumSha256: null,
+      isEncrypted: true,
+    });
+    await openReadingShell(8);
+    expect(mockStartSession).toHaveBeenCalledWith({
+      bookId: 8,
+      body: { spineIndex: 2, scrollOffset: 180 },
     });
   });
 

@@ -66,6 +66,9 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 39 | Mobile reflowable EPUB engine (R3) | Complete |
 | 40 | Mobile fixed-layout EPUB canvas engine (R3) | Complete |
 | 41 | Mobile reflowable reading controls (R3) | Complete |
+| 42 | Mobile Smart Resume save + restore (R4) | Complete |
+| 43 | Mobile in-reader bookmarks (R4) | Complete |
+| 44 | Mobile Continue Reading + sync pull (R4) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1403,13 +1406,107 @@ typecheck/lint/unit tests pass.
 
 ---
 
+## STEP 42 — Mobile Smart Resume save + restore (R4)
+
+**Goal:** Persist and restore layout-discriminated reading position via existing
+`PUT/GET /reader/books/:id/progress` so reopening a book resumes the last
+saved spine/scroll or spread/page (SRS §4.2).
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md`. Depends on STEPs 37–41 engines.
+**APIs (existing backend):** `PUT/GET /reader/books/:id/progress`.
+
+**In scope:**
+
+- Mobile progress API client (get + save)
+- Seed new reading sessions from saved progress when present
+- Default start position when no progress exists (404)
+- Engines save progress on activity ticks and on leave
+- Layout-correct fields only (reflowable: spine/scroll; fixed: spread/page)
+
+**Out of scope:** Bookmarks UI, multi-book sync pull UI, Continue Reading home
+shelf, conflict UI beyond server last-write-wins, offline, Maestro/E2E, FR-* polish.
+
+**Done when:** closing and reopening a book restores the last saved position;
+typecheck/lint/unit tests pass.
+
+---
+
+## STEP 43 — Mobile in-reader bookmarks (R4)
+
+**Goal:** Let readers create, list, jump to, and delete layout-discriminated
+bookmarks for the open book via existing bookmark APIs (SRS §11).
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md`. Depends on STEP 42 position model
+and STEPs 39–40 engines.
+
+**APIs (existing backend):** `POST/GET/DELETE /reader/books/:id/bookmarks`.
+
+**In scope:**
+
+- Bookmark API clients (create, list, delete)
+- Shared in-reader bookmarks panel
+- Add bookmark at current engine position
+- Jump to bookmark (reflowable spine/scroll; fixed spread/page)
+- Delete bookmark
+- Empty / loading / error states
+
+**Out of scope:** Multi-book bookmark library, sync pull UI, Continue Reading
+home shelf, offline, Maestro/E2E, FR-* polish.
+
+**Done when:** readers can bookmark and return to positions in both engines;
+typecheck/lint/unit tests pass.
+
+---
+
+## STEP 44 — Mobile Continue Reading + sync pull (R4)
+
+**Goal:** Pull `GET /reader/sync` and surface a Continue Reading shelf on Home
+that opens books at their Smart Resume position (SRS §4.2 + §11).
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md`. Depends on STEP 42.
+
+**APIs (existing backend):** `GET /reader/sync` (+ catalog book title lookup).
+
+**In scope:**
+
+- Sync pull API client
+- Sort progress by `lastSessionAt`
+- Continue Reading list on Home (loading / empty / error)
+- Tap opens the open-reader route (resume via STEP 42)
+
+**Out of scope:** Offline cache, conflict UI, bookmark library screen, R5/R6,
+Maestro/E2E, FR-* polish.
+
+**Done when:** Home shows recent progress and continues into the reader;
+typecheck/lint/unit tests pass.
+
+---
+
+## Future reader improvements (backlog — not scheduled STEPs)
+
+Recorded after STEP 40/41 so they are not forgotten. These are **future**
+polish items. Do **not** implement them before R4 unless a later STEP
+explicitly pulls one in. Do not invent duplicate STEPs for completed 37–41 work.
+
+| ID | Item | Notes |
+| --- | --- | --- |
+| FR-1 | Fixed-layout pinch-to-zoom / gesture zoom | STEP 40 ships button zoom only |
+| FR-2 | Fixed-layout RTL navigation polish | SRS §4.1; not started |
+| FR-3 | Fixed-layout dark-theme support | SRS §4.1 “where technically applicable” |
+| FR-4 | PDF fixed-layout rendering | Only if product requires PDF `fixed_layout` sources; STEP 40 fails closed with a clear message |
+| FR-5 | Persisted reflowable reading-preference sync | Font/line/margin/theme are session-local in STEP 41 |
+| FR-6 | In-book search client overlay | Backend search exists; client overlay was out of R3 scope |
+
+---
+
 ## Out of scope for this list
 
-- Reader R4+ features (Smart Resume UI, bookmarks, sync UX), R6 offline,
-  subscriptions UI
+- Reader R5+ features (subscriptions UI), R6 offline
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
 - Recalculating publisher earnings in the browser
+- Future reader polish rows FR-1…FR-6 (see backlog table above) unless a STEP
+  explicitly schedules one
 
 ## Implementation order
 
@@ -1439,3 +1536,9 @@ STEP 40 (mobile fixed-layout EPUB canvas engine) depends on STEP 38 and STEP 37;
 it completes the R3 dual-engine pair with STEP 39.
 STEP 41 (mobile reflowable reading controls) depends on STEP 39 and finishes
 SRS §4.1 reflowable presentation controls within R3.
+STEP 42 (mobile Smart Resume) depends on STEPs 37–41 and starts R4 using the
+existing progress APIs.
+STEP 43 (mobile in-reader bookmarks) depends on STEP 42 position fields and
+STEPs 39–40 engines.
+STEP 44 (mobile Continue Reading + sync pull) depends on STEP 42 and uses
+`GET /reader/sync` for the Home shelf.

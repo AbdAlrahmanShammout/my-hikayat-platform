@@ -26,6 +26,9 @@ import {
   toggleReaderTheme,
   type ReflowableReaderSettings,
 } from '@/features/reader/lib/reflowable-reader-settings';
+import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-reading-progress-best-effort';
+import { ReaderBookmarksPanel } from '@/features/reader/components/reader-bookmarks-panel';
+import type { ReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
 import { theme } from '@/theme/theme';
 
 type ReflowableReaderEngineProps = {
@@ -280,13 +283,16 @@ export function ReflowableReaderEngine({
         style={[styles.webview, { backgroundColor: webBackground }]}
         originWhitelist={['about:blank']}
         source={{ html, baseUrl: 'about:blank' }}
-        javaScriptEnabled={false}
+        javaScriptEnabled
         domStorageEnabled={false}
         allowFileAccess={false}
         allowFileAccessFromFileURLs={false}
         allowUniversalAccessFromFileURLs={false}
         setSupportMultipleWindows={false}
         startInLoadingState
+        injectedJavaScript={
+          scrollOffset > 0 ? `window.scrollTo(0, ${scrollOffset}); true;` : 'true;'
+        }
         testID="reader-reflowable-webview"
         onScroll={(event) => {
           const nextOffset: number = Math.max(0, Math.round(event.nativeEvent.contentOffset.y));
@@ -322,6 +328,24 @@ export function ReflowableReaderEngine({
         >
           <Text style={styles.navLabel}>Next</Text>
         </Pressable>
+        <ReaderBookmarksPanel
+          bookId={book.id}
+          layoutType="reflowable"
+          currentPosition={{
+            kind: 'reflowable',
+            spineIndex,
+            scrollOffset,
+          }}
+          onJump={(bookmark: ReadingBookmark) => {
+            const nextSpine: number = clampSpineIndex(
+              coerceNonNegativeInt(bookmark.spineIndex, 0),
+              loadState.epub.chapters.length,
+            );
+            setSpineIndex(nextSpine);
+            setScrollOffset(coerceNonNegativeInt(bookmark.scrollOffset, 0));
+            activeStartedAtRef.current = Date.now();
+          }}
+        />
         <CloseButton onClose={onClose} />
       </View>
     </View>
@@ -371,23 +395,29 @@ async function reportActivity(input: {
   const now: number = Date.now();
   const activeDurationMs: number = Math.max(0, now - input.activeStartedAtRef.current);
   input.activeStartedAtRef.current = now;
-  if (activeDurationMs === 0) {
-    return;
+  if (activeDurationMs > 0) {
+    try {
+      await ingestReadingActivity({
+        bookId: input.bookId,
+        sessionId: input.sessionId,
+        body: {
+          activeDurationMs,
+          idleDurationMs: 0,
+          spineIndex: input.spineIndexRef.current,
+          scrollOffset: input.scrollOffsetRef.current,
+        },
+      });
+    } catch {
+      // Activity ingest is best-effort; reading continues if it fails.
+    }
   }
-  try {
-    await ingestReadingActivity({
-      bookId: input.bookId,
-      sessionId: input.sessionId,
-      body: {
-        activeDurationMs,
-        idleDurationMs: 0,
-        spineIndex: input.spineIndexRef.current,
-        scrollOffset: input.scrollOffsetRef.current,
-      },
-    });
-  } catch {
-    // Activity ingest is best-effort; reading continues if it fails.
-  }
+  await saveReadingProgressBestEffort({
+    bookId: input.bookId,
+    body: {
+      spineIndex: input.spineIndexRef.current,
+      scrollOffset: input.scrollOffsetRef.current,
+    },
+  });
 }
 
 function coerceNonNegativeInt(value: unknown, fallback: number): number {

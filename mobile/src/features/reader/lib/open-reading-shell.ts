@@ -11,6 +11,7 @@ import {
   type ReadingSession,
 } from '@/features/reader/api/start-reading-session';
 import { buildStartSessionBody } from '@/features/reader/lib/build-start-session-body';
+import { findReadingProgress } from '@/features/reader/lib/find-reading-progress';
 import {
   isBookLayoutType,
   resolveReaderEngine,
@@ -25,8 +26,8 @@ export type OpenReadingShellResult = {
 };
 
 /**
- * Opens the reading shell: catalog book → session → layout engine.
- * Delivery grant is best-effort for later engines; missing source is not entitlement.
+ * Opens the reading shell: catalog book → Smart Resume → session → layout engine.
+ * Delivery grant is best-effort for engines; missing source is not entitlement.
  */
 export async function openReadingShell(bookId: number): Promise<OpenReadingShellResult> {
   const book: CatalogBook = await getCatalogBook(bookId);
@@ -54,10 +55,11 @@ async function startOrResumeSession(
   bookId: number,
   layoutType: 'reflowable' | 'fixed_layout',
 ): Promise<ReadingSession> {
+  const progress = await findReadingProgress(bookId);
   try {
     return await startReadingSession({
       bookId,
-      body: buildStartSessionBody(layoutType),
+      body: buildStartSessionBody(layoutType, progress),
     });
   } catch (error: unknown) {
     if (error instanceof ApiError && error.code === 'READING_SESSION_ALREADY_OPEN') {

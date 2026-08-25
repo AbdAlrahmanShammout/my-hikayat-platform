@@ -26,6 +26,9 @@ import type {
   ParsedFixedLayoutPage,
   ParsedFixedLayoutSpread,
 } from '@/features/reader/lib/parse-fixed-layout-epub';
+import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-reading-progress-best-effort';
+import { ReaderBookmarksPanel } from '@/features/reader/components/reader-bookmarks-panel';
+import type { ReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
 import { theme } from '@/theme/theme';
 
 type FixedLayoutReaderEngineProps = {
@@ -349,6 +352,31 @@ export function FixedLayoutReaderEngine({
         >
           <Text style={styles.navLabel}>Zoom +</Text>
         </Pressable>
+        <ReaderBookmarksPanel
+          bookId={book.id}
+          layoutType="fixed_layout"
+          currentPosition={{
+            kind: 'fixed_layout',
+            spreadIndex,
+            pageNumber,
+          }}
+          onJump={(bookmark: ReadingBookmark) => {
+            const nextSpread: number = clampIndex(
+              coerceNonNegativeInt(bookmark.spreadIndex, 0),
+              loadState.epub.spreads.length,
+            );
+            setSpreadIndex(nextSpread);
+            setPageNumber(
+              resolvePageNumberForSpread(
+                loadState.epub,
+                nextSpread,
+                coercePositiveInt(bookmark.pageNumber, 1),
+              ),
+            );
+            setZoom(MIN_ZOOM);
+            activeStartedAtRef.current = Date.now();
+          }}
+        />
         <CloseButton onClose={onClose} />
       </View>
     </View>
@@ -408,37 +436,43 @@ async function reportFixedLayoutActivity(input: {
   const now: number = Date.now();
   const activeDurationMs: number = Math.max(0, now - input.activeStartedAtRef.current);
   input.activeStartedAtRef.current = now;
-  if (activeDurationMs === 0) {
-    return;
+  if (activeDurationMs > 0) {
+    try {
+      await ingestReadingActivity({
+        bookId: input.bookId,
+        sessionId: input.sessionId,
+        body: {
+          activeDurationMs,
+          idleDurationMs: 0,
+          spreadIndex: input.spreadIndexRef.current,
+          pageNumber: input.pageNumberRef.current,
+        },
+      });
+    } catch {
+      // Activity ingest is best-effort; reading continues if it fails.
+    }
+    try {
+      await ingestReadingVisualEngagement({
+        bookId: input.bookId,
+        sessionId: input.sessionId,
+        body: {
+          spreadIndex: input.spreadIndexRef.current,
+          pageNumber: input.pageNumberRef.current,
+          activeDurationMs,
+          visualSceneTimeMs: activeDurationMs,
+        },
+      });
+    } catch {
+      // Visual engagement ingest is best-effort; reading continues if it fails.
+    }
   }
-  try {
-    await ingestReadingActivity({
-      bookId: input.bookId,
-      sessionId: input.sessionId,
-      body: {
-        activeDurationMs,
-        idleDurationMs: 0,
-        spreadIndex: input.spreadIndexRef.current,
-        pageNumber: input.pageNumberRef.current,
-      },
-    });
-  } catch {
-    // Activity ingest is best-effort; reading continues if it fails.
-  }
-  try {
-    await ingestReadingVisualEngagement({
-      bookId: input.bookId,
-      sessionId: input.sessionId,
-      body: {
-        spreadIndex: input.spreadIndexRef.current,
-        pageNumber: input.pageNumberRef.current,
-        activeDurationMs,
-        visualSceneTimeMs: activeDurationMs,
-      },
-    });
-  } catch {
-    // Visual engagement ingest is best-effort; reading continues if it fails.
-  }
+  await saveReadingProgressBestEffort({
+    bookId: input.bookId,
+    body: {
+      spreadIndex: input.spreadIndexRef.current,
+      pageNumber: input.pageNumberRef.current,
+    },
+  });
 }
 
 function resolvePageNumberForSpread(
