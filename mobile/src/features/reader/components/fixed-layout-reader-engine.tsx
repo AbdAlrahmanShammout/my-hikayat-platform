@@ -27,6 +27,7 @@ import type {
   ParsedFixedLayoutSpread,
 } from '@/features/reader/lib/parse-fixed-layout-epub';
 import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-reading-progress-best-effort';
+import type { ReadingPositionSnapshot } from '@/features/reader/lib/reading-position';
 import { ReaderBookmarksPanel } from '@/features/reader/components/reader-bookmarks-panel';
 import type { ReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
 import { theme } from '@/theme/theme';
@@ -36,6 +37,7 @@ type FixedLayoutReaderEngineProps = {
   readonly session: ReadingSession;
   readonly deliveryGrant: BookAssetDeliveryGrant | null;
   readonly onClose: () => void;
+  readonly onPositionChange?: (position: ReadingPositionSnapshot) => void;
 };
 
 type LoadState =
@@ -60,6 +62,7 @@ export function FixedLayoutReaderEngine({
   session,
   deliveryGrant,
   onClose,
+  onPositionChange,
 }: FixedLayoutReaderEngineProps): JSX.Element {
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' });
   const [spreadIndex, setSpreadIndex] = useState<number>(
@@ -86,6 +89,14 @@ export function FixedLayoutReaderEngine({
   useEffect(() => {
     pageNumberRef.current = pageNumber;
   }, [pageNumber]);
+
+  useEffect(() => {
+    onPositionChange?.({
+      layoutType: 'fixed_layout',
+      spreadIndex,
+      pageNumber,
+    });
+  }, [onPositionChange, pageNumber, spreadIndex]);
 
   useEffect(() => {
     let isCancelled = false;

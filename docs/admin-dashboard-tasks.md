@@ -69,6 +69,7 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 42 | Mobile Smart Resume save + restore (R4) | Complete |
 | 43 | Mobile in-reader bookmarks (R4) | Complete |
 | 44 | Mobile Continue Reading + sync pull (R4) | Complete |
+| 45 | Mobile Smart Resume/sync reliability + Continue CTA (R4) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1482,6 +1483,32 @@ typecheck/lint/unit tests pass.
 
 ---
 
+## STEP 45 — Mobile Smart Resume/sync reliability + Continue CTA (R4)
+
+**Goal:** Close remaining R4 reliability/UX gaps for SRS §4.2 + §11 without
+offline conflict machinery: flush position on close, refresh Continue Reading,
+book-detail Continue CTA, and AppState→Query focus for sync refetch.
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md` §12.1. Depends on STEPs 42–44.
+
+**In scope:**
+
+- Engine position callback + flush progress on reader close
+- End-session body includes final layout position when known
+- Invalidate Continue Reading sync query after close
+- Continue Reading query stays fresh (`staleTime: 0`)
+- Bind AppState to TanStack Query `focusManager`
+- Book detail shows Continue reading when progress exists; remove stale
+  placeholder copy
+
+**Out of scope:** Offline conflict resolution, local sync cache, multi-book
+bookmark library, FR-1…FR-6, R5/R6, Maestro/E2E.
+
+**Done when:** close/reopen and Home/book-detail Continue paths stay consistent
+with saved progress; typecheck/lint/unit tests pass.
+
+---
+
 ## Future reader improvements (backlog — not scheduled STEPs)
 
 Recorded after STEP 40/41 so they are not forgotten. These are **future**
@@ -1542,3 +1569,5 @@ STEP 43 (mobile in-reader bookmarks) depends on STEP 42 position fields and
 STEPs 39–40 engines.
 STEP 44 (mobile Continue Reading + sync pull) depends on STEP 42 and uses
 `GET /reader/sync` for the Home shelf.
+STEP 45 (Smart Resume/sync reliability + Continue CTA) depends on STEPs 42–44
+and finishes online R4 resume/sync UX gaps.

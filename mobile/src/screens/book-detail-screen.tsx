@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import type { JSX } from 'react';
 import {
@@ -12,15 +13,27 @@ import {
 import { ApiError } from '@/api/api-error';
 import { useCatalogBook } from '@/features/catalog/hooks/use-catalog-book';
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
+import { findReadingProgress } from '@/features/reader/lib/find-reading-progress';
 import { theme } from '@/theme/theme';
 
 /**
- * Catalog book detail. Opens the R3 reading shell when the reader taps Read.
+ * Catalog book detail. Opens the reading shell; Continue reading when progress exists.
  */
 export function BookDetailScreen(): JSX.Element {
   const params = useLocalSearchParams<{ bookId: string }>();
   const bookId: number | null = parseBookIdParam(params.bookId);
   const bookQuery = useCatalogBook(bookId);
+  const progressQuery = useQuery({
+    queryKey: ['reader', 'progress', bookId],
+    queryFn: async () => {
+      if (bookId === null) {
+        return null;
+      }
+      return findReadingProgress(bookId);
+    },
+    enabled: bookId !== null,
+    staleTime: 0,
+  });
 
   if (bookId === null) {
     return (
@@ -75,6 +88,8 @@ export function BookDetailScreen(): JSX.Element {
       : book.layoutType === 'fixed_layout'
         ? 'Fixed layout'
         : 'Layout not ready';
+  const hasProgress: boolean = progressQuery.data !== null && progressQuery.data !== undefined;
+  const readLabel: string = hasProgress ? 'Continue reading' : 'Read';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -96,13 +111,15 @@ export function BookDetailScreen(): JSX.Element {
           router.push(`/(app)/books/read/${book.id}` as Href);
         }}
         accessibilityRole="button"
-        accessibilityLabel="Read book"
+        accessibilityLabel={readLabel}
         testID="book-detail-read-button"
       >
-        <Text style={styles.primaryLabel}>Read</Text>
+        <Text style={styles.primaryLabel}>{readLabel}</Text>
       </Pressable>
-      <Text style={styles.note}>
-        Reading opens a placeholder engine in this STEP. Full page rendering comes next.
+      <Text style={styles.note} testID="book-detail-resume-note">
+        {hasProgress
+          ? 'You will pick up where you left off.'
+          : 'Reading opens in the layout-correct engine for this book.'}
       </Text>
     </ScrollView>
   );
@@ -129,15 +146,9 @@ function BackButton(): JSX.Element {
 
 function toUserFacingMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    if (error.statusCode === 404) {
-      return 'That book is not available.';
-    }
     return error.message;
   }
-  if (error instanceof Error && error.message.trim() !== '') {
-    return error.message;
-  }
-  return 'Could not load this book.';
+  return 'Something went wrong. Please try again.';
 }
 
 const styles = StyleSheet.create({
@@ -147,8 +158,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.xxxl,
-    paddingBottom: theme.spacing.xxxl,
+    paddingBottom: theme.spacing.xl,
     gap: theme.spacing.sm,
   },
   centered: {
@@ -163,44 +173,31 @@ const styles = StyleSheet.create({
     ...theme.typography.title,
     color: theme.colors.textPrimary,
   },
+  body: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+  },
   meta: {
     fontSize: 16,
     color: theme.colors.textMuted,
   },
-  body: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
-  },
   note: {
     ...theme.typography.body,
-    fontSize: 16,
     color: theme.colors.textMuted,
-    marginTop: theme.spacing.md,
   },
   error: {
     ...theme.typography.body,
     color: theme.colors.danger,
     textAlign: 'center',
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
-    justifyContent: 'center',
-    marginBottom: theme.spacing.xs,
-  },
-  backLabel: {
-    ...theme.typography.link,
-    color: theme.colors.primaryMuted,
-  },
   primaryButton: {
-    marginTop: theme.spacing.md,
     minHeight: theme.controlMinHeight,
     borderRadius: theme.radii.control,
     backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.sm,
   },
   primaryLabel: {
     ...theme.typography.button,
@@ -210,13 +207,25 @@ const styles = StyleSheet.create({
     minHeight: theme.controlMinHeight,
     minWidth: 160,
     borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.lg,
   },
   secondaryLabel: {
     ...theme.typography.button,
-    color: theme.colors.onPrimary,
+    color: theme.colors.primary,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    justifyContent: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+  backLabel: {
+    ...theme.typography.button,
+    color: theme.colors.primary,
   },
 });

@@ -27,6 +27,7 @@ import {
   type ReflowableReaderSettings,
 } from '@/features/reader/lib/reflowable-reader-settings';
 import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-reading-progress-best-effort';
+import type { ReadingPositionSnapshot } from '@/features/reader/lib/reading-position';
 import { ReaderBookmarksPanel } from '@/features/reader/components/reader-bookmarks-panel';
 import type { ReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
 import { theme } from '@/theme/theme';
@@ -36,6 +37,7 @@ type ReflowableReaderEngineProps = {
   readonly session: ReadingSession;
   readonly deliveryGrant: BookAssetDeliveryGrant | null;
   readonly onClose: () => void;
+  readonly onPositionChange?: (position: ReadingPositionSnapshot) => void;
 };
 
 type LoadState =
@@ -57,6 +59,7 @@ export function ReflowableReaderEngine({
   session,
   deliveryGrant,
   onClose,
+  onPositionChange,
 }: ReflowableReaderEngineProps): JSX.Element {
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' });
   const [spineIndex, setSpineIndex] = useState<number>(
@@ -81,6 +84,14 @@ export function ReflowableReaderEngine({
   useEffect(() => {
     scrollOffsetRef.current = scrollOffset;
   }, [scrollOffset]);
+
+  useEffect(() => {
+    onPositionChange?.({
+      layoutType: 'reflowable',
+      spineIndex,
+      scrollOffset,
+    });
+  }, [onPositionChange, scrollOffset, spineIndex]);
 
   useEffect(() => {
     let isCancelled = false;

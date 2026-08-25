@@ -21,6 +21,7 @@ export function useContinueReading(): {
       const snapshot = await getReadingSync();
       return sortProgressByLastSession(snapshot.progress).slice(0, CONTINUE_READING_LIMIT);
     },
+    staleTime: 0,
   });
   return {
     items: query.data ?? [],

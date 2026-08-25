@@ -6,6 +6,7 @@ import { useEffect, useState, type JSX, type ReactNode } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { bindQueryFocusManager } from '@/api/bind-query-focus-manager';
 import { createQueryClient } from '@/api/query-client';
 import { AppErrorBoundary } from '@/root/app-error-boundary';
 import { SessionProvider } from '@/session/session-provider';
@@ -18,6 +19,7 @@ void SplashScreen.preventAutoHideAsync();
  */
 export default function RootLayout(): JSX.Element {
   const [queryClient] = useState(() => createQueryClient());
+  useEffect(() => bindQueryFocusManager(), []);
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppErrorBoundary>

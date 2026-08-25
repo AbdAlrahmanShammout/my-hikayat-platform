@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
-import { useState, type JSX } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useRef, useState, type JSX } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -14,6 +15,12 @@ import { ReflowableReaderEngine } from '@/features/reader/components/reflowable-
 import { endReadingSession } from '@/features/reader/api/end-reading-session';
 import { useOpenReadingShell } from '@/features/reader/hooks/use-open-reading-shell';
 import { mapOpenReaderError } from '@/features/reader/lib/map-open-reader-error';
+import {
+  toEndSessionBody,
+  toSaveProgressBody,
+  type ReadingPositionSnapshot,
+} from '@/features/reader/lib/reading-position';
+import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-reading-progress-best-effort';
 import { theme } from '@/theme/theme';
 
 /**
@@ -23,7 +30,12 @@ export function OpenReaderScreen(): JSX.Element {
   const params = useLocalSearchParams<{ bookId: string }>();
   const bookId: number | null = parseBookIdParam(params.bookId);
   const openQuery = useOpenReadingShell(bookId);
+  const queryClient = useQueryClient();
   const [isClosing, setIsClosing] = useState<boolean>(false);
+  const positionRef = useRef<ReadingPositionSnapshot | null>(null);
+  const handlePositionChange = useCallback((position: ReadingPositionSnapshot): void => {
+    positionRef.current = position;
+  }, []);
 
   if (bookId === null) {
     return (
@@ -93,14 +105,26 @@ export function OpenReaderScreen(): JSX.Element {
       return;
     }
     setIsClosing(true);
+    const position: ReadingPositionSnapshot | null = positionRef.current;
+    if (position !== null) {
+      await saveReadingProgressBestEffort({
+        bookId: openedBookId,
+        body: toSaveProgressBody(position),
+      });
+    }
     try {
       await endReadingSession({
         bookId: openedBookId,
         sessionId: openedSessionId,
+        body: position === null ? {} : toEndSessionBody(position),
       });
     } catch {
       // Closing the UI still returns home even if end-session fails.
     } finally {
+      await queryClient.invalidateQueries({ queryKey: ['reader', 'sync'] });
+      await queryClient.invalidateQueries({
+        queryKey: ['reader', 'progress', openedBookId],
+      });
       setIsClosing(false);
       if (router.canGoBack()) {
         router.back();
@@ -121,6 +145,7 @@ export function OpenReaderScreen(): JSX.Element {
           book={opened.book}
           session={opened.session}
           deliveryGrant={opened.deliveryGrant}
+          onPositionChange={handlePositionChange}
           onClose={() => {
             void executeClose();
           }}
@@ -139,6 +164,7 @@ export function OpenReaderScreen(): JSX.Element {
         book={opened.book}
         session={opened.session}
         deliveryGrant={opened.deliveryGrant}
+        onPositionChange={handlePositionChange}
         onClose={() => {
           void executeClose();
         }}
