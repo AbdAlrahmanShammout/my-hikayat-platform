@@ -70,6 +70,7 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 43 | Mobile in-reader bookmarks (R4) | Complete |
 | 44 | Mobile Continue Reading + sync pull (R4) | Complete |
 | 45 | Mobile Smart Resume/sync reliability + Continue CTA (R4) | Complete |
+| 46 | Mobile subscription status + refund (R5) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1509,6 +1510,34 @@ with saved progress; typecheck/lint/unit tests pass.
 
 ---
 
+## STEP 46 — Mobile subscription status + refund (R5)
+
+**Goal:** Start R5 by surfacing the existing billing projection and reader
+refund on Profile. Checkout is deferred until return-URL architecture is
+decided (backend validates origins against `APP_CORS_ORIGINS`).
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md`. Backend remains authoritative
+for entitlement and refund eligibility (SRS §6 / §6.2).
+
+**APIs (existing):** `GET /reader/billing/subscription`,
+`POST /reader/billing/refund`.
+
+**In scope:**
+
+- Subscription API client + Profile status card
+- Display plan / status / period end from backend fields only
+- Refund confirm flow for monthly plans (server enforces 7-day window)
+- Loading / error / retry states
+- No client entitlement recalculation
+
+**Out of scope:** Stripe Checkout start, return-URL / deep-link design,
+cancel-without-refund (admin-only today), R6, Maestro/E2E, FR-* polish.
+
+**Done when:** Profile shows subscription state and can request a refund when
+applicable; typecheck/lint/unit tests pass.
+
+---
+
 ## Future reader improvements (backlog — not scheduled STEPs)
 
 Recorded after STEP 40/41 so they are not forgotten. These are **future**
@@ -1528,7 +1557,7 @@ explicitly pulls one in. Do not invent duplicate STEPs for completed 37–41 wor
 
 ## Out of scope for this list
 
-- Reader R5+ features (subscriptions UI), R6 offline
+- Remaining R5 checkout (blocked on return-URL decision), R6 offline
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
 - Recalculating publisher earnings in the browser
@@ -1571,3 +1600,5 @@ STEP 44 (mobile Continue Reading + sync pull) depends on STEP 42 and uses
 `GET /reader/sync` for the Home shelf.
 STEP 45 (Smart Resume/sync reliability + Continue CTA) depends on STEPs 42–44
 and finishes online R4 resume/sync UX gaps.
+STEP 46 (mobile subscription status + refund) starts R5 using existing billing
+APIs. Stripe Checkout return-URL strategy is a separate decision before STEP 47.

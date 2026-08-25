@@ -1,12 +1,13 @@
 import { useState, type JSX } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SubscriptionStatusCard } from '@/features/billing/components/subscription-status-card';
 import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
 
 /**
- * Profile tab: identity from /auth/me and sign-out.
+ * Profile tab: identity from /auth/me, subscription status, and sign-out.
  */
 export function ProfileScreen(): JSX.Element {
   const { user, signOut } = useSession();
@@ -23,33 +24,36 @@ export function ProfileScreen(): JSX.Element {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']} testID="shell-profile-screen">
-      <Text style={styles.title} accessibilityRole="header" testID="shell-profile-title">
-        Me
-      </Text>
-      <Text style={styles.label}>Email</Text>
-      <Text style={styles.value} testID="shell-profile-email">
-        {user?.email ?? '—'}
-      </Text>
-      <Text style={styles.label}>Role</Text>
-      <Text style={styles.value} testID="shell-profile-role">
-        {user?.role ?? '—'}
-      </Text>
-      <Pressable
-        style={[styles.button, isSigningOut ? styles.buttonDisabled : null]}
-        onPress={() => {
-          void handleSignOut();
-        }}
-        disabled={isSigningOut}
-        testID="shell-sign-out-button"
-        accessibilityRole="button"
-        accessibilityLabel="Sign out"
-      >
-        {isSigningOut ? (
-          <ActivityIndicator color={theme.colors.onPrimary} />
-        ) : (
-          <Text style={styles.buttonLabel}>Sign out</Text>
-        )}
-      </Pressable>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.title} accessibilityRole="header" testID="shell-profile-title">
+          Me
+        </Text>
+        <Text style={styles.label}>Email</Text>
+        <Text style={styles.value} testID="shell-profile-email">
+          {user?.email ?? '—'}
+        </Text>
+        <Text style={styles.label}>Role</Text>
+        <Text style={styles.value} testID="shell-profile-role">
+          {user?.role ?? '—'}
+        </Text>
+        <SubscriptionStatusCard />
+        <Pressable
+          style={[styles.button, isSigningOut ? styles.buttonDisabled : null]}
+          onPress={() => {
+            void handleSignOut();
+          }}
+          disabled={isSigningOut}
+          testID="shell-sign-out-button"
+          accessibilityRole="button"
+          accessibilityLabel="Sign out"
+        >
+          {isSigningOut ? (
+            <ActivityIndicator color={theme.colors.onPrimary} />
+          ) : (
+            <Text style={styles.buttonLabel}>Sign out</Text>
+          )}
+        </Pressable>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -58,7 +62,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  content: {
     paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
     gap: theme.spacing.xs,
   },
   title: {
