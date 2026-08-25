@@ -13,6 +13,7 @@ import { ApiError } from '@/api/api-error';
 import { getCurrentUser } from '@/features/auth/api/get-current-user';
 import { login } from '@/features/auth/api/login';
 import { register } from '@/features/auth/api/register';
+import { purgeOfflinePackages } from '@/features/offline/lib/purge-offline-packages';
 import type { AuthSession } from '@/features/auth/auth.types';
 import {
   clearAccessToken,
@@ -122,6 +123,7 @@ export function SessionProvider({ children }: SessionProviderProps): JSX.Element
   );
 
   const signOut = useCallback(async (): Promise<void> => {
+    await purgeOfflinePackages().catch(() => undefined);
     await clearAccessToken();
     applySignedOut();
     setErrorMessage(null);
@@ -134,6 +136,7 @@ export function SessionProvider({ children }: SessionProviderProps): JSX.Element
   }, [refreshFromToken]);
 
   const abandonRestore = useCallback(async (): Promise<void> => {
+    await purgeOfflinePackages().catch(() => undefined);
     await clearAccessToken();
     applySignedOut();
     setErrorMessage(null);

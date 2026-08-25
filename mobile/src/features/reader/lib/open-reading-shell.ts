@@ -1,6 +1,7 @@
 import { ApiError } from '@/api/api-error';
 import type { CatalogBook } from '@/features/catalog/api/get-catalog-book';
 import { getCatalogBook } from '@/features/catalog/api/get-catalog-book';
+import { openOfflineReadingShell } from '@/features/offline/lib/open-offline-reading-shell';
 import {
   createBookAssetDeliveryGrant,
   type BookAssetDeliveryGrant,
@@ -23,13 +24,25 @@ export type OpenReadingShellResult = {
   readonly session: ReadingSession;
   readonly engine: ReaderEngineKind;
   readonly deliveryGrant: BookAssetDeliveryGrant | null;
+  readonly isOfflinePackage?: boolean;
 };
 
 /**
  * Opens the reading shell: catalog book → Smart Resume → session → layout engine.
- * Delivery grant is best-effort for engines; missing source is not entitlement.
+ * Falls back to a downloaded offline package when the network is unavailable.
  */
 export async function openReadingShell(bookId: number): Promise<OpenReadingShellResult> {
+  try {
+    return await openOnlineReadingShell(bookId);
+  } catch (error: unknown) {
+    if (!isRecoverableNetworkError(error)) {
+      throw error;
+    }
+    return openOfflineReadingShell(bookId);
+  }
+}
+
+async function openOnlineReadingShell(bookId: number): Promise<OpenReadingShellResult> {
   const book: CatalogBook = await getCatalogBook(bookId);
   if (!isBookLayoutType(book.layoutType)) {
     throw new ApiError({
@@ -48,7 +61,7 @@ export async function openReadingShell(bookId: number): Promise<OpenReadingShell
   }
   const session: ReadingSession = await startOrResumeSession(bookId, book.layoutType);
   const deliveryGrant: BookAssetDeliveryGrant | null = await tryCreateDeliveryGrant(bookId);
-  return { book, session, engine, deliveryGrant };
+  return { book, session, engine, deliveryGrant, isOfflinePackage: false };
 }
 
 async function startOrResumeSession(
@@ -86,4 +99,18 @@ async function tryCreateDeliveryGrant(bookId: number): Promise<BookAssetDelivery
     }
     throw error;
   }
+}
+
+function isRecoverableNetworkError(error: unknown): boolean {
+  if (error instanceof ApiError) {
+    return false;
+  }
+  if (error instanceof TypeError) {
+    return true;
+  }
+  if (error instanceof Error) {
+    const message: string = error.message.toLowerCase();
+    return message.includes('network') || message.includes('fetch');
+  }
+  return false;
 }

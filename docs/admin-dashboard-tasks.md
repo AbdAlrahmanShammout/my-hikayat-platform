@@ -73,6 +73,7 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 46 | Mobile subscription status + refund (R5) | Complete |
 | 47 | Mobile Stripe Checkout + checkout return allowlist (R5) | Complete |
 | 48 | Mobile entitlement-denied → Subscribe path (R5) | Complete |
+| 49 | Mobile offline encrypted download + open (R6) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1589,6 +1590,32 @@ typecheck/lint/unit tests pass.
 
 ---
 
+## STEP 49 — Mobile offline encrypted download + open (R6)
+
+**Goal:** Download encrypted book ciphertext to device, cache the DEK in
+SecureStore while online, and open books offline with in-memory decrypt only.
+
+**Architecture:** Reuse delivery-grant + content-key online; persist ciphertext
+via `expo-file-system`; manifest on disk; Library lists downloads; engines prefer
+local package when present.
+
+**In scope:**
+
+- Offline manifest + ciphertext file storage + SecureStore DEK adapter
+- Download pipeline (grant → disk → checksum → session → content-key → DEK)
+- Offline open path + reader engine local decrypt preference
+- Library downloaded-books shelf; book detail Download / Remove
+- Purge offline packages on sign-out
+- Unit tests for manifest/checksum/purge helpers
+
+**Out of scope:** Offline progress write queues, device-bound licenses, Maestro/E2E,
+FR-* polish, backend API changes.
+
+**Done when:** entitled reader can download a book, open it from Library without
+network, and plaintext never touches disk; typecheck/lint/unit tests pass.
+
+---
+
 ## Future reader improvements (backlog — not scheduled STEPs)
 
 Recorded after STEP 40/41 so they are not forgotten. These are **future**
@@ -1608,7 +1635,7 @@ explicitly pulls one in. Do not invent duplicate STEPs for completed 37–41 wor
 
 ## Out of scope for this list
 
-- R6 offline (after R5 STEPs 46–48)
+- R6 offline polish after STEP 49 (connectivity UX, download progress)
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
 - Recalculating publisher earnings in the browser
@@ -1657,3 +1684,5 @@ STEP 47 (mobile Stripe Checkout + checkout return allowlist) depends on STEP 46
 and uses `APP_CHECKOUT_RETURN_ORIGINS` with `reader://` deep links.
 STEP 48 (entitlement-denied → Subscribe) depends on STEPs 46–47 and finishes
 the R5 subscribe loop from open-book denials.
+STEP 49 (mobile offline encrypted download + open) starts R6 using existing
+delivery-grant and content-key contracts while online.

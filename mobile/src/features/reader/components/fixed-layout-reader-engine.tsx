@@ -101,13 +101,6 @@ export function FixedLayoutReaderEngine({
   useEffect(() => {
     let isCancelled = false;
     async function executeLoad(): Promise<void> {
-      if (deliveryGrant === null) {
-        setLoadState({
-          status: 'error',
-          message: 'This book file is not ready to open yet.',
-        });
-        return;
-      }
       setLoadState({ status: 'loading' });
       try {
         const epub: ParsedFixedLayoutEpub = await loadFixedLayoutEpubBook({

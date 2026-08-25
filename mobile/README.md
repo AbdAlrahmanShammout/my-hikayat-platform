@@ -91,6 +91,7 @@ npm run build
 | `expo-router` | File-based navigation and deep links |
 | `expo-secure-store` | Persist Bearer access token off the JS heap on native |
 | `expo-web-browser` | Stripe Checkout auth session (`openAuthSessionAsync`) |
+| `expo-file-system` | Encrypted offline book ciphertext on device |
 | `react-native-screens` | Native screen primitives (Expo Router peer) |
 | `react-native-safe-area-context` | Safe areas for tab shell |
 | `react-native-gesture-handler` | Gesture root for navigation |
@@ -112,4 +113,5 @@ Token storage: SecureStore on iOS/Android, `localStorage` on web. A 401 clears t
 
 ## Out of scope until later STEPs
 
-Catalog, dual engines, Smart Resume, offline DRM, subscriptions UI, audiobooks.
+Catalog, dual engines, Smart Resume, subscriptions UI, audiobooks. Offline encrypted
+reading (STEP 49) stores ciphertext on device and decrypts in memory only.

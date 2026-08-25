@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
-import type { JSX } from 'react';
+import { useState, type JSX } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -13,6 +13,8 @@ import {
 import { ApiError } from '@/api/api-error';
 import { useCatalogBook } from '@/features/catalog/hooks/use-catalog-book';
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
+import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book-actions';
+import { useOfflinePackage } from '@/features/offline/hooks/use-offline-packages';
 import { findReadingProgress } from '@/features/reader/lib/find-reading-progress';
 import { theme } from '@/theme/theme';
 
@@ -23,6 +25,9 @@ export function BookDetailScreen(): JSX.Element {
   const params = useLocalSearchParams<{ bookId: string }>();
   const bookId: number | null = parseBookIdParam(params.bookId);
   const bookQuery = useCatalogBook(bookId);
+  const offlinePackage = useOfflinePackage(bookId);
+  const offlineActions = useOfflineBookActions(bookId);
+  const [offlineMessage, setOfflineMessage] = useState<string | null>(null);
   const progressQuery = useQuery({
     queryKey: ['reader', 'progress', bookId],
     queryFn: async () => {
@@ -116,6 +121,59 @@ export function BookDetailScreen(): JSX.Element {
       >
         <Text style={styles.primaryLabel}>{readLabel}</Text>
       </Pressable>
+      {offlinePackage.isDownloaded ? (
+        <Pressable
+          style={styles.secondaryButton}
+          disabled={offlineActions.isRemoving}
+          onPress={() => {
+            void offlineActions
+              .remove()
+              .then(async () => {
+                setOfflineMessage('Download removed from this device.');
+                await offlinePackage.invalidate();
+              })
+              .catch((error: unknown) => {
+                setOfflineMessage(
+                  error instanceof Error ? error.message : 'Could not remove the download.',
+                );
+              });
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Remove offline download"
+          testID="book-detail-remove-offline-button"
+        >
+          {offlineActions.isRemoving ? (
+            <ActivityIndicator color={theme.colors.primary} />
+          ) : (
+            <Text style={styles.secondaryLabel}>Remove offline download</Text>
+          )}
+        </Pressable>
+      ) : (
+        <Pressable
+          style={styles.secondaryButton}
+          disabled={offlineActions.isDownloading}
+          onPress={() => {
+            void offlineActions.download().then((message: string | null) => {
+              setOfflineMessage(message);
+              void offlinePackage.invalidate();
+            });
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Download for offline reading"
+          testID="book-detail-download-offline-button"
+        >
+          {offlineActions.isDownloading ? (
+            <ActivityIndicator color={theme.colors.primary} />
+          ) : (
+            <Text style={styles.secondaryLabel}>Download for offline</Text>
+          )}
+        </Pressable>
+      )}
+      {offlineMessage !== null ? (
+        <Text style={styles.note} testID="book-detail-offline-message">
+          {offlineMessage}
+        </Text>
+      ) : null}
       <Text style={styles.note} testID="book-detail-resume-note">
         {hasProgress
           ? 'You will pick up where you left off.'

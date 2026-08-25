@@ -34,4 +34,8 @@ export const queryKeys = {
     openShell: (bookId: number) => ['reader', 'reading', 'open-shell', bookId] as const,
     currentSession: (bookId: number) => ['reader', 'reading', 'session', 'current', bookId] as const,
   },
+  offline: {
+    packages: ['reader', 'offline', 'packages'] as const,
+    package: (bookId: number) => ['reader', 'offline', 'package', bookId] as const,
+  },
 } as const;
