@@ -10,6 +10,7 @@ import { startReadingSession } from '@/features/reader/api/start-reading-session
 import { buildStartSessionBody } from '@/features/reader/lib/build-start-session-body';
 import { verifyCiphertextChecksum } from '@/features/reader/lib/decrypt-content-with-data-key';
 import { isBookLayoutType } from '@/features/reader/lib/resolve-reader-engine';
+import { fetchConnectivitySnapshot } from '@/native/connectivity/net-info-adapter';
 import { writeOfflineDek } from '@/storage/offline-dek-storage';
 import {
   deleteOfflineFileIfExists,
@@ -37,6 +38,10 @@ export type DownloadOfflineBookInput = {
 export async function downloadOfflineBook(
   input: DownloadOfflineBookInput,
 ): Promise<DownloadOfflineBookResult> {
+  const connectivity = await fetchConnectivitySnapshot();
+  if (!connectivity.isOnline) {
+    throw new Error('Connect to the internet to download this book.');
+  }
   const bookId: number = input.bookId;
   const book: CatalogBook = await getCatalogBook(bookId);
   if (!isBookLayoutType(book.layoutType)) {

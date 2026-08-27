@@ -1627,8 +1627,8 @@ Query `onlineManager` once. Reuse STEP 49 ciphertext/DEK packages.
 
 **In scope:**
 
-- Native connectivity adapter + `onlineManager` binding (NetInfo when installed;
-  web `navigator.onLine` / unknown-as-online fallback otherwise)
+- Native connectivity adapter + `onlineManager` binding via required
+  `@react-native-community/netinfo` (no navigator/offline-heuristic fallback)
 - Kids-friendly offline banner on Library / book detail
 - Disable Download when actually offline; keep Open for saved packages
 - Ciphertext download progress (percent when byte size is known)

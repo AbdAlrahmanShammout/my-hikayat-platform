@@ -2,6 +2,7 @@ import { ApiError } from '@/api/api-error';
 import type { CatalogBook } from '@/features/catalog/api/get-catalog-book';
 import { getCatalogBook } from '@/features/catalog/api/get-catalog-book';
 import { openOfflineReadingShell } from '@/features/offline/lib/open-offline-reading-shell';
+import { fetchConnectivitySnapshot } from '@/native/connectivity/net-info-adapter';
 import {
   createBookAssetDeliveryGrant,
   type BookAssetDeliveryGrant,
@@ -29,17 +30,14 @@ export type OpenReadingShellResult = {
 
 /**
  * Opens the reading shell: catalog book → Smart Resume → session → layout engine.
- * Falls back to a downloaded offline package when the network is unavailable.
+ * Uses NetInfo as the only Online / Offline source; opens a downloaded package when offline.
  */
 export async function openReadingShell(bookId: number): Promise<OpenReadingShellResult> {
-  try {
-    return await openOnlineReadingShell(bookId);
-  } catch (error: unknown) {
-    if (!isRecoverableNetworkError(error)) {
-      throw error;
-    }
+  const connectivity = await fetchConnectivitySnapshot();
+  if (!connectivity.isOnline) {
     return openOfflineReadingShell(bookId);
   }
+  return openOnlineReadingShell(bookId);
 }
 
 async function openOnlineReadingShell(bookId: number): Promise<OpenReadingShellResult> {
@@ -99,18 +97,4 @@ async function tryCreateDeliveryGrant(bookId: number): Promise<BookAssetDelivery
     }
     throw error;
   }
-}
-
-function isRecoverableNetworkError(error: unknown): boolean {
-  if (error instanceof ApiError) {
-    return false;
-  }
-  if (error instanceof TypeError) {
-    return true;
-  }
-  if (error instanceof Error) {
-    const message: string = error.message.toLowerCase();
-    return message.includes('network') || message.includes('fetch');
-  }
-  return false;
 }

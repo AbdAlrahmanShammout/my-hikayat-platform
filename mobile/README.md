@@ -92,6 +92,7 @@ npm run build
 | `expo-secure-store` | Persist Bearer access token off the JS heap on native |
 | `expo-web-browser` | Stripe Checkout auth session (`openAuthSessionAsync`) |
 | `expo-file-system` | Encrypted offline book ciphertext on device |
+| `@react-native-community/netinfo` | Required Online / Offline source of truth |
 | `react-native-screens` | Native screen primitives (Expo Router peer) |
 | `react-native-safe-area-context` | Safe areas for tab shell |
 | `react-native-gesture-handler` | Gesture root for navigation |

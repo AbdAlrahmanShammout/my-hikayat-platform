@@ -1,11 +1,20 @@
 import { ApiError } from '@/api/api-error';
 import { getCatalogBook } from '@/features/catalog/api/get-catalog-book';
+import { openOfflineReadingShell } from '@/features/offline/lib/open-offline-reading-shell';
 import { createBookAssetDeliveryGrant } from '@/features/reader/api/create-delivery-grant';
 import { getCurrentReadingSession } from '@/features/reader/api/get-current-reading-session';
 import { getReadingProgress } from '@/features/reader/api/get-reading-progress';
 import { startReadingSession } from '@/features/reader/api/start-reading-session';
+import { openReadingShell } from '@/features/reader/lib/open-reading-shell';
 
-import { openReadingShell } from './open-reading-shell';
+import { fetchConnectivitySnapshot } from '@/native/connectivity/net-info-adapter';
+
+jest.mock('@/native/connectivity/net-info-adapter', () => ({
+  fetchConnectivitySnapshot: jest.fn(),
+}));
+jest.mock('@/features/offline/lib/open-offline-reading-shell', () => ({
+  openOfflineReadingShell: jest.fn(),
+}));
 
 jest.mock('@/features/catalog/api/get-catalog-book', () => ({
   getCatalogBook: jest.fn(),
@@ -32,6 +41,12 @@ const mockGetCurrentSession = getCurrentReadingSession as jest.MockedFunction<
   typeof getCurrentReadingSession
 >;
 const mockGetProgress = getReadingProgress as jest.MockedFunction<typeof getReadingProgress>;
+const mockFetchConnectivity = fetchConnectivitySnapshot as jest.MockedFunction<
+  typeof fetchConnectivitySnapshot
+>;
+const mockOpenOfflineReadingShell = openOfflineReadingShell as jest.MockedFunction<
+  typeof openOfflineReadingShell
+>;
 
 describe('openReadingShell', () => {
   beforeEach(() => {
@@ -40,6 +55,9 @@ describe('openReadingShell', () => {
     mockStartSession.mockReset();
     mockGetCurrentSession.mockReset();
     mockGetProgress.mockReset();
+    mockFetchConnectivity.mockReset();
+    mockOpenOfflineReadingShell.mockReset();
+    mockFetchConnectivity.mockResolvedValue({ isOnline: true });
     mockGetProgress.mockRejectedValue(
       new ApiError({
         message: 'missing',
@@ -206,5 +224,46 @@ describe('openReadingShell', () => {
     expect(actual.engine).toBe('fixed_layout');
     expect(actual.session.id).toBe(55);
     expect(actual.deliveryGrant?.bookAssetId).toBe(3);
+  });
+
+  it('opens a downloaded package when NetInfo reports offline', async () => {
+    mockFetchConnectivity.mockResolvedValue({ isOnline: false });
+    mockOpenOfflineReadingShell.mockResolvedValue({
+      book: {
+        id: 8,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        title: 'Harbor',
+        description: 'Story',
+        layoutType: 'reflowable',
+        bookType: 'standard_chapter',
+        publishingStatus: 'approved',
+        processingStatus: 'ready',
+        publishedAt: '2026-01-01T00:00:00.000Z',
+        ownerId: 1,
+        categories: [],
+      },
+      session: {
+        id: -1,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        userId: 0,
+        bookId: 8,
+        layoutType: 'reflowable',
+        startedAt: '2026-01-01T00:00:00.000Z',
+        endedAt: null,
+        activeDurationMs: 0,
+        idleDurationMs: 0,
+        spineIndex: 0,
+        scrollOffset: 0,
+      },
+      engine: 'reflowable',
+      deliveryGrant: null,
+      isOfflinePackage: true,
+    });
+    const actual = await openReadingShell(8);
+    expect(actual.isOfflinePackage).toBe(true);
+    expect(mockOpenOfflineReadingShell).toHaveBeenCalledWith(8);
+    expect(mockGetCatalogBook).not.toHaveBeenCalled();
   });
 });
