@@ -1,7 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
 import { queryKeys } from '@/api/query-keys';
 import { downloadOfflineBook } from '@/features/offline/lib/download-offline-book';
+import { formatDownloadProgress } from '@/features/offline/lib/format-download-progress';
 import { removeOfflineBook } from '@/features/offline/lib/remove-offline-book';
 
 /**
@@ -12,18 +14,31 @@ export function useOfflineBookActions(bookId: number | null): {
   readonly remove: () => Promise<void>;
   readonly isDownloading: boolean;
   readonly isRemoving: boolean;
+  readonly downloadProgressLabel: string | null;
   readonly actionErrorMessage: string | null;
 } {
   const queryClient = useQueryClient();
+  const [downloadProgressLabel, setDownloadProgressLabel] = useState<string | null>(null);
   const downloadMutation = useMutation({
     mutationFn: async () => {
       if (bookId === null) {
         throw new Error('That book link is not valid.');
       }
-      await downloadOfflineBook(bookId);
+      setDownloadProgressLabel('Downloading…');
+      await downloadOfflineBook({
+        bookId,
+        onProgress: (progress) => {
+          const label: string | null = formatDownloadProgress(progress);
+          setDownloadProgressLabel(label ?? 'Downloading…');
+        },
+      });
     },
     onSuccess: async () => {
+      setDownloadProgressLabel(null);
       await invalidateOfflineQueries(queryClient, bookId);
+    },
+    onError: () => {
+      setDownloadProgressLabel(null);
     },
   });
   const removeMutation = useMutation({
@@ -51,6 +66,7 @@ export function useOfflineBookActions(bookId: number | null): {
     },
     isDownloading: downloadMutation.isPending,
     isRemoving: removeMutation.isPending,
+    downloadProgressLabel,
     actionErrorMessage:
       downloadMutation.error === null && removeMutation.error === null
         ? null

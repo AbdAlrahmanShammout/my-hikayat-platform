@@ -36,6 +36,13 @@ export function mapOpenReaderError(error: unknown): MappedOpenReaderError {
         message: 'This book is not ready to open in a reader yet.',
       };
     }
+    if (error.code === 'OFFLINE_PACKAGE_MISSING') {
+      return {
+        kind: 'not_found',
+        message:
+          'This book is not downloaded for offline reading. Connect to the internet or download it first.',
+      };
+    }
     if (error.statusCode === 404) {
       return {
         kind: 'not_found',

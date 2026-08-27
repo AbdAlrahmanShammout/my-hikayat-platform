@@ -15,6 +15,7 @@ import { useCatalogBook } from '@/features/catalog/hooks/use-catalog-book';
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
 import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book-actions';
 import { useOfflinePackage } from '@/features/offline/hooks/use-offline-packages';
+import { useConnectivity } from '@/native/connectivity/use-connectivity';
 import { findReadingProgress } from '@/features/reader/lib/find-reading-progress';
 import { theme } from '@/theme/theme';
 
@@ -27,6 +28,7 @@ export function BookDetailScreen(): JSX.Element {
   const bookQuery = useCatalogBook(bookId);
   const offlinePackage = useOfflinePackage(bookId);
   const offlineActions = useOfflineBookActions(bookId);
+  const { isOnline } = useConnectivity();
   const [offlineMessage, setOfflineMessage] = useState<string | null>(null);
   const progressQuery = useQuery({
     queryKey: ['reader', 'progress', bookId],
@@ -110,6 +112,11 @@ export function BookDetailScreen(): JSX.Element {
         {layoutLabel}
       </Text>
       <Text style={styles.body}>{book.description}</Text>
+      {!isOnline ? (
+        <Text style={styles.note} testID="book-detail-offline-banner">
+          You are offline. Downloaded books still open. New downloads need the internet.
+        </Text>
+      ) : null}
       <Pressable
         style={styles.primaryButton}
         onPress={() => {
@@ -151,7 +158,7 @@ export function BookDetailScreen(): JSX.Element {
       ) : (
         <Pressable
           style={styles.secondaryButton}
-          disabled={offlineActions.isDownloading}
+          disabled={offlineActions.isDownloading || !isOnline}
           onPress={() => {
             void offlineActions.download().then((message: string | null) => {
               setOfflineMessage(message);
@@ -165,10 +172,17 @@ export function BookDetailScreen(): JSX.Element {
           {offlineActions.isDownloading ? (
             <ActivityIndicator color={theme.colors.primary} />
           ) : (
-            <Text style={styles.secondaryLabel}>Download for offline</Text>
+            <Text style={styles.secondaryLabel}>
+              {isOnline ? 'Download for offline' : 'Connect to download'}
+            </Text>
           )}
         </Pressable>
       )}
+      {offlineActions.isDownloading ? (
+        <Text style={styles.note} testID="book-detail-download-progress">
+          {offlineActions.downloadProgressLabel ?? 'Downloading…'}
+        </Text>
+      ) : null}
       {offlineMessage !== null ? (
         <Text style={styles.note} testID="book-detail-offline-message">
           {offlineMessage}

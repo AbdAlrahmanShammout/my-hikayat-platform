@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { bindQueryFocusManager } from '@/api/bind-query-focus-manager';
+import { bindQueryOnlineManager } from '@/api/bind-query-online-manager';
 import { createQueryClient } from '@/api/query-client';
 import { AppErrorBoundary } from '@/root/app-error-boundary';
 import { SessionProvider } from '@/session/session-provider';
@@ -22,6 +23,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function RootLayout(): JSX.Element {
   const [queryClient] = useState(() => createQueryClient());
   useEffect(() => bindQueryFocusManager(), []);
+  useEffect(() => bindQueryOnlineManager(), []);
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppErrorBoundary>

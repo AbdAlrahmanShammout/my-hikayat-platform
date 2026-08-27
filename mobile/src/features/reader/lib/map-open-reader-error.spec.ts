@@ -25,4 +25,16 @@ describe('mapOpenReaderError', () => {
     );
     expect(actual.kind).toBe('layout_unavailable');
   });
+
+  it('maps a missing offline package', () => {
+    const actual = mapOpenReaderError(
+      new ApiError({
+        message: 'missing package',
+        code: 'OFFLINE_PACKAGE_MISSING',
+        statusCode: 404,
+      }),
+    );
+    expect(actual.kind).toBe('not_found');
+    expect(actual.message).toContain('not downloaded for offline reading');
+  });
 });

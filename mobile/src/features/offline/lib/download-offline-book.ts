@@ -22,11 +22,22 @@ export type DownloadOfflineBookResult = {
   readonly manifest: OfflineBookManifest;
 };
 
+export type DownloadOfflineBookInput = {
+  readonly bookId: number;
+  readonly onProgress?: (input: {
+    readonly totalBytesWritten: number;
+    readonly totalBytesExpectedToWrite: number;
+  }) => void;
+};
+
 /**
  * Downloads encrypted ciphertext to disk and caches the DEK for offline reading.
  * Requires network, entitlement, and an openable layout type.
  */
-export async function downloadOfflineBook(bookId: number): Promise<DownloadOfflineBookResult> {
+export async function downloadOfflineBook(
+  input: DownloadOfflineBookInput,
+): Promise<DownloadOfflineBookResult> {
+  const bookId: number = input.bookId;
   const book: CatalogBook = await getCatalogBook(bookId);
   if (!isBookLayoutType(book.layoutType)) {
     throw new Error('This book is not ready to download yet.');
@@ -35,7 +46,11 @@ export async function downloadOfflineBook(bookId: number): Promise<DownloadOffli
   const ciphertextFileName: string = buildOfflineCiphertextFileName(bookId, grant.bookAssetId);
   const ciphertextPath: string = resolveOfflineCiphertextPath(ciphertextFileName);
   await deleteOfflineFileIfExists(ciphertextPath);
-  await downloadOfflineCiphertextFile({ url: grant.url, targetPath: ciphertextPath });
+  await downloadOfflineCiphertextFile({
+    url: grant.url,
+    targetPath: ciphertextPath,
+    onProgress: input.onProgress,
+  });
   const ciphertext: Uint8Array = await readOfflineCiphertextFile(ciphertextPath);
   verifyCiphertextChecksum(ciphertext, coerceChecksum(grant.checksumSha256));
   const session = await startReadingSession({

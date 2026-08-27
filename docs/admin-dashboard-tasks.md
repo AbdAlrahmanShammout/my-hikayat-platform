@@ -74,6 +74,7 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 47 | Mobile Stripe Checkout + checkout return allowlist (R5) | Complete |
 | 48 | Mobile entitlement-denied → Subscribe path (R5) | Complete |
 | 49 | Mobile offline encrypted download + open (R6) | Complete |
+| 50 | Mobile offline connectivity UX + download progress (R6) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1616,6 +1617,30 @@ network, and plaintext never touches disk; typecheck/lint/unit tests pass.
 
 ---
 
+## STEP 50 — Mobile offline connectivity UX + download progress (R6)
+
+**Goal:** Show real connectivity (not a single failed request) and download
+progress so readers know when they can download vs open a saved encrypted book.
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md` §12.2 — bind NetInfo to TanStack
+Query `onlineManager` once. Reuse STEP 49 ciphertext/DEK packages.
+
+**In scope:**
+
+- Native connectivity adapter + `onlineManager` binding (NetInfo when installed;
+  web `navigator.onLine` / unknown-as-online fallback otherwise)
+- Kids-friendly offline banner on Library / book detail
+- Disable Download when actually offline; keep Open for saved packages
+- Ciphertext download progress (percent when byte size is known)
+- Clearer open-book copy when the package is missing while offline
+
+**Out of scope:** Offline write queues, device-bound licenses, Maestro/E2E,
+FR-* polish, backend API changes.
+
+**Done when:** connectivity and download progress are visible and tests/typecheck/lint pass.
+
+---
+
 ## Future reader improvements (backlog — not scheduled STEPs)
 
 Recorded after STEP 40/41 so they are not forgotten. These are **future**
@@ -1635,7 +1660,7 @@ explicitly pulls one in. Do not invent duplicate STEPs for completed 37–41 wor
 
 ## Out of scope for this list
 
-- R6 offline polish after STEP 49 (connectivity UX, download progress)
+- Remaining R6 after STEP 50 only if a later STEP schedules it
 - Part 2 TTS, Part 3 formatting
 - Admin delete categories
 - Recalculating publisher earnings in the browser
@@ -1686,3 +1711,5 @@ STEP 48 (entitlement-denied → Subscribe) depends on STEPs 46–47 and finishes
 the R5 subscribe loop from open-book denials.
 STEP 49 (mobile offline encrypted download + open) starts R6 using existing
 delivery-grant and content-key contracts while online.
+STEP 50 (offline connectivity UX + download progress) depends on STEP 49 and
+wires NetInfo to TanStack Query without inventing offline write queues.

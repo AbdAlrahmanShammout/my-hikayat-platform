@@ -42,13 +42,46 @@ export async function readOfflineCiphertextFile(path: string): Promise<Uint8Arra
 /**
  * Downloads encrypted bytes from a grant URL into the offline ciphertext directory.
  */
+export type OfflineDownloadProgressCallback = (input: {
+  readonly totalBytesWritten: number;
+  readonly totalBytesExpectedToWrite: number;
+}) => void;
+
+/**
+ * Downloads encrypted bytes from a grant URL into the offline ciphertext directory.
+ */
 export async function downloadOfflineCiphertextFile(input: {
   readonly url: string;
   readonly targetPath: string;
+  readonly onProgress?: OfflineDownloadProgressCallback;
 }): Promise<void> {
   await ensureOfflineStorageDirectories();
-  const result = await FileSystem.downloadAsync(input.url, input.targetPath);
-  if (result.status < 200 || result.status >= 300) {
+  const callback: OfflineDownloadProgressCallback | undefined = input.onProgress;
+  if (callback === undefined) {
+    const result = await FileSystem.downloadAsync(input.url, input.targetPath);
+    assertSuccessfulDownload(result.status);
+    return;
+  }
+  const download = FileSystem.createDownloadResumable(
+    input.url,
+    input.targetPath,
+    {},
+    (progress) => {
+      callback({
+        totalBytesWritten: progress.totalBytesWritten,
+        totalBytesExpectedToWrite: progress.totalBytesExpectedToWrite,
+      });
+    },
+  );
+  const result = await download.downloadAsync();
+  if (result === undefined) {
+    throw new Error('Could not download the book for offline reading.');
+  }
+  assertSuccessfulDownload(result.status);
+}
+
+function assertSuccessfulDownload(status: number): void {
+  if (status < 200 || status >= 300) {
     throw new Error('Could not download the book for offline reading.');
   }
 }

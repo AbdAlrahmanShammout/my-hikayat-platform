@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book-actions';
 import { useOfflinePackages } from '@/features/offline/hooks/use-offline-packages';
 import type { OfflineBookManifest } from '@/features/offline/types/offline-book-manifest';
+import { useConnectivity } from '@/native/connectivity/use-connectivity';
 import { theme } from '@/theme/theme';
 
 /**
@@ -20,6 +21,7 @@ import { theme } from '@/theme/theme';
  */
 export function LibraryScreen(): JSX.Element {
   const offline = useOfflinePackages();
+  const { isOnline } = useConnectivity();
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']} testID="shell-library-screen">
       <ScrollView contentContainerStyle={styles.content}>
@@ -29,6 +31,11 @@ export function LibraryScreen(): JSX.Element {
         <Text style={styles.lead}>
           Downloaded books stay encrypted on this device until you remove them.
         </Text>
+        {!isOnline ? (
+          <Text style={styles.note} testID="library-offline-banner">
+            You are offline. You can still open downloaded books.
+          </Text>
+        ) : null}
         {offline.isLoading ? (
           <ActivityIndicator color={theme.colors.primary} testID="library-offline-loading" />
         ) : null}
