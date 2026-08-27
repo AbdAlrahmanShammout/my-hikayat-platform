@@ -1,0 +1,15 @@
+version: 1.0
+runtime: nodejs22
+build:
+  commands:
+    build:
+      - corepack enable
+      - corepack prepare pnpm@11.10.0 --activate
+      - pnpm config set engine-strict false
+      - pnpm --filter backend install --frozen-lockfile
+      - pnpm --filter backend exec prisma generate
+      - pnpm --filter backend build
+run:
+  command: sh -c "cd backend && npx prisma migrate deploy && node dist/main"
+  network:
+    port: 8080
