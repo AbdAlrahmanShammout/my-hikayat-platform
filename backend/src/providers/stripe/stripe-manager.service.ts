@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import Stripe from 'stripe';
 
 import { StripeConfigService } from '@/config/stripe/stripe-config.service';
@@ -23,6 +23,7 @@ import { mapStripeWebhookEvent } from '@/providers/stripe/map-stripe-webhook-eve
 
 @Injectable()
 export class StripeManagerService {
+  private readonly logger = new Logger(StripeManagerService.name);
   private eventHandlers: StripeEventHandlers | null = null;
 
   constructor(
@@ -43,7 +44,7 @@ export class StripeManagerService {
       });
       return { customerId: customer.id };
     } catch (err: unknown) {
-      throw StripeManagerService.translateRequestError(err);
+      throw this.translateRequestError(err);
     }
   }
 
@@ -66,7 +67,7 @@ export class StripeManagerService {
       }
       return { checkoutSessionId: session.id, url: session.url };
     } catch (err: unknown) {
-      throw StripeManagerService.translateRequestError(err);
+      throw this.translateRequestError(err);
     }
   }
 
@@ -109,7 +110,7 @@ export class StripeManagerService {
       await this.stripe.subscriptions.cancel(input.stripeSubscriptionId);
       return { refundId: refund.id };
     } catch (err: unknown) {
-      throw StripeManagerService.translateRequestError(err);
+      throw this.translateRequestError(err);
     }
   }
 
@@ -117,7 +118,7 @@ export class StripeManagerService {
     try {
       await this.stripe.subscriptions.cancel(input.stripeSubscriptionId);
     } catch (err: unknown) {
-      throw StripeManagerService.translateRequestError(err);
+      throw this.translateRequestError(err);
     }
   }
 
@@ -187,10 +188,14 @@ export class StripeManagerService {
     return null;
   }
 
-  private static translateRequestError(err: unknown): Error {
+  private translateRequestError(err: unknown): Error {
     if (err instanceof StripeFailureException) {
       return err;
     }
+    this.logger.error(
+      err instanceof Error ? err.message : 'Stripe request failed',
+      err instanceof Error ? err.stack : undefined,
+    );
     return new StripeFailureException();
   }
 }

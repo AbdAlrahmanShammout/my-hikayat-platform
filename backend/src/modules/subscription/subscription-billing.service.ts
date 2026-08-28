@@ -17,14 +17,16 @@ import {
 import { PlanEntity } from '@/modules/subscription/entity/plan.entity';
 import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.entity';
 import { PlanKind, SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
-import { CheckoutReturnUrlInvalidException } from '@/modules/subscription/exceptions/checkout-return-url-invalid.exception';
+import { buildCheckoutReturnPage } from '@/modules/subscription/build-checkout-return-page.helper';
 import { isCheckoutReturnUrlAllowed } from '@/modules/subscription/checkout-return-url.helper';
+import { CheckoutReturnUrlInvalidException } from '@/modules/subscription/exceptions/checkout-return-url-invalid.exception';
 import { RefundNotEligibleException } from '@/modules/subscription/exceptions/refund-not-eligible.exception';
 import { RefundWindowExpiredException } from '@/modules/subscription/exceptions/refund-window-expired.exception';
 import { SubscriptionAlreadyPaidException } from '@/modules/subscription/exceptions/subscription-already-paid.exception';
 import { hasPaidReadingEntitlement } from '@/modules/subscription/has-paid-reading-entitlement.helper';
 import { PlanService } from '@/modules/subscription/plan.service';
 import { SubscriptionRepository } from '@/modules/subscription/repository/subscription.repository';
+import { resolveStripeCheckoutReturnUrl } from '@/modules/subscription/resolve-stripe-checkout-return-url.helper';
 import { SubscriptionService } from '@/modules/subscription/subscription.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserService } from '@/modules/user/user.service';
@@ -61,11 +63,22 @@ export class SubscriptionBillingService {
     const customerId: string = await this.resolveStripeCustomerId(user, subscription);
     const session = await this.stripeManagerService.createCheckoutSession({
       customerId,
-      successUrl: input.successUrl,
-      cancelUrl: input.cancelUrl,
+      successUrl: resolveStripeCheckoutReturnUrl({
+        clientReturnUrl: input.successUrl,
+        bridgeOrigin: input.bridgeOrigin,
+      }),
+      cancelUrl: resolveStripeCheckoutReturnUrl({
+        clientReturnUrl: input.cancelUrl,
+        bridgeOrigin: input.bridgeOrigin,
+      }),
       clientReferenceId: String(user.id),
     });
     return { url: session.url };
+  }
+
+  renderCheckoutReturnPage(returnUrl: string): string {
+    this.assertCheckoutReturnUrl(returnUrl);
+    return buildCheckoutReturnPage(returnUrl);
   }
 
   async getCurrentSubscription(userId: number): Promise<SubscriptionEntity> {
@@ -279,9 +292,7 @@ export class SubscriptionBillingService {
   }
 
   private assertCheckoutReturnUrl(urlValue: string): void {
-    if (
-      isCheckoutReturnUrlAllowed(urlValue, this.appConfigService.checkoutReturnOrigins)
-    ) {
+    if (isCheckoutReturnUrlAllowed(urlValue, this.appConfigService.checkoutReturnOrigins)) {
       return;
     }
     throw new CheckoutReturnUrlInvalidException();

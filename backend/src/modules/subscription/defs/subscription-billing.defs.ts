@@ -2,6 +2,7 @@ export type StartCheckoutServiceInput = {
   readonly userId: number;
   readonly successUrl: string;
   readonly cancelUrl: string;
+  readonly bridgeOrigin: string;
 };
 
 export type StartCheckoutResult = {

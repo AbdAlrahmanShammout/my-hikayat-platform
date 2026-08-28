@@ -158,6 +158,7 @@ describe('SubscriptionBillingService', () => {
         userId: 5,
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
+        bridgeOrigin: 'http://localhost:3000',
       });
       expect(mockStripeManagerService.createCustomer).toHaveBeenCalledWith({
         email: 'reader@example.com',
@@ -186,6 +187,7 @@ describe('SubscriptionBillingService', () => {
           userId: 5,
           successUrl: 'http://localhost:3000/success',
           cancelUrl: 'http://localhost:3000/cancel',
+          bridgeOrigin: 'http://localhost:3000',
         }),
       ).rejects.toBeInstanceOf(SubscriptionAlreadyPaidException);
       expect(mockStripeManagerService.createCheckoutSession).not.toHaveBeenCalled();
@@ -205,6 +207,7 @@ describe('SubscriptionBillingService', () => {
           userId: 5,
           successUrl: 'http://localhost:3000/success',
           cancelUrl: 'http://localhost:3000/cancel',
+          bridgeOrigin: 'http://localhost:3000',
         }),
       ).rejects.toBeInstanceOf(SubscriptionAlreadyPaidException);
       expect(mockStripeManagerService.createCheckoutSession).not.toHaveBeenCalled();
@@ -231,6 +234,7 @@ describe('SubscriptionBillingService', () => {
         userId: 5,
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
+        bridgeOrigin: 'http://localhost:3000',
       });
       expect(actualResult).toEqual({ url: 'https://checkout.stripe.test/cs_1' });
     });
@@ -256,6 +260,7 @@ describe('SubscriptionBillingService', () => {
         userId: 5,
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
+        bridgeOrigin: 'http://localhost:3000',
       });
       expect(actualResult).toEqual({ url: 'https://checkout.stripe.test/cs_1' });
     });
@@ -267,6 +272,7 @@ describe('SubscriptionBillingService', () => {
           userId: 5,
           successUrl: 'https://evil.test/success',
           cancelUrl: 'http://localhost:3000/cancel',
+          bridgeOrigin: 'http://localhost:3000',
         }),
       ).rejects.toBeInstanceOf(CheckoutReturnUrlInvalidException);
     });
@@ -286,14 +292,32 @@ describe('SubscriptionBillingService', () => {
         userId: 5,
         successUrl: 'reader://billing/success',
         cancelUrl: 'reader://billing/cancel',
+        bridgeOrigin: 'http://54.225.86.205',
       });
       expect(actualResult).toEqual({ url: 'https://checkout.stripe.test/cs_reader' });
       expect(mockStripeManagerService.createCheckoutSession).toHaveBeenCalledWith(
         expect.objectContaining({
-          successUrl: 'reader://billing/success',
-          cancelUrl: 'reader://billing/cancel',
+          successUrl:
+            'http://54.225.86.205/reader/billing/checkout-return?to=reader%3A%2F%2Fbilling%2Fsuccess',
+          cancelUrl:
+            'http://54.225.86.205/reader/billing/checkout-return?to=reader%3A%2F%2Fbilling%2Fcancel',
         }),
       );
+    });
+  });
+
+  describe('renderCheckoutReturnPage', () => {
+    it('renders HTML for an allowlisted return URL', () => {
+      const actualHtml: string = subscriptionBillingService.renderCheckoutReturnPage(
+        'reader://billing/success',
+      );
+      expect(actualHtml).toContain('href="reader://billing/success"');
+    });
+
+    it('rejects a return URL outside the allowlist', () => {
+      expect(() =>
+        subscriptionBillingService.renderCheckoutReturnPage('https://evil.test/success'),
+      ).toThrow(CheckoutReturnUrlInvalidException);
     });
   });
 

@@ -198,6 +198,35 @@ describe('Subscription billing (e2e)', () => {
     expect(actualResponse.body.url).toBe(`https://checkout.stripe.test/cs_memory_${getReaderId()}`);
   });
 
+  it('Given reader deep-link return URLs, When checkout starts, Then a hosted checkout URL is returned', async () => {
+    const actualResponse = await request(getServer())
+      .post('/reader/billing/checkout')
+      .set('Authorization', `Bearer ${getReaderAccessToken()}`)
+      .send({
+        successUrl: 'reader://billing/success',
+        cancelUrl: 'reader://billing/cancel',
+      });
+    expect(actualResponse.status).toBe(HttpStatus.OK);
+    expect(actualResponse.body.url).toBe(`https://checkout.stripe.test/cs_memory_${getReaderId()}`);
+  });
+
+  it('Given an allowlisted deep link, When checkout-return is opened, Then the app URL is rendered', async () => {
+    const actualResponse = await request(getServer())
+      .get('/reader/billing/checkout-return')
+      .query({ to: 'reader://billing/success' });
+    expect(actualResponse.status).toBe(HttpStatus.OK);
+    expect(actualResponse.headers['content-type']).toMatch(/text\/html/);
+    expect(actualResponse.text).toContain('href="reader://billing/success"');
+  });
+
+  it('Given a foreign return URL, When checkout-return is opened, Then the URL is rejected', async () => {
+    const actualResponse = await request(getServer())
+      .get('/reader/billing/checkout-return')
+      .query({ to: 'https://evil.test/success' });
+    expect(actualResponse.status).toBe(HttpStatus.BAD_REQUEST);
+    expect(actualResponse.body.code).toBe('CHECKOUT_RETURN_URL_INVALID');
+  });
+
   it('Given checkout completed, When the webhook is received, Then the subscription is monthly and active', async () => {
     const webhookResponse = await request(getServer())
       .post('/webhooks/stripe')
