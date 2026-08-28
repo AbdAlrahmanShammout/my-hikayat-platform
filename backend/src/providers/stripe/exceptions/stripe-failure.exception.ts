@@ -1,9 +1,9 @@
 import { DependencyFailureException } from '@/common/exceptions/dependency-failure.exception';
 
 export class StripeFailureException extends DependencyFailureException {
-  constructor() {
+  constructor(message: string = 'Stripe request failed') {
     super({
-      message: 'Stripe request failed',
+      message,
       code: 'STRIPE_FAILURE',
     });
   }

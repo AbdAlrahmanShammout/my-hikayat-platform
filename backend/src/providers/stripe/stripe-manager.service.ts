@@ -192,10 +192,15 @@ export class StripeManagerService {
     if (err instanceof StripeFailureException) {
       return err;
     }
-    this.logger.error(
-      err instanceof Error ? err.message : 'Stripe request failed',
-      err instanceof Error ? err.stack : undefined,
-    );
-    return new StripeFailureException();
+    const message: string = StripeManagerService.readStripeErrorMessage(err);
+    this.logger.error(message, err instanceof Error ? err.stack : undefined);
+    return new StripeFailureException(message);
+  }
+
+  private static readStripeErrorMessage(err: unknown): string {
+    if (err instanceof Error && err.message.trim().length > 0) {
+      return err.message;
+    }
+    return 'Stripe request failed';
   }
 }

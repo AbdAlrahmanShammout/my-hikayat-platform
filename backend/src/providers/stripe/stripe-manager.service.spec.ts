@@ -56,7 +56,7 @@ describe('StripeManagerService', () => {
           email: 'reader@example.com',
           clientReferenceId: '7',
         }),
-      ).rejects.toBeInstanceOf(StripeFailureException);
+      ).rejects.toThrow(new StripeFailureException('network'));
     });
   });
 
