@@ -1,0 +1,52 @@
+name: Deploy my-hikayat development
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'backend/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - '.github/workflows/deploy-dev.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.10.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm --filter backend install --frozen-lockfile
+      - run: pnpm --filter backend test
+
+  deploy-dev:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEV_SSH_HOST }}
+          username: ${{ secrets.DEV_SSH_USER }}
+          key: ${{ secrets.DEV_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            cd /var/www/my-hikayat
+            git fetch origin
+            git checkout develop
+            git reset --hard origin/develop
+            pnpm --filter backend install --frozen-lockfile
+            pnpm --filter backend exec prisma generate
+            pnpm --filter backend exec prisma migrate deploy
+            pnpm --filter backend build
+            pm2 restart my-hikayat-dev-api
+            sleep 2
+            curl -fsS http://127.0.0.1:3000/health/live
