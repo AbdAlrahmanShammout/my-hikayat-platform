@@ -14,15 +14,17 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
         with:
           version: 11.10.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: pnpm
+          package-manager-cache: false
       - run: pnpm --filter backend install --frozen-lockfile
+      - run: pnpm --filter backend exec prisma generate
       - run: pnpm --filter backend test
 
   deploy-dev:
@@ -31,7 +33,7 @@ jobs:
     environment: development
     steps:
       - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.DEV_SSH_HOST }}
           username: ${{ secrets.DEV_SSH_USER }}
