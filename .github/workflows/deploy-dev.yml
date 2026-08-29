@@ -44,7 +44,6 @@ jobs:
           username: ${{ secrets.DEV_SSH_USER }}
           key: ${{ secrets.DEV_SSH_KEY }}
           envs: VITE_API_BASE_URL
-          script_stop: true
           script: |
             set -e
             cd /var/www/my-hikayat
@@ -55,8 +54,8 @@ jobs:
             pnpm --filter backend exec prisma generate
             pnpm --filter backend exec prisma migrate deploy
             pnpm --filter backend build
-            pm2 restart my-hikayat-dev-api
-            sleep 2
+            pm2 restart my-hikayat-dev-api --update-env
+            sleep 5
             curl -fsS http://127.0.0.1:3000/health/live
             pnpm --filter frontend install --frozen-lockfile
             VITE_API_BASE_URL="$VITE_API_BASE_URL" pnpm --filter frontend build
