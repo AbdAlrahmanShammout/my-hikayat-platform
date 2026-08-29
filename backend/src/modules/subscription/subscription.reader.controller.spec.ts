@@ -7,6 +7,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { StartCheckoutResponseDto } from '@/modules/subscription/dto/response/start-checkout-response.dto';
 import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.entity';
 import { SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
+import { PlanService } from '@/modules/subscription/plan.service';
 import { SubscriptionBillingService } from '@/modules/subscription/subscription-billing.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
@@ -33,6 +34,7 @@ describe('SubscriptionReaderController', () => {
     getCurrentSubscription: jest.Mock;
     requestRefund: jest.Mock;
   };
+  let mockPlanService: { listPaidCatalogPlans: jest.Mock };
 
   beforeEach(async () => {
     mockSubscriptionBillingService = {
@@ -41,11 +43,13 @@ describe('SubscriptionReaderController', () => {
       getCurrentSubscription: jest.fn(),
       requestRefund: jest.fn(),
     };
+    mockPlanService = { listPaidCatalogPlans: jest.fn() };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       controllers: [SubscriptionReaderController],
       providers: [
         { provide: SubscriptionBillingService, useValue: mockSubscriptionBillingService },
+        { provide: PlanService, useValue: mockPlanService },
         JwtAuthGuard,
         RolesGuard,
       ],
@@ -60,6 +64,7 @@ describe('SubscriptionReaderController', () => {
     const actualResponse: StartCheckoutResponseDto =
       await subscriptionReaderController.startCheckout(
         {
+          planId: 2,
           successUrl: 'http://localhost:3000/success',
           cancelUrl: 'http://localhost:3000/cancel',
         },
@@ -73,6 +78,7 @@ describe('SubscriptionReaderController', () => {
       );
     expect(mockSubscriptionBillingService.startCheckout).toHaveBeenCalledWith({
       userId: 5,
+      planId: 2,
       successUrl: 'http://localhost:3000/success',
       cancelUrl: 'http://localhost:3000/cancel',
       bridgeOrigin: 'http://localhost:3000',

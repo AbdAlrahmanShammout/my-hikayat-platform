@@ -1,7 +1,6 @@
 import { AppConfigService } from '@/config/app/app-config.service';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
-import { PLAN_SLUG } from '@/modules/subscription/consts/plan-slug.constant';
 import { REFUND_WINDOW } from '@/modules/subscription/consts/refund-window.constant';
 import { PlanEntity } from '@/modules/subscription/entity/plan.entity';
 import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.entity';
@@ -44,8 +43,12 @@ function createSamplePlan(kind = PlanKind.FREE): PlanEntity {
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
     slug: kind === PlanKind.FREE ? 'free' : 'monthly',
     name: kind === PlanKind.FREE ? 'Free' : 'Monthly',
+    description: kind === PlanKind.FREE ? 'Free reading access' : 'Monthly paid full-book reading',
     kind,
     interval: kind === PlanKind.FREE ? null : PlanInterval.MONTH,
+    stripePriceId: kind === PlanKind.FREE ? null : 'price_seed_monthly',
+    amountCents: kind === PlanKind.FREE ? null : 999,
+    currency: kind === PlanKind.FREE ? null : 'usd',
   });
 }
 
@@ -86,7 +89,7 @@ describe('SubscriptionBillingService', () => {
     findByStripeSubscriptionId: jest.Mock;
     findByStripeCustomerId: jest.Mock;
   };
-  let mockPlanService: { getPlanBySlug: jest.Mock };
+  let mockPlanService: { getPlanBySlug: jest.Mock; getPurchasablePlanById: jest.Mock; findPlanById: jest.Mock };
   let mockUserService: { getUserById: jest.Mock; findUserById: jest.Mock };
   let mockStripeManagerService: {
     createCustomer: jest.Mock;
@@ -113,7 +116,7 @@ describe('SubscriptionBillingService', () => {
       findByStripeSubscriptionId: jest.fn(),
       findByStripeCustomerId: jest.fn(),
     };
-    mockPlanService = { getPlanBySlug: jest.fn() };
+    mockPlanService = { getPlanBySlug: jest.fn(), getPurchasablePlanById: jest.fn(), findPlanById: jest.fn() };
     mockUserService = { getUserById: jest.fn(), findUserById: jest.fn() };
     mockStripeManagerService = {
       createCustomer: jest.fn(),
@@ -145,6 +148,7 @@ describe('SubscriptionBillingService', () => {
   describe('startCheckout', () => {
     it('creates a Stripe customer then returns a hosted checkout url', async () => {
       mockUserService.getUserById.mockResolvedValue(createSampleUser());
+      mockPlanService.getPurchasablePlanById.mockResolvedValue(createSamplePlan(PlanKind.MONTHLY_PAID));
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
         createSampleSubscription(),
       );
@@ -156,6 +160,7 @@ describe('SubscriptionBillingService', () => {
       });
       const actualResult = await subscriptionBillingService.startCheckout({
         userId: 5,
+        planId: 2,
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
         bridgeOrigin: 'http://localhost:3000',
@@ -169,12 +174,15 @@ describe('SubscriptionBillingService', () => {
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
         clientReferenceId: '5',
+        priceId: 'price_seed_monthly',
+        metadata: { planId: '2' },
       });
       expect(actualResult).toEqual({ url: 'https://checkout.stripe.test/cs_1' });
     });
 
     it('rejects checkout when the user is already on an active monthly plan', async () => {
       mockUserService.getUserById.mockResolvedValue(createSampleUser());
+      mockPlanService.getPurchasablePlanById.mockResolvedValue(createSamplePlan(PlanKind.MONTHLY_PAID));
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
         createSampleSubscription(
           PlanKind.MONTHLY_PAID,
@@ -185,6 +193,7 @@ describe('SubscriptionBillingService', () => {
       await expect(
         subscriptionBillingService.startCheckout({
           userId: 5,
+          planId: 2,
           successUrl: 'http://localhost:3000/success',
           cancelUrl: 'http://localhost:3000/cancel',
           bridgeOrigin: 'http://localhost:3000',
@@ -195,6 +204,7 @@ describe('SubscriptionBillingService', () => {
 
     it('rejects checkout when a canceled paid period is still open', async () => {
       mockUserService.getUserById.mockResolvedValue(createSampleUser());
+      mockPlanService.getPurchasablePlanById.mockResolvedValue(createSamplePlan(PlanKind.MONTHLY_PAID));
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
         createSampleSubscription(
           PlanKind.MONTHLY_PAID,
@@ -205,6 +215,7 @@ describe('SubscriptionBillingService', () => {
       await expect(
         subscriptionBillingService.startCheckout({
           userId: 5,
+          planId: 2,
           successUrl: 'http://localhost:3000/success',
           cancelUrl: 'http://localhost:3000/cancel',
           bridgeOrigin: 'http://localhost:3000',
@@ -215,6 +226,7 @@ describe('SubscriptionBillingService', () => {
 
     it('allows checkout when an active paid period has already ended', async () => {
       mockUserService.getUserById.mockResolvedValue(createSampleUser());
+      mockPlanService.getPurchasablePlanById.mockResolvedValue(createSamplePlan(PlanKind.MONTHLY_PAID));
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
         createSampleSubscription(
           PlanKind.MONTHLY_PAID,
@@ -232,6 +244,7 @@ describe('SubscriptionBillingService', () => {
       });
       const actualResult = await subscriptionBillingService.startCheckout({
         userId: 5,
+        planId: 2,
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
         bridgeOrigin: 'http://localhost:3000',
@@ -241,6 +254,7 @@ describe('SubscriptionBillingService', () => {
 
     it('allows checkout when a canceled paid period has already ended', async () => {
       mockUserService.getUserById.mockResolvedValue(createSampleUser());
+      mockPlanService.getPurchasablePlanById.mockResolvedValue(createSamplePlan(PlanKind.MONTHLY_PAID));
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
         createSampleSubscription(
           PlanKind.MONTHLY_PAID,
@@ -258,6 +272,7 @@ describe('SubscriptionBillingService', () => {
       });
       const actualResult = await subscriptionBillingService.startCheckout({
         userId: 5,
+        planId: 2,
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
         bridgeOrigin: 'http://localhost:3000',
@@ -270,6 +285,7 @@ describe('SubscriptionBillingService', () => {
       await expect(
         subscriptionBillingService.startCheckout({
           userId: 5,
+          planId: 2,
           successUrl: 'https://evil.test/success',
           cancelUrl: 'http://localhost:3000/cancel',
           bridgeOrigin: 'http://localhost:3000',
@@ -279,6 +295,7 @@ describe('SubscriptionBillingService', () => {
 
     it('allows reader deep-link return URLs from the checkout allowlist', async () => {
       mockUserService.getUserById.mockResolvedValue(createSampleUser());
+      mockPlanService.getPurchasablePlanById.mockResolvedValue(createSamplePlan(PlanKind.MONTHLY_PAID));
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
         createSampleSubscription(),
       );
@@ -290,6 +307,7 @@ describe('SubscriptionBillingService', () => {
       });
       const actualResult = await subscriptionBillingService.startCheckout({
         userId: 5,
+        planId: 2,
         successUrl: 'reader://billing/success',
         cancelUrl: 'reader://billing/cancel',
         bridgeOrigin: 'http://54.225.86.205',
@@ -327,7 +345,7 @@ describe('SubscriptionBillingService', () => {
       mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(
         createSampleSubscription(),
       );
-      mockPlanService.getPlanBySlug.mockResolvedValue(createSamplePlan(PlanKind.MONTHLY_PAID));
+      mockPlanService.findPlanById.mockResolvedValue(createSamplePlan(PlanKind.MONTHLY_PAID));
       mockSubscriptionService.updateSubscription.mockResolvedValue(
         createSampleSubscription(PlanKind.MONTHLY_PAID),
       );
@@ -335,10 +353,11 @@ describe('SubscriptionBillingService', () => {
         customerId: 'cus_1',
         subscriptionId: 'sub_1',
         clientReferenceId: '5',
+        planId: '2',
         currentPeriodStart: new Date('2026-08-01T00:00:00.000Z'),
         currentPeriodEnd: new Date('2026-09-01T00:00:00.000Z'),
       });
-      expect(mockPlanService.getPlanBySlug).toHaveBeenCalledWith(PLAN_SLUG.MONTHLY);
+      expect(mockPlanService.findPlanById).toHaveBeenCalledWith(2);
       expect(mockSubscriptionService.updateSubscription).toHaveBeenCalledWith({
         id: 7,
         planId: 2,
@@ -357,6 +376,7 @@ describe('SubscriptionBillingService', () => {
         customerId: 'cus_1',
         subscriptionId: 'sub_1',
         clientReferenceId: 'not-a-user',
+        planId: null,
         currentPeriodStart: null,
         currentPeriodEnd: null,
       });
@@ -397,7 +417,6 @@ describe('SubscriptionBillingService', () => {
       mockSubscriptionRepository.findByStripeSubscriptionId.mockResolvedValue(
         createSampleSubscription(PlanKind.MONTHLY_PAID),
       );
-      mockPlanService.getPlanBySlug.mockResolvedValue(createSamplePlan(PlanKind.MONTHLY_PAID));
       mockSubscriptionService.updateSubscription.mockResolvedValue(
         createSampleSubscription(PlanKind.MONTHLY_PAID),
       );
@@ -410,7 +429,6 @@ describe('SubscriptionBillingService', () => {
       });
       expect(mockSubscriptionService.updateSubscription).toHaveBeenCalledWith({
         id: 7,
-        planId: 2,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodStart: new Date('2026-08-01T00:00:00.000Z'),
         currentPeriodEnd: new Date('2026-09-01T00:00:00.000Z'),

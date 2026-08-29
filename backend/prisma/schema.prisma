@@ -430,13 +430,18 @@ model Plan {
   id             Int            @id @default(autoincrement())
   slug           String         @unique
   name           String
-  kind           PlanKind       @unique
+  description    String
+  kind           PlanKind
   interval       PlanInterval?
+  stripePriceId  String?        @unique
+  amountCents    Int?
+  currency       String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   deletedAt      DateTime?
   subscriptions  Subscription[]
 
+  @@index([kind])
   @@index([deletedAt])
 }
 

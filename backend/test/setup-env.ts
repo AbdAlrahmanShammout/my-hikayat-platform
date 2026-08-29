@@ -27,7 +27,6 @@ process.env.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ?? 'ab'.repeat(32);
 process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? 'sk_test_not_for_production';
 process.env.STRIPE_WEBHOOK_SECRET =
   process.env.STRIPE_WEBHOOK_SECRET ?? 'whsec_test_not_for_production';
-process.env.STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID ?? 'price_test_not_for_production';
 process.env.PLATFORM_CUT_PERCENT = process.env.PLATFORM_CUT_PERCENT ?? '30';
 process.env.MAIL_FROM = process.env.MAIL_FROM ?? 'noreply@example.com';
 process.env.MAIL_SMTP_HOST = process.env.MAIL_SMTP_HOST ?? 'localhost';

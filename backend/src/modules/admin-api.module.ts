@@ -15,6 +15,7 @@ import { CollectionModule } from '@/modules/collection/collection.module';
 import { DashboardAdminController } from '@/modules/monetization/dashboard.admin.controller';
 import { MonetizationAdminController } from '@/modules/monetization/monetization.admin.controller';
 import { MonetizationModule } from '@/modules/monetization/monetization.module';
+import { PlanAdminController } from '@/modules/subscription/plan.admin.controller';
 import { SubscriptionAdminController } from '@/modules/subscription/subscription.admin.controller';
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { AdminInvitationAdminController } from '@/modules/user/admin-invitation.admin.controller';
@@ -39,6 +40,7 @@ import { UserModule } from '@/modules/user/user.module';
     CollectionAdminController,
     DashboardAdminController,
     MonetizationAdminController,
+    PlanAdminController,
     SubscriptionAdminController,
     UserAdminController,
     AdminInvitationAdminController,

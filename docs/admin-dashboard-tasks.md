@@ -60,7 +60,7 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 33 | Mobile catalog browse + book detail (R2) | Complete |
 | 34 | Mobile catalog metadata search (R2) | Complete |
 | 35 | Mobile curated collections discovery (R2) | Complete |
-|| 36 | R2 Mobile Discovery E2E (Maestro) — testing phase | Deferred |
+| 36 | R2 Mobile Discovery E2E (Maestro) — testing phase | Deferred |
 | 37 | Mobile open-book shell + dual-engine routing (R3) | Complete |
 | 38 | Backend per-book content key + reader key-access (R3) | Complete |
 | 39 | Mobile reflowable EPUB engine (R3) | Complete |
@@ -75,6 +75,8 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 48 | Mobile entitlement-denied → Subscribe path (R5) | Complete |
 | 49 | Mobile offline encrypted download + open (R6) | Complete |
 | 50 | Mobile offline connectivity UX + download progress (R6) | Complete |
+| 51 | Admin subscription plans catalog | Complete |
+| 52 | Mobile paid plan picker + checkout planId (R5) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1641,6 +1643,59 @@ FR-* polish, backend API changes.
 
 ---
 
+## STEP 51 — Admin subscription plans catalog
+
+**Goal:** Let admins register Stripe Prices as paid catalog plans (name,
+description, `stripe_price_id`) and edit the free plan display copy. Amount
+and currency come from Stripe retrieve — the UI does not invent prices.
+
+**Architecture:** `docs/FRONTEND-ARCHITECTURE.md`. Backend remains
+authoritative (`GET/POST/PATCH /admin/plans`).
+
+**APIs:** `GET /admin/plans`, `POST /admin/plans`, `PATCH /admin/plans/:id`.
+
+**In scope:**
+
+- `/admin/plans` feature + nav next to Subscriptions
+- Create paid plan form (Stripe price id required)
+- Edit dialog (free: name/description; paid: + Stripe price id)
+- Display Stripe amount/currency after save
+- Loading / empty / error states; TanStack Query
+
+**Out of scope:** Creating Stripe Products/Prices in-app, Customer Portal,
+changing a reader’s plan while entitled.
+
+**Done when:** admins can list/create/update plans; typecheck/lint/unit tests
+pass.
+
+---
+
+## STEP 52 — Mobile paid plan picker + checkout planId (R5)
+
+**Goal:** List paid plans from `GET /reader/billing/plans` on Profile and start
+Checkout with the selected `planId`. Clients never see `stripePriceId` and
+never decide entitlement.
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md`. Extends STEP 46–47 billing UI.
+
+**APIs:** `GET /reader/billing/plans`, `POST /reader/billing/checkout` with
+`planId`.
+
+**In scope:**
+
+- Paid plan catalog query + kids-friendly picker
+- Subscribe sends selected `planId`
+- Empty catalog messaging when no paid plans exist
+- Unit tests for price display helper
+
+**Out of scope:** Client entitlement math, Stripe Elements, plan change while
+entitled, Maestro/E2E.
+
+**Done when:** Profile can pick a plan and start Checkout; typecheck/lint/unit
+tests pass.
+
+---
+
 ## Future reader improvements (backlog — not scheduled STEPs)
 
 Recorded after STEP 40/41 so they are not forgotten. These are **future**
@@ -1713,3 +1768,7 @@ STEP 49 (mobile offline encrypted download + open) starts R6 using existing
 delivery-grant and content-key contracts while online.
 STEP 50 (offline connectivity UX + download progress) depends on STEP 49 and
 wires NetInfo to TanStack Query without inventing offline write queues.
+STEP 51 (admin plans catalog) depends on STEP 5 subscriptions UX and the
+dynamic plan HTTP contracts.
+STEP 52 (mobile plan picker + checkout planId) depends on STEPs 46–47 and
+`GET /reader/billing/plans`.

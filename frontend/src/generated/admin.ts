@@ -302,6 +302,35 @@ export interface paths {
       };
     };
   };
+  "/admin/plans": {
+    get: {
+      parameters: { query?: { limit?: number; offset?: number; kind?: "free" | "monthly_paid" } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['GetPlansResponseDto'] } };
+      };
+    };
+    post: {
+      requestBody: { content: { 'application/json': components['schemas']['CreatePlanRequestDto'] } };
+      responses: {
+        "201": { content: { 'application/json': components['schemas']['PlanResponse'] } };
+      };
+    };
+  };
+  "/admin/plans/{id}": {
+    get: {
+      parameters: { path: { id: number } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['PlanResponse'] } };
+      };
+    };
+    patch: {
+      parameters: { path: { id: number } };
+      requestBody: { content: { 'application/json': components['schemas']['UpdatePlanRequestDto'] } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['PlanResponse'] } };
+      };
+    };
+  };
   "/admin/subscriptions": {
     get: {
       parameters: { query?: { limit?: number; offset?: number; userId?: number; status?: "active" | "canceled" } };
@@ -416,7 +445,10 @@ export interface components {
     AuthorBookHeatmapCellResponse: { spreadIndex: number; pageNumber: number; activeDurationMs: number; visualSceneTimeMs: number };
     AuthorBookChapterHeatmapCellResponse: { spineIndex: number; title?: unknown | null; activeDurationMs: number };
     GetAdminPeriodBookHeatmapResponseDto: { bookId: number; revenuePeriodId: number; layoutType: "reflowable" | "fixed_layout" | null; spreads: Array<components['schemas']['AuthorBookHeatmapCellResponse']>; chapters: Array<components['schemas']['AuthorBookChapterHeatmapCellResponse']> };
-    PlanResponse: { id: number; createdAt: string; updatedAt: string; slug: string; name: string; kind: "free" | "monthly_paid"; interval: "month" | null };
+    PlanResponse: { id: number; createdAt: string; updatedAt: string; slug: string; name: string; description: string; kind: "free" | "monthly_paid"; interval: "month" | null; stripePriceId?: string | null; amountCents: number | null; currency: string | null };
+    GetPlansResponseDto: { plans: Array<components['schemas']['PlanResponse']>; total: number };
+    CreatePlanRequestDto: { name: string; description: string; kind: "free" | "monthly_paid"; slug?: string; stripePriceId?: string };
+    UpdatePlanRequestDto: { name?: string; description?: string; stripePriceId?: string };
     SubscriptionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; planId: number; status: "active" | "canceled"; startedAt: string; currentPeriodStart?: unknown | null; currentPeriodEnd?: unknown | null; canceledAt?: unknown | null; activatedAt?: unknown | null; plan?: components['schemas']['PlanResponse'] };
     GetSubscriptionsResponseDto: { subscriptions: Array<components['schemas']['SubscriptionResponse']>; total: number };
     GetUsersResponseDto: { users: Array<components['schemas']['UserResponse']>; total: number };

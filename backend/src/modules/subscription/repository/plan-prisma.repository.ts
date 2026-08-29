@@ -5,6 +5,7 @@ import {
   CreatePlanRepoInput,
   ListPlansRepoInput,
   PlanPage,
+  UpdatePlanRepoInput,
 } from '@/modules/subscription/defs/plan-repository.defs';
 import { PlanEntity } from '@/modules/subscription/entity/plan.entity';
 import { PlanKind } from '@/modules/subscription/enum/general.enum';
@@ -23,8 +24,28 @@ export class PlanPrismaRepository implements PlanRepository {
       data: {
         slug: input.slug,
         name: input.name,
+        description: input.description,
         kind: input.kind,
         interval: input.interval,
+        stripePriceId: input.stripePriceId,
+        amountCents: input.amountCents,
+        currency: input.currency,
+      },
+    });
+    return PlanMapper.toEntity(result);
+  }
+
+  async update(input: UpdatePlanRepoInput, context?: TransactionContext): Promise<PlanEntity> {
+    const client = resolvePrismaTransactionClient(this.prismaProviderService, context);
+    const result = await client.plan.update({
+      where: { id: input.id },
+      data: {
+        name: input.name,
+        description: input.description,
+        interval: input.interval,
+        stripePriceId: input.stripePriceId,
+        amountCents: input.amountCents,
+        currency: input.currency,
       },
     });
     return PlanMapper.toEntity(result);
@@ -60,8 +81,21 @@ export class PlanPrismaRepository implements PlanRepository {
     return PlanMapper.toEntity(result);
   }
 
+  async findByStripePriceId(stripePriceId: string): Promise<PlanEntity | null> {
+    const result = await this.prismaProviderService.plan.findFirst({
+      where: { stripePriceId, deletedAt: null },
+    });
+    if (result === null) {
+      return null;
+    }
+    return PlanMapper.toEntity(result);
+  }
+
   async list(input: ListPlansRepoInput): Promise<PlanPage> {
-    const where = { deletedAt: null };
+    const where = {
+      deletedAt: null,
+      ...(input.kind === undefined ? {} : { kind: input.kind }),
+    };
     const [rows, total] = await this.prismaProviderService.$transaction([
       this.prismaProviderService.plan.findMany({
         where,

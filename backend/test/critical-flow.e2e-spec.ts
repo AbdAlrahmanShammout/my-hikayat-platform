@@ -15,6 +15,8 @@ import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
 import { EPUB_OCF } from '@/modules/book-processing/epub-ocf.constant';
 import { ZipArchive } from '@/modules/book-processing/zip-archive.helper';
 import { PlanKind, SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
+import { PLAN_SLUG } from '@/modules/subscription/consts/plan-slug.constant';
+import { PlanService } from '@/modules/subscription/plan.service';
 import { UserRole } from '@/modules/user/enum/general.enum';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 import { MEMORY_STORAGE_URI_SCHEME } from '@/providers/storage/memory/consts';
@@ -72,6 +74,7 @@ describe('Part 1 critical flow (e2e)', () => {
   let authorAccessToken: string | undefined;
   let readerAccessToken: string | undefined;
   let adminAccessToken: string | undefined;
+  let monthlyPlanId: number | undefined;
 
   beforeAll(async () => {
     app = await createTestingApp();
@@ -275,10 +278,16 @@ describe('Part 1 critical flow (e2e)', () => {
   });
 
   it('Given checkout and a Stripe webhook, When the reader is paid, Then they can download, read, and search', async () => {
+    if (monthlyPlanId === undefined) {
+      const planService: PlanService = getRunningApp().get(PlanService);
+      const monthlyPlan = await planService.getPlanBySlug(PLAN_SLUG.MONTHLY);
+      monthlyPlanId = monthlyPlan.id;
+    }
     const checkoutResponse = await request(getServer())
       .post('/reader/billing/checkout')
       .set('Authorization', `Bearer ${getReaderAccessToken()}`)
       .send({
+        planId: monthlyPlanId,
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
       });
@@ -296,6 +305,7 @@ describe('Part 1 critical flow (e2e)', () => {
             customer: `cus_memory_${getReaderUserId()}`,
             subscription: `sub_memory_${getReaderUserId()}`,
             client_reference_id: String(getReaderUserId()),
+            metadata: { planId: String(monthlyPlanId) },
           },
         },
       });

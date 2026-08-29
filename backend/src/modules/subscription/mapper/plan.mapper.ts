@@ -11,8 +11,12 @@ export class PlanMapper {
       deletedAt: schema.deletedAt,
       slug: schema.slug,
       name: schema.name,
+      description: schema.description,
       kind: schema.kind as PlanKind,
       interval: (schema.interval as PlanInterval | null) ?? null,
+      stripePriceId: schema.stripePriceId ?? null,
+      amountCents: schema.amountCents ?? null,
+      currency: schema.currency ?? null,
     });
   }
 }

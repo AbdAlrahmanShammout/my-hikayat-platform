@@ -7,8 +7,10 @@ import {
   CreateStripeCustomerInput,
   RefundPaidSubscriptionInput,
   CancelPaidSubscriptionInput,
+  RetrieveStripePriceInput,
   StripeCheckoutSession,
   StripeCustomer,
+  StripePrice,
   StripeRefund,
   StripeWebhookEvent,
 } from '@/providers/stripe/defs/stripe-manager.defs';
@@ -19,6 +21,7 @@ import { StripeEventHandlers } from '@/providers/stripe/interfaces/stripe-event-
 import { mapStripeWebhookEvent } from '@/providers/stripe/map-stripe-webhook-event.helper';
 
 const MEMORY_CHECKOUT_PERIOD_MS: number = 30 * 24 * 60 * 60 * 1000;
+const MEMORY_MONTHLY_AMOUNT_CENTS: number = 999;
 
 @Injectable()
 export class MemoryStripeManagerService {
@@ -38,6 +41,16 @@ export class MemoryStripeManagerService {
     return Promise.resolve({
       checkoutSessionId,
       url: `https://checkout.stripe.test/${checkoutSessionId}`,
+    });
+  }
+
+  retrievePrice(input: RetrieveStripePriceInput): Promise<StripePrice> {
+    return Promise.resolve({
+      priceId: input.priceId,
+      amountCents: MEMORY_MONTHLY_AMOUNT_CENTS,
+      currency: 'usd',
+      interval: 'month',
+      isRecurring: true,
     });
   }
 

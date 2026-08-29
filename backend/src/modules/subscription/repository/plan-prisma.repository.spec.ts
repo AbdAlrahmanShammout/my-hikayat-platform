@@ -14,8 +14,12 @@ describe('PlanPrismaRepository', () => {
     deletedAt: null,
     slug: 'free',
     name: 'Free',
+    description: 'Free reading access',
     kind: 'free',
     interval: null,
+    stripePriceId: null,
+    amountCents: null,
+    currency: null,
   };
   let mockPrismaProviderService: {
     $transaction: jest.Mock;
@@ -48,15 +52,23 @@ describe('PlanPrismaRepository', () => {
     const actualEntity = await planPrismaRepository.create({
       slug: 'free',
       name: 'Free',
+      description: 'Free reading access',
       kind: PlanKind.FREE,
       interval: null,
+      stripePriceId: null,
+      amountCents: null,
+      currency: null,
     });
     expect(mockPrismaProviderService.plan.create).toHaveBeenCalledWith({
       data: {
         slug: 'free',
         name: 'Free',
+        description: 'Free reading access',
         kind: PlanKind.FREE,
         interval: null,
+        stripePriceId: null,
+        amountCents: null,
+        currency: null,
       },
     });
     expect(actualEntity).toEqual(PlanMapper.toEntity(persistenceRow));

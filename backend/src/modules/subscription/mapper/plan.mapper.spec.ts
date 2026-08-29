@@ -13,11 +13,19 @@ describe('PlanMapper', () => {
       deletedAt: null,
       slug: 'monthly',
       name: 'Monthly',
+      description: 'Monthly paid full-book reading',
       kind: 'monthly_paid',
       interval: 'month',
+      stripePriceId: 'price_seed_monthly',
+      amountCents: 999,
+      currency: 'usd',
     });
     expect(actualEntity.kind).toBe(PlanKind.MONTHLY_PAID);
     expect(actualEntity.interval).toBe(PlanInterval.MONTH);
     expect(actualEntity.slug).toBe('monthly');
+    expect(actualEntity.description).toBe('Monthly paid full-book reading');
+    expect(actualEntity.stripePriceId).toBe('price_seed_monthly');
+    expect(actualEntity.amountCents).toBe(999);
+    expect(actualEntity.currency).toBe('usd');
   });
 });

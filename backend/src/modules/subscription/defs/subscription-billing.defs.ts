@@ -1,5 +1,6 @@
 export type StartCheckoutServiceInput = {
   readonly userId: number;
+  readonly planId: number;
   readonly successUrl: string;
   readonly cancelUrl: string;
   readonly bridgeOrigin: string;

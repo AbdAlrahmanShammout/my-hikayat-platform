@@ -17,13 +17,14 @@ export type StartCheckoutFlowResult =
   | { readonly kind: 'session_failed'; readonly message: string };
 
 /**
- * Starts Stripe-hosted Checkout in an auth session and maps the browser return.
+ * Starts Stripe-hosted Checkout for a catalog plan and maps the browser return.
  * Does not grant entitlement — callers must refetch subscription from the backend.
  */
-export async function executeStripeCheckoutFlow(): Promise<StartCheckoutFlowResult> {
+export async function executeStripeCheckoutFlow(planId: number): Promise<StartCheckoutFlowResult> {
   let checkoutUrl: string;
   try {
     const session = await startReaderCheckout({
+      planId,
       successUrl: CHECKOUT_SUCCESS_URL,
       cancelUrl: CHECKOUT_CANCEL_URL,
     });
@@ -58,6 +59,9 @@ function mapCheckoutStartError(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.code === 'SUBSCRIPTION_ALREADY_PAID') {
       return 'This plan is already active. Full-book reading follows the server.';
+    }
+    if (error.code === 'PLAN_NOT_PURCHASABLE') {
+      return 'Ask a grown-up to pick a plan that is ready to buy.';
     }
     if (error.code === 'CHECKOUT_RETURN_URL_INVALID') {
       return 'Checkout return links are not configured correctly.';

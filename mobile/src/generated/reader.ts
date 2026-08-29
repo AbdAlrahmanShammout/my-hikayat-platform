@@ -181,6 +181,14 @@ export interface paths {
       };
     };
   };
+  "/reader/billing/plans": {
+    get: {
+      parameters: { query?: { limit?: number; offset?: number } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['GetPlansResponseDto'] } };
+      };
+    };
+  };
   "/reader/billing/checkout": {
     post: {
       requestBody: { content: { 'application/json': components['schemas']['StartCheckoutRequestDto'] } };
@@ -279,9 +287,10 @@ export interface components {
     InBookSearchHighlightResponse: { text: string; x: number; y: number; width?: unknown | null; height?: unknown | null };
     InBookSearchHitResponse: { layoutType: "reflowable" | "fixed_layout"; spineIndex: number; pageNumber?: unknown | null; spreadIndex?: unknown | null; title: string; excerpt: string; matchOffset: number; highlights: Array<components['schemas']['InBookSearchHighlightResponse']> };
     GetInBookSearchResponseDto: { hits: Array<components['schemas']['InBookSearchHitResponse']>; total: number };
-    StartCheckoutRequestDto: { successUrl: string; cancelUrl: string };
+    StartCheckoutRequestDto: { planId: number; successUrl: string; cancelUrl: string };
     StartCheckoutResponseDto: { url: string };
-    PlanResponse: { id: number; createdAt: string; updatedAt: string; slug: string; name: string; kind: "free" | "monthly_paid"; interval: "month" | null };
+    PlanResponse: { id: number; createdAt: string; updatedAt: string; slug: string; name: string; description: string; kind: "free" | "monthly_paid"; interval: "month" | null; amountCents: number | null; currency: string | null };
+    GetPlansResponseDto: { plans: Array<components['schemas']['PlanResponse']>; total: number };
     SubscriptionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; planId: number; status: "active" | "canceled"; startedAt: string; currentPeriodStart?: unknown | null; currentPeriodEnd?: unknown | null; canceledAt?: unknown | null; activatedAt?: unknown | null; plan?: components['schemas']['PlanResponse'] };
     StripeWebhookReceivedResponseDto: { received: boolean };
     AuthSessionResponseDto: { accessToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };

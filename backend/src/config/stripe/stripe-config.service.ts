@@ -11,8 +11,4 @@ export class StripeConfigService extends BaseConfigService {
   get webhookSecret(): string {
     return this.getValue<string>('stripe.webhookSecret');
   }
-
-  get priceId(): string {
-    return this.getValue<string>('stripe.priceId');
-  }
 }

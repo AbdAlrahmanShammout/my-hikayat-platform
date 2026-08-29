@@ -17,6 +17,8 @@ import {
 import { CategoryService } from '@/modules/category/category.service';
 import { REFUND_WINDOW } from '@/modules/subscription/consts/refund-window.constant';
 import { SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
+import { PLAN_SLUG } from '@/modules/subscription/consts/plan-slug.constant';
+import { PlanService } from '@/modules/subscription/plan.service';
 import { SubscriptionService } from '@/modules/subscription/subscription.service';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
@@ -106,10 +108,13 @@ describe('Subscription refund (e2e)', () => {
   }
 
   async function completeCheckout(userId: number, accessToken: string): Promise<void> {
+    const planService: PlanService = getRunningApp().get(PlanService);
+    const monthlyPlan = await planService.getPlanBySlug(PLAN_SLUG.MONTHLY);
     await request(getServer())
       .post('/reader/billing/checkout')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
+        planId: monthlyPlan.id,
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
       });
@@ -125,6 +130,7 @@ describe('Subscription refund (e2e)', () => {
             customer: `cus_memory_${userId}`,
             subscription: `sub_memory_${userId}`,
             client_reference_id: String(userId),
+            metadata: { planId: String(monthlyPlan.id) },
           },
         },
       });

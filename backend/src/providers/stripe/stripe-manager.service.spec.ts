@@ -7,7 +7,6 @@ import { StripeManagerService } from './stripe-manager.service';
 
 describe('StripeManagerService', () => {
   const mockStripeConfigService = {
-    priceId: 'price_test_monthly',
     webhookSecret: 'whsec_test_secret',
   };
   let mockStripe: {
@@ -17,6 +16,7 @@ describe('StripeManagerService', () => {
     invoices: { list: jest.Mock };
     refunds: { create: jest.Mock };
     webhooks: { constructEvent: jest.Mock };
+    prices: { retrieve: jest.Mock };
   };
   let stripeManagerService: StripeManagerService;
 
@@ -28,6 +28,7 @@ describe('StripeManagerService', () => {
       invoices: { list: jest.fn() },
       refunds: { create: jest.fn() },
       webhooks: { constructEvent: jest.fn() },
+      prices: { retrieve: jest.fn() },
     };
     stripeManagerService = new StripeManagerService(
       mockStripe as never,
@@ -61,7 +62,7 @@ describe('StripeManagerService', () => {
   });
 
   describe('createCheckoutSession', () => {
-    it('creates a hosted checkout session for the configured monthly price', async () => {
+    it('creates a hosted checkout session for the supplied price and plan metadata', async () => {
       mockStripe.checkout.sessions.create.mockResolvedValue({
         id: 'cs_test_1',
         url: 'https://checkout.stripe.test/cs_test_1',
@@ -71,6 +72,8 @@ describe('StripeManagerService', () => {
         successUrl: 'https://app.test/success',
         cancelUrl: 'https://app.test/cancel',
         clientReferenceId: '7',
+        priceId: 'price_test_monthly',
+        metadata: { planId: '2' },
       });
       expect(mockStripe.checkout.sessions.create).toHaveBeenCalledWith({
         mode: 'subscription',
@@ -79,6 +82,8 @@ describe('StripeManagerService', () => {
         success_url: 'https://app.test/success',
         cancel_url: 'https://app.test/cancel',
         line_items: [{ price: 'price_test_monthly', quantity: 1 }],
+        metadata: { planId: '2' },
+        subscription_data: { metadata: { planId: '2' } },
       });
       expect(actualSession).toEqual({
         checkoutSessionId: 'cs_test_1',
@@ -94,7 +99,45 @@ describe('StripeManagerService', () => {
           successUrl: 'https://app.test/success',
           cancelUrl: 'https://app.test/cancel',
           clientReferenceId: '7',
+          priceId: 'price_test_monthly',
+          metadata: { planId: '2' },
         }),
+      ).rejects.toBeInstanceOf(StripeFailureException);
+    });
+  });
+
+  describe('retrievePrice', () => {
+    it('maps a recurring monthly Stripe price to the internal type', async () => {
+      mockStripe.prices.retrieve.mockResolvedValue({
+        id: 'price_test_monthly',
+        unit_amount: 999,
+        currency: 'usd',
+        type: 'recurring',
+        recurring: { interval: 'month' },
+      });
+      const actualPrice = await stripeManagerService.retrievePrice({
+        priceId: 'price_test_monthly',
+      });
+      expect(mockStripe.prices.retrieve).toHaveBeenCalledWith('price_test_monthly');
+      expect(actualPrice).toEqual({
+        priceId: 'price_test_monthly',
+        amountCents: 999,
+        currency: 'usd',
+        interval: 'month',
+        isRecurring: true,
+      });
+    });
+
+    it('rejects a non-recurring price', async () => {
+      mockStripe.prices.retrieve.mockResolvedValue({
+        id: 'price_one_time',
+        unit_amount: 999,
+        currency: 'usd',
+        type: 'one_time',
+        recurring: null,
+      });
+      await expect(
+        stripeManagerService.retrievePrice({ priceId: 'price_one_time' }),
       ).rejects.toBeInstanceOf(StripeFailureException);
     });
   });
@@ -129,6 +172,7 @@ describe('StripeManagerService', () => {
         customerId: 'cus_test_1',
         subscriptionId: 'sub_test_1',
         clientReferenceId: '7',
+        planId: null,
         currentPeriodStart: null,
         currentPeriodEnd: null,
         status: null,
@@ -175,6 +219,7 @@ describe('StripeManagerService', () => {
             customer: 'cus_test_1',
             subscription: 'sub_test_1',
             client_reference_id: '7',
+            metadata: { planId: '2' },
           },
         },
       });
@@ -195,6 +240,7 @@ describe('StripeManagerService', () => {
         customerId: 'cus_test_1',
         subscriptionId: 'sub_test_1',
         clientReferenceId: '7',
+        planId: '2',
         currentPeriodStart: new Date(1_700_000_000 * 1000),
         currentPeriodEnd: new Date(1_702_592_000 * 1000),
       });

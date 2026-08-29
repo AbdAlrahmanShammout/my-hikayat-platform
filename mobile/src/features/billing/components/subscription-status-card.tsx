@@ -7,17 +7,22 @@ import {
   View,
 } from 'react-native';
 
+import type { ReaderBillingPlan } from '@/features/billing/api/list-reader-billing-plans';
+import { formatPlanPriceLabel } from '@/features/billing/lib/format-plan-price-label';
 import { formatSubscriptionDisplay } from '@/features/billing/lib/format-subscription-display';
 import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subscription';
 import { theme } from '@/theme/theme';
 
 /**
- * Profile billing card: plan/status, Stripe Checkout, and refund (server-authoritative).
+ * Profile billing card: plan/status, plan picker, Stripe Checkout, and refund.
  */
 export function SubscriptionStatusCard(): JSX.Element {
   const billing = useReaderSubscription();
   const [confirmRefund, setConfirmRefund] = useState<boolean>(false);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const effectivePlanId: number | null =
+    selectedPlanId ?? billing.plans[0]?.id ?? null;
 
   if (billing.isLoading) {
     return (
@@ -46,10 +51,20 @@ export function SubscriptionStatusCard(): JSX.Element {
         >
           <Text style={styles.secondaryLabel}>Try again</Text>
         </Pressable>
+        <PlanPicker
+          plans={billing.plans}
+          selectedPlanId={effectivePlanId}
+          onSelect={setSelectedPlanId}
+        />
         <SubscribeButton
           isCheckingOut={billing.isCheckingOut}
+          disabled={effectivePlanId === null}
           onPress={async () => {
-            const message: string | null = await billing.startCheckout();
+            if (effectivePlanId === null) {
+              setCheckoutMessage('Ask a grown-up to pick a plan first.');
+              return;
+            }
+            const message: string | null = await billing.startCheckout(effectivePlanId);
             setCheckoutMessage(message);
           }}
         />
@@ -87,10 +102,20 @@ export function SubscriptionStatusCard(): JSX.Element {
         Full-book reading follows your plan on the server. Ask a grown-up before
         changing billing.
       </Text>
+      <PlanPicker
+        plans={billing.plans}
+        selectedPlanId={effectivePlanId}
+        onSelect={setSelectedPlanId}
+      />
       <SubscribeButton
         isCheckingOut={billing.isCheckingOut}
+        disabled={effectivePlanId === null}
         onPress={async () => {
-          const message: string | null = await billing.startCheckout();
+          if (effectivePlanId === null) {
+            setCheckoutMessage('Ask a grown-up to pick a plan first.');
+            return;
+          }
+          const message: string | null = await billing.startCheckout(effectivePlanId);
           setCheckoutMessage(message);
         }}
       />
@@ -163,14 +188,58 @@ export function SubscriptionStatusCard(): JSX.Element {
   );
 }
 
+function PlanPicker(input: {
+  readonly plans: ReadonlyArray<ReaderBillingPlan>;
+  readonly selectedPlanId: number | null;
+  readonly onSelect: (planId: number) => void;
+}): JSX.Element | null {
+  if (input.plans.length === 0) {
+    return (
+      <Text style={styles.note} testID="billing-plans-empty">
+        No plans are ready to buy yet. Ask a grown-up to check again later.
+      </Text>
+    );
+  }
+  return (
+    <View style={styles.planList} testID="billing-plans-list">
+      <Text style={styles.label}>Choose a plan</Text>
+      {input.plans.map((plan) => {
+        const isSelected: boolean = plan.id === input.selectedPlanId;
+        const priceLabel: string = formatPlanPriceLabel(plan.amountCents, plan.currency);
+        return (
+          <Pressable
+            key={plan.id}
+            style={[styles.planOption, isSelected ? styles.planOptionSelected : null]}
+            onPress={() => {
+              input.onSelect(plan.id);
+            }}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isSelected }}
+            accessibilityLabel={`Select ${plan.name}`}
+            testID={`billing-plan-option-${plan.id}`}
+          >
+            <Text style={styles.planName}>{plan.name}</Text>
+            <Text style={styles.planDescription}>{plan.description}</Text>
+            {priceLabel.length > 0 ? (
+              <Text style={styles.planPrice}>{priceLabel} / month</Text>
+            ) : null}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 function SubscribeButton(input: {
   readonly isCheckingOut: boolean;
+  readonly disabled: boolean;
   readonly onPress: () => Promise<void>;
 }): JSX.Element {
+  const isDisabled: boolean = input.isCheckingOut || input.disabled;
   return (
     <Pressable
-      style={[styles.primaryButton, input.isCheckingOut ? styles.disabled : null]}
-      disabled={input.isCheckingOut}
+      style={[styles.primaryButton, isDisabled ? styles.disabled : null]}
+      disabled={isDisabled}
       onPress={() => {
         void input.onPress();
       }}
@@ -219,6 +288,34 @@ const styles = StyleSheet.create({
   confirmBlock: {
     gap: theme.spacing.sm,
     marginTop: theme.spacing.sm,
+  },
+  planList: {
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
+  },
+  planOption: {
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radii.control,
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing.sm,
+    gap: 4,
+  },
+  planOptionSelected: {
+    borderColor: theme.colors.primary,
+  },
+  planName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.textPrimary,
+  },
+  planDescription: {
+    ...theme.typography.body,
+    color: theme.colors.textMuted,
+  },
+  planPrice: {
+    ...theme.typography.label,
+    color: theme.colors.primary,
   },
   primaryButton: {
     minHeight: theme.controlMinHeight,

@@ -9,8 +9,10 @@ import {
   CreateStripeCustomerInput,
   RefundPaidSubscriptionInput,
   CancelPaidSubscriptionInput,
+  RetrieveStripePriceInput,
   StripeCheckoutSession,
   StripeCustomer,
+  StripePrice,
   StripeRefund,
   StripeWebhookEvent,
 } from '@/providers/stripe/defs/stripe-manager.defs';
@@ -58,14 +60,25 @@ export class StripeManagerService {
         client_reference_id: input.clientReferenceId,
         success_url: input.successUrl,
         cancel_url: input.cancelUrl,
-        line_items: [
-          { price: this.stripeConfigService.priceId, quantity: STRIPE.checkout.quantity },
-        ],
+        line_items: [{ price: input.priceId, quantity: STRIPE.checkout.quantity }],
+        metadata: { planId: input.metadata.planId },
+        subscription_data: {
+          metadata: { planId: input.metadata.planId },
+        },
       });
       if (session.url === null) {
         throw new StripeFailureException();
       }
       return { checkoutSessionId: session.id, url: session.url };
+    } catch (err: unknown) {
+      throw this.translateRequestError(err);
+    }
+  }
+
+  async retrievePrice(input: RetrieveStripePriceInput): Promise<StripePrice> {
+    try {
+      const price: Stripe.Price = await this.stripe.prices.retrieve(input.priceId);
+      return StripeManagerService.mapStripePrice(price);
     } catch (err: unknown) {
       throw this.translateRequestError(err);
     }
@@ -144,6 +157,7 @@ export class StripeManagerService {
       return {
         ...event,
         customerId: event.customerId ?? mapped.customerId,
+        planId: event.planId ?? mapped.planId,
         currentPeriodStart: event.currentPeriodStart ?? mapped.currentPeriodStart,
         currentPeriodEnd: event.currentPeriodEnd ?? mapped.currentPeriodEnd,
         status: event.status ?? mapped.status,
@@ -166,6 +180,26 @@ export class StripeManagerService {
       throw new StripeFailureException();
     }
     return paymentIntentId;
+  }
+
+  private static mapStripePrice(price: Stripe.Price): StripePrice {
+    if (price.unit_amount === null) {
+      throw new StripeFailureException('Stripe price is missing a unit amount');
+    }
+    if (price.type !== 'recurring' || price.recurring === null) {
+      throw new StripeFailureException('Stripe price must be recurring');
+    }
+    const interval: string = price.recurring.interval;
+    if (interval !== 'month' && interval !== 'year') {
+      throw new StripeFailureException('Stripe price interval must be month or year');
+    }
+    return {
+      priceId: price.id,
+      amountCents: price.unit_amount,
+      currency: price.currency,
+      interval,
+      isRecurring: true,
+    };
   }
 
   private static readPaymentIntentId(invoice: unknown): string | null {

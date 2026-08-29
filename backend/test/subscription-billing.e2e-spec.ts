@@ -17,7 +17,9 @@ import {
   BookType,
 } from '@/modules/book/enum/general.enum';
 import { CategoryService } from '@/modules/category/category.service';
+import { PLAN_SLUG } from '@/modules/subscription/consts/plan-slug.constant';
 import { PlanKind, SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
+import { PlanService } from '@/modules/subscription/plan.service';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
 import { createTestingApp } from './create-testing-app';
@@ -33,6 +35,7 @@ describe('Subscription billing (e2e)', () => {
   let readerId: number | undefined;
   let readerAccessToken: string | undefined;
   let publishedBookId: number | undefined;
+  let monthlyPlanId: number | undefined;
 
   beforeAll(async () => {
     app = await createTestingApp();
@@ -91,6 +94,13 @@ describe('Subscription billing (e2e)', () => {
       throw new Error('Published book was not created');
     }
     return publishedBookId;
+  }
+
+  function getMonthlyPlanId(): number {
+    if (monthlyPlanId === undefined) {
+      throw new Error('Monthly plan was not looked up');
+    }
+    return monthlyPlanId;
   }
 
   async function registerUser(email: string): Promise<{ userId: number; accessToken: string }> {
@@ -159,6 +169,9 @@ describe('Subscription billing (e2e)', () => {
       .set('Authorization', `Bearer ${owner.accessToken}`);
     const publishedBook = await publishCatalogBook(publisherResponse.body.user.id as number);
     publishedBookId = publishedBook.id;
+    const planService: PlanService = getRunningApp().get(PlanService);
+    const monthlyPlan = await planService.getPlanBySlug(PLAN_SLUG.MONTHLY);
+    monthlyPlanId = monthlyPlan.id;
     const actualResponse = await request(getServer())
       .get('/reader/catalog')
       .set('Authorization', `Bearer ${getReaderAccessToken()}`);
@@ -179,6 +192,7 @@ describe('Subscription billing (e2e)', () => {
       .post('/reader/billing/checkout')
       .set('Authorization', `Bearer ${getReaderAccessToken()}`)
       .send({
+        planId: getMonthlyPlanId(),
         successUrl: 'https://evil.test/success',
         cancelUrl: 'http://localhost:3000/cancel',
       });
@@ -191,6 +205,7 @@ describe('Subscription billing (e2e)', () => {
       .post('/reader/billing/checkout')
       .set('Authorization', `Bearer ${getReaderAccessToken()}`)
       .send({
+        planId: getMonthlyPlanId(),
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
       });
@@ -203,6 +218,7 @@ describe('Subscription billing (e2e)', () => {
       .post('/reader/billing/checkout')
       .set('Authorization', `Bearer ${getReaderAccessToken()}`)
       .send({
+        planId: getMonthlyPlanId(),
         successUrl: 'reader://billing/success',
         cancelUrl: 'reader://billing/cancel',
       });
@@ -240,6 +256,7 @@ describe('Subscription billing (e2e)', () => {
             customer: `cus_memory_${getReaderId()}`,
             subscription: `sub_memory_${getReaderId()}`,
             client_reference_id: String(getReaderId()),
+            metadata: { planId: String(getMonthlyPlanId()) },
           },
         },
       });
@@ -273,6 +290,7 @@ describe('Subscription billing (e2e)', () => {
       .post('/reader/billing/checkout')
       .set('Authorization', `Bearer ${getReaderAccessToken()}`)
       .send({
+        planId: getMonthlyPlanId(),
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
       });

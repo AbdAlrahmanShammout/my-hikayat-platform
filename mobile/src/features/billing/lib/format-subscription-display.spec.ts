@@ -24,8 +24,11 @@ describe('formatSubscriptionDisplay', () => {
         updatedAt: '2026-01-01T00:00:00.000Z',
         slug: 'free',
         name: 'Free',
+        description: 'Free reading tier',
         kind: 'free',
         interval: null,
+        amountCents: null,
+        currency: null,
       },
     };
     const actual: SubscriptionDisplay = formatSubscriptionDisplay(input);
@@ -54,8 +57,11 @@ describe('formatSubscriptionDisplay', () => {
         updatedAt: '2026-01-01T00:00:00.000Z',
         slug: 'monthly',
         name: 'Monthly',
+        description: 'Full-book reading',
         kind: 'monthly_paid',
         interval: 'month',
+        amountCents: 999,
+        currency: 'usd',
       },
     };
     const actual: SubscriptionDisplay = formatSubscriptionDisplay(input);

@@ -31,7 +31,7 @@ The platform supports:
   reader (`role = reader`, `isPublisher = false`). It does not create an
   author.
 
-- Subscribe to platform (single subscription model)
+- Subscribe to platform (admin-defined paid plans via Stripe Checkout)
 
 - Browse and read books
 
@@ -147,6 +147,10 @@ Admin accounts are invitation-only:
   `ADMIN`. An existing non-admin is promoted and keeps `isPublisher`.
 
 - Manage subscriptions
+
+- Manage subscription plans (`GET/POST /admin/plans`,
+  `PATCH /admin/plans/:id`). Admins register Stripe Price IDs for paid
+  plans and may edit the free plan name/description.
 
 Admin subscription management:
 
@@ -740,13 +744,19 @@ session time to a chapter spine index as described in §5.1.
 
 # **6. Subscription System**
 
-- Single subscription model for users
+- Admin-defined paid plan catalog (multiple Stripe prices)
 
-- Monthly subscription (Stripe integration)
+- Each paid plan is a recurring Stripe Price registered by an admin
+  (`name`, `description`, `stripe_price_id`). The app does not create
+  Stripe Products or Prices; it retrieves the Price to verify it and
+  store display amount/currency.
 
-- Automatic renewal
+- Readers choose a paid plan and start Checkout for that `planId`
 
-- Free tier available
+- Automatic renewal via Stripe
+
+- Free tier available as exactly one local free plan (no Stripe price,
+  no card)
 
 - Free tier does not require a credit card
 
@@ -754,16 +764,18 @@ session time to a chapter spine index as described in §5.1.
 
 Paid full-book reading is allowed when both are true:
 
-- the user’s plan is the monthly paid plan, and
+- the user’s plan kind is a paid Stripe plan (`monthly_paid`), and
 
 - the current time is before `currentPeriodEnd`.
 
 If `currentPeriodEnd` is missing, paid reading is denied.
 
-The free plan never grants paid reading.
+The free plan never grants paid reading. Entitlement does not depend on
+which paid catalog row was purchased—any paid plan with an open period
+grants access.
 
 Local subscription status is `active` or `canceled`. A **canceled**
-monthly paid subscription still grants paid reading until
+paid subscription still grants paid reading until
 `currentPeriodEnd`. After that timestamp, access stops even if status
 is still `active`.
 
@@ -774,6 +786,7 @@ period end, or access by itself.
 
 A user who already has paid reading entitlement cannot start another
 checkout. After entitlement ends, checkout is allowed again.
+Checkout always targets a specific purchasable paid `planId`.
 
 ## **6.2 Refund Policy**
 

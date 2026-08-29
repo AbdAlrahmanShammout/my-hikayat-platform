@@ -40,6 +40,7 @@ async function dispatchCheckoutCompleted(input: DispatchStripeWebhookEventInput)
     customerId: event.customerId,
     subscriptionId: event.subscriptionId,
     clientReferenceId: event.clientReferenceId,
+    planId: event.planId,
     currentPeriodStart: event.currentPeriodStart,
     currentPeriodEnd: event.currentPeriodEnd,
   });

@@ -18,6 +18,7 @@ type AdminPeriodAnalyticsQuery = NonNullable<
 type AdminCategoriesListQuery = NonNullable<
   paths['/admin/categories']['get']['parameters']['query']
 >;
+type AdminPlansListQuery = NonNullable<paths['/admin/plans']['get']['parameters']['query']>;
 type AdminCollectionsListQuery = NonNullable<
   paths['/admin/collections']['get']['parameters']['query']
 >;
@@ -68,6 +69,10 @@ export const queryKeys = {
       all: ['admin', 'categories'] as const,
       list: (filters: AdminCategoriesListQuery) =>
         [...queryKeys.admin.categories.all, 'list', filters] as const,
+    },
+    plans: {
+      all: ['admin', 'plans'] as const,
+      list: (filters: AdminPlansListQuery) => [...queryKeys.admin.plans.all, 'list', filters] as const,
     },
     users: {
       all: ['admin', 'users'] as const,

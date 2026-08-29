@@ -5,7 +5,6 @@ import { TransactionRunner } from '@/common/base/transaction-runner';
 import { AppConfigService } from '@/config/app/app-config.service';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
-import { PLAN_SLUG } from '@/modules/subscription/consts/plan-slug.constant';
 import { REFUND_WINDOW } from '@/modules/subscription/consts/refund-window.constant';
 import {
   CancelManagedSubscriptionServiceInput,
@@ -56,6 +55,8 @@ export class SubscriptionBillingService {
     const user: UserEntity = await this.userService.getUserById(input.userId);
     this.assertCheckoutReturnUrl(input.successUrl);
     this.assertCheckoutReturnUrl(input.cancelUrl);
+    const plan: PlanEntity = await this.planService.getPurchasablePlanById(input.planId);
+    const stripePriceId: string = plan.stripePriceId as string;
     const subscription: SubscriptionEntity = await this.resolveCheckoutSubscription(user.id);
     if (hasPaidReadingEntitlement(subscription)) {
       throw new SubscriptionAlreadyPaidException();
@@ -72,6 +73,8 @@ export class SubscriptionBillingService {
         bridgeOrigin: input.bridgeOrigin,
       }),
       clientReferenceId: String(user.id),
+      priceId: stripePriceId,
+      metadata: { planId: String(plan.id) },
     });
     return { url: session.url };
   }
@@ -166,10 +169,17 @@ export class SubscriptionBillingService {
     if (subscription === null) {
       return;
     }
-    const monthlyPlan: PlanEntity = await this.planService.getPlanBySlug(PLAN_SLUG.MONTHLY);
+    const planId: number | null = SubscriptionBillingService.parsePlanId(input.planId);
+    if (planId === null) {
+      return;
+    }
+    const plan: PlanEntity | null = await this.planService.findPlanById(planId);
+    if (plan === null || plan.kind !== PlanKind.MONTHLY_PAID) {
+      return;
+    }
     await this.subscriptionService.updateSubscription({
       id: subscription.id,
-      planId: monthlyPlan.id,
+      planId: plan.id,
       status: SubscriptionStatus.ACTIVE,
       stripeCustomerId: input.customerId,
       stripeSubscriptionId: input.subscriptionId,
@@ -188,10 +198,8 @@ export class SubscriptionBillingService {
     if (subscription === null) {
       return;
     }
-    const monthlyPlan: PlanEntity = await this.planService.getPlanBySlug(PLAN_SLUG.MONTHLY);
     await this.subscriptionService.updateSubscription({
       id: subscription.id,
-      planId: monthlyPlan.id,
       status: SubscriptionStatus.ACTIVE,
       currentPeriodStart: input.currentPeriodStart,
       currentPeriodEnd: input.currentPeriodEnd,
@@ -363,5 +371,16 @@ export class SubscriptionBillingService {
       return null;
     }
     return userId;
+  }
+
+  private static parsePlanId(planId: string | null): number | null {
+    if (planId === null) {
+      return null;
+    }
+    const parsed: number = Number.parseInt(planId, 10);
+    if (!Number.isInteger(parsed) || parsed <= 0 || String(parsed) !== planId) {
+      return null;
+    }
+    return parsed;
   }
 }

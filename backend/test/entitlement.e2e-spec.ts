@@ -16,6 +16,8 @@ import {
 } from '@/modules/book/enum/general.enum';
 import { CategoryService } from '@/modules/category/category.service';
 import { PlanKind, SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
+import { PLAN_SLUG } from '@/modules/subscription/consts/plan-slug.constant';
+import { PlanService } from '@/modules/subscription/plan.service';
 import { SubscriptionService } from '@/modules/subscription/subscription.service';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
@@ -37,6 +39,7 @@ describe('Entitlement (e2e)', () => {
   let freeAccessToken: string | undefined;
   let paidUserId: number | undefined;
   let paidAccessToken: string | undefined;
+  let monthlyPlanId: number | undefined;
 
   beforeAll(async () => {
     app = await createTestingApp();
@@ -240,10 +243,16 @@ describe('Entitlement (e2e)', () => {
   });
 
   it('Given an active paid subscription after currentPeriodEnd, When checkout starts, Then a hosted checkout URL is returned', async () => {
+    if (monthlyPlanId === undefined) {
+      const planService: PlanService = getRunningApp().get(PlanService);
+      const monthlyPlan = await planService.getPlanBySlug(PLAN_SLUG.MONTHLY);
+      monthlyPlanId = monthlyPlan.id;
+    }
     const actualResponse = await request(getServer())
       .post('/reader/billing/checkout')
       .set('Authorization', `Bearer ${getPaidAccessToken()}`)
       .send({
+        planId: monthlyPlanId,
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
       });
@@ -269,6 +278,7 @@ describe('Entitlement (e2e)', () => {
       .post('/reader/billing/checkout')
       .set('Authorization', `Bearer ${getPaidAccessToken()}`)
       .send({
+        planId: monthlyPlanId,
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
       });
@@ -294,6 +304,7 @@ describe('Entitlement (e2e)', () => {
       .post('/reader/billing/checkout')
       .set('Authorization', `Bearer ${getPaidAccessToken()}`)
       .send({
+        planId: monthlyPlanId,
         successUrl: 'http://localhost:3000/success',
         cancelUrl: 'http://localhost:3000/cancel',
       });

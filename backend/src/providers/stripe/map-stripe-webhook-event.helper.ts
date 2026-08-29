@@ -14,6 +14,7 @@ export function mapStripeWebhookEvent(input: MapStripeWebhookEventInput): Stripe
     customerId: readStripeId(object.customer),
     subscriptionId: resolveSubscriptionId(input.type, objectId, object.subscription),
     clientReferenceId: readString(object.client_reference_id),
+    planId: readPlanId(object),
     currentPeriodStart: readPeriodField(object, 'current_period_start'),
     currentPeriodEnd: readPeriodField(object, 'current_period_end'),
     status: readString(object.status),
@@ -34,6 +35,16 @@ function resolveSubscriptionId(
     type === STRIPE.webhookEventType.customerSubscriptionDeleted
   ) {
     return objectId;
+  }
+  return null;
+}
+
+function readPlanId(object: Record<string, unknown>): string | null {
+  if (isRecord(object.metadata)) {
+    const fromMetadata: string | null = readString(object.metadata.planId);
+    if (fromMetadata !== null) {
+      return fromMetadata;
+    }
   }
   return null;
 }

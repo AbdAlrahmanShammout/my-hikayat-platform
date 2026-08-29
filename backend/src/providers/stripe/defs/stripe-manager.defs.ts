@@ -12,11 +12,27 @@ export type CreateStripeCheckoutSessionInput = {
   readonly successUrl: string;
   readonly cancelUrl: string;
   readonly clientReferenceId: string;
+  readonly priceId: string;
+  readonly metadata: {
+    readonly planId: string;
+  };
 };
 
 export type StripeCheckoutSession = {
   readonly checkoutSessionId: string;
   readonly url: string;
+};
+
+export type RetrieveStripePriceInput = {
+  readonly priceId: string;
+};
+
+export type StripePrice = {
+  readonly priceId: string;
+  readonly amountCents: number;
+  readonly currency: string;
+  readonly interval: 'month' | 'year';
+  readonly isRecurring: boolean;
 };
 
 export type ConstructStripeWebhookEventInput = {
@@ -31,6 +47,7 @@ export type StripeWebhookEvent = {
   readonly customerId: string | null;
   readonly subscriptionId: string | null;
   readonly clientReferenceId: string | null;
+  readonly planId: string | null;
   readonly currentPeriodStart: Date | null;
   readonly currentPeriodEnd: Date | null;
   readonly status: string | null;
@@ -40,6 +57,7 @@ export type HandleCheckoutCompletedInput = {
   readonly customerId: string;
   readonly subscriptionId: string;
   readonly clientReferenceId: string;
+  readonly planId: string | null;
   readonly currentPeriodStart: Date | null;
   readonly currentPeriodEnd: Date | null;
 };

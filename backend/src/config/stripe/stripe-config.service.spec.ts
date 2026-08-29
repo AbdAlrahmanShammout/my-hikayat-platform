@@ -32,13 +32,4 @@ describe('StripeConfigService', () => {
       expect(mockConfigService.get).toHaveBeenCalledWith('stripe.webhookSecret');
     });
   });
-
-  describe('priceId', () => {
-    it('returns the configured monthly price id', () => {
-      mockConfigService.get.mockReturnValue('price_test_monthly');
-      const actualPriceId: string = stripeConfigService.priceId;
-      expect(actualPriceId).toBe('price_test_monthly');
-      expect(mockConfigService.get).toHaveBeenCalledWith('stripe.priceId');
-    });
-  });
 });

@@ -19,6 +19,7 @@ describe('mapStripeWebhookEvent', () => {
       customerId: 'cus_1',
       subscriptionId: 'sub_1',
       clientReferenceId: '7',
+      planId: null,
       currentPeriodStart: null,
       currentPeriodEnd: null,
       status: null,
@@ -62,9 +63,25 @@ describe('mapStripeWebhookEvent', () => {
       customerId: 'cus_1',
       subscriptionId: 'sub_1',
       clientReferenceId: null,
+      planId: null,
       currentPeriodStart: null,
       currentPeriodEnd: null,
       status: 'open',
     });
+  });
+
+  it('reads planId from checkout session metadata', () => {
+    const actualEvent = mapStripeWebhookEvent({
+      id: 'evt_4',
+      type: 'checkout.session.completed',
+      object: {
+        id: 'cs_1',
+        customer: 'cus_1',
+        subscription: 'sub_1',
+        client_reference_id: '7',
+        metadata: { planId: '2' },
+      },
+    });
+    expect(actualEvent.planId).toBe('2');
   });
 });

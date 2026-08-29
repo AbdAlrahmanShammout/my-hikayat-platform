@@ -20,6 +20,8 @@ describe('MemoryStripeManagerService', () => {
       successUrl: 'http://localhost:3000/success',
       cancelUrl: 'http://localhost:3000/cancel',
       clientReferenceId: '7',
+      priceId: 'price_memory_monthly',
+      metadata: { planId: '2' },
     });
     expect(actualCustomer).toEqual({ customerId: 'cus_memory_7' });
     expect(actualSession).toEqual({
@@ -85,6 +87,7 @@ describe('MemoryStripeManagerService', () => {
       customerId: 'cus_memory_7',
       subscriptionId: 'sub_memory_7',
       clientReferenceId: '7',
+      planId: null,
       currentPeriodStart: expect.any(Date),
       currentPeriodEnd: expect.any(Date),
     });
