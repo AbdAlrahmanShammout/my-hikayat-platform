@@ -204,6 +204,13 @@ export interface paths {
       };
     };
   };
+  "/reader/billing/trial/start": {
+    post: {
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['SubscriptionResponse'] } };
+      };
+    };
+  };
   "/reader/billing/refund": {
     post: {
       responses: {
@@ -266,7 +273,8 @@ export interface components {
     GetBooksResponseDto: { books: Array<components['schemas']['BookResponse']>; total: number };
     CreateBookAssetDeliveryGrantResponseDto: { bookId: number; bookAssetId: number; kind: "source" | "processed" | "preview_image" | "promo_video" | "audio"; url: string; expiresAt: string; contentType: string; byteSize: number; checksumSha256?: unknown | null; isEncrypted: boolean };
     CreateBookAssetContentKeyRequestDto: { sessionId: number };
-    CreateBookAssetContentKeyResponseDto: { bookId: number; bookAssetId: number; sessionId: number; keyId: string; algorithm: "aes-256-gcm"; keyDelivery: "plain"; key: string; expiresAt: string };
+    OfflineReadingLeaseResponse: { version: 1; keyId: string; userId: number; bookId: number; bookAssetId: number; accessKind: "trial" | "paid"; issuedAt: string; expiresAt: string; signature: string };
+    CreateBookAssetContentKeyResponseDto: { bookId: number; bookAssetId: number; sessionId: number; keyId: string; algorithm: "aes-256-gcm"; keyDelivery: "plain"; key: string; expiresAt: string; offlineLease: components['schemas']['OfflineReadingLeaseResponse'] };
     GetCategoriesResponseDto: { categories: Array<components['schemas']['CategoryResponse']>; total: number };
     CollectionDiscoveryResponse: { id: number; createdAt: string; updatedAt: string; title: string; books: Array<components['schemas']['BookResponse']> };
     GetDiscoveryCollectionsResponseDto: { collections: Array<components['schemas']['CollectionDiscoveryResponse']>; total: number };
@@ -291,7 +299,7 @@ export interface components {
     StartCheckoutResponseDto: { url: string };
     PlanResponse: { id: number; createdAt: string; updatedAt: string; slug: string; name: string; description: string; kind: "free" | "monthly_paid"; interval: "month" | null; amountCents: number | null; currency: string | null };
     GetPlansResponseDto: { plans: Array<components['schemas']['PlanResponse']>; total: number };
-    SubscriptionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; planId: number; status: "active" | "canceled"; startedAt: string; currentPeriodStart?: unknown | null; currentPeriodEnd?: unknown | null; canceledAt?: unknown | null; activatedAt?: unknown | null; plan?: components['schemas']['PlanResponse'] };
+    SubscriptionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; planId: number; status: "active" | "canceled"; startedAt: string; currentPeriodStart?: unknown | null; currentPeriodEnd?: unknown | null; canceledAt?: unknown | null; activatedAt?: unknown | null; trialStartedAt?: unknown | null; trialEndsAt?: unknown | null; readingAccessState: "free" | "trial" | "paid"; trialEligible: boolean; plan?: components['schemas']['PlanResponse'] };
     StripeWebhookReceivedResponseDto: { received: boolean };
     AuthSessionResponseDto: { accessToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
     RegisterRequestDto: { email: string; password: string };

@@ -22,6 +22,8 @@ describe('SubscriptionResponse', () => {
       currentPeriodEnd: new Date('2026-09-01T00:00:00.000Z'),
       canceledAt: null,
       activatedAt: null,
+      trialStartedAt: null,
+      trialEndsAt: null,
       stripeCustomerId: 'cus_secret',
       stripeSubscriptionId: 'sub_secret',
       plan: new PlanEntity({
@@ -30,8 +32,12 @@ describe('SubscriptionResponse', () => {
         updatedAt: new Date('2026-01-01T00:00:00.000Z'),
         slug: 'monthly',
         name: 'Monthly',
+        description: 'Monthly paid full-book reading',
         kind: PlanKind.MONTHLY_PAID,
         interval: PlanInterval.MONTH,
+        stripePriceId: 'price_seed_monthly',
+        amountCents: 999,
+        currency: 'usd',
       }),
     });
     const actualResponse = new SubscriptionResponse(inputEntity);
@@ -39,6 +45,10 @@ describe('SubscriptionResponse', () => {
     expect(actualResponse.status).toBe(SubscriptionStatus.ACTIVE);
     expect(actualResponse.plan?.kind).toBe(PlanKind.MONTHLY_PAID);
     expect(actualResponse.activatedAt).toBeNull();
+    expect(actualResponse.trialStartedAt).toBeNull();
+    expect(actualResponse.trialEndsAt).toBeNull();
+    expect(actualResponse.readingAccessState).toBe('paid');
+    expect(actualResponse.trialEligible).toBe(false);
     expect(actualResponse).not.toHaveProperty('stripeCustomerId');
     expect(actualResponse).not.toHaveProperty('stripeSubscriptionId');
   });

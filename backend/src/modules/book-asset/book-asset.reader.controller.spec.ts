@@ -84,6 +84,17 @@ describe('BookAssetReaderController', () => {
         keyDelivery: 'plain',
         key: Buffer.alloc(32, 1).toString('base64'),
         expiresAt,
+        offlineLease: {
+          version: 1,
+          keyId: 'lease-v1',
+          userId: 5,
+          bookId: 8,
+          bookAssetId: 9,
+          accessKind: 'trial',
+          issuedAt: new Date('2026-08-15T16:00:00.000Z'),
+          expiresAt: new Date('2026-08-22T16:00:00.000Z'),
+          signature: 'signed',
+        },
       });
       const actualResponse = await bookAssetReaderController.createSourceContentKey(
         8,
@@ -98,6 +109,7 @@ describe('BookAssetReaderController', () => {
       expect(actualResponse.keyDelivery).toBe('plain');
       expect(actualResponse.sessionId).toBe(12);
       expect(actualResponse.key).toBe(Buffer.alloc(32, 1).toString('base64'));
+      expect(actualResponse.offlineLease.signature).toBe('signed');
     });
   });
 });

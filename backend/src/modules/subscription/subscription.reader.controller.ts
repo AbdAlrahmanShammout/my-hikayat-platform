@@ -97,6 +97,17 @@ export class SubscriptionReaderController {
     return new SubscriptionResponse(entity);
   }
 
+  @Post('trial/start')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Start the one-time no-card free trial for full-book reading' })
+  @ApiResponse({ status: 200, type: SubscriptionResponse })
+  async startTrial(@LoggedInUser() currentUser: UserEntity): Promise<SubscriptionResponse> {
+    const entity: SubscriptionEntity = await this.subscriptionBillingService.startTrial(
+      currentUser.id,
+    );
+    return new SubscriptionResponse(entity);
+  }
+
   @Post('refund')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Request a refund within 7 days of activating monthly access' })

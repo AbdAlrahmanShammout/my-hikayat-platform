@@ -56,14 +56,14 @@ describe('BookAssetDeliveryService', () => {
   const expiresAt = new Date('2026-08-15T16:05:00.000Z');
   let mockBookService: { getCatalogBookById: jest.Mock };
   let mockBookAssetService: { findLatestBookAsset: jest.Mock };
-  let mockEntitlementService: { assertPaidReadingAccess: jest.Mock };
+  let mockEntitlementService: { assertFullBookReadingAccess: jest.Mock };
   let mockStorageManagerService: { createSignedGetUrl: jest.Mock };
   let bookAssetDeliveryService: BookAssetDeliveryService;
 
   beforeEach(() => {
     mockBookService = { getCatalogBookById: jest.fn() };
     mockBookAssetService = { findLatestBookAsset: jest.fn() };
-    mockEntitlementService = { assertPaidReadingAccess: jest.fn().mockResolvedValue(undefined) };
+    mockEntitlementService = { assertFullBookReadingAccess: jest.fn().mockResolvedValue(undefined) };
     mockStorageManagerService = { createSignedGetUrl: jest.fn() };
     bookAssetDeliveryService = new BookAssetDeliveryService(
       mockBookService as unknown as BookService,
@@ -86,7 +86,7 @@ describe('BookAssetDeliveryService', () => {
         userId: 5,
       });
       expect(mockBookService.getCatalogBookById).toHaveBeenCalledWith(8);
-      expect(mockEntitlementService.assertPaidReadingAccess).toHaveBeenCalledWith(5);
+      expect(mockEntitlementService.assertFullBookReadingAccess).toHaveBeenCalledWith(5);
       expect(mockStorageManagerService.createSignedGetUrl).toHaveBeenCalledWith({
         key: 'books/8/source/uuid',
         expiresInSeconds: BOOK_DELIVERY_GRANT.expiresInSeconds,
@@ -112,12 +112,12 @@ describe('BookAssetDeliveryService', () => {
       await expect(
         bookAssetDeliveryService.createSourceDeliveryGrant({ bookId: 8, userId: 5 }),
       ).rejects.toBeInstanceOf(ResourceNotFoundException);
-      expect(mockEntitlementService.assertPaidReadingAccess).not.toHaveBeenCalled();
+      expect(mockEntitlementService.assertFullBookReadingAccess).not.toHaveBeenCalled();
     });
 
     it('requires paid reading access after the catalog book is visible', async () => {
       mockBookService.getCatalogBookById.mockResolvedValue(createCatalogBook());
-      mockEntitlementService.assertPaidReadingAccess.mockRejectedValue(
+      mockEntitlementService.assertFullBookReadingAccess.mockRejectedValue(
         new FullBookAccessDeniedException(),
       );
       await expect(

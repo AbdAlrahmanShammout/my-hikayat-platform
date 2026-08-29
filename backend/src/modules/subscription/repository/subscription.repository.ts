@@ -2,6 +2,7 @@ import { TransactionContext } from '@/common/base/transaction-context';
 import {
   CreateSubscriptionRepoInput,
   ListSubscriptionsRepoInput,
+  StartTrialIfUnusedRepoInput,
   SubscriptionPage,
   UpdateSubscriptionRepoInput,
 } from '@/modules/subscription/defs/subscription-repository.defs';
@@ -16,6 +17,10 @@ export abstract class SubscriptionRepository {
     input: UpdateSubscriptionRepoInput,
     context?: TransactionContext,
   ): Promise<SubscriptionEntity>;
+  abstract startTrialIfUnused(
+    input: StartTrialIfUnusedRepoInput,
+    context?: TransactionContext,
+  ): Promise<SubscriptionEntity | null>;
   abstract findById(id: number): Promise<SubscriptionEntity | null>;
   abstract findByUserId(userId: number): Promise<SubscriptionEntity | null>;
   abstract findByStripeCustomerId(stripeCustomerId: string): Promise<SubscriptionEntity | null>;

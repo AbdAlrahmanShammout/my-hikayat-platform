@@ -41,7 +41,7 @@ export class SearchService {
   async searchInBook(input: SearchInBookServiceInput): Promise<InBookSearchPage> {
     const query: string = SearchService.normalizeSearchQuery(input.query);
     const book: BookEntity = await this.bookService.getCatalogBookById(input.bookId);
-    await this.entitlementService.assertPaidReadingAccess(input.userId);
+    await this.entitlementService.assertFullBookReadingAccess(input.userId);
     if (
       book.layoutType !== BookLayoutType.REFLOWABLE &&
       book.layoutType !== BookLayoutType.FIXED_LAYOUT

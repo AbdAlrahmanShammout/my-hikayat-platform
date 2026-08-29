@@ -85,7 +85,11 @@ export class SubscriptionBillingService {
   }
 
   async getCurrentSubscription(userId: number): Promise<SubscriptionEntity> {
-    return this.subscriptionService.getSubscriptionByUserId(userId);
+    return this.subscriptionService.ensureFreeSubscription(userId);
+  }
+
+  async startTrial(userId: number): Promise<SubscriptionEntity> {
+    return this.subscriptionService.startTrial(userId);
   }
 
   async requestRefund(userId: number): Promise<SubscriptionEntity> {
@@ -177,6 +181,10 @@ export class SubscriptionBillingService {
     if (plan === null || plan.kind !== PlanKind.MONTHLY_PAID) {
       return;
     }
+    const closedTrialEndsAt: Date | undefined =
+      subscription.trialEndsAt !== null && subscription.trialEndsAt.getTime() > Date.now()
+        ? new Date()
+        : undefined;
     await this.subscriptionService.updateSubscription({
       id: subscription.id,
       planId: plan.id,
@@ -187,6 +195,7 @@ export class SubscriptionBillingService {
       currentPeriodEnd: input.currentPeriodEnd,
       canceledAt: null,
       activatedAt: SubscriptionBillingService.resolveActivatedAt(subscription, input),
+      ...(closedTrialEndsAt === undefined ? {} : { trialEndsAt: closedTrialEndsAt }),
     });
   }
 

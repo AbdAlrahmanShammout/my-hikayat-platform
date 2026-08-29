@@ -22,6 +22,8 @@ describe('SubscriptionPrismaRepository', () => {
     currentPeriodEnd: null,
     canceledAt: null,
     activatedAt: null,
+    trialStartedAt: null,
+    trialEndsAt: null,
     stripeCustomerId: null,
     stripeSubscriptionId: null,
     plan: {
@@ -31,8 +33,12 @@ describe('SubscriptionPrismaRepository', () => {
       deletedAt: null,
       slug: 'free',
       name: 'Free',
+      description: 'Free tier without a credit card',
       kind: 'free',
       interval: null,
+      stripePriceId: null,
+      amountCents: null,
+      currency: null,
     },
   };
   let mockPrismaProviderService: {
@@ -43,6 +49,7 @@ describe('SubscriptionPrismaRepository', () => {
       findMany: jest.Mock;
       count: jest.Mock;
       update: jest.Mock;
+      updateMany: jest.Mock;
     };
   };
   let subscriptionPrismaRepository: SubscriptionPrismaRepository;
@@ -56,6 +63,7 @@ describe('SubscriptionPrismaRepository', () => {
         findMany: jest.fn(),
         count: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
       },
     };
     subscriptionPrismaRepository = new SubscriptionPrismaRepository(
@@ -82,6 +90,8 @@ describe('SubscriptionPrismaRepository', () => {
         currentPeriodStart: null,
         currentPeriodEnd: null,
         activatedAt: null,
+        trialStartedAt: null,
+        trialEndsAt: null,
         stripeCustomerId: null,
         stripeSubscriptionId: null,
       },
@@ -120,5 +130,37 @@ describe('SubscriptionPrismaRepository', () => {
       include: subscriptionDetailsInclude,
     });
     expect(actualEntity?.stripeSubscriptionId).toBe('sub_1');
+  });
+
+  it('starts a trial only when trialStartedAt is still null', async () => {
+    const trialStartedAt = new Date('2026-08-16T12:00:00.000Z');
+    const trialEndsAt = new Date('2026-08-23T12:00:00.000Z');
+    mockPrismaProviderService.subscription.updateMany.mockResolvedValue({ count: 1 });
+    mockPrismaProviderService.subscription.findFirst.mockResolvedValue({
+      ...persistenceRow,
+      trialStartedAt,
+      trialEndsAt,
+    });
+    const actualEntity = await subscriptionPrismaRepository.startTrialIfUnused({
+      userId: 5,
+      trialStartedAt,
+      trialEndsAt,
+    });
+    expect(mockPrismaProviderService.subscription.updateMany).toHaveBeenCalledWith({
+      where: { userId: 5, trialStartedAt: null, deletedAt: null },
+      data: { trialStartedAt, trialEndsAt },
+    });
+    expect(actualEntity?.trialStartedAt).toEqual(trialStartedAt);
+  });
+
+  it('returns null when the trial CAS finds the trial already used', async () => {
+    mockPrismaProviderService.subscription.updateMany.mockResolvedValue({ count: 0 });
+    const actualEntity = await subscriptionPrismaRepository.startTrialIfUnused({
+      userId: 5,
+      trialStartedAt: new Date(),
+      trialEndsAt: new Date(),
+    });
+    expect(actualEntity).toBeNull();
+    expect(mockPrismaProviderService.subscription.findFirst).not.toHaveBeenCalled();
   });
 });

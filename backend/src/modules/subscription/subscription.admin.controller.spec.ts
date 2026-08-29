@@ -20,8 +20,12 @@ function createSamplePlan(): PlanEntity {
     updatedAt: new Date('2026-01-01T00:00:00.000Z'),
     slug: 'free',
     name: 'Free',
+    description: 'Free tier without a credit card',
     kind: PlanKind.FREE,
     interval: null,
+    stripePriceId: null,
+    amountCents: null,
+    currency: null,
   });
 }
 
@@ -38,6 +42,8 @@ function createSampleSubscription(): SubscriptionEntity {
     currentPeriodEnd: null,
     canceledAt: null,
     activatedAt: null,
+    trialStartedAt: null,
+    trialEndsAt: null,
     stripeCustomerId: null,
     stripeSubscriptionId: null,
     plan: createSamplePlan(),

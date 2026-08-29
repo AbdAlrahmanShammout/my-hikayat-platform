@@ -70,6 +70,8 @@ function createSampleSubscription(
     currentPeriodEnd,
     canceledAt: status === SubscriptionStatus.CANCELED ? new Date() : null,
     activatedAt: kind === PlanKind.MONTHLY_PAID ? new Date() : null,
+    trialStartedAt: null,
+    trialEndsAt: null,
     stripeCustomerId: null,
     stripeSubscriptionId: null,
     plan,
@@ -82,6 +84,7 @@ describe('SubscriptionBillingService', () => {
     getSubscriptionByUserId: jest.Mock;
     getSubscriptionById: jest.Mock;
     ensureFreeSubscription: jest.Mock;
+    startTrial: jest.Mock;
     updateSubscription: jest.Mock;
     cancelSubscription: jest.Mock;
   };
@@ -109,6 +112,7 @@ describe('SubscriptionBillingService', () => {
       getSubscriptionByUserId: jest.fn(),
       getSubscriptionById: jest.fn(),
       ensureFreeSubscription: jest.fn(),
+      startTrial: jest.fn(),
       updateSubscription: jest.fn(),
       cancelSubscription: jest.fn(),
     };
@@ -369,6 +373,32 @@ describe('SubscriptionBillingService', () => {
         canceledAt: null,
         activatedAt: new Date('2026-08-01T00:00:00.000Z'),
       });
+    });
+
+    it('closes an open trial window when converting to paid', async () => {
+      const trialSubscription = createSampleSubscription();
+      trialSubscription.trialStartedAt = new Date('2026-08-10T00:00:00.000Z');
+      trialSubscription.trialEndsAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      mockUserService.findUserById.mockResolvedValue(createSampleUser());
+      mockSubscriptionService.findSubscriptionByUserId.mockResolvedValue(trialSubscription);
+      mockPlanService.findPlanById.mockResolvedValue(createSamplePlan(PlanKind.MONTHLY_PAID));
+      mockSubscriptionService.updateSubscription.mockResolvedValue(
+        createSampleSubscription(PlanKind.MONTHLY_PAID),
+      );
+      await subscriptionBillingService.applyCheckoutCompleted({
+        customerId: 'cus_1',
+        subscriptionId: 'sub_1',
+        clientReferenceId: '5',
+        planId: '2',
+        currentPeriodStart: new Date('2026-08-01T00:00:00.000Z'),
+        currentPeriodEnd: new Date('2026-09-01T00:00:00.000Z'),
+      });
+      expect(mockSubscriptionService.updateSubscription).toHaveBeenCalledWith(
+        expect.objectContaining({
+          planId: 2,
+          trialEndsAt: expect.any(Date),
+        }),
+      );
     });
 
     it('no-ops when the client reference does not match a user', async () => {

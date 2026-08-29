@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 import { BookAssetContentKey } from '@/modules/book-asset/defs/book-asset-service.defs';
+import { OfflineReadingLeaseResponse } from '@/modules/book-asset/dto/response/offline-reading-lease.response';
 
 export class CreateBookAssetContentKeyResponseDto {
   @ApiProperty({ description: 'Catalog book id', example: 8 })
@@ -39,6 +40,12 @@ export class CreateBookAssetContentKeyResponseDto {
   })
   expiresAt: Date;
 
+  @ApiProperty({
+    description: 'Signed offline reading lease bound to this user, book, and asset',
+    type: () => OfflineReadingLeaseResponse,
+  })
+  offlineLease: OfflineReadingLeaseResponse;
+
   constructor(contentKey: BookAssetContentKey) {
     this.bookId = contentKey.bookId;
     this.bookAssetId = contentKey.bookAssetId;
@@ -48,5 +55,6 @@ export class CreateBookAssetContentKeyResponseDto {
     this.keyDelivery = contentKey.keyDelivery;
     this.key = contentKey.key;
     this.expiresAt = contentKey.expiresAt;
+    this.offlineLease = new OfflineReadingLeaseResponse(contentKey.offlineLease);
   }
 }

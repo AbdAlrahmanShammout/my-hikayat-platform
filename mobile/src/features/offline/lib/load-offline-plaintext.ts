@@ -1,4 +1,5 @@
 import { getOfflineManifest } from '@/features/offline/lib/offline-manifest-storage';
+import { assertOfflineReadingLeaseValid } from '@/features/offline/lib/offline-reading-lease';
 import {
   decodeContentKeyBase64,
   decryptContentWithDataKey,
@@ -18,6 +19,7 @@ export async function tryLoadOfflinePlaintext(bookId: number): Promise<Uint8Arra
   if (manifest === null) {
     return null;
   }
+  await assertOfflineReadingLeaseValid(manifest);
   const dekBase64: string | null = await readOfflineDek(manifest.bookId, manifest.bookAssetId);
   if (dekBase64 === null || dekBase64.trim().length === 0) {
     return null;

@@ -44,6 +44,8 @@ function createSampleSubscription(input: {
     currentPeriodEnd,
     canceledAt: status === SubscriptionStatus.CANCELED ? NOW : null,
     activatedAt: null,
+    trialStartedAt: null,
+    trialEndsAt: null,
     stripeCustomerId: null,
     stripeSubscriptionId: null,
     plan,

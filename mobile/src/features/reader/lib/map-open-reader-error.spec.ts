@@ -12,7 +12,7 @@ describe('mapOpenReaderError', () => {
       }),
     );
     expect(actual.kind).toBe('entitlement_denied');
-    expect(actual.message).toContain('Subscribe on Profile');
+    expect(actual.message).toContain('Start Free Trial or Subscribe on Profile');
   });
 
   it('maps layout unavailable', () => {
@@ -36,5 +36,17 @@ describe('mapOpenReaderError', () => {
     );
     expect(actual.kind).toBe('not_found');
     expect(actual.message).toContain('not downloaded for offline reading');
+  });
+
+  it('maps an expired offline lease to its server-authorized lock message', () => {
+    const actual = mapOpenReaderError(
+      new ApiError({
+        message: 'This offline download is locked. Connect to the internet or Subscribe.',
+        code: 'OFFLINE_LEASE_EXPIRED',
+        statusCode: 403,
+      }),
+    );
+    expect(actual.kind).toBe('entitlement_denied');
+    expect(actual.message).toContain('offline download is locked');
   });
 });

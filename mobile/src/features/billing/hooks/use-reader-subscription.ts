@@ -1,28 +1,32 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { ApiError } from '@/api/api-error';
 import { getReaderSubscription } from '@/features/billing/api/get-reader-subscription';
 import {
   listReaderBillingPlans,
   type ReaderBillingPlan,
 } from '@/features/billing/api/list-reader-billing-plans';
 import { requestReaderRefund } from '@/features/billing/api/request-reader-refund';
+import { startReaderTrial } from '@/features/billing/api/start-reader-trial';
 import { executeStripeCheckoutFlow } from '@/features/billing/lib/execute-stripe-checkout-flow';
+import { mapBillingError } from '@/features/billing/lib/map-billing-error';
 
 const SUBSCRIPTION_QUERY_KEY = ['reader', 'billing', 'subscription'] as const;
 const PLANS_QUERY_KEY = ['reader', 'billing', 'plans'] as const;
 
 /**
- * Loads subscription status, paid plan catalog, refund, and Stripe Checkout.
+ * Loads subscription status, paid plan catalog, trial start, refund, and Stripe Checkout.
  * Backend remains the source of truth for entitlement.
  */
 export function useReaderSubscription(): {
   readonly subscription: Awaited<ReturnType<typeof getReaderSubscription>> | undefined;
-  readonly plans: ReadonlyArray<ReaderBillingPlan>;
+  readonly plans: readonly ReaderBillingPlan[];
   readonly isLoading: boolean;
   readonly isError: boolean;
   readonly errorMessage: string | null;
   readonly refetch: () => Promise<void>;
+  readonly startTrial: () => Promise<void>;
+  readonly isStartingTrial: boolean;
+  readonly trialErrorMessage: string | null;
   readonly requestRefund: () => Promise<void>;
   readonly isRefunding: boolean;
   readonly refundErrorMessage: string | null;
@@ -40,6 +44,15 @@ export function useReaderSubscription(): {
     queryKey: PLANS_QUERY_KEY,
     queryFn: listReaderBillingPlans,
     staleTime: 60_000,
+  });
+  const trialMutation = useMutation({
+    mutationFn: startReaderTrial,
+    onSuccess: (subscription) => {
+      queryClient.setQueryData(SUBSCRIPTION_QUERY_KEY, subscription);
+    },
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY });
+    },
   });
   const refundMutation = useMutation({
     mutationFn: requestReaderRefund,
@@ -67,6 +80,16 @@ export function useReaderSubscription(): {
     refetch: async () => {
       await refetchSubscription();
     },
+    startTrial: async () => {
+      try {
+        await trialMutation.mutateAsync();
+      } finally {
+        await query.refetch();
+      }
+    },
+    isStartingTrial: trialMutation.isPending,
+    trialErrorMessage:
+      trialMutation.error === null ? null : mapBillingError(trialMutation.error),
     requestRefund: async () => {
       await refundMutation.mutateAsync();
     },
@@ -90,16 +113,4 @@ export function useReaderSubscription(): {
     isCheckingOut: checkoutMutation.isPending,
     checkoutMessage: null,
   };
-}
-
-function mapBillingError(error: unknown): string {
-  if (error instanceof ApiError) {
-    if (error.statusCode === 404) {
-      return 'No subscription is set up yet. Ask a grown-up to subscribe.';
-    }
-    if (error.message.trim().length > 0) {
-      return error.message;
-    }
-  }
-  return 'Could not talk to billing right now.';
 }

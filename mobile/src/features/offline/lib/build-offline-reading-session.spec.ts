@@ -14,6 +14,7 @@ describe('buildOfflineReadingSession', () => {
       byteSize: 100,
       ciphertextFileName: '5-9.enc',
       downloadedAt: '2026-08-25T00:00:00.000Z',
+      offlineLease: null,
     };
     const actual = buildOfflineReadingSession(manifest);
     expect(actual.id).toBe(OFFLINE_READING_SESSION_ID);
@@ -33,6 +34,7 @@ describe('buildOfflineReadingSession', () => {
       byteSize: null,
       ciphertextFileName: '6-10.enc',
       downloadedAt: '2026-08-25T00:00:00.000Z',
+      offlineLease: null,
     };
     const actual = buildOfflineReadingSession(manifest);
     expect(actual.spreadIndex).toBe(0);

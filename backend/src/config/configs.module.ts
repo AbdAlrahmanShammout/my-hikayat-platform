@@ -20,6 +20,9 @@ import mailConfigs from './mail/mail-configs';
 import { monetizationConfigSchema } from './monetization/monetization-config.schema';
 import { MonetizationConfigService } from './monetization/monetization-config.service';
 import monetizationConfigs from './monetization/monetization-configs';
+import { offlineLeaseConfigSchema } from './offline-lease/offline-lease-config.schema';
+import { OfflineLeaseConfigService } from './offline-lease/offline-lease-config.service';
+import offlineLeaseConfigs from './offline-lease/offline-lease-configs';
 import { storageConfigSchema } from './storage/storage-config.schema';
 import { StorageConfigService } from './storage/storage-config.service';
 import storageConfigs from './storage/storage-configs';
@@ -43,6 +46,7 @@ import stripeConfigs from './stripe/stripe-configs';
         ...stripeConfigs,
         ...monetizationConfigs,
         ...mailConfigs,
+        ...offlineLeaseConfigs,
       ],
       validationSchema: Joi.object({
         ...appConfigSchema,
@@ -53,6 +57,7 @@ import stripeConfigs from './stripe/stripe-configs';
         ...stripeConfigSchema,
         ...monetizationConfigSchema,
         ...mailConfigSchema,
+        ...offlineLeaseConfigSchema,
       }),
       // OS and tool environment keys (PATH, npm_*, etc.) are always present.
       // Declared application variables are still validated by the merged schema.
@@ -71,6 +76,7 @@ import stripeConfigs from './stripe/stripe-configs';
     StripeConfigService,
     MonetizationConfigService,
     MailConfigService,
+    OfflineLeaseConfigService,
   ],
   exports: [
     AppConfigService,
@@ -81,6 +87,7 @@ import stripeConfigs from './stripe/stripe-configs';
     StripeConfigService,
     MonetizationConfigService,
     MailConfigService,
+    OfflineLeaseConfigService,
   ],
 })
 export class ConfigsModule {}

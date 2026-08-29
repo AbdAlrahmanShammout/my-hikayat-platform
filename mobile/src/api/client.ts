@@ -2,6 +2,7 @@ import { clearAccessToken, readAccessToken } from '@/session/session-store';
 import { ApiError } from '@/api/api-error';
 import { parseErrorResponse } from '@/api/parse-api-error';
 import { getMobilePublicConfig } from '@/config/env';
+import { recordTrustedServerDateHeader } from '@/storage/offline-trusted-time-storage';
 
 const FALLBACK_EMPTY_RESPONSE = 'The server returned an empty response';
 
@@ -24,8 +25,10 @@ export async function requestJson<TResponse>(input: RequestJsonInput): Promise<T
     credentials: 'omit',
   });
   if (!response.ok) {
+    await recordTrustedServerDateHeader(response.headers.get('date'));
     throw await toThrownApiError(response);
   }
+  await recordTrustedServerDateHeader(response.headers.get('date'));
   return parseSuccessJson<TResponse>(response);
 }
 

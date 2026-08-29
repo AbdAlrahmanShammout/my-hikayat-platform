@@ -1,6 +1,9 @@
 import { offlineFileSystem as FileSystem } from '@/native/offline-file-system';
 
-import type { OfflineBookManifest } from '@/features/offline/types/offline-book-manifest';
+import type {
+  OfflineBookManifest,
+  OfflineReadingLease,
+} from '@/features/offline/types/offline-book-manifest';
 import {
   ensureOfflineStorageDirectories,
   OFFLINE_MANIFEST_FILE_PATH,
@@ -144,6 +147,55 @@ function normalizeManifestEntry(value: unknown): OfflineBookManifest | null {
     byteSize: coerceNullablePositiveInt(record.byteSize),
     ciphertextFileName,
     downloadedAt,
+    offlineLease: normalizeOfflineReadingLease(record.offlineLease, bookId, bookAssetId),
+  };
+}
+
+function normalizeOfflineReadingLease(
+  value: unknown,
+  bookId: number,
+  bookAssetId: number,
+): OfflineReadingLease | null {
+  if (typeof value !== 'object' || value === null) {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  if (
+    record.version !== 1 ||
+    record.userId === undefined ||
+    record.bookId !== bookId ||
+    record.bookAssetId !== bookAssetId
+  ) {
+    return null;
+  }
+  const userId: number | null = coercePositiveInt(record.userId);
+  const accessKind: OfflineReadingLease['accessKind'] | null = coerceLeaseAccessKind(
+    record.accessKind,
+  );
+  const keyId: string = coerceString(record.keyId);
+  const issuedAt: string = coerceString(record.issuedAt);
+  const expiresAt: string = coerceString(record.expiresAt);
+  const signature: string = coerceString(record.signature);
+  if (
+    userId === null ||
+    accessKind === null ||
+    keyId.length === 0 ||
+    issuedAt.length === 0 ||
+    expiresAt.length === 0 ||
+    signature.length === 0
+  ) {
+    return null;
+  }
+  return {
+    version: 1,
+    keyId,
+    userId,
+    bookId,
+    bookAssetId,
+    accessKind,
+    issuedAt,
+    expiresAt,
+    signature,
   };
 }
 
@@ -178,6 +230,13 @@ function coerceNullableString(value: unknown): string | null {
 
 function coerceLayoutType(value: unknown): OfflineBookManifest['layoutType'] | null {
   if (value === 'reflowable' || value === 'fixed_layout') {
+    return value;
+  }
+  return null;
+}
+
+function coerceLeaseAccessKind(value: unknown): OfflineReadingLease['accessKind'] | null {
+  if (value === 'trial' || value === 'paid') {
     return value;
   }
   return null;

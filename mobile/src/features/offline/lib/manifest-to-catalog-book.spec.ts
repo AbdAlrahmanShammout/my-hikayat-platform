@@ -14,6 +14,7 @@ describe('manifestToCatalogBook', () => {
       byteSize: 2048,
       ciphertextFileName: '2-4.enc',
       downloadedAt: '2026-08-25T12:00:00.000Z',
+      offlineLease: null,
     };
     const actual = manifestToCatalogBook(manifest);
     expect(actual.id).toBe(2);

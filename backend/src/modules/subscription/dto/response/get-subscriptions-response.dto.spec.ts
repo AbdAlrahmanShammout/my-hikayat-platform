@@ -18,6 +18,8 @@ describe('GetSubscriptionsResponseDto', () => {
       currentPeriodEnd: null,
       canceledAt: null,
       activatedAt: null,
+      trialStartedAt: null,
+      trialEndsAt: null,
       stripeCustomerId: null,
       stripeSubscriptionId: null,
       plan: new PlanEntity({

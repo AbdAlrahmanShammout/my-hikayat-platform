@@ -7,6 +7,7 @@ export type MobilePublicConfig = {
 };
 
 const API_BASE_URL_ENV = 'EXPO_PUBLIC_API_BASE_URL';
+const OFFLINE_LEASE_PUBLIC_KEY_ENV = 'EXPO_PUBLIC_OFFLINE_LEASE_PUBLIC_KEY';
 
 /**
  * Returns the configured API base URL or throws when missing/blank.
@@ -19,6 +20,20 @@ export function getMobilePublicConfig(): MobilePublicConfig {
     );
   }
   return { apiBaseUrl: stripTrailingSlash(apiBaseUrl) };
+}
+
+/**
+ * Returns the public Ed25519 key used to verify server-issued offline leases.
+ */
+export function getOfflineLeasePublicKey(): string {
+  const offlineLeasePublicKey: string | undefined =
+    process.env.EXPO_PUBLIC_OFFLINE_LEASE_PUBLIC_KEY?.trim();
+  if (offlineLeasePublicKey === undefined || offlineLeasePublicKey.length === 0) {
+    throw new Error(
+      `${OFFLINE_LEASE_PUBLIC_KEY_ENV} is required. Copy mobile/.env.example to mobile/.env and set the offline lease public key.`,
+    );
+  }
+  return offlineLeasePublicKey;
 }
 
 /**

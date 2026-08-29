@@ -5,6 +5,7 @@ import { TransactionContext } from '@/common/base/transaction-context';
 import {
   CreateSubscriptionRepoInput,
   ListSubscriptionsRepoInput,
+  StartTrialIfUnusedRepoInput,
   SubscriptionPage,
   UpdateSubscriptionRepoInput,
 } from '@/modules/subscription/defs/subscription-repository.defs';
@@ -33,6 +34,8 @@ export class SubscriptionPrismaRepository implements SubscriptionRepository {
         currentPeriodStart: input.currentPeriodStart,
         currentPeriodEnd: input.currentPeriodEnd,
         activatedAt: input.activatedAt ?? null,
+        trialStartedAt: input.trialStartedAt ?? null,
+        trialEndsAt: input.trialEndsAt ?? null,
         stripeCustomerId: input.stripeCustomerId ?? null,
         stripeSubscriptionId: input.stripeSubscriptionId ?? null,
       },
@@ -65,6 +68,12 @@ export class SubscriptionPrismaRepository implements SubscriptionRepository {
     if (input.activatedAt !== undefined) {
       data.activatedAt = input.activatedAt;
     }
+    if (input.trialStartedAt !== undefined) {
+      data.trialStartedAt = input.trialStartedAt;
+    }
+    if (input.trialEndsAt !== undefined) {
+      data.trialEndsAt = input.trialEndsAt;
+    }
     if (input.stripeCustomerId !== undefined) {
       data.stripeCustomerId = input.stripeCustomerId;
     }
@@ -77,6 +86,24 @@ export class SubscriptionPrismaRepository implements SubscriptionRepository {
       include: subscriptionDetailsInclude,
     });
     return SubscriptionMapper.toEntity(result);
+  }
+
+  async startTrialIfUnused(
+    input: StartTrialIfUnusedRepoInput,
+    context?: TransactionContext,
+  ): Promise<SubscriptionEntity | null> {
+    const client = resolvePrismaTransactionClient(this.prismaProviderService, context);
+    const result = await client.subscription.updateMany({
+      where: { userId: input.userId, trialStartedAt: null, deletedAt: null },
+      data: {
+        trialStartedAt: input.trialStartedAt,
+        trialEndsAt: input.trialEndsAt,
+      },
+    });
+    if (result.count === 0) {
+      return null;
+    }
+    return this.findByUserId(input.userId);
   }
 
   async findById(id: number): Promise<SubscriptionEntity | null> {

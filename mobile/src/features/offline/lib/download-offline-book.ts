@@ -82,6 +82,7 @@ export async function downloadOfflineBook(
       byteSize: coerceNullablePositiveInt(grant.byteSize),
       ciphertextFileName,
       downloadedAt: new Date().toISOString(),
+      offlineLease: contentKey.offlineLease,
     };
     await upsertOfflineManifest(manifest);
     return { manifest };

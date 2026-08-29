@@ -13,6 +13,7 @@ import { BookAssetEntity } from '@/modules/book-asset/entity/book-asset.entity';
 import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
 import { BookAssetContentKeyUnavailableException } from '@/modules/book-asset/exceptions/book-asset-content-key-unavailable.exception';
 import { BookAssetEncryptedSourceMissingException } from '@/modules/book-asset/exceptions/book-asset-encrypted-source-missing.exception';
+import { OfflineReadingLeaseService } from '@/modules/book-asset/offline-reading-lease.service';
 import { EntitlementService } from '@/modules/entitlement/entitlement.service';
 import { FullBookAccessDeniedException } from '@/modules/entitlement/exceptions/full-book-access-denied.exception';
 import { ReadingSessionEntity } from '@/modules/reading/entity/reading-session.entity';
@@ -79,19 +80,21 @@ function createOpenSession(): ReadingSessionEntity {
 describe('BookAssetContentKeyService', () => {
   let mockBookService: { getCatalogBookById: jest.Mock };
   let mockBookAssetService: { findLatestBookAsset: jest.Mock };
-  let mockEntitlementService: { assertPaidReadingAccess: jest.Mock };
+  let mockEntitlementService: { assertFullBookReadingAccess: jest.Mock };
   let mockReadingSessionService: { getOwnedOpenReadingSession: jest.Mock };
   let mockEncryptionManagerService: { unwrapDataKey: jest.Mock };
   let mockAuditLogService: { append: jest.Mock };
+  let mockOfflineReadingLeaseService: { issueLease: jest.Mock };
   let bookAssetContentKeyService: BookAssetContentKeyService;
 
   beforeEach(() => {
     mockBookService = { getCatalogBookById: jest.fn() };
     mockBookAssetService = { findLatestBookAsset: jest.fn() };
-    mockEntitlementService = { assertPaidReadingAccess: jest.fn() };
+    mockEntitlementService = { assertFullBookReadingAccess: jest.fn() };
     mockReadingSessionService = { getOwnedOpenReadingSession: jest.fn() };
     mockEncryptionManagerService = { unwrapDataKey: jest.fn() };
     mockAuditLogService = { append: jest.fn() };
+    mockOfflineReadingLeaseService = { issueLease: jest.fn() };
     bookAssetContentKeyService = new BookAssetContentKeyService(
       mockBookService as unknown as BookService,
       mockBookAssetService as unknown as BookAssetService,
@@ -99,6 +102,7 @@ describe('BookAssetContentKeyService', () => {
       mockReadingSessionService as unknown as ReadingSessionService,
       mockEncryptionManagerService as unknown as EncryptionManagerService,
       mockAuditLogService as unknown as AuditLogService,
+      mockOfflineReadingLeaseService as unknown as OfflineReadingLeaseService,
     );
   });
 
@@ -108,12 +112,23 @@ describe('BookAssetContentKeyService', () => {
     mockReadingSessionService.getOwnedOpenReadingSession.mockResolvedValue(createOpenSession());
     mockBookAssetService.findLatestBookAsset.mockResolvedValue(createSourceAsset());
     mockEncryptionManagerService.unwrapDataKey.mockReturnValue({ dataKey, keyId: 'v1' });
+    mockOfflineReadingLeaseService.issueLease.mockResolvedValue({
+      version: 1,
+      keyId: 'v1',
+      userId: 5,
+      bookId: 8,
+      bookAssetId: 9,
+      accessKind: 'trial',
+      issuedAt: new Date('2026-08-29T12:00:00.000Z'),
+      expiresAt: new Date('2026-09-05T12:00:00.000Z'),
+      signature: 'signed',
+    });
     const actualKey = await bookAssetContentKeyService.createSourceContentKey({
       bookId: 8,
       userId: 5,
       sessionId: 12,
     });
-    expect(mockEntitlementService.assertPaidReadingAccess).toHaveBeenCalledWith(5);
+    expect(mockEntitlementService.assertFullBookReadingAccess).toHaveBeenCalledWith(5);
     expect(mockReadingSessionService.getOwnedOpenReadingSession).toHaveBeenCalledWith({
       id: 12,
       userId: 5,
@@ -123,6 +138,12 @@ describe('BookAssetContentKeyService', () => {
     expect(actualKey.algorithm).toBe('aes-256-gcm');
     expect(actualKey.keyDelivery).toBe('plain');
     expect(actualKey.keyId).toBe('v1');
+    expect(actualKey.offlineLease.signature).toBe('signed');
+    expect(mockOfflineReadingLeaseService.issueLease).toHaveBeenCalledWith({
+      userId: 5,
+      bookId: 8,
+      bookAssetId: 9,
+    });
     expect(mockAuditLogService.append).toHaveBeenCalledWith(
       expect.objectContaining({
         actorUserId: 5,
@@ -133,6 +154,8 @@ describe('BookAssetContentKeyService', () => {
           bookAssetId: 9,
           sessionId: 12,
           keyId: 'v1',
+          offlineLeaseAccessKind: 'trial',
+          offlineLeaseExpiresAt: '2026-09-05T12:00:00.000Z',
         }),
       }),
     );
@@ -140,7 +163,7 @@ describe('BookAssetContentKeyService', () => {
 
   it('denies unpaid readers before looking up a session', async () => {
     mockBookService.getCatalogBookById.mockResolvedValue(createCatalogBook());
-    mockEntitlementService.assertPaidReadingAccess.mockRejectedValue(
+    mockEntitlementService.assertFullBookReadingAccess.mockRejectedValue(
       new FullBookAccessDeniedException(),
     );
     await expect(

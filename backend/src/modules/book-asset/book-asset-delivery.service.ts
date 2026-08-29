@@ -28,7 +28,7 @@ export class BookAssetDeliveryService {
     input: CreateBookAssetDeliveryGrantServiceInput,
   ): Promise<BookAssetDeliveryGrant> {
     const book = await this.bookService.getCatalogBookById(input.bookId);
-    await this.entitlementService.assertPaidReadingAccess(input.userId);
+    await this.entitlementService.assertFullBookReadingAccess(input.userId);
     const source: BookAssetEntity | null = await this.bookAssetService.findLatestBookAsset({
       bookId: book.id,
       kind: BookAssetKind.SOURCE,

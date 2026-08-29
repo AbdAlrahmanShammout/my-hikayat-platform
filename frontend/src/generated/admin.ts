@@ -449,7 +449,7 @@ export interface components {
     GetPlansResponseDto: { plans: Array<components['schemas']['PlanResponse']>; total: number };
     CreatePlanRequestDto: { name: string; description: string; kind: "free" | "monthly_paid"; slug?: string; stripePriceId?: string };
     UpdatePlanRequestDto: { name?: string; description?: string; stripePriceId?: string };
-    SubscriptionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; planId: number; status: "active" | "canceled"; startedAt: string; currentPeriodStart?: unknown | null; currentPeriodEnd?: unknown | null; canceledAt?: unknown | null; activatedAt?: unknown | null; plan?: components['schemas']['PlanResponse'] };
+    SubscriptionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; planId: number; status: "active" | "canceled"; startedAt: string; currentPeriodStart?: unknown | null; currentPeriodEnd?: unknown | null; canceledAt?: unknown | null; activatedAt?: unknown | null; trialStartedAt?: unknown | null; trialEndsAt?: unknown | null; readingAccessState: "free" | "trial" | "paid"; trialEligible: boolean; plan?: components['schemas']['PlanResponse'] };
     GetSubscriptionsResponseDto: { subscriptions: Array<components['schemas']['SubscriptionResponse']>; total: number };
     GetUsersResponseDto: { users: Array<components['schemas']['UserResponse']>; total: number };
     UpdateManagedUserRequestDto: { role?: "reader" | "author" | "admin"; isPublisher?: boolean };

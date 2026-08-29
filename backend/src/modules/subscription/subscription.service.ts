@@ -5,6 +5,7 @@ import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagin
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { UserService } from '@/modules/user/user.service';
 import { PLAN_SLUG } from '@/modules/subscription/consts/plan-slug.constant';
+import { resolveTrialEndsAt } from '@/modules/subscription/consts/trial-window.constant';
 import { SubscriptionPage } from '@/modules/subscription/defs/subscription-repository.defs';
 import {
   CreateSubscriptionServiceInput,
@@ -15,6 +16,10 @@ import { PlanEntity } from '@/modules/subscription/entity/plan.entity';
 import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.entity';
 import { SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
 import { SubscriptionAlreadyExistsException } from '@/modules/subscription/exceptions/subscription-already-exists.exception';
+import { TrialAlreadyUsedException } from '@/modules/subscription/exceptions/trial-already-used.exception';
+import { TrialNotNeededException } from '@/modules/subscription/exceptions/trial-not-needed.exception';
+import { hasPaidReadingEntitlement } from '@/modules/subscription/has-paid-reading-entitlement.helper';
+import { hasTrialReadingEntitlement } from '@/modules/subscription/has-trial-reading-entitlement.helper';
 import { PlanService } from '@/modules/subscription/plan.service';
 import { SubscriptionRepository } from '@/modules/subscription/repository/subscription.repository';
 
@@ -52,6 +57,34 @@ export class SubscriptionService {
     return this.createSubscription({ userId, planId: freePlan.id });
   }
 
+  async startTrial(userId: number): Promise<SubscriptionEntity> {
+    const subscription: SubscriptionEntity = await this.ensureFreeSubscription(userId);
+    if (hasPaidReadingEntitlement(subscription)) {
+      throw new TrialNotNeededException();
+    }
+    if (hasTrialReadingEntitlement(subscription)) {
+      return subscription;
+    }
+    if (subscription.trialStartedAt !== null) {
+      throw new TrialAlreadyUsedException();
+    }
+    const trialStartedAt: Date = new Date();
+    const trialEndsAt: Date = resolveTrialEndsAt(trialStartedAt);
+    const started: SubscriptionEntity | null = await this.subscriptionRepository.startTrialIfUnused({
+      userId,
+      trialStartedAt,
+      trialEndsAt,
+    });
+    if (started !== null) {
+      return started;
+    }
+    const reloaded: SubscriptionEntity = await this.getSubscriptionByUserId(userId);
+    if (hasTrialReadingEntitlement(reloaded)) {
+      return reloaded;
+    }
+    throw new TrialAlreadyUsedException();
+  }
+
   async updateSubscription(input: UpdateSubscriptionServiceInput): Promise<SubscriptionEntity> {
     const current: SubscriptionEntity = await this.getSubscriptionById(input.id);
     if (input.planId !== undefined) {
@@ -65,6 +98,8 @@ export class SubscriptionService {
       currentPeriodEnd: input.currentPeriodEnd,
       canceledAt: input.canceledAt,
       activatedAt: input.activatedAt,
+      trialStartedAt: input.trialStartedAt,
+      trialEndsAt: input.trialEndsAt,
       stripeCustomerId: input.stripeCustomerId,
       stripeSubscriptionId: input.stripeSubscriptionId,
     });

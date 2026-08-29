@@ -14,7 +14,7 @@ import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subsc
 import { theme } from '@/theme/theme';
 
 /**
- * Profile billing card: plan/status, plan picker, Stripe Checkout, and refund.
+ * Profile billing card: plan/status, free trial, plan picker, Stripe Checkout, and refund.
  */
 export function SubscriptionStatusCard(): JSX.Element {
   const billing = useReaderSubscription();
@@ -86,10 +86,26 @@ export function SubscriptionStatusCard(): JSX.Element {
       <Text style={styles.value} testID="billing-plan-label">
         {display.planLabel}
       </Text>
+      <Text style={styles.label}>Reading access</Text>
+      <Text style={styles.value} testID="billing-access-label">
+        {display.accessLabel}
+      </Text>
       <Text style={styles.label}>Status</Text>
       <Text style={styles.value} testID="billing-status-label">
         {display.statusLabel}
       </Text>
+      {display.trialRemainingLabel !== null ? (
+        <>
+          <Text style={styles.label}>Free trial</Text>
+          <Text style={styles.value} testID="billing-trial-remaining-label">
+            {display.trialRemainingLabel}
+          </Text>
+          <Text style={styles.note} testID="billing-trial-active-note">
+            You are on a free trial. Full-book reading is checked by the server.
+            No card was charged for this trial.
+          </Text>
+        </>
+      ) : null}
       {display.periodLabel !== null ? (
         <>
           <Text style={styles.label}>Period</Text>
@@ -102,6 +118,40 @@ export function SubscriptionStatusCard(): JSX.Element {
         Full-book reading follows your plan on the server. Ask a grown-up before
         changing billing.
       </Text>
+      {display.canOfferTrialAction ? (
+        <View style={styles.trialBlock} testID="billing-trial-offer">
+          <Text style={styles.note} testID="billing-trial-offer-note">
+            7 days free — no credit card required. This does not start a paid
+            subscription by itself.
+          </Text>
+          {billing.trialErrorMessage !== null ? (
+            <Text style={styles.error} testID="billing-trial-error">
+              {billing.trialErrorMessage}
+            </Text>
+          ) : null}
+          <Pressable
+            style={[
+              styles.primaryButton,
+              billing.isStartingTrial ? styles.disabled : null,
+            ]}
+            disabled={billing.isStartingTrial}
+            onPress={() => {
+              void billing.startTrial().catch(() => {
+                // Error surfaces via trialErrorMessage; subscription is refreshed.
+              });
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Start free trial"
+            testID="billing-start-trial-button"
+          >
+            {billing.isStartingTrial ? (
+              <ActivityIndicator color={theme.colors.onPrimary} />
+            ) : (
+              <Text style={styles.primaryLabel}>Start Free Trial</Text>
+            )}
+          </Pressable>
+        </View>
+      ) : null}
       <PlanPicker
         plans={billing.plans}
         selectedPlanId={effectivePlanId}
@@ -189,7 +239,7 @@ export function SubscriptionStatusCard(): JSX.Element {
 }
 
 function PlanPicker(input: {
-  readonly plans: ReadonlyArray<ReaderBillingPlan>;
+  readonly plans: readonly ReaderBillingPlan[];
   readonly selectedPlanId: number | null;
   readonly onSelect: (planId: number) => void;
 }): JSX.Element | null {
@@ -284,6 +334,10 @@ const styles = StyleSheet.create({
   error: {
     ...theme.typography.body,
     color: theme.colors.danger,
+  },
+  trialBlock: {
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
   },
   confirmBlock: {
     gap: theme.spacing.sm,

@@ -18,6 +18,8 @@ describe('SubscriptionMapper', () => {
       currentPeriodEnd: null,
       canceledAt: null,
       activatedAt: null,
+      trialStartedAt: null,
+      trialEndsAt: null,
       stripeCustomerId: null,
       stripeSubscriptionId: null,
       plan: {
@@ -27,12 +29,17 @@ describe('SubscriptionMapper', () => {
         deletedAt: null,
         slug: 'free',
         name: 'Free',
+        description: 'Free tier without a credit card',
         kind: 'free',
         interval: null,
+        stripePriceId: null,
+        amountCents: null,
+        currency: null,
       },
     });
     expect(actualEntity.userId).toBe(5);
     expect(actualEntity.planId).toBe(1);
+    expect(actualEntity.trialStartedAt).toBeNull();
     expect(actualEntity.plan?.slug).toBe('free');
   });
 });

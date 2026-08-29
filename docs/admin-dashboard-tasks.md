@@ -77,6 +77,8 @@ governed by `docs/MOBILE-ARCHITECTURE.md`.
 | 50 | Mobile offline connectivity UX + download progress (R6) | Complete |
 | 51 | Admin subscription plans catalog | Complete |
 | 52 | Mobile paid plan picker + checkout planId (R5) | Complete |
+| 53 | Mobile 7-day free trial UI (R5) | Complete |
+| 54 | Server-authorized offline reading lease (R6) | Complete |
 
 Each STEP must include loading, empty, error, and success states; responsive layout;
 accessible controls; TanStack Query for server data; and display of **backend** values
@@ -1696,6 +1698,78 @@ tests pass.
 
 ---
 
+## STEP 53 — Mobile 7-day free trial UI (R5)
+
+**Goal:** Surface backend no-card free trial on Profile billing: show
+`readingAccessState` / `trialEligible`, start trial via
+`POST /reader/billing/trial/start`, and display remaining time from server
+`trialEndsAt` without inventing client entitlement rules.
+
+**Architecture:** `docs/MOBILE-ARCHITECTURE.md`. Extends STEP 46–48 billing UI.
+Backend remains authoritative for trial eligibility, duration, and full-book
+access. Open-book denial still routes to Profile.
+
+**APIs:** `GET /reader/billing/subscription` (`trialStartedAt`, `trialEndsAt`,
+`readingAccessState`, `trialEligible`), `POST /reader/billing/trial/start`.
+
+**In scope:**
+
+- Profile “Start Free Trial” CTA when `trialEligible === true`
+- Active trial status + remaining-time display only
+- Invalidate/refetch subscription after start / trial errors
+- Entitlement-denied copy mentions trial or Subscribe on Profile
+- Unit tests for display helpers and trial error mapping
+
+**Out of scope:** Client entitlement math, Stripe trial, admin trial UI,
+SRS edits, Maestro/E2E, automatic trial start on register.
+
+**Done when:** eligible readers can start trial from Profile; expired/used
+trial hides the CTA; typecheck/lint/unit tests pass.
+
+---
+
+## STEP 54 — Server-authorized offline reading lease (R6)
+
+**Goal:** Require server-issued offline authorization before decrypting cached
+offline book packages so Trial downloads lock when the backend entitlement
+window ends, while Paid refresh can unlock an existing package without
+re-downloading ciphertext.
+
+**Architecture:** `ARCHITECTURE.md` for backend content-key issuance and
+`docs/MOBILE-ARCHITECTURE.md` for mobile offline storage. The backend remains
+authoritative for lease expiry; mobile validates a signed local lease only as an
+offline copy of that server decision.
+
+**APIs:** Existing `POST /reader/books/:bookId/content-key` now returns
+`offlineLease` with `accessKind`, server `issuedAt`, `expiresAt`, and signature.
+The backend signs the canonical lease payload with Ed25519. Configure
+`OFFLINE_LEASE_PRIVATE_KEY` on the backend as a PKCS#8 DER Ed25519 private key
+encoded with base64url, keep `OFFLINE_LEASE_KEY_ID` for rotation labeling, and
+configure `EXPO_PUBLIC_OFFLINE_LEASE_PUBLIC_KEY` in mobile as raw Ed25519 public
+key bytes encoded with base64url. Lease signatures are Ed25519 signature bytes
+encoded with base64url. Generate keys with Node, for example:
+`generateKeyPairSync('ed25519')`, export the backend key with
+`privateKey.export({ format: 'der', type: 'pkcs8' }).toString('base64url')`,
+and export the mobile key from `publicKey.export({ format: 'jwk' }).x`.
+
+**In scope:**
+
+- Issue offline lease from current Trial/Paid entitlement end
+- Persist lease in the existing offline manifest
+- Validate lease before cached DEK decrypt
+- Refresh cached DEK/lease on online open without re-downloading ciphertext
+- Fail closed for missing, expired, tampered, or clock-rollback leases
+
+**Out of scope:** New Prisma lease table, device-bound cryptographic keys,
+content encryption format changes, instant refund revocation while fully
+offline.
+
+**Done when:** Trial-downloaded books stop opening offline after the signed
+lease expires; Paid refresh can renew the lease for the existing package;
+typecheck/lint/unit tests pass.
+
+---
+
 ## Future reader improvements (backlog — not scheduled STEPs)
 
 Recorded after STEP 40/41 so they are not forgotten. These are **future**
@@ -1772,3 +1846,9 @@ STEP 51 (admin plans catalog) depends on STEP 5 subscriptions UX and the
 dynamic plan HTTP contracts.
 STEP 52 (mobile plan picker + checkout planId) depends on STEPs 46–47 and
 `GET /reader/billing/plans`.
+STEP 53 (mobile 7-day free trial UI) depends on STEPs 46–48 and the backend
+`POST /reader/billing/trial/start` + subscription `readingAccessState` /
+`trialEligible` fields; Profile billing CTA only — no client entitlement math.
+STEP 54 (server-authorized offline reading lease) depends on STEPs 49–50 and
+the backend Trial/Paid entitlement end dates; it extends content-key issuance
+and mobile offline open without changing encrypted package format.

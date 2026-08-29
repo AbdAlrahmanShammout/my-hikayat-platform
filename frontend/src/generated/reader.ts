@@ -195,6 +195,13 @@ export interface paths {
       };
     };
   };
+  "/reader/billing/trial/start": {
+    post: {
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['SubscriptionResponse'] } };
+      };
+    };
+  };
   "/reader/billing/refund": {
     post: {
       responses: {
@@ -280,7 +287,7 @@ export interface components {
     StartCheckoutResponseDto: { url: string };
     PlanResponse: { id: number; createdAt: string; updatedAt: string; slug: string; name: string; description: string; kind: "free" | "monthly_paid"; interval: "month" | null; amountCents: number | null; currency: string | null };
     GetPlansResponseDto: { plans: Array<components['schemas']['PlanResponse']>; total: number };
-    SubscriptionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; planId: number; status: "active" | "canceled"; startedAt: string; currentPeriodStart?: unknown | null; currentPeriodEnd?: unknown | null; canceledAt?: unknown | null; activatedAt?: unknown | null; plan?: components['schemas']['PlanResponse'] };
+    SubscriptionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; planId: number; status: "active" | "canceled"; startedAt: string; currentPeriodStart?: unknown | null; currentPeriodEnd?: unknown | null; canceledAt?: unknown | null; activatedAt?: unknown | null; trialStartedAt?: unknown | null; trialEndsAt?: unknown | null; readingAccessState: "free" | "trial" | "paid"; trialEligible: boolean; plan?: components['schemas']['PlanResponse'] };
     StripeWebhookReceivedResponseDto: { received: boolean };
     AuthSessionResponseDto: { accessToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
     RegisterRequestDto: { email: string; password: string };

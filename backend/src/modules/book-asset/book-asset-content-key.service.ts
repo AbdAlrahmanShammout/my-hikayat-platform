@@ -14,6 +14,7 @@ import { BookAssetKind } from '@/modules/book-asset/enum/general.enum';
 import { BookAssetContentKeyUnavailableException } from '@/modules/book-asset/exceptions/book-asset-content-key-unavailable.exception';
 import { BookAssetEncryptedSourceMissingException } from '@/modules/book-asset/exceptions/book-asset-encrypted-source-missing.exception';
 import { BookAssetNotEncryptedException } from '@/modules/book-asset/exceptions/book-asset-not-encrypted.exception';
+import { OfflineReadingLeaseService } from '@/modules/book-asset/offline-reading-lease.service';
 import { EntitlementService } from '@/modules/entitlement/entitlement.service';
 import { ReadingSessionEntity } from '@/modules/reading/entity/reading-session.entity';
 import { ReadingSessionService } from '@/modules/reading/reading-session.service';
@@ -29,13 +30,14 @@ export class BookAssetContentKeyService {
     private readonly readingSessionService: ReadingSessionService,
     private readonly encryptionManagerService: EncryptionManagerService,
     private readonly auditLogService: AuditLogService,
+    private readonly offlineReadingLeaseService: OfflineReadingLeaseService,
   ) {}
 
   async createSourceContentKey(
     input: CreateBookAssetContentKeyServiceInput,
   ): Promise<BookAssetContentKey> {
     await this.bookService.getCatalogBookById(input.bookId);
-    await this.entitlementService.assertPaidReadingAccess(input.userId);
+    await this.entitlementService.assertFullBookReadingAccess(input.userId);
     const session: ReadingSessionEntity =
       await this.readingSessionService.getOwnedOpenReadingSession({
         id: input.sessionId,
@@ -49,6 +51,11 @@ export class BookAssetContentKeyService {
     const unwrapped: UnwrapDataKeyResult = this.encryptionManagerService.unwrapDataKey({
       wrappedKey: source.wrappedContentKey,
     });
+    const offlineLease = await this.offlineReadingLeaseService.issueLease({
+      userId: input.userId,
+      bookId: input.bookId,
+      bookAssetId: source.id,
+    });
     await this.auditLogService.append({
       actorUserId: input.userId,
       action: AuditAction.BOOK_CONTENT_KEY_ISSUED,
@@ -59,6 +66,8 @@ export class BookAssetContentKeyService {
         sessionId: session.id,
         keyId: unwrapped.keyId,
         keyDelivery: BOOK_CONTENT_KEY.keyDelivery,
+        offlineLeaseAccessKind: offlineLease.accessKind,
+        offlineLeaseExpiresAt: offlineLease.expiresAt.toISOString(),
       },
     });
     return {
@@ -70,6 +79,7 @@ export class BookAssetContentKeyService {
       keyDelivery: BOOK_CONTENT_KEY.keyDelivery,
       key: unwrapped.dataKey.toString('base64'),
       expiresAt: new Date(Date.now() + BOOK_CONTENT_KEY.expiresInSeconds * 1000),
+      offlineLease,
     };
   }
 

@@ -32,6 +32,7 @@ describe('SubscriptionReaderController', () => {
     startCheckout: jest.Mock;
     renderCheckoutReturnPage: jest.Mock;
     getCurrentSubscription: jest.Mock;
+    startTrial: jest.Mock;
     requestRefund: jest.Mock;
   };
   let mockPlanService: { listPaidCatalogPlans: jest.Mock };
@@ -41,6 +42,7 @@ describe('SubscriptionReaderController', () => {
       startCheckout: jest.fn(),
       renderCheckoutReturnPage: jest.fn(),
       getCurrentSubscription: jest.fn(),
+      startTrial: jest.fn(),
       requestRefund: jest.fn(),
     };
     mockPlanService = { listPaidCatalogPlans: jest.fn() };
@@ -112,6 +114,8 @@ describe('SubscriptionReaderController', () => {
       currentPeriodEnd: null,
       canceledAt: null,
       activatedAt: null,
+      trialStartedAt: null,
+      trialEndsAt: null,
       stripeCustomerId: 'cus_secret',
       stripeSubscriptionId: null,
       plan: undefined,
@@ -121,7 +125,35 @@ describe('SubscriptionReaderController', () => {
       await subscriptionReaderController.getCurrentSubscription(createSampleUser());
     expect(actualResponse.userId).toBe(5);
     expect(actualResponse.status).toBe(SubscriptionStatus.ACTIVE);
+    expect(actualResponse.readingAccessState).toBe('free');
+    expect(actualResponse.trialEligible).toBe(true);
     expect(actualResponse).not.toHaveProperty('stripeCustomerId');
+  });
+
+  it('starts the free trial for the authenticated user', async () => {
+    const entity = new SubscriptionEntity({
+      id: 7,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      userId: 5,
+      planId: 1,
+      status: SubscriptionStatus.ACTIVE,
+      startedAt: new Date('2026-01-01T00:00:00.000Z'),
+      currentPeriodStart: null,
+      currentPeriodEnd: null,
+      canceledAt: null,
+      activatedAt: null,
+      trialStartedAt: new Date('2026-08-29T12:00:00.000Z'),
+      trialEndsAt: new Date('2026-09-05T12:00:00.000Z'),
+      stripeCustomerId: null,
+      stripeSubscriptionId: null,
+      plan: undefined,
+    });
+    mockSubscriptionBillingService.startTrial.mockResolvedValue(entity);
+    const actualResponse = await subscriptionReaderController.startTrial(createSampleUser());
+    expect(mockSubscriptionBillingService.startTrial).toHaveBeenCalledWith(5);
+    expect(actualResponse.readingAccessState).toBe('trial');
+    expect(actualResponse.trialEligible).toBe(false);
   });
 
   it('requests a refund for the authenticated user', async () => {
@@ -137,6 +169,8 @@ describe('SubscriptionReaderController', () => {
       currentPeriodEnd: new Date('2026-09-01T00:00:00.000Z'),
       canceledAt: new Date('2026-08-02T00:00:00.000Z'),
       activatedAt: new Date('2026-08-01T00:00:00.000Z'),
+      trialStartedAt: null,
+      trialEndsAt: null,
       stripeCustomerId: 'cus_secret',
       stripeSubscriptionId: 'sub_secret',
       plan: undefined,

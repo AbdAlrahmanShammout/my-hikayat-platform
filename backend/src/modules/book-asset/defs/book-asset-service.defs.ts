@@ -79,6 +79,20 @@ export type BookAssetDeliveryGrant = {
   readonly isEncrypted: boolean;
 };
 
+export type OfflineReadingLeaseAccessKind = 'trial' | 'paid';
+
+export type OfflineReadingLease = {
+  readonly version: 1;
+  readonly keyId: string;
+  readonly userId: number;
+  readonly bookId: number;
+  readonly bookAssetId: number;
+  readonly accessKind: OfflineReadingLeaseAccessKind;
+  readonly issuedAt: Date;
+  readonly expiresAt: Date;
+  readonly signature: string;
+};
+
 export type CreateBookAssetContentKeyServiceInput = {
   readonly bookId: number;
   readonly userId: number;
@@ -94,4 +108,5 @@ export type BookAssetContentKey = {
   readonly keyDelivery: 'plain';
   readonly key: string;
   readonly expiresAt: Date;
+  readonly offlineLease: OfflineReadingLease;
 };

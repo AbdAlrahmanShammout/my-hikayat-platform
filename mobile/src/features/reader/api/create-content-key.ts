@@ -1,4 +1,5 @@
 import { requestJson } from '@/api/client';
+import type { OfflineReadingLease } from '@/features/offline/types/offline-book-manifest';
 
 export type CreateBookAssetContentKeyRequest = {
   readonly sessionId: number;
@@ -13,6 +14,7 @@ export type BookAssetContentKey = {
   readonly keyDelivery: 'plain';
   readonly key: string;
   readonly expiresAt: string;
+  readonly offlineLease: OfflineReadingLease;
 };
 
 /**

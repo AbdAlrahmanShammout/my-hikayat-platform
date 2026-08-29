@@ -24,6 +24,9 @@ process.env.STORAGE_ACCESS_KEY_ID =
 process.env.STORAGE_SECRET_ACCESS_KEY =
   process.env.STORAGE_SECRET_ACCESS_KEY ?? 'test-storage-secret-key-not-for-production';
 process.env.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY ?? 'ab'.repeat(32);
+process.env.OFFLINE_LEASE_PRIVATE_KEY =
+  process.env.OFFLINE_LEASE_PRIVATE_KEY ??
+  'MC4CAQAwBQYDK2VwBCIEIP38HzT82ttN8iwco07E9pFgJU9j2UUkFvrb94IKPXua';
 process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? 'sk_test_not_for_production';
 process.env.STRIPE_WEBHOOK_SECRET =
   process.env.STRIPE_WEBHOOK_SECRET ?? 'whsec_test_not_for_production';

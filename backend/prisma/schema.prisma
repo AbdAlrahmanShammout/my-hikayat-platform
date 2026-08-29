@@ -455,6 +455,8 @@ model Subscription {
   currentPeriodEnd     DateTime?
   canceledAt           DateTime?
   activatedAt          DateTime?
+  trialStartedAt       DateTime?
+  trialEndsAt          DateTime?
   stripeCustomerId     String?            @unique
   stripeSubscriptionId String?            @unique
   createdAt            DateTime           @default(now())
@@ -465,6 +467,7 @@ model Subscription {
 
   @@index([planId])
   @@index([status])
+  @@index([trialEndsAt])
 }
 
 enum RevenuePeriodStatus {

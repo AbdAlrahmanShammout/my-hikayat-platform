@@ -18,6 +18,8 @@ export class SubscriptionMapper {
       currentPeriodEnd: schema.currentPeriodEnd,
       canceledAt: schema.canceledAt,
       activatedAt: schema.activatedAt,
+      trialStartedAt: schema.trialStartedAt,
+      trialEndsAt: schema.trialEndsAt,
       stripeCustomerId: schema.stripeCustomerId,
       stripeSubscriptionId: schema.stripeSubscriptionId,
       plan: schema.plan === undefined ? undefined : PlanMapper.toEntity(schema.plan),
