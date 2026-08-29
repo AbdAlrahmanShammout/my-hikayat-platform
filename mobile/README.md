@@ -49,11 +49,14 @@ cp .env.example .env
 | Variable | Purpose |
 | --- | --- |
 | `EXPO_PUBLIC_API_BASE_URL` | NestJS API origin, no trailing slash |
+| `EXPO_PUBLIC_OFFLINE_LEASE_PUBLIC_KEY` | Ed25519 public key (raw bytes, base64url) used to verify server-issued offline leases. Not a secret; must match the backend `OFFLINE_LEASE_PRIVATE_KEY` pair. |
 
-Do not commit secrets, device paths, or machine-only URLs.
+Do not commit secrets, device paths, or machine-only URLs. Never put
+`OFFLINE_LEASE_PRIVATE_KEY` in mobile env — that private key is backend-only.
 
-On Replit, set the same variable in Secrets / environment. Point it at a reachable
-API host (not a developer-laptop-only address unless Replit can reach it).
+On Replit, set the same variables in Secrets / environment. Point the API base URL
+at a reachable API host (not a developer-laptop-only address unless Replit can
+reach it).
 
 ## Commands (from repo root)
 
@@ -80,7 +83,7 @@ npm run build
 
 1. Clone / import the monorepo (or this `mobile/` package with workspace install).
 2. Run `pnpm install` at the repo root.
-3. Set `EXPO_PUBLIC_API_BASE_URL`.
+3. Set `EXPO_PUBLIC_API_BASE_URL` and `EXPO_PUBLIC_OFFLINE_LEASE_PUBLIC_KEY`.
 4. Run `pnpm --filter mobile typecheck`, `lint`, and `test`.
 5. Run `pnpm --filter mobile start` (or `web` when a native simulator is unavailable).
 
@@ -93,6 +96,9 @@ npm run build
 | `expo-web-browser` | Stripe Checkout auth session (`openAuthSessionAsync`) |
 | `expo-file-system` | Encrypted offline book ciphertext on device |
 | `@react-native-community/netinfo` | Required Online / Offline source of truth |
+| `@noble/ciphers` | AES-GCM decrypt of encrypted book packages |
+| `@noble/hashes` | Hash/utf8 helpers used by crypto flows |
+| `@noble/curves` | Ed25519 verify for offline reading leases |
 | `react-native-screens` | Native screen primitives (Expo Router peer) |
 | `react-native-safe-area-context` | Safe areas for tab shell |
 | `react-native-gesture-handler` | Gesture root for navigation |
@@ -114,5 +120,8 @@ Token storage: SecureStore on iOS/Android, `localStorage` on web. A 401 clears t
 
 ## Out of scope until later STEPs
 
-Catalog, dual engines, Smart Resume, subscriptions UI, audiobooks. Offline encrypted
-reading (STEP 49) stores ciphertext on device and decrypts in memory only.
+Catalog polish, dual engines, Smart Resume, subscriptions UI, and audiobooks are
+covered by later STEPs as they complete. Offline encrypted reading (STEP 49) stores
+ciphertext on device and decrypts in memory only. Offline open also requires a
+valid Ed25519-signed lease (STEP 54) issued by
+`POST /reader/books/:bookId/content-key`.

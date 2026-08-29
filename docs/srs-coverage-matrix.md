@@ -22,12 +22,12 @@ Do not treat a row as Complete unless both the backend behavior and tests exist.
 
 | Status | Count |
 | --- | ---: |
-| Complete | 80 |
+| Complete | 83 |
 | In Progress | 0 |
 | Future | 2 |
 | Blocked | 0 |
 | Not Required | 15 |
-| **Total** | **97** |
+| **Total** | **100** |
 
 ## Future / out of scope for current Part 1
 
@@ -107,7 +107,9 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §5.2 Session tracking model (start/end, bookId, active vs idle, layout, layout-specific position) | `ReadingSession` | `reading-session.e2e-spec.ts`, `reading-intelligence.e2e-spec.ts` | Complete |
 | §5.2 Reflowable chapter attribution from session activity | Recorded with the session; idle is not copied onto chapter rows | `reading-chapter-engagement.e2e-spec.ts` | Complete |
 | §6 Admin-defined paid Stripe catalog, automatic renewal, free tier without a card | `GET/POST/PATCH /admin/plans`, `GET /reader/billing/plans`, checkout `planId`, `customer.subscription.updated`, free plan | `plan.service.spec.ts`, `subscription.e2e-spec.ts`, `subscription-billing.e2e-spec.ts` | Complete |
+| §6 No-card 7-day free trial (product STEP 53; extends free-tier access) | `POST /reader/billing/trial/start`; subscription `trialStartedAt` / `trialEndsAt`, `readingAccessState`, `trialEligible`; one trial per user | `subscription-trial.e2e-spec.ts`, `subscription.service.spec.ts`, `has-trial-reading-entitlement.helper.spec.ts` | Complete |
 | §6.1 Paid entitlement (paid kind + now < currentPeriodEnd); canceled access until period end; payment_failed audit only; checkout blocked while entitled | `hasPaidReadingEntitlement`; `invoice.payment_failed` audit; checkout uses the same entitlement check + selected plan price | `entitlement.e2e-spec.ts`, `subscription-billing.e2e-spec.ts`, `has-paid-reading-entitlement.helper.spec.ts` | Complete |
+| §6.1 Full-book reading while trial is active | `hasTrialReadingEntitlement` + `assertFullBookReadingAccess` (trial or paid) | `entitlement.service.spec.ts`, `subscription-trial.e2e-spec.ts`, `offline-reading-lease.service.spec.ts` | Complete |
 | §6.2 7-day refund ends paid reading immediately | `POST /reader/billing/refund` and `POST /admin/subscriptions/:id/refund` clamp `currentPeriodEnd` to now | `subscription-refund.e2e-spec.ts`, `admin-subscription-refund.e2e-spec.ts`, `subscription-billing.e2e-spec.ts` | Complete |
 | §7.1 / §7.2 Weighted engagement and book revenue formula | Follows `layoutType`: reflowable uses active reading ms × category weight; fixed-layout uses spread `activeDurationMs` × category weight. `visualSceneTimeMs` is stored and shown, not added to the revenue weight. Multi-category weight is the arithmetic mean of assigned weights. Not derived from `bookType`. | `book-engagement.service.spec.ts`, `book-revenue.e2e-spec.ts` | Complete |
 | §7.3 Platform cut and remaining author share | `PLATFORM_CUT_PERCENT` on revenue periods | `revenue-period.service.spec.ts`, `book-revenue.e2e-spec.ts` | Complete |
@@ -116,7 +118,8 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §8.2 Client-only anti-piracy (no open outside app, no file-manager access, decrypt only in app runtime) | Client runtime | — | Not Required |
 | §8 JWT auth, authorization, validation, upload checks, webhook verification, rate limits | Auth module, `RolesGuard` on `role`, validation pipe, Stripe signature, throttling. `isPublisher` is not a guard input (book domain). | `auth.e2e-spec.ts`, `http-surface.e2e-spec.ts`, `auth-throttle.e2e-spec.ts`, `subscription-billing.e2e-spec.ts` | Complete |
 | §9 Encrypted download for offline | `POST /reader/books/:id/delivery-grant` | `reader-book-asset.e2e-spec.ts` | Complete |
-| §9 Full offline reading experience | Client cache + reader | — | Not Required |
+| §9 Server-authorized offline reading lease (product STEP 54) | `POST /reader/books/:id/content-key` returns Ed25519-signed `offlineLease` (`OFFLINE_LEASE_PRIVATE_KEY` / `OFFLINE_LEASE_KEY_ID`) | `offline-reading-lease.service.spec.ts`, `book-asset-content-key.service.spec.ts`, `reader-book-asset.e2e-spec.ts` | Complete |
+| §9 Full offline reading experience | Client cache + reader validates lease with public key | — | Not Required |
 | §10 Metadata search (title, author, publisher) | `GET /reader/search` | `reader-search.e2e-spec.ts` | Complete |
 | §10 Catalog filters (category, popularity, newest) | `GET /reader/catalog?categoryId&sort=` Popularity ranks by reading-progress row count, not engagement minutes. | `reader-catalog.e2e-spec.ts` | Complete |
 | §10 In-book full-text search | `GET /reader/search/:id?q=` | `reader-in-book-search.e2e-spec.ts` | Complete |
