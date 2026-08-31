@@ -90,3 +90,4 @@ function getAuditLogLoadMessage(error: Error): string {
   }
   return getUserFacingErrorMessage(error);
 }
+
