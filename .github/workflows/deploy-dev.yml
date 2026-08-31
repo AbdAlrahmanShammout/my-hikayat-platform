@@ -53,3 +53,4 @@ jobs:
             pm2 restart my-hikayat-dev-api --update-env
             sleep 5
             curl -fsS http://127.0.0.1:3000/health/live
+            
