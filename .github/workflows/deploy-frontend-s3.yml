@@ -1,4 +1,4 @@
-name: Deploy frontend to Netlify
+name: Deploy frontend to S3
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'package.json'
-      - '.github/workflows/deploy-frontend-netlify.yml'
+      - '.github/workflows/deploy-frontend-s3.yml'
   workflow_dispatch:
 
 jobs:
@@ -36,17 +36,12 @@ jobs:
           VITE_API_BASE_URL: ${{ vars.DEV_PUBLIC_ORIGIN || 'http://54.225.86.205' }}
         run: pnpm --filter frontend build
 
-      - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v3.0
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          publish-dir: ./frontend/dist
-          production-branch: develop
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: 'Deploy from GitHub Actions ${{ github.sha }}'
-          enable-pull-request-comment: false
-          enable-commit-comment: true
-          overwrites-pull-request-comment: false
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        timeout-minutes: 5
+          aws-access-key-id: ${{ secrets.AWS_S3_FRONTEND_DEV_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_S3_FRONTEND_DEV_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Sync frontend to S3
+        run: aws s3 sync frontend/dist/ "s3://${{ vars.FRONTEND_S3_BUCKET_DEV }}/" --delete

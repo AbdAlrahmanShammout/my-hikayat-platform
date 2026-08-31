@@ -5,7 +5,6 @@ on:
     branches: [develop]
     paths:
       - 'backend/**'
-      - 'frontend/**'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'package.json'
@@ -34,16 +33,13 @@ jobs:
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     environment: development
-    env:
-      VITE_API_BASE_URL: ${{ vars.DEV_PUBLIC_ORIGIN || 'http://54.225.86.205' }}
     steps:
-      - name: Deploy over SSH
+      - name: Deploy API over SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.DEV_SSH_HOST }}
           username: ${{ secrets.DEV_SSH_USER }}
           key: ${{ secrets.DEV_SSH_KEY }}
-          envs: VITE_API_BASE_URL
           script: |
             set -e
             cd /var/www/my-hikayat
@@ -57,10 +53,3 @@ jobs:
             pm2 restart my-hikayat-dev-api --update-env
             sleep 5
             curl -fsS http://127.0.0.1:3000/health/live
-            pnpm --filter frontend install --frozen-lockfile
-            VITE_API_BASE_URL="$VITE_API_BASE_URL" pnpm --filter frontend build
-            sudo mkdir -p /var/www/my-hikayat-web
-            sudo rm -rf /var/www/my-hikayat-web/*
-            sudo cp -r /var/www/my-hikayat/frontend/dist/* /var/www/my-hikayat-web/
-            sudo chown -R www-data:www-data /var/www/my-hikayat-web
-            curl -fsS http://127.0.0.1/login | grep -q 'Noory Dashboard'
