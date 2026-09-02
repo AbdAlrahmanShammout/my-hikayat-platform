@@ -60,6 +60,3 @@ jobs:
             exit 1
           fi
           aws s3 sync frontend/dist/ "s3://${FRONTEND_S3_BUCKET_DEV}/" --delete
-          aws s3 website "s3://${FRONTEND_S3_BUCKET_DEV}" \
-            --index-document index.html \
-            --error-document index.html
