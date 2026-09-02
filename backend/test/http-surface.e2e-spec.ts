@@ -7,6 +7,7 @@ import request from 'supertest';
 
 import { UNAUTHENTICATED_THROTTLE_LIMIT } from '@/common/constants/http-surface.constant';
 import { PublicRoute } from '@/common/decorators/route/public-route.decorator';
+import { Environment } from '@/config/environment';
 
 import { createTestingApp } from './create-testing-app';
 
@@ -144,5 +145,50 @@ describe('HTTP surface (e2e)', () => {
         statusCode: HttpStatus.TOO_MANY_REQUESTS,
       }),
     );
+  });
+});
+
+describe('HTTP surface CORS in development (e2e)', () => {
+  const inputUnlistedOrigin = 'https://unlisted.example';
+  let app: INestApplication | undefined;
+
+  beforeEach(async () => {
+    app = await createTestingApp({ env: Environment.DEVELOPMENT });
+  });
+
+  afterEach(async () => {
+    if (app) {
+      await app.close();
+    }
+  });
+
+  function getRunningApp(): INestApplication {
+    if (!app) {
+      throw new Error('Application was not initialized');
+    }
+    return app;
+  }
+
+  function getServer(): Server {
+    return getRunningApp().getHttpServer() as Server;
+  }
+
+  it('Given development, When GET /health/live from an unlisted Origin, Then CORS reflects that origin', async () => {
+    const actualResponse = await request(getServer())
+      .get('/health/live')
+      .set('Origin', inputUnlistedOrigin);
+    expect(actualResponse.headers['access-control-allow-origin']).toBe(inputUnlistedOrigin);
+    expect(actualResponse.headers['access-control-allow-credentials']).toBe('true');
+  });
+
+  it('Given development, When a browser preflights from an unlisted Origin, Then CORS allows the preflight', async () => {
+    const actualResponse = await request(getServer())
+      .options('/http-surface-probe')
+      .set('Origin', inputUnlistedOrigin)
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'Content-Type');
+    expect(actualResponse.status).toBe(HttpStatus.NO_CONTENT);
+    expect(actualResponse.headers['access-control-allow-origin']).toBe(inputUnlistedOrigin);
+    expect(actualResponse.headers['access-control-allow-credentials']).toBe('true');
   });
 });

@@ -8,6 +8,7 @@ import {
   CORS_PREFLIGHT_MAX_AGE_SECONDS,
   REQUEST_JSON_BODY_LIMIT,
 } from '@/common/constants/http-surface.constant';
+import { resolveCorsOrigin } from '@/common/helpers/resolve-cors-origin.helper';
 import { InputValidationPipe } from '@/common/pipes/input-validation.pipe';
 import { AppConfigService } from '@/config/app/app-config.service';
 
@@ -64,7 +65,10 @@ export function configureHttpSurface(
   );
   app.use(urlencoded({ extended: true, limit: REQUEST_JSON_BODY_LIMIT }));
   app.enableCors({
-    origin: appConfigService.allowedOrigins,
+    origin: resolveCorsOrigin({
+      env: appConfigService.env,
+      allowedOrigins: appConfigService.allowedOrigins,
+    }),
     methods: [...CORS_ALLOWED_METHODS],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
