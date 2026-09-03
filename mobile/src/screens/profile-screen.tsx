@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text } from 'reac
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SubscriptionStatusCard } from '@/features/billing/components/subscription-status-card';
+import { confirmOfflinePurgeIfNeeded } from '@/features/offline/lib/confirm-offline-purge-if-needed';
 import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
 
@@ -13,13 +14,20 @@ export function ProfileScreen(): JSX.Element {
   const { user, signOut } = useSession();
   const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
 
-  async function handleSignOut(): Promise<void> {
+  async function executeSignOut(): Promise<void> {
     setIsSigningOut(true);
     try {
       await signOut();
     } finally {
       setIsSigningOut(false);
     }
+  }
+
+  async function handleSignOutPress(): Promise<void> {
+    await confirmOfflinePurgeIfNeeded({
+      kind: 'sign_out',
+      onConfirm: executeSignOut,
+    });
   }
 
   return (
@@ -40,7 +48,7 @@ export function ProfileScreen(): JSX.Element {
         <Pressable
           style={[styles.button, isSigningOut ? styles.buttonDisabled : null]}
           onPress={() => {
-            void handleSignOut();
+            void handleSignOutPress();
           }}
           disabled={isSigningOut}
           testID="shell-sign-out-button"

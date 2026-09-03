@@ -32,9 +32,9 @@ roadmap is the ordered implementation source of truth for closing gaps. Historic
 31–54 in `docs/admin-dashboard-tasks.md` remain Complete and are not rewritten. As each `MG-*`
 task completes, this specification must be updated so it stays current.
 
-**Roadmap snapshot (2026-09-03).** **MG-1…MG-8 COMPLETE**. Next task when approved: **MG-9**
-(sign-out confirmation for downloads). Confirmed blocker: access tokens default to **15 minutes**
-with no refresh (`MG-FINAL`, last).
+**Roadmap snapshot (2026-09-03).** **MG-1…MG-9 COMPLETE**. Next task when approved: **MG-10**
+(catalog and search pagination). Confirmed blocker: access tokens default to **15 minutes** with no
+refresh (`MG-FINAL`, last).
 
 ---
 
@@ -209,9 +209,9 @@ denial happens when they try to open a book, not when they browse it.
 - **After use.** Four things are cleared: **(1)** all offline downloaded books, their encryption
   keys, and the offline manifest; **(2)** the stored access token; **(3)** the in-memory user;
   **(4)** the entire cached server state.
-- **Important UX consequence.** **Signing out destroys all offline downloads.** This is a
-  destructive action presented as a routine one. The design should treat it as destructive and
-  make the consequence visible before it happens.
+- **Confirmation (**MG-9**).** When one or more downloads exist, the app shows a confirm dialog
+  explaining that downloads will be removed before purge runs. When there are no downloads, sign-out
+  proceeds without that dialog.
 
 ### F-AUTH-5 · Session expiry handling — **IMPLEMENTED**
 
@@ -666,7 +666,7 @@ what information must be present, what actions originate there, where they can g
 | **User accomplishes** | Chooses whether to retry or start over. |
 | **Information needed** | That this is a connection problem rather than an account problem; the specific reason when available; that their session was not necessarily lost. |
 | **Actions** | Retry the restore; abandon and go sign in. |
-| **Conditions** | **Abandoning purges all offline downloads.** The user must understand this before choosing it. |
+| **Conditions** | **Abandoning purges all offline downloads.** When downloads exist, the user must confirm before purge (**MG-9**). When there are none, abandon proceeds without that dialog. |
 
 ### S-03 · Global error boundary — **IMPLEMENTED**
 
@@ -1176,6 +1176,7 @@ the authorization expires, which is the intended design.
   show active / approaching / locked lease states from stored `expiresAt` (**MG-8**). Open-path
   validation stays fail-closed.
 - **Sign-out destroys downloads.** Including the abandon path on the session-restore screen.
+  When downloads exist, both paths require confirmation before purge (**MG-9**).
 
 ## 4.10 Session expiry mid-use
 
@@ -1460,8 +1461,9 @@ and weights.
 3. There is no age or reading-level information, so an adult cannot judge suitability from the app.
 
 **Remediation.** Cover (**MG-1**), author/publisher (**MG-2**), entitlement CTA (**MG-3**), trial
-discovery (**MG-4**), offline resume/bookmarks/progress sync (**MG-5…MG-7**), and lease expiry UX
-(**MG-8**) are **COMPLETE**. Next gap in order is sign-out confirmation (**MG-9**).
+discovery (**MG-4**), offline resume/bookmarks/progress sync (**MG-5…MG-7**), lease expiry UX
+(**MG-8**), and sign-out/abandon confirmation (**MG-9**) are **COMPLETE**. Next gap in order is
+catalog/search pagination (**MG-10**).
 
 ## 6.3 Catalog behavior
 
@@ -1606,8 +1608,9 @@ reflowable reading controls, which live inside the reader and reset when it clos
 Available on Me. It clears the session, the cached server state, **and every offline download with
 its keys**. The same purge happens when a user abandons a failed session restore.
 
-**This is a destructive action currently presented as a routine one.** The design should reflect
-its true consequence.
+**Confirmation (**MG-9**).** If downloads exist, sign-out and abandon-restore show a destructive
+confirm dialog first. If there are no downloads, both actions proceed without that dialog. Purge
+behavior itself is unchanged (DEKs and ciphertext are never retained after sign-out).
 
 ---
 
@@ -1850,8 +1853,8 @@ resolution**, because there is nothing queued to reconcile.
 
 - **Per book**, from either book detail or My books, with confirmation copy after the fact
   ("download removed from this device"). No pre-confirmation for this genuinely destructive action.
-- **All downloads at once**, implicitly, on sign-out or on abandoning a failed session restore.
-  There is no warning.
+- **All downloads at once**, after confirmation when downloads exist (**MG-9**), on sign-out or on
+  abandoning a failed session restore.
 
 ## 9.10 Documented intent vs implementation
 
@@ -2402,7 +2405,7 @@ The reader must express these distinctly, because the correct user action differ
 | Authorization for another account | Locks with the same message | Sign in as the right account, or re-download |
 | Device clock rolled back | Locks with the distinct device-time message | Reconnect |
 | Re-authorization fails because entitlement genuinely ended | Routed to the subscribe path | Subscribe |
-| Sign-out purges downloads | **No warning; downloads simply vanish** | Re-download after signing in |
+| Sign-out purges downloads | Confirm when downloads exist; purge still runs; no dialog when empty | Re-download after signing in |
 
 ## 14.7 Platform and infrastructure
 
@@ -2546,8 +2549,8 @@ locked-download states with distinct recovery for expiry versus device-clock cha
 
 **Constraints to design around:** offline metadata is title and layout only; offline reading resumes
 from device-local progress when available and syncs that progress on reconnect; offline bookmarks
-work locally and sync on reconnect; downloads lock without warning; sign-out destroys all downloads
-and local progress/bookmarks.
+work locally and sync on reconnect; lease status is shown before lockouts; sign-out confirms before
+destroying downloads when any exist (**MG-9**).
 
 ## 15.13 Critical business rules
 
@@ -2572,7 +2575,8 @@ Session expiring mid-reading with no warning and no context restoration; entitle
 full-screen interruption of an expected reading experience; trial and subscription expiring with
 no warning; downloads locking without notice; device clock changes locking a paying user out;
 integrity failures with no suggested repair; indefinite loading on a slow or dead network with no
-cancel; sign-out silently destroying downloads; a book in "continue reading" that refuses to open
+cancel; sign-out destroying downloads without confirmation when downloads exist (addressed **MG-9**);
+a book in "continue reading" that refuses to open
 because entitlement lapsed; and the catalog reporting hundreds of books while surfacing twenty.
 
 ## 15.15 Information that must be surfaced to users
@@ -2798,7 +2802,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 | Author / publisher display | **COMPLETE.** `BookResponse.authorName` / `publisherName` from EPUB `creator` / `publisher`; mobile no longer uses `owner.email` as the public byline. | **MG-2** |
 | Access token lifetime | **Confirmed 15m default**, no refresh today. Refresh architecture is mandatory and scheduled last. | **MG-FINAL** |
 | Offline lease lifetime | Equals trial end or paid `currentPeriodEnd`; UX shows active / soon / locked from `expiresAt`. | **MG-8 COMPLETE** |
-| Sign-out purge | **Keep** security purge; require explicit confirmation when downloads exist. | **MG-9** |
+| Sign-out purge | **COMPLETE.** Keep security purge; confirm when downloads exist; direct when none. | **MG-9 COMPLETE** |
 | Entitlement visibility | **COMPLETE.** Book detail shows Access hint and maps primary CTA from `readingAccessState` / `trialEligible` (Profile for trial/subscribe). Denial path kept as fallback. | **MG-3** |
 | Trial discovery | **COMPLETE.** Home discovery card for eligible / active trial; book detail shows remaining time; start still on Profile; no auto-start. | **MG-4** |
 | Offline resume + sync | **MG-5…MG-7 COMPLETE** (local progress, bookmark queue, progress upload with newer-timestamp conflict rule). | **MG-5**, **MG-6**, **MG-7** |
@@ -2831,7 +2835,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 6. **MG-6** Offline bookmark persistence & sync — `COMPLETE`
 7. **MG-7** Offline progress write queue — `COMPLETE` (depends on MG-5)
 8. **MG-8** Offline lease expiration UX — `COMPLETE`
-9. **MG-9** Sign-out confirmation for downloads — `TODO`
+9. **MG-9** Sign-out confirmation for downloads — `COMPLETE`
 10. **MG-10** Catalog & search pagination — `TODO`
 11. **MG-11** Settings (scoped) — `TODO`
 12. **MG-12** Password reset — `TODO`

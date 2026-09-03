@@ -2,6 +2,7 @@ import { useState, type JSX } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { confirmOfflinePurgeIfNeeded } from '@/features/offline/lib/confirm-offline-purge-if-needed';
 import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
 
@@ -23,13 +24,20 @@ export function SessionRestoreScreen(): JSX.Element {
     }
   }
 
-  async function handleSignInInstead(): Promise<void> {
+  async function executeAbandonRestore(): Promise<void> {
     setIsAbandoning(true);
     try {
       await abandonRestore();
     } finally {
       setIsAbandoning(false);
     }
+  }
+
+  async function handleSignInInsteadPress(): Promise<void> {
+    await confirmOfflinePurgeIfNeeded({
+      kind: 'abandon_restore',
+      onConfirm: executeAbandonRestore,
+    });
   }
 
   const isBusy: boolean = isRetrying || isAbandoning;
@@ -61,11 +69,12 @@ export function SessionRestoreScreen(): JSX.Element {
         <Pressable
           style={styles.secondaryButton}
           onPress={() => {
-            void handleSignInInstead();
+            void handleSignInInsteadPress();
           }}
           disabled={isBusy}
           accessibilityRole="button"
           accessibilityLabel="Sign in instead"
+          testID="session-restore-abandon-button"
         >
           <Text style={styles.secondaryLabel}>Sign in instead</Text>
         </Pressable>

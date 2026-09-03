@@ -38,7 +38,7 @@
 | Offline resume | Starts at beginning | Confirmed in offline shell/session stub | **Valid** |
 | Offline bookmarks / progress | Discarded | No offline write queue in `mobile/src/features/offline/` | **Valid** |
 | Offline lease expiry UX | Surfaced (active / soon / locked) | Lease `expiresAt` already stored in offline manifest | **COMPLETE (MG-8)** — UX only; crypto unchanged |
-| Sign-out purge | Silent destruction | Confirmed purge on sign-out / abandon restore | **Valid** — keep purge; add confirmation |
+| Sign-out purge | Confirmed when downloads exist | Confirmed purge on sign-out / abandon restore | **COMPLETE (MG-9)** — keep purge; confirm when non-empty |
 | Catalog/search pagination | First 20 only | API supports `limit`/`offset`; UI hardcodes `offset: 0` | **Valid** — mobile-only |
 | Settings | Absent | No settings route/screen | **Valid** — scope tightly |
 | Password reset | Absent | No forgot/reset HTTP; mail + recovery JWT infrastructure exist | **Valid** — needs backend + mobile |
@@ -83,7 +83,7 @@ Priority bands used:
 | 6 | **MG-6** | Offline bookmark persistence & sync | `COMPLETE` | 5 | Prefer after MG-5 (shared local offline store patterns) |
 | 7 | **MG-7** | Offline progress write queue / sync | `COMPLETE` | 5 | **MG-5** |
 | 8 | **MG-8** | Offline lease expiration UX | `COMPLETE` | 5 | — (lease already on device) |
-| 9 | **MG-9** | Sign-out & offline content confirmation | `TODO` | 8 | — |
+| 9 | **MG-9** | Sign-out & offline content confirmation | `COMPLETE` | 8 | — |
 | 10 | **MG-10** | Catalog & search pagination | `TODO` | 6 | Prefer after MG-1/MG-2 so new pages include cover/author |
 | 11 | **MG-11** | Settings (scoped) | `TODO` | 8 | Prefer after MG-5 (reading prefs), MG-9 |
 | 12 | **MG-12** | Password reset | `TODO` | 8 | — (backend mail + recovery JWT) |
@@ -91,7 +91,7 @@ Priority bands used:
 | 14 | **MG-14** | Trial / subscription expiry notifications | `TODO` | 9 | MG-3/MG-4 for in-app; push infra may be `BLOCKED` |
 | 15 | **MG-FINAL** | Access + refresh token architecture | `TODO` | 3 | After MG-1…MG-14 (largest auth change; last by requirement) |
 
-**Next task to start when approved:** **MG-9**.
+**Next task to start when approved:** **MG-10**.
 
 ---
 
@@ -260,7 +260,7 @@ Priority bands used:
 
 | Field | Content |
 | --- | --- |
-| **Status** | `TODO` |
+| **Status** | `COMPLETE` |
 | **Problem** | Sign-out (and abandon-restore) purge all offline packages with no warning. |
 | **Current behavior** | Security-motivated purge is correct; UX presents Sign out as routine. |
 | **Desired behavior** | Keep purge. Before sign-out / abandon-restore, tell the user downloads will be removed and require confirmation when downloads exist. |
@@ -270,7 +270,7 @@ Priority bands used:
 | **Dependencies** | None. |
 | **Implementation notes** | Do not keep DEKs/ciphertext after sign-out. Confirmation only when `packages.length > 0`. |
 | **Testing** | Confirm dialog appears when downloads exist; purge still runs; no downloads → optional lighter confirm or direct sign-out (document choice). |
-| **Completion** | — |
+| **Completion** | **2026-09-03.** `confirmOfflinePurgeIfNeeded` on Me sign-out and session-restore abandon; dialog only when downloads exist; **no dialog when empty** (documented); purge path unchanged. |
 
 ---
 
@@ -398,6 +398,7 @@ Priority bands used:
 | 2026-09-03 | **MG-6 COMPLETE.** Offline bookmark local store + reconnect sync queue. Next: MG-7 on explicit approval. |
 | 2026-09-03 | **MG-7 COMPLETE.** Offline progress pendingSync + reconnect upload. Next: MG-8 on explicit approval. |
 | 2026-09-03 | **MG-8 COMPLETE.** Lease expiry labels on My books + book detail (3-day approaching). Next: MG-9 on explicit approval. |
+| 2026-09-03 | **MG-9 COMPLETE.** Sign-out/abandon confirm when downloads exist. Next: MG-10 on explicit approval. |
 
 ---
 
