@@ -32,8 +32,8 @@ roadmap is the ordered implementation source of truth for closing gaps. Historic
 31–54 in `docs/admin-dashboard-tasks.md` remain Complete and are not rewritten. As each `MG-*`
 task completes, this specification must be updated so it stays current.
 
-**Roadmap snapshot (2026-09-03).** **MG-1…MG-10 COMPLETE**. Next task when approved: **MG-11**
-(scoped Settings). Confirmed blocker: access tokens default to **15 minutes** with no refresh
+**Roadmap snapshot (2026-09-03).** **MG-1…MG-11 COMPLETE**. Next task when approved: **MG-12**
+(password reset). Confirmed blocker: access tokens default to **15 minutes** with no refresh
 (`MG-FINAL`, last).
 
 ---
@@ -393,7 +393,7 @@ Covered in depth in [§5](#5-reader-experience-specification). Summary of featur
 | F-READ-8 · Right-to-left reading direction | **PLANNED** (documented in requirements, absent in both engines) |
 | F-READ-9 · Fixed-layout dark theme | **PLANNED** |
 | F-READ-10 · PDF fixed-layout rendering | **PLANNED** (fails with an explicit "not available in this build" message) |
-| F-READ-11 · Persisted / cross-device reading preferences | **PLANNED** (settings are session-local today) |
+| F-READ-11 · Persisted / cross-device reading preferences | **PARTIALLY IMPLEMENTED** — device-local persistence (**MG-11**); not cross-device |
 | F-READ-12 · Close reader with position flush | **IMPLEMENTED** |
 | F-READ-13 · Reading session lifecycle (start / activity / end) | **IMPLEMENTED** |
 | F-READ-14 · Idle-time detection | **PLANNED** (idle duration is always reported as zero) |
@@ -491,15 +491,18 @@ The Me screen shows the user's email address and their role, both read-only.
 Users cannot change their email, password, display name, or avatar, and cannot delete their
 account. There is no profile-edit surface at all.
 
-### F-ACC-3 · Application settings screen — **NOT AVAILABLE**
+### F-ACC-3 · Application settings screen — **IMPLEMENTED** (scoped)
 
-There is **no settings screen**. No app-level appearance setting, no language selection, no
-notification preferences, no download preferences (Wi-Fi-only, storage cap), no accessibility
-settings, no about/legal/privacy screen. The only user-adjustable preferences in the entire
-product are the four reflowable reading controls, and those live inside the reader and reset when
-the reader closes.
+Minimal Settings from Me (**MG-11**). Included only what is product-justified:
 
-This is one of the largest structural gaps in the product.
+- **Reading defaults** — reflowable font, line spacing, margin, light/dark; device-local persistence
+  shared with the reader
+- **Downloads** — count of offline packages + link to My books
+- **About** — app version
+
+**Explicitly not included:** notifications, Wi-Fi-only downloads, language, app-wide appearance,
+legal/privacy URLs without real content, password reset (deferred to **MG-12**), sign-out (stays on
+Me).
 
 ## 2.11 Notifications
 
@@ -736,9 +739,21 @@ what information must be present, what actions originate there, where they can g
 | **Access** | Signed-in users. |
 | **User accomplishes** | Understands their current reading access; starts a free trial; picks a plan and subscribes; requests a refund; signs out. |
 | **Information needed** | Email and role; **plan name and type**; **reading access level** (free / trial / paid); **subscription status** (active / canceled); **paid access end date** when there is one; **trial time remaining** when on trial; the trial offer with its terms (7 days, no card, does not itself start a paid subscription) when eligible; the purchasable plans with prices; the note that reading access is decided by the server; per-action loading and error states. |
-| **Actions** | Start free trial (only when eligible); select a plan; subscribe (opens external checkout); request refund (only for a paid plan) with a confirm step; retry loading subscription; sign out. |
-| **Navigates to** | External hosted checkout and back; sign-in on sign-out. |
+| **Actions** | Start free trial (only when eligible); select a plan; subscribe (opens external checkout); request refund (only for a paid plan) with a confirm step; retry loading subscription; open Settings; sign out. |
+| **Navigates to** | Settings; external hosted checkout and back; sign-in on sign-out. |
 | **Conditions** | This screen carries an unusual amount of conditional content — the trial offer, trial-remaining, period end, refund action, and post-checkout messages each appear only in specific states. It is also the destination of the entitlement-denied path, so users often **arrive here with intent**, from a book they wanted to read. It has **no cancel-subscription action** and **no parental gate**. |
+
+### S-08b · Settings — **IMPLEMENTED** (scoped)
+
+| | |
+| --- | --- |
+| **Purpose** | Device-local reading defaults, downloads summary, and about. |
+| **Access** | Signed-in users, from Me. |
+| **User accomplishes** | Adjusts reflowable defaults; sees download count; opens My books; reads app version. |
+| **Information needed** | Current reading defaults; download count; app version; clear note that password reset / notifications are not available yet. |
+| **Actions** | Change reading defaults; reset defaults; open My books; go back. |
+| **Navigates to** | My books tab; back to Me. |
+| **Conditions** | Preferences persist on this device only. No invented toggles. |
 
 ## 3.4 Pushed discovery contexts
 
@@ -809,7 +824,7 @@ what information must be present, what actions originate there, where they can g
 | **User accomplishes** | Reads; moves between chapters; scrolls within a chapter; tunes text presentation for comfort; bookmarks positions; leaves. |
 | **Information needed** | Book title; current chapter title; position in the book (which chapter of how many); the current state of each reading setting; whether they are at the first or last chapter; loading and error states for the content itself. |
 | **Actions** | Previous / next chapter; scroll; increase/decrease font size; increase/decrease line spacing; increase/decrease margin; toggle light/dark reading theme; open bookmarks; close the reader. |
-| **Conditions** | Settings are **session-local** — they reset when the reader closes. Changing chapter resets scroll to the top. Position is captured continuously and saved periodically and on close. No RTL support. No text selection, search, dictionary, or table of contents jump list. |
+| **Conditions** | Settings are **persisted on this device** (**MG-11**) and shared with Settings. Changing chapter resets scroll to the top. Position is captured continuously and saved periodically and on close. No RTL support. No text selection, search, dictionary, or table of contents jump list. |
 
 ### S-15 · Reader — fixed-layout engine — **IMPLEMENTED**
 
@@ -865,14 +880,14 @@ listed so the design can propose them deliberately rather than assume them.
 | Missing screen | Status | Consequence |
 | --- | --- | --- |
 | Onboarding / welcome | **PLANNED / not evidenced** | First-time users get no orientation |
-| Settings | **NOT AVAILABLE** | No home for app preferences, legal, about, storage |
+| Settings | **IMPLEMENTED** (scoped **MG-11**) | Reading defaults, downloads summary, about — no invented toggles |
 | Profile edit | **NOT AVAILABLE** | Email and password are unchangeable in-app |
 | Password reset / forgot password | **NOT AVAILABLE** | A user who forgets their password is locked out with no in-app recovery |
 | Cancel subscription | **NOT AVAILABLE** | No in-app path to stop paying |
 | Billing history / payment method | **NOT AVAILABLE** | No record of what was charged |
 | Cross-book bookmark library | **PLANNED** (explicitly out of scope) | Bookmarks are only reachable inside each book |
 | Reading statistics | **NOT AVAILABLE** | Engagement data is collected but never shown |
-| Storage / download management | **NOT AVAILABLE** | No visibility into space used |
+| Storage / download management | **PARTIALLY** — count + My books link in Settings; no byte-level storage UI | Downloads managed on My books |
 | Notification center | **NOT AVAILABLE** | No channel for trial-expiry or billing events |
 | In-reader table of contents | **NOT AVAILABLE** | Chapter navigation is sequential only |
 | In-reader search | **PLANNED** (backend ready) | Cannot search within a book |
@@ -1284,8 +1299,8 @@ inside a sandboxed content view with no external network access.
 **Behavioral rules.**
 - Changing chapter **resets scroll to the top** of the new chapter.
 - Scroll position within a chapter is restored on return.
-- All four settings are **session-local and reset on close** — they are not remembered across
-  sessions or devices.
+- All four settings are **persisted on this device** (**MG-11**) and shared with Settings — they are
+  not synced across devices in this release.
 - Reading position is captured continuously and saved periodically and on close.
 
 **Not available.** Right-to-left reading direction; a table of contents or chapter jump list;
@@ -1460,8 +1475,8 @@ and weights.
 
 **Remediation.** Cover (**MG-1**), author/publisher (**MG-2**), entitlement CTA (**MG-3**), trial
 discovery (**MG-4**), offline resume/bookmarks/progress sync (**MG-5…MG-7**), lease expiry UX
-(**MG-8**), sign-out/abandon confirmation (**MG-9**), and catalog/search pagination (**MG-10**) are
-**COMPLETE**. Next gap in order is scoped Settings (**MG-11**).
+(**MG-8**), sign-out/abandon confirmation (**MG-9**), catalog/search pagination (**MG-10**), and
+scoped Settings (**MG-11**) are **COMPLETE**. Next gap in order is password reset (**MG-12**).
 
 ## 6.3 Catalog behavior
 
@@ -1598,8 +1613,15 @@ email change, no display name or avatar, and **no account deletion**.
 
 ## 7.9 Settings
 
-**There is no settings screen.** The only user-adjustable preferences in the product are the four
-reflowable reading controls, which live inside the reader and reset when it closes.
+**Settings** is reachable from Me (**MG-11**). Scope is deliberately minimal:
+
+1. Reflowable reading defaults (font, line spacing, margin, theme) persisted on this device and
+   shared with the reader
+2. Downloads summary + link to My books
+3. About (app version)
+
+Sign-out remains on Me. Password reset and notification preferences are deferred (**MG-12**,
+**MG-14**). No Wi-Fi-only, language, or invented toggles.
 
 ## 7.10 Sign out
 
@@ -2270,7 +2292,7 @@ technically within reach but is not a supported product feature today.
 | --- | --- |
 | R-R1 | The engine is chosen from the book's **layout type**, never from its book type. |
 | R-R2 | Reflowable position is chapter plus scroll offset; fixed-layout position is spread plus page. There is no reflowable page number or percentage. |
-| R-R3 | Reflowable reading settings are session-local and reset on close. |
+| R-R3 | Reflowable reading settings persist on this device and are shared with Settings (**MG-11**). |
 | R-R4 | Fixed-layout books must not offer typography or theme controls. |
 | R-R5 | Fixed-layout content must be scaled uniformly and never cropped or distorted; letterboxing is expected. |
 | R-R6 | Fixed-layout zoom is stepped from 1× to 3× and resets on spread change. Pinch zoom is disabled. |
@@ -2724,8 +2746,8 @@ navigation. Discovery, reader engines, offline, and checkout have **no** end-to-
 
 1. **~~Catalog and search pagination.~~** **COMPLETE (MG-10).** Infinite `limit`/`offset` paging on
    catalog and search with partial counts and end-of-results.
-2. **No settings surface at all.** No home exists for app preferences, legal content, about
-   information, or storage management.
+2. **~~No settings surface at all.~~** **COMPLETE (MG-11)** — scoped Settings with reading defaults,
+   downloads summary, and about. Cross-device preference sync remains out of scope.
 3. **No password reset or account recovery.** A hard lockout path with no in-app remedy.
 4. **No account deletion or profile editing.**
 5. **No in-app subscription cancellation**, despite full support for subscribing and refunding.
@@ -2807,7 +2829,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 | Password reset | **Will implement** using recovery JWT + mail infrastructure. | **MG-12** |
 | Reader cancellation | **Will implement** reader cancel (access until period end); distinct from refund. | **MG-13** |
 | Expiry notifications | **Phase A in-app** banners from subscription fields; push only after real infra (no fakes). | **MG-14** |
-| Settings | **Scoped settings only** — no invented toggles; final scope set during **MG-11**. | **MG-11** |
+| Settings | **COMPLETE (scoped).** Reading defaults (device-local), downloads summary, about. | **MG-11 COMPLETE** |
 
 ### Still deferred / product decisions (not in MG-1…MG-FINAL)
 
@@ -2834,7 +2856,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 8. **MG-8** Offline lease expiration UX — `COMPLETE`
 9. **MG-9** Sign-out confirmation for downloads — `COMPLETE`
 10. **MG-10** Catalog & search pagination — `COMPLETE`
-11. **MG-11** Settings (scoped) — `TODO`
+11. **MG-11** Settings (scoped) — `COMPLETE`
 12. **MG-12** Password reset — `TODO`
 13. **MG-13** Reader subscription cancellation — `TODO`
 14. **MG-14** Trial/subscription expiry notifications — `TODO`

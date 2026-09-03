@@ -1,3 +1,4 @@
+import { router, type Href } from 'expo-router';
 import { useState, type JSX } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,7 +9,7 @@ import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
 
 /**
- * Profile tab: identity from /auth/me, subscription status, and sign-out.
+ * Profile tab: identity from /auth/me, subscription status, settings entry, and sign-out.
  */
 export function ProfileScreen(): JSX.Element {
   const { user, signOut } = useSession();
@@ -45,6 +46,17 @@ export function ProfileScreen(): JSX.Element {
           {user?.role ?? '—'}
         </Text>
         <SubscriptionStatusCard />
+        <Pressable
+          style={styles.secondaryButton}
+          onPress={() => {
+            router.push('/(app)/settings' as Href);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Open settings"
+          testID="shell-settings-button"
+        >
+          <Text style={styles.secondaryLabel}>Settings</Text>
+        </Pressable>
         <Pressable
           style={[styles.button, isSigningOut ? styles.buttonDisabled : null]}
           onPress={() => {
@@ -90,8 +102,22 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: theme.colors.textPrimary,
   },
+  secondaryButton: {
+    marginTop: theme.spacing.lg,
+    minHeight: theme.controlMinHeight,
+    borderRadius: theme.radii.control,
+    borderWidth: 2,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryLabel: {
+    ...theme.typography.button,
+    color: theme.colors.primary,
+  },
   button: {
-    marginTop: theme.spacing.xl,
+    marginTop: theme.spacing.sm,
     minHeight: theme.controlMinHeight,
     borderRadius: theme.radii.control,
     backgroundColor: theme.colors.primary,

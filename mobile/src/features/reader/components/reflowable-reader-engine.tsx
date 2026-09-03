@@ -16,19 +16,24 @@ import { buildReflowableChapterHtml } from '@/features/reader/lib/build-reflowab
 import { loadReflowableEpubBook } from '@/features/reader/lib/load-reflowable-epub-book';
 import type { ParsedEpubBook, ParsedEpubChapter } from '@/features/reader/lib/parse-epub-book';
 import {
+  DEFAULT_REFLOWABLE_READER_SETTINGS,
   decreaseFontScale,
   decreaseLineHeight,
   decreaseMargin,
-  DEFAULT_REFLOWABLE_READER_SETTINGS,
   increaseFontScale,
   increaseLineHeight,
   increaseMargin,
   toggleReaderTheme,
   type ReflowableReaderSettings,
 } from '@/features/reader/lib/reflowable-reader-settings';
+import {
+  loadReflowableReaderSettings,
+  saveReflowableReaderSettings,
+} from '@/features/reader/lib/reflowable-reader-settings-storage';
 import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-reading-progress-best-effort';
 import type { ReadingPositionSnapshot } from '@/features/reader/lib/reading-position';
 import { ReaderBookmarksPanel } from '@/features/reader/components/reader-bookmarks-panel';
+import { ReflowableReaderSettingsControls } from '@/features/reader/components/reflowable-reader-settings-controls';
 import type { ReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
 import { theme } from '@/theme/theme';
 
@@ -76,6 +81,23 @@ export function ReflowableReaderEngine({
   const spineIndexRef = useRef<number>(spineIndex);
   const scrollOffsetRef = useRef<number>(scrollOffset);
   const activeStartedAtRef = useRef<number>(Date.now());
+
+  useEffect(() => {
+    let isCancelled = false;
+    void loadReflowableReaderSettings().then((loaded) => {
+      if (!isCancelled) {
+        setReaderSettings(loaded);
+      }
+    });
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  function applyReaderSettings(next: ReflowableReaderSettings): void {
+    setReaderSettings(next);
+    void saveReflowableReaderSettings(next);
+  }
 
   useEffect(() => {
     spineIndexRef.current = spineIndex;
@@ -225,61 +247,29 @@ export function ReflowableReaderEngine({
           {`Chapter ${spineIndex + 1} of ${loadState.epub.chapters.length}`}
         </Text>
       </View>
-      <View style={styles.settingsRow} testID="reader-reflowable-settings">
-        <SettingsButton
-          label="A−"
-          accessibilityLabel="Decrease font size"
-          testID="reader-font-decrease"
-          onPress={() => {
-            setReaderSettings((current) => decreaseFontScale(current));
+      <View style={styles.settingsRow}>
+        <ReflowableReaderSettingsControls
+          settings={readerSettings}
+          onDecreaseFont={() => {
+            applyReaderSettings(decreaseFontScale(readerSettings));
           }}
-        />
-        <SettingsButton
-          label="A+"
-          accessibilityLabel="Increase font size"
-          testID="reader-font-increase"
-          onPress={() => {
-            setReaderSettings((current) => increaseFontScale(current));
+          onIncreaseFont={() => {
+            applyReaderSettings(increaseFontScale(readerSettings));
           }}
-        />
-        <SettingsButton
-          label="Line −"
-          accessibilityLabel="Decrease line spacing"
-          testID="reader-line-decrease"
-          onPress={() => {
-            setReaderSettings((current) => decreaseLineHeight(current));
+          onDecreaseLine={() => {
+            applyReaderSettings(decreaseLineHeight(readerSettings));
           }}
-        />
-        <SettingsButton
-          label="Line +"
-          accessibilityLabel="Increase line spacing"
-          testID="reader-line-increase"
-          onPress={() => {
-            setReaderSettings((current) => increaseLineHeight(current));
+          onIncreaseLine={() => {
+            applyReaderSettings(increaseLineHeight(readerSettings));
           }}
-        />
-        <SettingsButton
-          label="Margin −"
-          accessibilityLabel="Decrease margin"
-          testID="reader-margin-decrease"
-          onPress={() => {
-            setReaderSettings((current) => decreaseMargin(current));
+          onDecreaseMargin={() => {
+            applyReaderSettings(decreaseMargin(readerSettings));
           }}
-        />
-        <SettingsButton
-          label="Margin +"
-          accessibilityLabel="Increase margin"
-          testID="reader-margin-increase"
-          onPress={() => {
-            setReaderSettings((current) => increaseMargin(current));
+          onIncreaseMargin={() => {
+            applyReaderSettings(increaseMargin(readerSettings));
           }}
-        />
-        <SettingsButton
-          label={readerSettings.theme === 'light' ? 'Dark' : 'Light'}
-          accessibilityLabel="Toggle reading theme"
-          testID="reader-theme-toggle"
-          onPress={() => {
-            setReaderSettings((current) => toggleReaderTheme(current));
+          onToggleTheme={() => {
+            applyReaderSettings(toggleReaderTheme(readerSettings));
           }}
         />
       </View>
@@ -353,25 +343,6 @@ export function ReflowableReaderEngine({
         <CloseButton onClose={onClose} />
       </View>
     </View>
-  );
-}
-
-function SettingsButton(input: {
-  readonly label: string;
-  readonly accessibilityLabel: string;
-  readonly testID: string;
-  readonly onPress: () => void;
-}): JSX.Element {
-  return (
-    <Pressable
-      style={styles.settingsButton}
-      onPress={input.onPress}
-      accessibilityRole="button"
-      accessibilityLabel={input.accessibilityLabel}
-      testID={input.testID}
-    >
-      <Text style={styles.settingsLabel}>{input.label}</Text>
-    </Pressable>
   );
 }
 
@@ -490,21 +461,6 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.sm,
-  },
-  settingsButton: {
-    minHeight: 40,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.sm,
-  },
-  settingsLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.primary,
   },
   webview: {
     flex: 1,

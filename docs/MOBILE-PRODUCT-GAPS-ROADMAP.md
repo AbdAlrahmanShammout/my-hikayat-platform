@@ -85,13 +85,13 @@ Priority bands used:
 | 8 | **MG-8** | Offline lease expiration UX | `COMPLETE` | 5 | — (lease already on device) |
 | 9 | **MG-9** | Sign-out & offline content confirmation | `COMPLETE` | 8 | — |
 | 10 | **MG-10** | Catalog & search pagination | `COMPLETE` | 6 | Prefer after MG-1/MG-2 so new pages include cover/author |
-| 11 | **MG-11** | Settings (scoped) | `TODO` | 8 | Prefer after MG-5 (reading prefs), MG-9 |
+| 11 | **MG-11** | Settings (scoped) | `COMPLETE` | 8 | Prefer after MG-5 (reading prefs), MG-9 |
 | 12 | **MG-12** | Password reset | `TODO` | 8 | — (backend mail + recovery JWT) |
 | 13 | **MG-13** | Subscription cancellation (reader) | `TODO` | 7 | — (extends existing billing) |
 | 14 | **MG-14** | Trial / subscription expiry notifications | `TODO` | 9 | MG-3/MG-4 for in-app; push infra may be `BLOCKED` |
 | 15 | **MG-FINAL** | Access + refresh token architecture | `TODO` | 3 | After MG-1…MG-14 (largest auth change; last by requirement) |
 
-**Next task to start when approved:** **MG-11**.
+**Next task to start when approved:** **MG-12**.
 
 ---
 
@@ -296,7 +296,7 @@ Priority bands used:
 
 | Field | Content |
 | --- | --- |
-| **Status** | `TODO` |
+| **Status** | `COMPLETE` |
 | **Problem** | No settings surface for justified preferences and account actions. |
 | **Current behavior** | Me has identity + billing + sign-out only. Reading prefs are session-local. |
 | **Desired behavior** | Add a **minimal** Settings experience justified by product needs only. Evaluate, then include only what is warranted — candidates: persisted reading preferences (ties FR-5), offline/storage summary + manage downloads link, legal/about placeholders if required, account actions (sign-out, password change/reset entry after MG-12), notification prefs only if MG-14 lands. |
@@ -306,7 +306,7 @@ Priority bands used:
 | **Dependencies** | Prefer after **MG-5**, **MG-9**; coordinate with **MG-12** / **MG-14**. |
 | **Implementation notes** | **Do not invent** unused toggles. Document final scope in the product spec when implementing. |
 | **Testing** | Navigation; persistence of any included prefs. |
-| **Completion** | — |
+| **Completion** | **2026-09-03.** Final scope: reading defaults (AsyncStorage via `local-storage`), downloads count + My books link, about/version. Entry from Me → Settings. Reader loads/saves same prefs. Excluded: notifications, Wi-Fi-only, language, fake legal URLs, password reset entry, moving sign-out. |
 
 ---
 
@@ -400,6 +400,7 @@ Priority bands used:
 | 2026-09-03 | **MG-8 COMPLETE.** Lease expiry labels on My books + book detail (3-day approaching). Next: MG-9 on explicit approval. |
 | 2026-09-03 | **MG-9 COMPLETE.** Sign-out/abandon confirm when downloads exist. Next: MG-10 on explicit approval. |
 | 2026-09-03 | **MG-10 COMPLETE.** Catalog + search infinite limit/offset paging. Next: MG-11 on explicit approval. |
+| 2026-09-03 | **MG-11 COMPLETE.** Scoped Settings (reading prefs, downloads, about). Next: MG-12 on explicit approval. |
 
 ---
 
