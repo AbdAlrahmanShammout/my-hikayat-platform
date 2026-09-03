@@ -10,6 +10,7 @@ import { bindQueryFocusManager } from '@/api/bind-query-focus-manager';
 import { bindQueryOnlineManager } from '@/api/bind-query-online-manager';
 import { createQueryClient } from '@/api/query-client';
 import { bindOfflineBookmarkSync } from '@/features/reader/lib/bind-offline-bookmark-sync';
+import { bindOfflineProgressSync } from '@/features/offline/lib/bind-offline-progress-sync';
 import { AppErrorBoundary } from '@/root/app-error-boundary';
 import { SessionProvider } from '@/session/session-provider';
 import { useSession } from '@/session/use-session';
@@ -26,6 +27,7 @@ export default function RootLayout(): JSX.Element {
   useEffect(() => bindQueryFocusManager(), []);
   useEffect(() => bindQueryOnlineManager(), []);
   useEffect(() => bindOfflineBookmarkSync(), []);
+  useEffect(() => bindOfflineProgressSync(), []);
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppErrorBoundary>

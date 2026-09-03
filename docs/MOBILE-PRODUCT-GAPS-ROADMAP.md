@@ -81,7 +81,7 @@ Priority bands used:
 | 4 | **MG-4** | Trial discovery & trial UX | `COMPLETE` | 7 | MG-3 (reuse access-state surfaces) |
 | 5 | **MG-5** | Offline reading resume (local progress) | `COMPLETE` | 5 | — |
 | 6 | **MG-6** | Offline bookmark persistence & sync | `COMPLETE` | 5 | Prefer after MG-5 (shared local offline store patterns) |
-| 7 | **MG-7** | Offline progress write queue / sync | `TODO` | 5 | **MG-5** |
+| 7 | **MG-7** | Offline progress write queue / sync | `COMPLETE` | 5 | **MG-5** |
 | 8 | **MG-8** | Offline lease expiration UX | `TODO` | 5 | — (lease already on device) |
 | 9 | **MG-9** | Sign-out & offline content confirmation | `TODO` | 8 | — |
 | 10 | **MG-10** | Catalog & search pagination | `TODO` | 6 | Prefer after MG-1/MG-2 so new pages include cover/author |
@@ -91,7 +91,7 @@ Priority bands used:
 | 14 | **MG-14** | Trial / subscription expiry notifications | `TODO` | 9 | MG-3/MG-4 for in-app; push infra may be `BLOCKED` |
 | 15 | **MG-FINAL** | Access + refresh token architecture | `TODO` | 3 | After MG-1…MG-14 (largest auth change; last by requirement) |
 
-**Next task to start when approved:** **MG-7**.
+**Next task to start when approved:** **MG-8**.
 
 ---
 
@@ -224,7 +224,7 @@ Priority bands used:
 
 | Field | Content |
 | --- | --- |
-| **Status** | `TODO` |
+| **Status** | `COMPLETE` |
 | **Problem** | Offline progress is discarded; reconnect does not upload offline reading. |
 | **Current behavior** | Progress PUT only while online; failures silent. |
 | **Desired behavior** | Offline change → local persistence → pending sync → reconnect → server sync → ack → queue cleanup. Define conflict rule (recommended: **latest `lastSessionAt` / newer client timestamp wins**, aligned with existing Smart Resume single-progress-row model). |
@@ -234,7 +234,7 @@ Priority bands used:
 | **Dependencies** | **MG-5** (required). Align with MG-6 queue mechanics. |
 | **Implementation notes** | Reuse MG-5 local store; add pending flag/ops. Sync on connectivity restore + app foreground. No infinite retry loops. |
 | **Testing** | Queue lifecycle; reconnect sync; conflict fixture; offline→online resume matches uploaded position. |
-| **Completion** | — |
+| **Completion** | **2026-09-03.** `pendingSync` on local progress records; flush on reconnect/foreground via existing PUT; conflict = newer of local `updatedAt` vs server `lastSessionAt`; capped retries; legacy MG-5 rows treated as pending once. |
 
 ---
 
@@ -396,6 +396,7 @@ Priority bands used:
 | 2026-09-03 | **MG-4 COMPLETE.** Home trial discovery card + trial remaining on detail. Next: MG-5 on explicit approval. |
 | 2026-09-03 | **MG-5 COMPLETE.** Local offline reading resume via `progress.json`. Next: MG-6 on explicit approval. |
 | 2026-09-03 | **MG-6 COMPLETE.** Offline bookmark local store + reconnect sync queue. Next: MG-7 on explicit approval. |
+| 2026-09-03 | **MG-7 COMPLETE.** Offline progress pendingSync + reconnect upload. Next: MG-8 on explicit approval. |
 
 ---
 

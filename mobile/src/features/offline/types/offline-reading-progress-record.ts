@@ -7,4 +7,6 @@ export type OfflineReadingProgressRecord = {
   readonly spreadIndex: number | null;
   readonly pageNumber: number | null;
   readonly updatedAt: string;
+  /** True when this local position still needs a server PUT. */
+  readonly pendingSync: boolean;
 };

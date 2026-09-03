@@ -44,6 +44,7 @@ describe('offline-progress-storage', () => {
       spreadIndex: null,
       pageNumber: null,
       updatedAt: '2026-09-03T12:00:00.000Z',
+      pendingSync: true,
     });
     const actual = await getOfflineReadingProgress(4, 8);
     expect(actual).toEqual({
@@ -55,6 +56,7 @@ describe('offline-progress-storage', () => {
       spreadIndex: null,
       pageNumber: null,
       updatedAt: '2026-09-03T12:00:00.000Z',
+      pendingSync: true,
     });
     expect(await getOfflineReadingProgress(4, 9)).toBeNull();
     expect(await getOfflineReadingProgress(5, 8)).toBeNull();
@@ -76,6 +78,7 @@ describe('offline-progress-storage', () => {
       spreadIndex: 0,
       pageNumber: 1,
       updatedAt: '2026-09-03T12:00:00.000Z',
+      pendingSync: true,
     });
     await upsertOfflineReadingProgress({
       userId: 4,
@@ -86,10 +89,12 @@ describe('offline-progress-storage', () => {
       spreadIndex: 3,
       pageNumber: 4,
       updatedAt: '2026-09-03T13:00:00.000Z',
+      pendingSync: false,
     });
     const actual = await getOfflineReadingProgress(4, 8);
     expect(actual?.spreadIndex).toBe(3);
     expect(actual?.pageNumber).toBe(4);
+    expect(actual?.pendingSync).toBe(false);
   });
 
   it('clears all progress records', async () => {
@@ -105,6 +110,7 @@ describe('offline-progress-storage', () => {
           spreadIndex: null,
           pageNumber: null,
           updatedAt: '2026-09-03T12:00:00.000Z',
+          pendingSync: true,
         },
       ],
     });
@@ -115,6 +121,28 @@ describe('offline-progress-storage', () => {
     });
     await clearOfflineProgressDocument();
     expect(await getOfflineReadingProgress(4, 8)).toBeNull();
+  });
+
+  it('treats legacy records without pendingSync as pending', async () => {
+    const stored = JSON.stringify({
+      schemaVersion: 1,
+      records: [
+        {
+          userId: 4,
+          bookId: 8,
+          layoutType: 'reflowable',
+          spineIndex: 1,
+          scrollOffset: 0,
+          spreadIndex: null,
+          pageNumber: null,
+          updatedAt: '2026-09-03T12:00:00.000Z',
+        },
+      ],
+    });
+    mockGetInfoAsync.mockResolvedValue({ exists: true });
+    mockReadAsStringAsync.mockResolvedValue(stored);
+    const actual = await getOfflineReadingProgress(4, 8);
+    expect(actual?.pendingSync).toBe(true);
   });
 
   it('returns empty document for corrupt progress files', async () => {

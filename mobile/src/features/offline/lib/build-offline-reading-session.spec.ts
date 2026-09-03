@@ -65,6 +65,7 @@ describe('buildOfflineReadingSession', () => {
         spreadIndex: null,
         pageNumber: null,
         updatedAt: '2026-09-03T12:00:00.000Z',
+        pendingSync: true,
       },
     );
     expect(reflowable.userId).toBe(4);
@@ -93,6 +94,7 @@ describe('buildOfflineReadingSession', () => {
         spreadIndex: 2,
         pageNumber: 3,
         updatedAt: '2026-09-03T12:00:00.000Z',
+        pendingSync: false,
       },
     );
     expect(fixed.spreadIndex).toBe(2);

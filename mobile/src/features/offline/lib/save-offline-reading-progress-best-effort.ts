@@ -24,6 +24,7 @@ export async function saveOfflineReadingProgressBestEffort(input: {
         spreadIndex: null,
         pageNumber: null,
         updatedAt: new Date().toISOString(),
+        pendingSync: true,
       });
       return;
     }
@@ -36,6 +37,7 @@ export async function saveOfflineReadingProgressBestEffort(input: {
       spreadIndex: input.position.spreadIndex,
       pageNumber: input.position.pageNumber,
       updatedAt: new Date().toISOString(),
+      pendingSync: true,
     });
   } catch {
     // Local progress save is best-effort; reading continues if it fails.

@@ -35,6 +35,7 @@ describe('saveOfflineReadingProgressBestEffort', () => {
         layoutType: 'reflowable',
         spineIndex: 2,
         scrollOffset: 90,
+        pendingSync: true,
       }),
     );
   });

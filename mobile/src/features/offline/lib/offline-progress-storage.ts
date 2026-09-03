@@ -43,6 +43,38 @@ export async function upsertOfflineReadingProgress(
 }
 
 /**
+ * Lists local progress rows that still need a server sync for one user.
+ */
+export async function listPendingOfflineReadingProgress(
+  userId: number,
+): Promise<readonly OfflineReadingProgressRecord[]> {
+  const document: OfflineProgressDocument = await readProgressDocument();
+  return document.records.filter(
+    (entry) => entry.userId === userId && entry.pendingSync === true,
+  );
+}
+
+/**
+ * Clears the pending-sync flag after a successful server upload.
+ */
+export async function markOfflineReadingProgressSynced(
+  userId: number,
+  bookId: number,
+): Promise<void> {
+  const existing: OfflineReadingProgressRecord | null = await getOfflineReadingProgress(
+    userId,
+    bookId,
+  );
+  if (existing === null) {
+    return;
+  }
+  await upsertOfflineReadingProgress({
+    ...existing,
+    pendingSync: false,
+  });
+}
+
+/**
  * Clears all local offline reading progress. Used on sign-out purge.
  */
 export async function clearOfflineProgressDocument(): Promise<void> {
@@ -113,6 +145,8 @@ function normalizeProgressRecord(value: unknown): OfflineReadingProgressRecord |
     spreadIndex: coerceNullableNonNegativeInt(record.spreadIndex),
     pageNumber: coerceNullablePositiveInt(record.pageNumber),
     updatedAt,
+    // Legacy MG-5 rows without the flag are treated as pending so they upload once.
+    pendingSync: record.pendingSync === false ? false : true,
   };
 }
 

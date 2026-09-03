@@ -45,6 +45,7 @@ describe('openOfflineReadingShell', () => {
       spreadIndex: null,
       pageNumber: null,
       updatedAt: '2026-09-03T12:00:00.000Z',
+      pendingSync: true,
     });
     const actual = await openOfflineReadingShell(5);
     expect(actual.isOfflinePackage).toBe(true);

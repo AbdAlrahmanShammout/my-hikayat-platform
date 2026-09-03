@@ -32,9 +32,9 @@ roadmap is the ordered implementation source of truth for closing gaps. Historic
 31–54 in `docs/admin-dashboard-tasks.md` remain Complete and are not rewritten. As each `MG-*`
 task completes, this specification must be updated so it stays current.
 
-**Roadmap snapshot (2026-09-03).** **MG-1…MG-6 COMPLETE**. Next task when approved: **MG-7**
-(offline progress write queue / sync). Confirmed blocker: access tokens default to **15 minutes**
-with no refresh (`MG-FINAL`, last).
+**Roadmap snapshot (2026-09-03).** **MG-1…MG-7 COMPLETE**. Next task when approved: **MG-8**
+(offline lease expiration UX). Confirmed blocker: access tokens default to **15 minutes** with no
+refresh (`MG-FINAL`, last).
 
 ---
 
@@ -523,7 +523,7 @@ Covered in depth in [§9](#9-offline-experience).
 | F-OFF-7 · Remove a single download | **IMPLEMENTED** |
 | F-OFF-8 · Purge all downloads on sign-out | **IMPLEMENTED** — also clears local offline progress |
 | F-OFF-9 · Device-clock-tampering resistance | **IMPLEMENTED** |
-| F-OFF-10 · Offline reading progress (local resume) | **IMPLEMENTED** (local only — **MG-5**); server sync queue is **MG-7** |
+| F-OFF-10 · Offline reading progress (local resume + sync) | **IMPLEMENTED** — local resume (**MG-5**) + reconnect upload (**MG-7**) |
 | F-OFF-11 · Offline bookmark creation | **IMPLEMENTED** — local store + reconnect sync (**MG-6**) |
 | F-OFF-12 · Download-all / bulk download / auto-download | **NOT AVAILABLE** |
 | F-OFF-13 · Storage usage view or storage management | **NOT AVAILABLE** |
@@ -1457,8 +1457,8 @@ and weights.
 3. There is no age or reading-level information, so an adult cannot judge suitability from the app.
 
 **Remediation.** Cover (**MG-1**), author/publisher (**MG-2**), entitlement CTA (**MG-3**), trial
-discovery (**MG-4**), offline local resume (**MG-5**), and offline bookmarks (**MG-6**) are
-**COMPLETE**. Next offline gap is progress upload sync (**MG-7**).
+discovery (**MG-4**), and offline resume/bookmarks/progress sync (**MG-5…MG-7**) are **COMPLETE**.
+Next offline gap is lease expiration UX (**MG-8**).
 
 ## 6.3 Catalog behavior
 
@@ -1791,9 +1791,9 @@ working — even on a device that never reconnects.
 - A book that is not downloaded cannot be opened, and the user is told to connect or download it
   first.
 - Server-state fetching is paused while offline.
-- **Local offline progress is saved** on the device during offline reading (**MG-5**). Progress is
-  **not** uploaded to the server until **MG-7**. Offline bookmarks persist locally and sync on
-  reconnect (**MG-6**).
+- **Local offline progress is saved** on the device during offline reading and **uploaded on
+  reconnect** (**MG-5**, **MG-7**). Offline bookmarks persist locally and sync on reconnect
+  (**MG-6**).
 
 ## 9.5 Offline vs online differences
 
@@ -1802,9 +1802,9 @@ working — even on a device that never reconnects.
 | Which books can open | Any entitled catalog book | Downloaded books only |
 | Metadata richness | Full | Title and layout only |
 | **Opening position** | **Resumed** (server) | **Resumed** from device-local progress when present; else beginning |
-| Progress saving | Works (server) | Saved locally on device; not uploaded (**MG-7**) |
+| Progress saving | Works (server) | Saved locally and uploaded on reconnect (**MG-7**) |
 | Bookmarks | Full | Local create/delete with reconnect sync (**MG-6**) |
-| Reading recorded for the platform | Yes | No (until MG-7 sync) |
+| Reading recorded for the platform | Yes | Yes after reconnect sync (**MG-7**) |
 | Authorization | Live check | Signed authorization, validated locally |
 | Recovery from expiry | Automatic and silent | Impossible |
 
@@ -2250,7 +2250,7 @@ technically within reach but is not a supported product feature today.
 | R-O7 | Device clock rollback beyond a 5-minute tolerance locks offline reading. |
 | R-O8 | Re-authorization requires connectivity and **does not** re-download the file. |
 | R-O9 | Offline reading resumes from **device-local** progress when available; otherwise starts at the beginning. |
-| R-O10 | Offline reading progress is stored locally (**MG-5**). Offline bookmarks are stored locally and synced on reconnect (**MG-6**). Progress is **not** uploaded until **MG-7**. |
+| R-O10 | Offline reading progress is stored locally and uploaded on reconnect (**MG-5**, **MG-7**). Offline bookmarks are stored locally and synced on reconnect (**MG-6**). |
 | R-O11 | Sign-out purges every download, key, and local offline progress. |
 | R-O12 | Integrity is verified on download and on every offline read. |
 | R-O13 | Downloaded books cannot be opened, shared, or exported outside the app. |
@@ -2537,9 +2537,9 @@ opening of downloaded books; per-book removal; clear connectivity messaging; and
 locked-download states with distinct recovery for expiry versus device-clock change.
 
 **Constraints to design around:** offline metadata is title and layout only; offline reading resumes
-from device-local progress when available; progress is not uploaded yet; offline bookmarks work
-locally and sync on reconnect; downloads lock without warning; sign-out destroys all downloads and
-local progress/bookmarks.
+from device-local progress when available and syncs that progress on reconnect; offline bookmarks
+work locally and sync on reconnect; downloads lock without warning; sign-out destroys all downloads
+and local progress/bookmarks.
 
 ## 15.13 Critical business rules
 
@@ -2553,7 +2553,7 @@ local progress/bookmarks.
 8. Checkout return links never grant access; always re-read server state.
 9. The reader engine follows layout type, never book type.
 10. Offline authorization validation fails closed.
-11. Offline reading resumes from device-local progress; it does not sync to the server yet.
+11. Offline reading resumes from device-local progress and syncs that progress on reconnect.
 12. Sign-out purges all offline content.
 13. Only the first 20 results are reachable in the catalog and in search.
 14. Backend ordering of collections and their books must be preserved.
@@ -2792,7 +2792,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 | Sign-out purge | **Keep** security purge; require explicit confirmation when downloads exist. | **MG-9** |
 | Entitlement visibility | **COMPLETE.** Book detail shows Access hint and maps primary CTA from `readingAccessState` / `trialEligible` (Profile for trial/subscribe). Denial path kept as fallback. | **MG-3** |
 | Trial discovery | **COMPLETE.** Home discovery card for eligible / active trial; book detail shows remaining time; start still on Profile; no auto-start. | **MG-4** |
-| Offline resume + sync | **MG-5** / **MG-6 COMPLETE** (local progress + bookmark queue). Progress upload queue remains **MG-7**. | **MG-5**, **MG-6**, **MG-7** |
+| Offline resume + sync | **MG-5…MG-7 COMPLETE** (local progress, bookmark queue, progress upload with newer-timestamp conflict rule). | **MG-5**, **MG-6**, **MG-7** |
 | Catalog/search pagination | **Will implement** against existing `limit`/`offset`. | **MG-10** |
 | Password reset | **Will implement** using recovery JWT + mail infrastructure. | **MG-12** |
 | Reader cancellation | **Will implement** reader cancel (access until period end); distinct from refund. | **MG-13** |
@@ -2820,7 +2820,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 4. **MG-4** Trial discovery & trial UX — `COMPLETE`
 5. **MG-5** Offline local resume — `COMPLETE`
 6. **MG-6** Offline bookmark persistence & sync — `COMPLETE`
-7. **MG-7** Offline progress write queue — `TODO` (depends on MG-5)
+7. **MG-7** Offline progress write queue — `COMPLETE` (depends on MG-5)
 8. **MG-8** Offline lease expiration UX — `TODO`
 9. **MG-9** Sign-out confirmation for downloads — `TODO`
 10. **MG-10** Catalog & search pagination — `TODO`
