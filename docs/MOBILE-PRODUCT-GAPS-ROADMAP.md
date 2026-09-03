@@ -37,7 +37,7 @@
 | Trial discovery | Only on Me | `POST /reader/billing/trial/start` + `trialEligible` exist; no first-run / Home offer | **Valid** |
 | Offline resume | Starts at beginning | Confirmed in offline shell/session stub | **Valid** |
 | Offline bookmarks / progress | Discarded | No offline write queue in `mobile/src/features/offline/` | **Valid** |
-| Offline lease expiry UX | Invisible | Lease `expiresAt` already stored in offline manifest | **Valid** — UX only; do not weaken crypto |
+| Offline lease expiry UX | Surfaced (active / soon / locked) | Lease `expiresAt` already stored in offline manifest | **COMPLETE (MG-8)** — UX only; crypto unchanged |
 | Sign-out purge | Silent destruction | Confirmed purge on sign-out / abandon restore | **Valid** — keep purge; add confirmation |
 | Catalog/search pagination | First 20 only | API supports `limit`/`offset`; UI hardcodes `offset: 0` | **Valid** — mobile-only |
 | Settings | Absent | No settings route/screen | **Valid** — scope tightly |
@@ -82,7 +82,7 @@ Priority bands used:
 | 5 | **MG-5** | Offline reading resume (local progress) | `COMPLETE` | 5 | — |
 | 6 | **MG-6** | Offline bookmark persistence & sync | `COMPLETE` | 5 | Prefer after MG-5 (shared local offline store patterns) |
 | 7 | **MG-7** | Offline progress write queue / sync | `COMPLETE` | 5 | **MG-5** |
-| 8 | **MG-8** | Offline lease expiration UX | `TODO` | 5 | — (lease already on device) |
+| 8 | **MG-8** | Offline lease expiration UX | `COMPLETE` | 5 | — (lease already on device) |
 | 9 | **MG-9** | Sign-out & offline content confirmation | `TODO` | 8 | — |
 | 10 | **MG-10** | Catalog & search pagination | `TODO` | 6 | Prefer after MG-1/MG-2 so new pages include cover/author |
 | 11 | **MG-11** | Settings (scoped) | `TODO` | 8 | Prefer after MG-5 (reading prefs), MG-9 |
@@ -91,7 +91,7 @@ Priority bands used:
 | 14 | **MG-14** | Trial / subscription expiry notifications | `TODO` | 9 | MG-3/MG-4 for in-app; push infra may be `BLOCKED` |
 | 15 | **MG-FINAL** | Access + refresh token architecture | `TODO` | 3 | After MG-1…MG-14 (largest auth change; last by requirement) |
 
-**Next task to start when approved:** **MG-8**.
+**Next task to start when approved:** **MG-9**.
 
 ---
 
@@ -242,7 +242,7 @@ Priority bands used:
 
 | Field | Content |
 | --- | --- |
-| **Status** | `TODO` |
+| **Status** | `COMPLETE` |
 | **Problem** | Downloads lock when lease expires with no advance visibility. |
 | **Current behavior** | Manifest stores signed `offlineLease.expiresAt`; UI never shows it; lock messages only on open failure. |
 | **Desired behavior** | Surface safe states: active; approaching expiry; expired/locked — using existing `expiresAt` + trusted time. Do not expose signatures/keys. |
@@ -252,7 +252,7 @@ Priority bands used:
 | **Dependencies** | None. |
 | **Implementation notes** | Fail-closed validation unchanged. “Approaching” threshold is a UX constant (document it). Clock-rollback messaging already distinct — keep it. |
 | **Testing** | Label mapping for active / soon / expired; locked open still fail-closed. |
-| **Completion** | — |
+| **Completion** | **2026-09-03.** `resolveOfflineLeaseExpiryPresentation` with **3-day** approaching threshold; labels on My books rows and book detail; trusted time + distinct clock-rollback copy; no signature/key exposure; open-path validation unchanged. |
 
 ---
 
@@ -397,6 +397,7 @@ Priority bands used:
 | 2026-09-03 | **MG-5 COMPLETE.** Local offline reading resume via `progress.json`. Next: MG-6 on explicit approval. |
 | 2026-09-03 | **MG-6 COMPLETE.** Offline bookmark local store + reconnect sync queue. Next: MG-7 on explicit approval. |
 | 2026-09-03 | **MG-7 COMPLETE.** Offline progress pendingSync + reconnect upload. Next: MG-8 on explicit approval. |
+| 2026-09-03 | **MG-8 COMPLETE.** Lease expiry labels on My books + book detail (3-day approaching). Next: MG-9 on explicit approval. |
 
 ---
 

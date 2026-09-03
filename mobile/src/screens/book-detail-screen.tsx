@@ -18,6 +18,7 @@ import { useCatalogBook } from '@/features/catalog/hooks/use-catalog-book';
 import { CatalogBookCover } from '@/features/catalog/components/catalog-book-cover';
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
 import { resolveCatalogBookAttribution } from '@/features/catalog/lib/resolve-catalog-book-attribution';
+import { OfflineLeaseExpiryLabel } from '@/features/offline/components/offline-lease-expiry-label';
 import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book-actions';
 import { useOfflinePackage } from '@/features/offline/hooks/use-offline-packages';
 import { useConnectivity } from '@/native/connectivity/use-connectivity';
@@ -168,32 +169,38 @@ export function BookDetailScreen(): JSX.Element {
         <Text style={styles.primaryLabel}>{entryCta.label}</Text>
       </Pressable>
       {offlinePackage.isDownloaded ? (
-        <Pressable
-          style={styles.secondaryButton}
-          disabled={offlineActions.isRemoving}
-          onPress={() => {
-            void offlineActions
-              .remove()
-              .then(async () => {
-                setOfflineMessage('Download removed from this device.');
-                await offlinePackage.invalidate();
-              })
-              .catch((error: unknown) => {
-                setOfflineMessage(
-                  error instanceof Error ? error.message : 'Could not remove the download.',
-                );
-              });
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Remove offline download"
-          testID="book-detail-remove-offline-button"
-        >
-          {offlineActions.isRemoving ? (
-            <ActivityIndicator color={theme.colors.primary} />
-          ) : (
-            <Text style={styles.secondaryLabel}>Remove offline download</Text>
-          )}
-        </Pressable>
+        <>
+          <OfflineLeaseExpiryLabel
+            expiresAt={offlinePackage.manifest?.offlineLease?.expiresAt}
+            testID="book-detail-offline-lease"
+          />
+          <Pressable
+            style={styles.secondaryButton}
+            disabled={offlineActions.isRemoving}
+            onPress={() => {
+              void offlineActions
+                .remove()
+                .then(async () => {
+                  setOfflineMessage('Download removed from this device.');
+                  await offlinePackage.invalidate();
+                })
+                .catch((error: unknown) => {
+                  setOfflineMessage(
+                    error instanceof Error ? error.message : 'Could not remove the download.',
+                  );
+                });
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Remove offline download"
+            testID="book-detail-remove-offline-button"
+          >
+            {offlineActions.isRemoving ? (
+              <ActivityIndicator color={theme.colors.primary} />
+            ) : (
+              <Text style={styles.secondaryLabel}>Remove offline download</Text>
+            )}
+          </Pressable>
+        </>
       ) : (
         <Pressable
           style={styles.secondaryButton}

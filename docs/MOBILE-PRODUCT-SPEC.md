@@ -32,9 +32,9 @@ roadmap is the ordered implementation source of truth for closing gaps. Historic
 31–54 in `docs/admin-dashboard-tasks.md` remain Complete and are not rewritten. As each `MG-*`
 task completes, this specification must be updated so it stays current.
 
-**Roadmap snapshot (2026-09-03).** **MG-1…MG-7 COMPLETE**. Next task when approved: **MG-8**
-(offline lease expiration UX). Confirmed blocker: access tokens default to **15 minutes** with no
-refresh (`MG-FINAL`, last).
+**Roadmap snapshot (2026-09-03).** **MG-1…MG-8 COMPLETE**. Next task when approved: **MG-9**
+(sign-out confirmation for downloads). Confirmed blocker: access tokens default to **15 minutes**
+with no refresh (`MG-FINAL`, last).
 
 ---
 
@@ -444,7 +444,9 @@ Covered in depth in [§5](#5-reader-experience-specification). Summary of featur
 
 - **What it does.** Lists every book downloaded to this device for offline reading, and lets the
   user open or remove each one.
-- **Information shown per book.** Title and layout type. That is all that is cached — see
+- **Information shown per book.** Title, layout type, and **offline lease status** (active /
+  approaching expiry / locked / device-time warning) from stored `expiresAt` + trusted time
+  (**MG-8**). Cached catalog metadata remains title/layout only — see
   [§9.2](#92-what-is-stored-locally).
 - **Rules.** **"My books" contains only downloads.** It is not a personal library, not a
   reading-history view, not a favorites list, and not a shelf of everything the user has read.
@@ -518,7 +520,7 @@ Covered in depth in [§9](#9-offline-experience).
 | F-OFF-2 · Download progress feedback | **IMPLEMENTED** |
 | F-OFF-3 · Integrity verification of the downloaded file | **IMPLEMENTED** |
 | F-OFF-4 · Open a downloaded book with no network | **IMPLEMENTED** |
-| F-OFF-5 · Server-signed offline reading authorization (lease) | **IMPLEMENTED** |
+| F-OFF-5 · Server-signed offline reading authorization (lease) | **IMPLEMENTED** — validated fail-closed; expiry surfaced in UI (**MG-8**) |
 | F-OFF-6 · Re-authorize an existing download without re-downloading | **IMPLEMENTED** |
 | F-OFF-7 · Remove a single download | **IMPLEMENTED** |
 | F-OFF-8 · Purge all downloads on sign-out | **IMPLEMENTED** — also clears local offline progress |
@@ -722,10 +724,10 @@ what information must be present, what actions originate there, where they can g
 | **Purpose** | Manage and open books saved on this device. |
 | **Access** | Signed-in users. Fully functional with no network. |
 | **User accomplishes** | Opens a downloaded book; frees space by removing one. |
-| **Information needed** | That these books are stored encrypted on this device until removed; each book's title and layout; current connectivity and what it means ("you can still open downloaded books"); loading/empty/error states; a clear empty state that teaches *how* to get books here. |
+| **Information needed** | That these books are leased encrypted downloads on this device; each book's title, layout, and offline access lifetime (active / soon / locked); current connectivity and what it means ("you can still open downloaded books"); loading/empty/error states; a clear empty state that teaches *how* to get books here. |
 | **Actions** | Open a book (into the reader); remove a download; retry loading; navigate tabs. |
 | **Navigates to** | Reader. |
-| **Conditions** | Contains **only** downloads. Cached metadata is minimal — title and layout only, no description, categories, or author. Emptied entirely by sign-out. A book listed here may still refuse to open if its offline authorization has expired. |
+| **Conditions** | Contains **only** downloads. Cached metadata is minimal — title and layout only, plus lease expiry from the signed authorization. Emptied entirely by sign-out. A book listed here may still refuse to open if its offline authorization has expired (UI warns in advance — **MG-8**). |
 
 ### S-08 · Me (account, subscription, trial, plans, refund) — **IMPLEMENTED**
 
@@ -1170,8 +1172,9 @@ the authorization expires, which is the intended design.
 - **Offline loses your place.** A user who reads offline for an hour and then reconnects finds
   their position unchanged from before, and their offline reading has no record. This is the most
   user-hostile behavior in the product.
-- **Downloaded ≠ permanently yours.** Downloads are leased and expire. My books gives no
-  indication of remaining offline validity, so a locked download is always a surprise.
+- **Downloaded ≠ permanently yours.** Downloads are leased and expire. My books and book detail
+  show active / approaching / locked lease states from stored `expiresAt` (**MG-8**). Open-path
+  validation stays fail-closed.
 - **Sign-out destroys downloads.** Including the abandon path on the session-restore screen.
 
 ## 4.10 Session expiry mid-use
@@ -1457,8 +1460,8 @@ and weights.
 3. There is no age or reading-level information, so an adult cannot judge suitability from the app.
 
 **Remediation.** Cover (**MG-1**), author/publisher (**MG-2**), entitlement CTA (**MG-3**), trial
-discovery (**MG-4**), and offline resume/bookmarks/progress sync (**MG-5…MG-7**) are **COMPLETE**.
-Next offline gap is lease expiration UX (**MG-8**).
+discovery (**MG-4**), offline resume/bookmarks/progress sync (**MG-5…MG-7**), and lease expiry UX
+(**MG-8**) are **COMPLETE**. Next gap in order is sign-out confirmation (**MG-9**).
 
 ## 6.3 Catalog behavior
 
@@ -1501,10 +1504,12 @@ product at all.
 ## 6.7 Library behavior
 
 "My books" is the offline downloads shelf, not a personal library. It lists downloaded books with
-their title and layout, works fully offline, and offers open and remove per book. Its empty state
-must teach the download flow, because there is no other way for a book to arrive here.
+their title, layout, and lease expiry status (**MG-8**), works fully offline, and offers open and
+remove per book. Its empty state must teach the download flow, because there is no other way for a
+book to arrive here.
 
-Its cached metadata is minimal — offline, a book has a title and a layout type and nothing else.
+Its cached catalog metadata is minimal — offline, a book has a title and a layout type; lease
+lifetime comes from the signed authorization already on the package.
 
 ## 6.8 Recently accessed content
 
@@ -1750,9 +1755,9 @@ obtains both the content key and a server-signed offline reading authorization.
 | A trusted-time reference | Device secure keystore | Underpins clock-rollback detection |
 
 **Not stored offline:** cover art (online covers are not cached into the offline package),
-categories, author or publisher names (online catalog fields only), reading progress, bookmarks,
-or any catalog data beyond the record above. This is why My books can only show a title and a
-layout type.
+categories, author or publisher names (online catalog fields only), or any other catalog data
+beyond the package record above. Local reading progress and bookmarks are stored separately
+(**MG-5**, **MG-6**) and are not catalog metadata.
 
 **Never stored:** decrypted book content, in any form, at any time.
 
@@ -1811,8 +1816,10 @@ working — even on a device that never reconnects.
 ## 9.6 When offline access expires
 
 The download does not disappear — it **locks**. The book remains listed in My books and remains
-tappable, but opening it produces the locked message. My books gives **no advance indication** of
-remaining offline validity, so this is always a surprise.
+tappable, but opening it produces the locked message. My books and book detail show lease status in
+advance (**MG-8**): active (“Offline access until …”), approaching within **3 days**
+(“Expires soon · until …”), expired/locked, or device-time-changed. Open-path validation remains
+fail-closed and does not expose signatures or keys.
 
 **Recovery.** Reconnect and open the book while online. The app silently obtains a fresh content
 key and a fresh authorization and unlocks the existing download **without re-downloading the
@@ -2054,8 +2061,9 @@ offline decrypt, and refreshed silently on online opens. Its expiry is what make
 expired-subscription downloads stop working, and its validation is what produces the "locked
 download" and "device time changed" states.
 
-**Currently never surfaced to the user** — the user cannot see how long their downloads remain
-valid, which is why locking always surprises them.
+**Surfaced in the UI (**MG-8**):** My books rows and book detail show safe labels from
+`offlineLease.expiresAt` + trusted time (active / approaching within 3 days / locked /
+clock-rollback). Signatures and keys are never shown.
 
 ## 11.13 Content delivery authorization and content key
 
@@ -2603,9 +2611,9 @@ hidden); publication dates; reading session and engagement data (collected, neve
    content while keeping navigation, position, settings, and exit reachable — for a 6-year-old.
 3. **The opening wait.** A potentially long, uncancellable, progress-free wait fronting a complex
    pipeline. It must feel intentional rather than stuck.
-4. **Offline honesty.** Downloads are leased and expire. Progress resumes on this device locally
-   but does not sync yet. The experience must set accurate expectations rather than implying
-   permanent ownership or cross-device offline continuity.
+4. **Offline honesty.** Downloads are leased and expire; My books/detail show remaining validity
+   (**MG-8**). Progress resumes locally and syncs on reconnect (**MG-5**, **MG-7**). The experience
+   must not imply permanent ownership.
 5. **Session expiry.** Currently an abrupt, unexplained ejection, possibly mid-page. Needs
    explanation, and ideally return-to-context.
 6. **The dual audience.** One interface must be operable by a six-year-old and trustworthy to the
@@ -2763,8 +2771,9 @@ navigation. Discovery, reader engines, offline, and checkout have **no** end-to-
    audit production config in **MG-FINAL**. Severity is high: reading sessions longer than the
    access lifetime are structurally at risk.
 4. **Offline authorization lifetime equals entitlement end.** Server-issued leases expire at
-   `trialEndsAt` (trial) or `currentPeriodEnd` (paid). The timestamp is already stored on the
-   device manifest as `offlineLease.expiresAt` but is not shown in the UI (**MG-8**).
+   `trialEndsAt` (trial) or `currentPeriodEnd` (paid). The timestamp is stored on the device
+   manifest as `offlineLease.expiresAt` and shown as active / approaching (3-day threshold) /
+   locked on My books and book detail (**MG-8 COMPLETE**).
 5. **Absent features are absent, not undiscovered.** Where no code, test, or documentation
    evidence exists (onboarding, settings, notifications, password reset), this document marks them
    unavailable rather than inferring intent.
@@ -2788,7 +2797,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 | Cover art | **COMPLETE.** Reader `BookResponse.cover` exposes signed preview URLs without reading entitlement; mobile shows cover + placeholder. | **MG-1** |
 | Author / publisher display | **COMPLETE.** `BookResponse.authorName` / `publisherName` from EPUB `creator` / `publisher`; mobile no longer uses `owner.email` as the public byline. | **MG-2** |
 | Access token lifetime | **Confirmed 15m default**, no refresh today. Refresh architecture is mandatory and scheduled last. | **MG-FINAL** |
-| Offline lease lifetime | Equals trial end or paid `currentPeriodEnd`; already on device as `expiresAt`. | **MG-8** (UX) |
+| Offline lease lifetime | Equals trial end or paid `currentPeriodEnd`; UX shows active / soon / locked from `expiresAt`. | **MG-8 COMPLETE** |
 | Sign-out purge | **Keep** security purge; require explicit confirmation when downloads exist. | **MG-9** |
 | Entitlement visibility | **COMPLETE.** Book detail shows Access hint and maps primary CTA from `readingAccessState` / `trialEligible` (Profile for trial/subscribe). Denial path kept as fallback. | **MG-3** |
 | Trial discovery | **COMPLETE.** Home discovery card for eligible / active trial; book detail shows remaining time; start still on Profile; no auto-start. | **MG-4** |
@@ -2821,7 +2830,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 5. **MG-5** Offline local resume — `COMPLETE`
 6. **MG-6** Offline bookmark persistence & sync — `COMPLETE`
 7. **MG-7** Offline progress write queue — `COMPLETE` (depends on MG-5)
-8. **MG-8** Offline lease expiration UX — `TODO`
+8. **MG-8** Offline lease expiration UX — `COMPLETE`
 9. **MG-9** Sign-out confirmation for downloads — `TODO`
 10. **MG-10** Catalog & search pagination — `TODO`
 11. **MG-11** Settings (scoped) — `TODO`

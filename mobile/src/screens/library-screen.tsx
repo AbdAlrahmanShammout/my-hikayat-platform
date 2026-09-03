@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OfflineLeaseExpiryLabel } from '@/features/offline/components/offline-lease-expiry-label';
 import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book-actions';
 import { useOfflinePackages } from '@/features/offline/hooks/use-offline-packages';
 import type { OfflineBookManifest } from '@/features/offline/types/offline-book-manifest';
@@ -29,7 +30,8 @@ export function LibraryScreen(): JSX.Element {
           My books
         </Text>
         <Text style={styles.lead}>
-          Downloaded books stay encrypted on this device until you remove them.
+          Downloads are leased and stay encrypted on this device. Each book shows when offline
+          access ends.
         </Text>
         {!isOnline ? (
           <Text style={styles.note} testID="library-offline-banner">
@@ -80,6 +82,10 @@ function OfflineBookRow(input: {
     <View style={styles.row} testID={`library-offline-book-${input.manifest.bookId}`}>
       <Text style={styles.rowTitle}>{input.manifest.title}</Text>
       <Text style={styles.meta}>{layoutLabel}</Text>
+      <OfflineLeaseExpiryLabel
+        expiresAt={input.manifest.offlineLease?.expiresAt}
+        testID={`library-offline-lease-${input.manifest.bookId}`}
+      />
       <View style={styles.actions}>
         <Pressable
           style={styles.primaryButton}
