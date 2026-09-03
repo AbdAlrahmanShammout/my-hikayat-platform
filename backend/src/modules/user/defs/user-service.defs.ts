@@ -34,3 +34,8 @@ export type GrantInvitedAdminServiceInput = {
   readonly passwordHash: string;
   readonly actorUserId: number;
 };
+
+export type UpdatePasswordHashServiceInput = {
+  readonly userId: number;
+  readonly passwordHash: string;
+};

@@ -4,9 +4,13 @@ import type { INestApplication } from '@nestjs/common';
 import type { Server } from 'node:http';
 import request from 'supertest';
 
+import { buildPasswordFingerprint } from '@/authentication/helpers/password-fingerprint.helper';
+import { compareHashString } from '@/common/helpers/compare-hash-string.helper';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 import { JwtTokenPurpose } from '@/providers/jwt/enum/jwt-token-purpose.enum';
 import { JwtTokenService } from '@/providers/jwt/jwt-token.service';
+import { MailManagerService } from '@/providers/mail/mail-manager.service';
+import { MemoryMailManagerService } from '@/providers/mail/memory/memory-mail-manager.service';
 
 import { createTestingApp } from './create-testing-app';
 import { deleteUsersByEmail } from './delete-users.helper';
@@ -146,5 +150,78 @@ describe('Authentication (e2e)', () => {
       });
     expect(actualResponse.status).toBe(HttpStatus.UNPROCESSABLE_ENTITY);
     expect(actualResponse.body.code).toBe('BAD_USER_INPUT');
+  });
+
+  it('Given an unknown email, When forgot-password is called, Then the acknowledgement is enumeration-safe', async () => {
+    const mailManager: MemoryMailManagerService = getRunningApp().get(
+      MailManagerService,
+    ) as MemoryMailManagerService;
+    const beforeCount: number = mailManager.readSentMessages().length;
+    const actualResponse = await request(getServer()).post('/auth/forgot-password').send({
+      email: 'missing-reset@auth.test',
+    });
+    expect(actualResponse.status).toBe(HttpStatus.OK);
+    expect(actualResponse.body.message).toContain('If an account exists');
+    expect(mailManager.readSentMessages()).toHaveLength(beforeCount);
+  });
+
+  it('Given a registered email, When forgot-password is called, Then a recovery email is sent', async () => {
+    const mailManager: MemoryMailManagerService = getRunningApp().get(
+      MailManagerService,
+    ) as MemoryMailManagerService;
+    const beforeCount: number = mailManager.readSentMessages().length;
+    const forgotResponse = await request(getServer()).post('/auth/forgot-password').send({
+      email,
+    });
+    expect(forgotResponse.status).toBe(HttpStatus.OK);
+    expect(forgotResponse.body.message).toContain('If an account exists');
+    const sent = mailManager.readSentMessages();
+    expect(sent.length).toBeGreaterThan(beforeCount);
+    const latest = sent[sent.length - 1];
+    expect(latest?.to).toBe(email);
+    expect(latest?.text).toContain('reader://reset-password?token=');
+  });
+
+  it('Given a valid recovery token, When reset-password succeeds, Then the new password signs in', async () => {
+    const resetEmail = `reset-${Date.now()}@auth.test`;
+    const originalPassword = 'correct-horse-battery';
+    const registerResponse = await request(getServer()).post('/auth/register').send({
+      email: resetEmail,
+      password: originalPassword,
+    });
+    expect(registerResponse.status).toBe(HttpStatus.CREATED);
+    const userId: number = registerResponse.body.user.id as number;
+    const prismaProviderService: PrismaProviderService = getRunningApp().get(PrismaProviderService);
+    const user = await prismaProviderService.user.findUnique({ where: { id: userId } });
+    expect(user).not.toBeNull();
+    const jwtTokenService: JwtTokenService = getRunningApp().get(JwtTokenService);
+    const token: string = jwtTokenService.createToken({
+      payload: {
+        principalId: user!.id,
+        passwordFingerprint: buildPasswordFingerprint(user!.passwordHash),
+      },
+      purpose: JwtTokenPurpose.RECOVERY,
+    });
+    const nextPassword = 'replacement-horse-battery';
+    const resetResponse = await request(getServer()).post('/auth/reset-password').send({
+      token,
+      password: nextPassword,
+    });
+    expect(resetResponse.status).toBe(HttpStatus.OK);
+    expect(resetResponse.body.message).toContain('password was updated');
+    const updatedUser = await prismaProviderService.user.findUnique({ where: { id: userId } });
+    expect(updatedUser).not.toBeNull();
+    expect(await compareHashString(nextPassword, updatedUser!.passwordHash)).toBe(true);
+    expect(await compareHashString(originalPassword, updatedUser!.passwordHash)).toBe(false);
+    await deleteUsersByEmail(prismaProviderService, resetEmail);
+  });
+
+  it('Given an invalid recovery token, When reset-password is called, Then the token is rejected', async () => {
+    const actualResponse = await request(getServer()).post('/auth/reset-password').send({
+      token: 'not-a-jwt',
+      password: 'another-valid-password',
+    });
+    expect(actualResponse.status).toBe(HttpStatus.UNAUTHORIZED);
+    expect(actualResponse.body.code).toBe('JWT_INVALID');
   });
 });

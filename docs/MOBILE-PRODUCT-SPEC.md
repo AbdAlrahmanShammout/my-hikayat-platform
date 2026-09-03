@@ -32,9 +32,9 @@ roadmap is the ordered implementation source of truth for closing gaps. Historic
 31–54 in `docs/admin-dashboard-tasks.md` remain Complete and are not rewritten. As each `MG-*`
 task completes, this specification must be updated so it stays current.
 
-**Roadmap snapshot (2026-09-03).** **MG-1…MG-11 COMPLETE**. Next task when approved: **MG-12**
-(password reset). Confirmed blocker: access tokens default to **15 minutes** with no refresh
-(`MG-FINAL`, last).
+**Roadmap snapshot (2026-09-03).** **MG-1…MG-12 COMPLETE**. Next task when approved: **MG-13**
+(subscription cancellation). Confirmed blocker: access tokens default to **15 minutes** with no
+refresh (`MG-FINAL`, last).
 
 ---
 
@@ -224,6 +224,14 @@ denial happens when they try to open a book, not when they browse it.
   documentation states a 15-minute lifetime and no refresh endpoint), a returning user could be
   bounced to sign-in frequently, including mid-reading. See
   [§16 open questions](#164-questions-to-answer-before-final-design).
+
+### F-AUTH-6 · Password reset — **IMPLEMENTED**
+
+- **What it does.** From sign-in, the user requests a reset email, then sets a new password with a
+  recovery token (deep link `reader://reset-password?token=…` or paste).
+- **Rules.** Forgot-password responses are enumeration-safe. Tokens use `JwtTokenPurpose.RECOVERY`
+  and bind to the current password fingerprint (one-time). Credential throttling applies.
+- **After use.** User returns to sign-in with the new password.
 
 ## 2.2 Onboarding
 
@@ -501,8 +509,8 @@ Minimal Settings from Me (**MG-11**). Included only what is product-justified:
 - **About** — app version
 
 **Explicitly not included:** notifications, Wi-Fi-only downloads, language, app-wide appearance,
-legal/privacy URLs without real content, password reset (deferred to **MG-12**), sign-out (stays on
-Me).
+legal/privacy URLs without real content, sign-out (stays on Me). Password reset lives on the public
+auth screens (**MG-12**).
 
 ## 2.11 Notifications
 
@@ -691,7 +699,7 @@ what information must be present, what actions originate there, where they can g
 | **Information needed** | Product identity; a short reassurance of what signing in gives them ("find books and keep your place"); the two required fields; validation feedback; a route to registration. |
 | **Actions** | Submit credentials; go to registration. |
 | **Navigates to** | Home on success; registration. |
-| **Conditions** | Fields and submit disable while in flight. Failure keeps the user here with a form-level error. **No password reset, no social sign-in, no "remember me", no guest/browse-without-account mode.** |
+| **Conditions** | Fields and submit disable while in flight. Failure keeps the user here with a form-level error. Forgot password is available (**MG-12**). No social sign-in, no "remember me", no guest/browse-without-account mode. |
 
 ### S-05 · Register — **IMPLEMENTED**
 
@@ -750,7 +758,7 @@ what information must be present, what actions originate there, where they can g
 | **Purpose** | Device-local reading defaults, downloads summary, and about. |
 | **Access** | Signed-in users, from Me. |
 | **User accomplishes** | Adjusts reflowable defaults; sees download count; opens My books; reads app version. |
-| **Information needed** | Current reading defaults; download count; app version; clear note that password reset / notifications are not available yet. |
+| **Information needed** | Current reading defaults; download count; app version; note that notifications are not available yet. |
 | **Actions** | Change reading defaults; reset defaults; open My books; go back. |
 | **Navigates to** | My books tab; back to Me. |
 | **Conditions** | Preferences persist on this device only. No invented toggles. |
@@ -882,7 +890,7 @@ listed so the design can propose them deliberately rather than assume them.
 | Onboarding / welcome | **PLANNED / not evidenced** | First-time users get no orientation |
 | Settings | **IMPLEMENTED** (scoped **MG-11**) | Reading defaults, downloads summary, about — no invented toggles |
 | Profile edit | **NOT AVAILABLE** | Email and password are unchangeable in-app |
-| Password reset / forgot password | **NOT AVAILABLE** | A user who forgets their password is locked out with no in-app recovery |
+| Password reset / forgot password | **IMPLEMENTED** (**MG-12**) | Request email → recovery token → new password |
 | Cancel subscription | **NOT AVAILABLE** | No in-app path to stop paying |
 | Billing history / payment method | **NOT AVAILABLE** | No record of what was charged |
 | Cross-book bookmark library | **PLANNED** (explicitly out of scope) | Bookmarks are only reachable inside each book |
@@ -1476,7 +1484,8 @@ and weights.
 **Remediation.** Cover (**MG-1**), author/publisher (**MG-2**), entitlement CTA (**MG-3**), trial
 discovery (**MG-4**), offline resume/bookmarks/progress sync (**MG-5…MG-7**), lease expiry UX
 (**MG-8**), sign-out/abandon confirmation (**MG-9**), catalog/search pagination (**MG-10**), and
-scoped Settings (**MG-11**) are **COMPLETE**. Next gap in order is password reset (**MG-12**).
+scoped Settings (**MG-11**) and password reset (**MG-12**) are **COMPLETE**. Next gap in order is
+subscription cancellation (**MG-13**).
 
 ## 6.3 Catalog behavior
 
@@ -1555,9 +1564,8 @@ likely to matter for compliance in many jurisdictions. Flagged, not designed.
 Email and password, with the same validation and the same error-mapping behavior. Failure keeps the
 user on the screen with a form-level message.
 
-**Absent — and significant:** **there is no password reset or account recovery of any kind.** A
-user who forgets their password has no in-app path back to their account, their subscription, or
-their reading progress. This is a serious product gap.
+**Password reset (**MG-12**).** Sign-in → Forgot password → email with recovery token → Reset
+password screen (deep link or paste) → new password → back to sign-in.
 
 ## 7.3 Session persistence
 
@@ -1620,8 +1628,8 @@ email change, no display name or avatar, and **no account deletion**.
 2. Downloads summary + link to My books
 3. About (app version)
 
-Sign-out remains on Me. Password reset and notification preferences are deferred (**MG-12**,
-**MG-14**). No Wi-Fi-only, language, or invented toggles.
+Sign-out remains on Me. Password reset is on the public auth screens (**MG-12**). Notification
+preferences remain deferred (**MG-14**).
 
 ## 7.10 Sign out
 
@@ -2217,7 +2225,7 @@ technically within reach but is not a supported product feature today.
 | R-A5 | **There is no token refresh.** A rejected session means immediate sign-out. |
 | R-A6 | Sign-out **and abandoning a failed session restore** both purge all offline downloads. |
 | R-A7 | Client route guards are UX convenience only; the backend enforces everything independently. |
-| R-A8 | No password reset, no account recovery, and no account deletion exist. |
+| R-A8 | Password reset uses recovery JWT + mail; account deletion still does not exist. |
 
 ## 13.2 Content visibility rules
 
@@ -2748,7 +2756,7 @@ navigation. Discovery, reader engines, offline, and checkout have **no** end-to-
    catalog and search with partial counts and end-of-results.
 2. **~~No settings surface at all.~~** **COMPLETE (MG-11)** — scoped Settings with reading defaults,
    downloads summary, and about. Cross-device preference sync remains out of scope.
-3. **No password reset or account recovery.** A hard lockout path with no in-app remedy.
+3. **~~No password reset or account recovery.~~** **COMPLETE (MG-12).**
 4. **No account deletion or profile editing.**
 5. **No in-app subscription cancellation**, despite full support for subscribing and refunding.
 6. **No expiry warnings** for trials or subscriptions, and no notification channel to deliver
@@ -2826,7 +2834,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 | Trial discovery | **COMPLETE.** Home discovery card for eligible / active trial; book detail shows remaining time; start still on Profile; no auto-start. | **MG-4** |
 | Offline resume + sync | **MG-5…MG-7 COMPLETE** (local progress, bookmark queue, progress upload with newer-timestamp conflict rule). | **MG-5**, **MG-6**, **MG-7** |
 | Catalog/search pagination | **COMPLETE.** Infinite load against existing `limit`/`offset`. | **MG-10 COMPLETE** |
-| Password reset | **Will implement** using recovery JWT + mail infrastructure. | **MG-12** |
+| Password reset | **COMPLETE.** `POST /auth/forgot-password` + `POST /auth/reset-password`; mobile screens. | **MG-12 COMPLETE** |
 | Reader cancellation | **Will implement** reader cancel (access until period end); distinct from refund. | **MG-13** |
 | Expiry notifications | **Phase A in-app** banners from subscription fields; push only after real infra (no fakes). | **MG-14** |
 | Settings | **COMPLETE (scoped).** Reading defaults (device-local), downloads summary, about. | **MG-11 COMPLETE** |
@@ -2857,7 +2865,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 9. **MG-9** Sign-out confirmation for downloads — `COMPLETE`
 10. **MG-10** Catalog & search pagination — `COMPLETE`
 11. **MG-11** Settings (scoped) — `COMPLETE`
-12. **MG-12** Password reset — `TODO`
+12. **MG-12** Password reset — `COMPLETE`
 13. **MG-13** Reader subscription cancellation — `TODO`
 14. **MG-14** Trial/subscription expiry notifications — `TODO`
 15. **MG-FINAL** Access + refresh tokens — `TODO` (last)

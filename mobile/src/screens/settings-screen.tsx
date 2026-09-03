@@ -119,7 +119,7 @@ export function SettingsScreen(): JSX.Element {
           {`Reader app · version ${appVersion}`}
         </Text>
         <Text style={styles.meta}>
-          Sign out stays on Me. Password reset and notifications are not available yet.
+          Sign out stays on Me. Notification preferences are not available yet.
         </Text>
       </ScrollView>
     </SafeAreaView>

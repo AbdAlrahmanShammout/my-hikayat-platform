@@ -14,6 +14,7 @@ import {
   GrantInvitedAdminServiceInput,
   ListUsersServiceInput,
   UpdateManagedUserServiceInput,
+  UpdatePasswordHashServiceInput,
 } from '@/modules/user/defs/user-service.defs';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
@@ -165,6 +166,16 @@ export class UserService {
 
   async findUserByEmail(email: string): Promise<UserEntity | null> {
     return this.userRepository.findByEmail(UserService.normalizeEmail(email));
+  }
+
+  async updatePasswordHash(input: UpdatePasswordHashServiceInput): Promise<UserEntity> {
+    const user: UserEntity = await this.getUserById(input.userId);
+    return this.userRepository.update({
+      id: user.id,
+      role: user.role,
+      isPublisher: user.isPublisher,
+      passwordHash: input.passwordHash,
+    });
   }
 
   async getUserByEmail(email: string): Promise<UserEntity> {

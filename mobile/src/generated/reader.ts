@@ -256,6 +256,22 @@ export interface paths {
       };
     };
   };
+  "/auth/forgot-password": {
+    post: {
+      requestBody: { content: { 'application/json': components['schemas']['ForgotPasswordRequestDto'] } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['ForgotPasswordResponseDto'] } };
+      };
+    };
+  };
+  "/auth/reset-password": {
+    post: {
+      requestBody: { content: { 'application/json': components['schemas']['ResetPasswordRequestDto'] } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['ResetPasswordResponseDto'] } };
+      };
+    };
+  };
   "/auth/me": {
     get: {
       responses: {
@@ -306,5 +322,9 @@ export interface components {
     RegisterRequestDto: { email: string; password: string };
     AcceptAdminInvitationRequestDto: { token: string; password: string };
     LoginRequestDto: { email: string; password: string };
+    ForgotPasswordRequestDto: { email: string };
+    ForgotPasswordResponseDto: { message: string };
+    ResetPasswordRequestDto: { token: string; password: string };
+    ResetPasswordResponseDto: { message: string };
   };
 }

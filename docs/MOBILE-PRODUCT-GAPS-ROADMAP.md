@@ -41,7 +41,7 @@
 | Sign-out purge | Confirmed when downloads exist | Confirmed purge on sign-out / abandon restore | **COMPLETE (MG-9)** — keep purge; confirm when non-empty |
 | Catalog/search pagination | Infinite pages | API supports `limit`/`offset` | **COMPLETE (MG-10)** — mobile-only |
 | Settings | Absent | No settings route/screen | **Valid** — scope tightly |
-| Password reset | Absent | No forgot/reset HTTP; mail + recovery JWT infrastructure exist | **Valid** — needs backend + mobile |
+| Password reset | Present | Forgot/reset HTTP + mail + recovery JWT | **COMPLETE (MG-12)** |
 | Reader cancel | Absent | Admin `POST /admin/subscriptions/:id/cancel` exists; **no** reader cancel endpoint | **Valid** — needs backend + mobile |
 | Push notifications | Absent | No mobile push / device-token stack | **Valid** — architecture first; in-app banners possible without push |
 | Refresh tokens | Absent | Confirmed | **Valid** — FINAL task |
@@ -86,12 +86,12 @@ Priority bands used:
 | 9 | **MG-9** | Sign-out & offline content confirmation | `COMPLETE` | 8 | — |
 | 10 | **MG-10** | Catalog & search pagination | `COMPLETE` | 6 | Prefer after MG-1/MG-2 so new pages include cover/author |
 | 11 | **MG-11** | Settings (scoped) | `COMPLETE` | 8 | Prefer after MG-5 (reading prefs), MG-9 |
-| 12 | **MG-12** | Password reset | `TODO` | 8 | — (backend mail + recovery JWT) |
+| 12 | **MG-12** | Password reset | `COMPLETE` | 8 | — (backend mail + recovery JWT) |
 | 13 | **MG-13** | Subscription cancellation (reader) | `TODO` | 7 | — (extends existing billing) |
 | 14 | **MG-14** | Trial / subscription expiry notifications | `TODO` | 9 | MG-3/MG-4 for in-app; push infra may be `BLOCKED` |
 | 15 | **MG-FINAL** | Access + refresh token architecture | `TODO` | 3 | After MG-1…MG-14 (largest auth change; last by requirement) |
 
-**Next task to start when approved:** **MG-12**.
+**Next task to start when approved:** **MG-13**.
 
 ---
 
@@ -314,7 +314,7 @@ Priority bands used:
 
 | Field | Content |
 | --- | --- |
-| **Status** | `TODO` |
+| **Status** | `COMPLETE` |
 | **Problem** | Forgotten password = hard lockout. |
 | **Current behavior** | Auth has register/login/me only. Recovery JWT purpose + mail provider exist; no forgot/reset HTTP for readers. |
 | **Desired behavior** | Complete secure flow: request reset → email with token → set new password → success/failure/expired/invalid handling. |
@@ -325,7 +325,7 @@ Priority bands used:
 | **Dependencies** | None (but do before MG-FINAL so refresh work does not collide with auth controller churn — refresh still last). |
 | **Implementation notes** | Align with `ARCHITECTURE.md` auth patterns. SRS lacks a reader forgot-password section — treat as product gap fix and document in SRS only if user requests SRS edits. |
 | **Testing** | Unit + e2e for happy path, expired token, invalid token, enumeration-safe request. |
-| **Completion** | — |
+| **Completion** | **2026-09-03.** `ForgetPasswordController`/`Service`; `POST /auth/forgot-password` + `POST /auth/reset-password`; recovery JWT with password fingerprint; mail deep link `reader://reset-password?token=…`; mobile forgot/reset screens from sign-in; unit + e2e. |
 
 ---
 
@@ -401,6 +401,7 @@ Priority bands used:
 | 2026-09-03 | **MG-9 COMPLETE.** Sign-out/abandon confirm when downloads exist. Next: MG-10 on explicit approval. |
 | 2026-09-03 | **MG-10 COMPLETE.** Catalog + search infinite limit/offset paging. Next: MG-11 on explicit approval. |
 | 2026-09-03 | **MG-11 COMPLETE.** Scoped Settings (reading prefs, downloads, about). Next: MG-12 on explicit approval. |
+| 2026-09-03 | **MG-12 COMPLETE.** Forgot/reset password (recovery JWT + mail + mobile screens). Next: MG-13 on explicit approval. |
 
 ---
 

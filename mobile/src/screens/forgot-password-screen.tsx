@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { router, type Href } from 'expo-router';
 import { useState, type JSX } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
@@ -14,42 +15,38 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { requestPasswordReset } from '@/features/auth/api/request-password-reset';
 import { applyAuthFormApiError } from '@/features/auth/lib/apply-auth-form-api-error';
 import {
-  authCredentialsSchema,
-  type AuthCredentials,
-} from '@/features/auth/schemas/auth-credentials-schema';
-import { useSession } from '@/session/use-session';
+  forgotPasswordSchema,
+  type ForgotPasswordFormValues,
+} from '@/features/auth/schemas/forgot-password-schema';
 import { theme } from '@/theme/theme';
 
-type LoginFormProps = {
-  readonly onOpenRegister: () => void;
-  readonly onOpenForgotPassword: () => void;
-};
-
 /**
- * Email/password sign-in form. Large targets and plain language for ages 6+.
+ * Requests a password-reset email. Always shows the enumeration-safe acknowledgement.
  */
-export function LoginForm({ onOpenRegister, onOpenForgotPassword }: LoginFormProps): JSX.Element {
-  const { signIn, clearError } = useSession();
+export function ForgotPasswordScreen(): JSX.Element {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [ackMessage, setAckMessage] = useState<string | null>(null);
   const {
     control,
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm<AuthCredentials>({
-    resolver: zodResolver(authCredentialsSchema),
-    defaultValues: { email: '', password: '' },
+  } = useForm<ForgotPasswordFormValues>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: '' },
   });
 
-  async function executeSignIn(values: AuthCredentials): Promise<void> {
-    clearError();
+  async function executeRequest(values: ForgotPasswordFormValues): Promise<void> {
+    setAckMessage(null);
     setIsSubmitting(true);
     try {
-      await signIn(values);
+      const response = await requestPasswordReset({ email: values.email.trim().toLowerCase() });
+      setAckMessage(response.message);
     } catch (error: unknown) {
-      applyAuthFormApiError(error, setError, 'Could not sign in. Check your email and password.');
+      applyAuthFormApiError(error, setError, 'Could not send reset instructions. Try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -59,23 +56,34 @@ export function LoginForm({ onOpenRegister, onOpenForgotPassword }: LoginFormPro
     <SafeAreaView
       style={styles.safe}
       edges={['top', 'right', 'bottom', 'left']}
-      testID="auth-sign-in-screen"
-      accessibilityLabel="Sign in screen"
+      testID="auth-forgot-password-screen"
     >
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
       >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-        >
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <Pressable
+            style={styles.backButton}
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+                return;
+              }
+              router.replace('/(public)/sign-in');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            testID="auth-forgot-back"
+          >
+            <Text style={styles.backLabel}>Back</Text>
+          </Pressable>
           <Text style={styles.title} accessibilityRole="header">
-            Reader
+            Forgot password
           </Text>
-          <Text style={styles.body}>Sign in to find books and keep your place.</Text>
+          <Text style={styles.body}>
+            Enter your email. If an account exists, we will send reset instructions.
+          </Text>
           <Controller
             control={control}
             name="email"
@@ -91,80 +99,52 @@ export function LoginForm({ onOpenRegister, onOpenForgotPassword }: LoginFormPro
                 onBlur={onBlur}
                 onChangeText={onChange}
                 editable={!isSubmitting}
-                testID="auth-email-input"
+                testID="auth-forgot-email-input"
                 accessibilityLabel="Email"
               />
             )}
           />
           {errors.email?.message !== undefined ? (
-            <Text style={styles.error} testID="auth-email-error">
-              {errors.email.message}
-            </Text>
-          ) : null}
-          <Controller
-            control={control}
-            name="password"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={styles.input}
-                secureTextEntry
-                placeholder="Password"
-                placeholderTextColor={theme.colors.textPlaceholder}
-                value={value}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                editable={!isSubmitting}
-                testID="auth-password-input"
-                accessibilityLabel="Password"
-              />
-            )}
-          />
-          {errors.password?.message !== undefined ? (
-            <Text style={styles.error} testID="auth-password-error">
-              {errors.password.message}
-            </Text>
+            <Text style={styles.error}>{errors.email.message}</Text>
           ) : null}
           {errors.root?.message !== undefined ? (
-            <Text style={styles.error} testID="auth-form-error">
+            <Text style={styles.error} testID="auth-forgot-error">
               {errors.root.message}
+            </Text>
+          ) : null}
+          {ackMessage !== null ? (
+            <Text style={styles.success} testID="auth-forgot-ack">
+              {ackMessage}
             </Text>
           ) : null}
           <Pressable
             style={[styles.primaryButton, isSubmitting ? styles.buttonDisabled : null]}
             onPress={() => {
-              void handleSubmit(executeSignIn)();
+              void handleSubmit(executeRequest)();
             }}
             disabled={isSubmitting}
-            testID="auth-sign-in-button"
+            testID="auth-forgot-submit"
             accessibilityRole="button"
-            accessibilityLabel="Sign in"
+            accessibilityLabel="Send reset instructions"
           >
             {isSubmitting ? (
               <ActivityIndicator color={theme.colors.onPrimary} />
             ) : (
-              <Text style={styles.primaryButtonLabel}>Sign in</Text>
+              <Text style={styles.primaryLabel}>Send reset instructions</Text>
             )}
           </Pressable>
           <Pressable
             style={styles.secondaryButton}
-            onPress={onOpenForgotPassword}
-            disabled={isSubmitting}
+            onPress={() => {
+              router.push('/(public)/reset-password' as Href);
+            }}
             accessibilityRole="button"
-            accessibilityLabel="Forgot password"
-            testID="auth-forgot-password-link"
+            accessibilityLabel="I already have a reset token"
+            testID="auth-forgot-have-token"
           >
-            <Text style={styles.secondaryButtonLabel}>Forgot password?</Text>
+            <Text style={styles.secondaryLabel}>I already have a reset token</Text>
           </Pressable>
-          <Pressable
-            style={styles.secondaryButton}
-            onPress={onOpenRegister}
-            disabled={isSubmitting}
-            accessibilityRole="button"
-            accessibilityLabel="Create an account"
-          >
-            <Text style={styles.secondaryButtonLabel}>Create an account</Text>
-          </Pressable>
-          <View style={styles.keyboardSpacer} />
+          <View style={styles.spacer} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -181,20 +161,28 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    backgroundColor: theme.colors.background,
     paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
+    gap: theme.spacing.sm,
     justifyContent: 'center',
-    gap: 14,
-    paddingVertical: theme.spacing.lg,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  backLabel: {
+    ...theme.typography.link,
+    color: theme.colors.primaryMuted,
   },
   title: {
-    ...theme.typography.titleLg,
+    ...theme.typography.title,
     color: theme.colors.textPrimary,
   },
   body: {
     ...theme.typography.body,
     color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.xs,
+    marginBottom: theme.spacing.sm,
   },
   input: {
     minHeight: theme.controlMinHeight,
@@ -207,8 +195,12 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
   },
   error: {
-    fontSize: 16,
+    ...theme.typography.body,
     color: theme.colors.danger,
+  },
+  success: {
+    ...theme.typography.body,
+    color: theme.colors.primaryMuted,
   },
   primaryButton: {
     minHeight: theme.controlMinHeight,
@@ -216,11 +208,12 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: theme.spacing.sm,
   },
   buttonDisabled: {
     opacity: 0.7,
   },
-  primaryButtonLabel: {
+  primaryLabel: {
     ...theme.typography.button,
     color: theme.colors.onPrimary,
   },
@@ -229,11 +222,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  secondaryButtonLabel: {
+  secondaryLabel: {
     ...theme.typography.link,
     color: theme.colors.primaryMuted,
   },
-  keyboardSpacer: {
+  spacer: {
     height: theme.spacing.xl,
   },
 });
