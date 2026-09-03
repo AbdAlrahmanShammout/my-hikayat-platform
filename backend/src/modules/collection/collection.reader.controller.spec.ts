@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import {
   BookLayoutType,
@@ -10,6 +11,7 @@ import {
   BookPublishingStatus,
   BookType,
 } from '@/modules/book/enum/general.enum';
+import { BookCatalogCoverService } from '@/modules/book-asset/book-catalog-cover.service';
 import { CollectionDiscoveryService } from '@/modules/collection/collection-discovery.service';
 import { CollectionEntity } from '@/modules/collection/entity/collection.entity';
 
@@ -48,17 +50,24 @@ describe('CollectionReaderController', () => {
     listDiscoveryCollections: jest.Mock;
     getDiscoveryCollectionById: jest.Mock;
   };
+  let mockBookCatalogCoverService: { toBookResponses: jest.Mock };
 
   beforeEach(async () => {
     mockCollectionDiscoveryService = {
       listDiscoveryCollections: jest.fn(),
       getDiscoveryCollectionById: jest.fn(),
     };
+    mockBookCatalogCoverService = {
+      toBookResponses: jest.fn(async (books: BookEntity[]) =>
+        books.map((book) => new BookResponse(book, null)),
+      ),
+    };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       controllers: [CollectionReaderController],
       providers: [
         { provide: CollectionDiscoveryService, useValue: mockCollectionDiscoveryService },
+        { provide: BookCatalogCoverService, useValue: mockBookCatalogCoverService },
         JwtAuthGuard,
         RolesGuard,
       ],
@@ -83,6 +92,7 @@ describe('CollectionReaderController', () => {
       expect(actualResponse.total).toBe(1);
       expect(actualResponse.collections[0].title).toBe('Harbor Picks');
       expect(actualResponse.collections[0].books[0].id).toBe(8);
+      expect(actualResponse.collections[0].books[0].cover).toBeNull();
     });
   });
 

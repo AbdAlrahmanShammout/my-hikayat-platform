@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { BookPage } from '@/modules/book/defs/book-repository.defs';
 import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 
 export class GetBooksResponseDto {
@@ -13,8 +12,8 @@ export class GetBooksResponseDto {
   })
   total: number;
 
-  constructor(page: BookPage) {
-    this.books = page.entities.map((entity) => new BookResponse(entity));
-    this.total = page.total;
+  constructor(books: readonly BookResponse[], total: number) {
+    this.books = [...books];
+    this.total = total;
   }
 }

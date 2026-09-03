@@ -1,3 +1,4 @@
+import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import {
   BookLayoutType,
@@ -32,14 +33,18 @@ describe('CollectionDiscoveryResponse', () => {
       ownerId: 4,
       categories: [],
     });
-    const actualResponse = new CollectionDiscoveryResponse({
-      collection: inputCollection,
-      books: [inputBook],
-    });
+    const actualResponse = new CollectionDiscoveryResponse(
+      {
+        collection: inputCollection,
+        books: [inputBook],
+      },
+      [new BookResponse(inputBook)],
+    );
     expect(actualResponse.id).toBe(3);
     expect(actualResponse.title).toBe('Harbor Picks');
     expect(actualResponse.books).toHaveLength(1);
     expect(actualResponse.books[0].id).toBe(8);
     expect(actualResponse.books[0].title).toBe('The Last Lighthouse');
+    expect(actualResponse.books[0].cover).toBeNull();
   });
 });

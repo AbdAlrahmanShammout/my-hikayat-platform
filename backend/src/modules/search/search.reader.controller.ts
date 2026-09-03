@@ -5,6 +5,8 @@ import { LoggedInUser } from '@/common/decorators/requests/logged-in-user.decora
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { BookPage } from '@/modules/book/defs/book-repository.defs';
+import { BookResponse } from '@/modules/book/dto/response/model/book.response';
+import { BookCatalogCoverService } from '@/modules/book-asset/book-catalog-cover.service';
 import { InBookSearchPage } from '@/modules/search/defs/search-service.defs';
 import { SearchCatalogBooksRequestDto } from '@/modules/search/dto/request/search-catalog-books-request.dto';
 import { SearchInBookRequestDto } from '@/modules/search/dto/request/search-in-book-request.dto';
@@ -18,7 +20,10 @@ import { UserEntity } from '@/modules/user/entity/user.entity';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class SearchReaderController {
-  constructor(private readonly searchService: SearchService) {}
+  constructor(
+    private readonly searchService: SearchService,
+    private readonly bookCatalogCoverService: BookCatalogCoverService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Search published catalog books by title, author, or publisher' })
@@ -33,7 +38,8 @@ export class SearchReaderController {
       author: query.author,
       publisher: query.publisher,
     });
-    return new GetSearchBooksResponseDto(page);
+    const books: BookResponse[] = await this.bookCatalogCoverService.toBookResponses(page.entities);
+    return new GetSearchBooksResponseDto(books, page.total);
   }
 
   @Get(':id')

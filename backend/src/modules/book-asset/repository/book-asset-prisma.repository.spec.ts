@@ -118,4 +118,52 @@ describe('BookAssetPrismaRepository', () => {
     });
     expect(actualEntity).toEqual(BookAssetMapper.toEntity(persistenceRow));
   });
+
+  it('returns the newest operational asset per book id for a kind', async () => {
+    const olderPreview = {
+      ...persistenceRow,
+      id: 10,
+      kind: 'preview_image' as const,
+      bookId: 8,
+      storageKey: 'books/8/preview/old.jpg',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    };
+    const newerPreview = {
+      ...persistenceRow,
+      id: 11,
+      kind: 'preview_image' as const,
+      bookId: 8,
+      storageKey: 'books/8/preview/new.jpg',
+      createdAt: new Date('2026-02-01T00:00:00.000Z'),
+    };
+    const otherBookPreview = {
+      ...persistenceRow,
+      id: 12,
+      kind: 'preview_image' as const,
+      bookId: 9,
+      storageKey: 'books/9/preview/cover.jpg',
+    };
+    mockPrismaProviderService.bookAsset.findMany.mockResolvedValue([
+      newerPreview,
+      olderPreview,
+      otherBookPreview,
+    ]);
+    const actualEntities = await bookAssetPrismaRepository.findLatestByBookIdsAndKind({
+      bookIds: [8, 9, 8],
+      kind: BookAssetKind.PREVIEW_IMAGE,
+    });
+    expect(mockPrismaProviderService.bookAsset.findMany).toHaveBeenCalledWith({
+      where: {
+        bookId: { in: [8, 9] },
+        kind: BookAssetKind.PREVIEW_IMAGE,
+        deletedAt: null,
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+    expect(actualEntities).toHaveLength(2);
+    expect(actualEntities.map((entity) => entity.storageKey)).toEqual([
+      'books/8/preview/new.jpg',
+      'books/9/preview/cover.jpg',
+    ]);
+  });
 });

@@ -11,9 +11,9 @@ export class CollectionDiscoveryResponse extends BaseModelResponseDto {
   @ApiProperty({ type: () => [BookResponse] })
   books: BookResponse[];
 
-  constructor(discovery: CollectionDiscovery) {
+  constructor(discovery: CollectionDiscovery, books: readonly BookResponse[]) {
     super(discovery.collection);
     this.title = discovery.collection.title;
-    this.books = discovery.books.map((book) => new BookResponse(book));
+    this.books = [...books];
   }
 }

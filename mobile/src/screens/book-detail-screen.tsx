@@ -12,6 +12,7 @@ import {
 
 import { ApiError } from '@/api/api-error';
 import { useCatalogBook } from '@/features/catalog/hooks/use-catalog-book';
+import { CatalogBookCover } from '@/features/catalog/components/catalog-book-cover';
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
 import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book-actions';
 import { useOfflinePackage } from '@/features/offline/hooks/use-offline-packages';
@@ -101,6 +102,7 @@ export function BookDetailScreen(): JSX.Element {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <BackButton />
+      <CatalogBookCover cover={book.cover} title={book.title} size="detail" />
       <Text style={styles.title} accessibilityRole="header">
         {book.title}
       </Text>

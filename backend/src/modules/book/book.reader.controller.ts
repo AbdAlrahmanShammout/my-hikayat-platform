@@ -9,13 +9,17 @@ import { ListCatalogBooksRequestDto } from '@/modules/book/dto/request/list-cata
 import { GetBooksResponseDto } from '@/modules/book/dto/response/get-books-response.dto';
 import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
+import { BookCatalogCoverService } from '@/modules/book-asset/book-catalog-cover.service';
 
 @ApiTags('Reader - Catalog')
 @Controller('reader/catalog')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class BookReaderController {
-  constructor(private readonly bookService: BookService) {}
+  constructor(
+    private readonly bookService: BookService,
+    private readonly bookCatalogCoverService: BookCatalogCoverService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List published catalog books by category, newest, or popularity' })
@@ -27,7 +31,8 @@ export class BookReaderController {
       categoryId: query.categoryId,
       sort: query.sort,
     });
-    return new GetBooksResponseDto(page);
+    const books: BookResponse[] = await this.bookCatalogCoverService.toBookResponses(page.entities);
+    return new GetBooksResponseDto(books, page.total);
   }
 
   @Get(':id')
@@ -36,6 +41,7 @@ export class BookReaderController {
   @ApiResponse({ status: 200, type: BookResponse })
   async getCatalogBook(@Param('id', ParseIntPipe) id: number): Promise<BookResponse> {
     const entity: BookEntity = await this.bookService.getCatalogBookById(id);
-    return new BookResponse(entity);
+    const books: BookResponse[] = await this.bookCatalogCoverService.toBookResponses([entity]);
+    return books[0];
   }
 }

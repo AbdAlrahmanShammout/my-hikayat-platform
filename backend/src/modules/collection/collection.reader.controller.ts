@@ -3,6 +3,9 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { BookResponse } from '@/modules/book/dto/response/model/book.response';
+import { BookEntity } from '@/modules/book/entity/book.entity';
+import { BookCatalogCoverService } from '@/modules/book-asset/book-catalog-cover.service';
 import { CollectionDiscoveryService } from '@/modules/collection/collection-discovery.service';
 import {
   CollectionDiscovery,
@@ -17,7 +20,10 @@ import { CollectionDiscoveryResponse } from '@/modules/collection/dto/response/m
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class CollectionReaderController {
-  constructor(private readonly collectionDiscoveryService: CollectionDiscoveryService) {}
+  constructor(
+    private readonly collectionDiscoveryService: CollectionDiscoveryService,
+    private readonly bookCatalogCoverService: BookCatalogCoverService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Browse curated collections with published books in editorial order' })
@@ -30,7 +36,10 @@ export class CollectionReaderController {
         limit: query.limit,
         offset: query.offset,
       });
-    return new GetDiscoveryCollectionsResponseDto(page);
+    const collections: CollectionDiscoveryResponse[] = await this.toDiscoveryResponses(
+      page.entities,
+    );
+    return new GetDiscoveryCollectionsResponseDto(collections, page.total);
   }
 
   @Get(':id')
@@ -42,6 +51,25 @@ export class CollectionReaderController {
   ): Promise<CollectionDiscoveryResponse> {
     const discovery: CollectionDiscovery =
       await this.collectionDiscoveryService.getDiscoveryCollectionById(id);
-    return new CollectionDiscoveryResponse(discovery);
+    const [response] = await this.toDiscoveryResponses([discovery]);
+    return response;
+  }
+
+  private async toDiscoveryResponses(
+    discoveries: readonly CollectionDiscovery[],
+  ): Promise<CollectionDiscoveryResponse[]> {
+    const allBooks: BookEntity[] = discoveries.flatMap((discovery) => discovery.books);
+    const bookResponses: BookResponse[] =
+      await this.bookCatalogCoverService.toBookResponses(allBooks);
+    const responseByBookId = new Map<number, BookResponse>(
+      bookResponses.map((book) => [book.id, book]),
+    );
+    return discoveries.map((discovery) => {
+      const books: BookResponse[] = discovery.books.map((book) => {
+        const response: BookResponse | undefined = responseByBookId.get(book.id);
+        return response ?? new BookResponse(book, null);
+      });
+      return new CollectionDiscoveryResponse(discovery, books);
+    });
   }
 }

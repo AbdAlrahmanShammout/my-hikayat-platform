@@ -1,3 +1,4 @@
+import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import {
   BookProcessingStatus,
@@ -8,7 +9,7 @@ import {
 import { GetBooksResponseDto } from './get-books-response.dto';
 
 describe('GetBooksResponseDto', () => {
-  it('maps a book page into the collection envelope', () => {
+  it('maps book responses into the collection envelope', () => {
     const inputEntity = new BookEntity({
       id: 8,
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -23,10 +24,11 @@ describe('GetBooksResponseDto', () => {
       ownerId: 4,
       categories: [],
     });
-    const actualResponse = new GetBooksResponseDto({ entities: [inputEntity], total: 3 });
+    const actualResponse = new GetBooksResponseDto([new BookResponse(inputEntity)], 3);
     expect(actualResponse.total).toBe(3);
     expect(actualResponse.books).toHaveLength(1);
     expect(actualResponse.books[0].id).toBe(8);
     expect(actualResponse.books[0].title).toBe('The Last Lighthouse');
+    expect(actualResponse.books[0].cover).toBeNull();
   });
 });

@@ -3,6 +3,7 @@ import type { JSX } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { getCatalogBook } from '@/features/catalog/api/get-catalog-book';
+import { CatalogBookCover } from '@/features/catalog/components/catalog-book-cover';
 import type { ReadingProgress } from '@/features/reader/api/get-reading-progress';
 import { useContinueReading } from '@/features/reader/hooks/use-continue-reading';
 import { formatContinueReadingLabel } from '@/features/reader/lib/continue-reading';
@@ -65,7 +66,8 @@ export function ContinueReadingList({ onContinue }: ContinueReadingListProps): J
     <View style={styles.block} testID="continue-reading-list">
       <Text style={styles.heading}>Continue reading</Text>
       {continueQuery.items.map((item: ReadingProgress, index: number) => {
-        const title: string = titleQueries[index]?.data?.title ?? `Book ${item.bookId}`;
+        const book = titleQueries[index]?.data;
+        const title: string = book?.title ?? `Book ${item.bookId}`;
         return (
           <Pressable
             key={item.id}
@@ -77,10 +79,13 @@ export function ContinueReadingList({ onContinue }: ContinueReadingListProps): J
             accessibilityLabel={`Continue reading ${title}`}
             testID={`continue-reading-item-${item.bookId}`}
           >
-            <Text style={styles.bookTitle} numberOfLines={2}>
-              {title}
-            </Text>
-            <Text style={styles.meta}>{formatContinueReadingLabel(item)}</Text>
+            <CatalogBookCover cover={book?.cover} title={title} size="row" />
+            <View style={styles.textBlock}>
+              <Text style={styles.bookTitle} numberOfLines={2}>
+                {title}
+              </Text>
+              <Text style={styles.meta}>{formatContinueReadingLabel(item)}</Text>
+            </View>
           </Pressable>
         );
       })}
@@ -124,9 +129,14 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
-    justifyContent: 'center',
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
+    gap: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  textBlock: {
+    flex: 1,
     gap: 2,
   },
   bookTitle: {

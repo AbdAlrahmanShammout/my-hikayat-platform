@@ -38,6 +38,17 @@ export type FindLatestBookAssetServiceInput = {
   readonly kind: BookAssetKind;
 };
 
+export type FindLatestBookAssetsByBookIdsServiceInput = {
+  readonly bookIds: readonly number[];
+  readonly kind: BookAssetKind;
+};
+
+export type BookCatalogCover = {
+  readonly url: string;
+  readonly expiresAt: Date;
+  readonly contentType: string;
+};
+
 export type UploadBookSourceServiceInput = {
   readonly bookId: number;
   readonly actorId: number;

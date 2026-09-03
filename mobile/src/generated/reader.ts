@@ -269,7 +269,8 @@ export interface components {
   schemas: {
     UserResponse: { id: number; createdAt: string; updatedAt: string; email: string; role: "reader" | "author" | "admin"; isPublisher: boolean };
     CategoryResponse: { id: number; createdAt: string; updatedAt: string; name: string; slug: string; categoryWeight: number };
-    BookResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string; layoutType?: "reflowable" | "fixed_layout" | null; bookType: "standard_chapter" | "picture_book" | "illustrated_chapter"; publishingStatus: "pending" | "in_review" | "approved" | "rejected"; processingStatus: "not_started" | "processing" | "ready" | "failed"; publishedAt?: unknown | null; ownerId: number; owner?: components['schemas']['UserResponse']; categories: Array<components['schemas']['CategoryResponse']> };
+    BookResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string; layoutType?: "reflowable" | "fixed_layout" | null; bookType: "standard_chapter" | "picture_book" | "illustrated_chapter"; publishingStatus: "pending" | "in_review" | "approved" | "rejected"; processingStatus: "not_started" | "processing" | "ready" | "failed"; publishedAt?: unknown | null; ownerId: number; owner?: components['schemas']['UserResponse']; categories: Array<components['schemas']['CategoryResponse']>; cover?: components['schemas']['BookCoverResponse'] | null };
+    BookCoverResponse: { url: string; expiresAt: string; contentType: string };
     GetBooksResponseDto: { books: Array<components['schemas']['BookResponse']>; total: number };
     CreateBookAssetDeliveryGrantResponseDto: { bookId: number; bookAssetId: number; kind: "source" | "processed" | "preview_image" | "promo_video" | "audio"; url: string; expiresAt: string; contentType: string; byteSize: number; checksumSha256?: unknown | null; isEncrypted: boolean };
     CreateBookAssetContentKeyRequestDto: { sessionId: number };

@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { CollectionDiscoveryPage } from '@/modules/collection/defs/collection-discovery.defs';
 import { CollectionDiscoveryResponse } from '@/modules/collection/dto/response/model/collection-discovery.response';
 
 export class GetDiscoveryCollectionsResponseDto {
@@ -13,8 +12,8 @@ export class GetDiscoveryCollectionsResponseDto {
   })
   total: number;
 
-  constructor(page: CollectionDiscoveryPage) {
-    this.collections = page.entities.map((entity) => new CollectionDiscoveryResponse(entity));
-    this.total = page.total;
+  constructor(collections: readonly CollectionDiscoveryResponse[], total: number) {
+    this.collections = [...collections];
+    this.total = total;
   }
 }

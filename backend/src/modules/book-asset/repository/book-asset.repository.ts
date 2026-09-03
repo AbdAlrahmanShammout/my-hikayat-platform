@@ -3,6 +3,7 @@ import {
   BookAssetPage,
   CreateBookAssetRepoInput,
   FindLatestBookAssetRepoInput,
+  FindLatestBookAssetsByBookIdsRepoInput,
   ListBookAssetsRepoInput,
   UpdateBookAssetRepoInput,
 } from '@/modules/book-asset/defs/book-asset-repository.defs';
@@ -21,5 +22,8 @@ export abstract class BookAssetRepository {
   abstract findLatestByBookIdAndKind(
     input: FindLatestBookAssetRepoInput,
   ): Promise<BookAssetEntity | null>;
+  abstract findLatestByBookIdsAndKind(
+    input: FindLatestBookAssetsByBookIdsRepoInput,
+  ): Promise<BookAssetEntity[]>;
   abstract list(input: ListBookAssetsRepoInput): Promise<BookAssetPage>;
 }

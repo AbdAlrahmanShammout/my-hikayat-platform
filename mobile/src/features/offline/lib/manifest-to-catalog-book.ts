@@ -17,5 +17,6 @@ export function manifestToCatalogBook(manifest: OfflineBookManifest): CatalogBoo
     categories: [],
     createdAt: manifest.downloadedAt,
     updatedAt: manifest.downloadedAt,
+    cover: null,
   };
 }

@@ -60,7 +60,10 @@ export class BookAdminController {
       offset: query.offset,
       publishingStatus: query.publishingStatus,
     });
-    return new GetBooksResponseDto(page);
+    return new GetBooksResponseDto(
+      page.entities.map((entity) => new BookResponse(entity)),
+      page.total,
+    );
   }
 
   @Get(':id/rejection-history')

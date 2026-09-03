@@ -57,5 +57,33 @@ describe('BookResponse', () => {
     expect(actualResponse.owner).not.toHaveProperty('passwordHash');
     expect(actualResponse.categories).toHaveLength(1);
     expect(actualResponse.categories[0].slug).toBe('picture-books');
+    expect(actualResponse.cover).toBeNull();
+  });
+
+  it('projects an optional catalog cover when provided', () => {
+    const inputEntity = new BookEntity({
+      id: 8,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      title: 'The Last Lighthouse',
+      description: 'A reflowable chapter book.',
+      layoutType: BookLayoutType.REFLOWABLE,
+      bookType: BookType.STANDARD_CHAPTER,
+      publishingStatus: BookPublishingStatus.APPROVED,
+      processingStatus: BookProcessingStatus.READY,
+      publishedAt: new Date('2026-08-15T00:00:00.000Z'),
+      ownerId: 4,
+      categories: [],
+    });
+    const actualResponse = new BookResponse(inputEntity, {
+      url: 'https://cdn.example.com/cover.jpg',
+      expiresAt: new Date('2026-09-03T13:00:00.000Z'),
+      contentType: 'image/jpeg',
+    });
+    expect(actualResponse.cover).toEqual({
+      url: 'https://cdn.example.com/cover.jpg',
+      expiresAt: new Date('2026-09-03T13:00:00.000Z'),
+      contentType: 'image/jpeg',
+    });
   });
 });

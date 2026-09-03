@@ -6,6 +6,7 @@ import {
   BookAssetPage,
   CreateBookAssetRepoInput,
   FindLatestBookAssetRepoInput,
+  FindLatestBookAssetsByBookIdsRepoInput,
   ListBookAssetsRepoInput,
   UpdateBookAssetRepoInput,
 } from '@/modules/book-asset/defs/book-asset-repository.defs';
@@ -101,6 +102,31 @@ export class BookAssetPrismaRepository implements BookAssetRepository {
       return null;
     }
     return BookAssetMapper.toEntity(result);
+  }
+
+  async findLatestByBookIdsAndKind(
+    input: FindLatestBookAssetsByBookIdsRepoInput,
+  ): Promise<BookAssetEntity[]> {
+    if (input.bookIds.length === 0) {
+      return [];
+    }
+    const uniqueBookIds: number[] = [...new Set(input.bookIds)];
+    const rows = await this.prismaProviderService.bookAsset.findMany({
+      where: {
+        bookId: { in: uniqueBookIds },
+        kind: input.kind,
+        deletedAt: null,
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+    const latestByBookId = new Map<number, BookAssetEntity>();
+    for (const row of rows) {
+      if (latestByBookId.has(row.bookId)) {
+        continue;
+      }
+      latestByBookId.set(row.bookId, BookAssetMapper.toEntity(row));
+    }
+    return [...latestByBookId.values()];
   }
 
   async list(input: ListBookAssetsRepoInput): Promise<BookAssetPage> {

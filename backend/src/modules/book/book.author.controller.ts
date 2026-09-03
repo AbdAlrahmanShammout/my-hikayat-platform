@@ -81,7 +81,10 @@ export class BookAuthorController {
       ownerId: currentUser.id,
       publishingStatus: query.publishingStatus,
     });
-    return new GetBooksResponseDto(page);
+    return new GetBooksResponseDto(
+      page.entities.map((entity) => new BookResponse(entity)),
+      page.total,
+    );
   }
 
   @Get(':id/rejection-history')

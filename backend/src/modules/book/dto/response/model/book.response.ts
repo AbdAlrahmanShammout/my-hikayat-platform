@@ -1,6 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { BaseModelResponseDto } from '@/common/base/base-model.response.dto';
+import {
+  BookCoverInput,
+  BookCoverResponse,
+} from '@/modules/book/dto/response/model/book-cover.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import {
   BookLayoutType,
@@ -63,7 +67,15 @@ export class BookResponse extends BaseModelResponseDto {
   @ApiProperty({ type: () => [CategoryResponse] })
   categories: CategoryResponse[];
 
-  constructor(entity: BookEntity) {
+  @ApiPropertyOptional({
+    description:
+      'Catalog cover from the latest preview image. Null when no preview is uploaded. URL is signed and expires.',
+    type: () => BookCoverResponse,
+    nullable: true,
+  })
+  cover: BookCoverResponse | null;
+
+  constructor(entity: BookEntity, cover: BookCoverInput | null = null) {
     super(entity);
     this.title = entity.title;
     this.description = entity.description;
@@ -75,5 +87,6 @@ export class BookResponse extends BaseModelResponseDto {
     this.ownerId = entity.ownerId;
     this.owner = entity.owner === undefined ? undefined : new UserResponse(entity.owner);
     this.categories = (entity.categories ?? []).map((category) => new CategoryResponse(category));
+    this.cover = cover === null ? null : new BookCoverResponse(cover);
   }
 }

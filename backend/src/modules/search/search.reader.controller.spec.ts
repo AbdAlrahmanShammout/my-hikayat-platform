@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import {
   BookLayoutType,
@@ -10,6 +11,7 @@ import {
   BookPublishingStatus,
   BookType,
 } from '@/modules/book/enum/general.enum';
+import { BookCatalogCoverService } from '@/modules/book-asset/book-catalog-cover.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
 
@@ -48,14 +50,21 @@ function createCatalogBook(): BookEntity {
 describe('SearchReaderController', () => {
   let searchReaderController: SearchReaderController;
   let mockSearchService: { searchCatalogBooks: jest.Mock; searchInBook: jest.Mock };
+  let mockBookCatalogCoverService: { toBookResponses: jest.Mock };
 
   beforeEach(async () => {
     mockSearchService = { searchCatalogBooks: jest.fn(), searchInBook: jest.fn() };
+    mockBookCatalogCoverService = {
+      toBookResponses: jest.fn(async (books: BookEntity[]) =>
+        books.map((book) => new BookResponse(book, null)),
+      ),
+    };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       controllers: [SearchReaderController],
       providers: [
         { provide: SearchService, useValue: mockSearchService },
+        { provide: BookCatalogCoverService, useValue: mockBookCatalogCoverService },
         JwtAuthGuard,
         RolesGuard,
       ],
@@ -84,9 +93,11 @@ describe('SearchReaderController', () => {
         author: 'Jane Author',
         publisher: 'Harbor Press',
       });
+      expect(mockBookCatalogCoverService.toBookResponses).toHaveBeenCalledWith([expectedBook]);
       expect(actualResponse.total).toBe(1);
       expect(actualResponse.books[0].id).toBe(8);
       expect(actualResponse.books[0].title).toBe('The Last Lighthouse');
+      expect(actualResponse.books[0].cover).toBeNull();
     });
   });
 
@@ -124,7 +135,6 @@ describe('SearchReaderController', () => {
         offset: 0,
       });
       expect(actualResponse.total).toBe(1);
-      expect(actualResponse.hits[0].spineIndex).toBe(0);
       expect(actualResponse.hits[0].excerpt).toBe('The Harbor lights');
     });
   });

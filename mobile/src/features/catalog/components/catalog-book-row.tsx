@@ -2,6 +2,7 @@ import type { JSX } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { CatalogBook } from '@/features/catalog/api/get-catalog-book';
+import { CatalogBookCover } from '@/features/catalog/components/catalog-book-cover';
 import { theme } from '@/theme/theme';
 
 type CatalogBookRowProps = {
@@ -23,6 +24,7 @@ export function CatalogBookRow({ book, onPress }: CatalogBookRowProps): JSX.Elem
       accessibilityRole="button"
       accessibilityLabel={`Open ${book.title}`}
     >
+      <CatalogBookCover cover={book.cover} title={book.title} size="row" />
       <View style={styles.textBlock}>
         <Text style={styles.title}>{book.title}</Text>
         <Text style={styles.meta} numberOfLines={2}>
@@ -43,8 +45,12 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     borderWidth: 1,
     borderColor: theme.colors.borderSubtle,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
   textBlock: {
+    flex: 1,
     gap: theme.spacing.xxs,
   },
   title: {
