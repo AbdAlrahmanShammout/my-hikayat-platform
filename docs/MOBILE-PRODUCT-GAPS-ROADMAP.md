@@ -76,7 +76,7 @@ Priority bands used:
 | Order | Task ID | Title | Status | Band | Depends on |
 | --- | --- | --- | --- | --- | --- |
 | 1 | **MG-1** | Book cover / preview image on catalog | `COMPLETE` | 1–2 | — |
-| 2 | **MG-2** | Author & publisher display fields | `TODO` | 1–2 | — (can parallelize with MG-1; sequential by rule) |
+| 2 | **MG-2** | Author & publisher display fields | `COMPLETE` | 1–2 | — (can parallelize with MG-1; sequential by rule) |
 | 3 | **MG-3** | Entitlement visibility before reader | `TODO` | 4 | Prefer after MG-1/MG-2 so book detail can show access + identity together |
 | 4 | **MG-4** | Trial discovery & trial UX | `TODO` | 7 | MG-3 (reuse access-state surfaces) |
 | 5 | **MG-5** | Offline reading resume (local progress) | `TODO` | 5 | — |
@@ -91,7 +91,7 @@ Priority bands used:
 | 14 | **MG-14** | Trial / subscription expiry notifications | `TODO` | 9 | MG-3/MG-4 for in-app; push infra may be `BLOCKED` |
 | 15 | **MG-FINAL** | Access + refresh token architecture | `TODO` | 3 | After MG-1…MG-14 (largest auth change; last by requirement) |
 
-**Next task to start when approved:** **MG-2**.
+**Next task to start when approved:** **MG-3**.
 
 ---
 
@@ -123,7 +123,7 @@ Priority bands used:
 
 | Field | Content |
 | --- | --- |
-| **Status** | `TODO` |
+| **Status** | `COMPLETE` |
 | **Problem** | Author/publisher are searchable via EPUB source metadata but not displayable. Book detail shows `By {owner.email}`. |
 | **Current behavior** | `BookSourceMetadata.creator` / `.publisher` stored at processing time; search filters on them; `BookResponse` only exposes `owner` (`UserResponse` with email). |
 | **Desired behavior** | Reader-facing book payloads include user-facing **author display name** and **publisher display name** (nullable when missing). Mobile must not use uploader email as the primary public identity. |
@@ -137,7 +137,7 @@ Priority bands used:
 | **Dependencies** | None (ordered after MG-1 only by working rule). |
 | **Implementation notes** | Search already uses `creator` as “author”. Keep naming consistent. Do not invent free-text author editing in this task unless SRS already requires it. |
 | **Testing** | Backend mapping tests; search still works; mobile display tests. |
-| **Completion** | — |
+| **Completion** | **2026-09-03.** Extended `bookDetailsInclude` with `sourceMetadata`. Mapped `creator`→`authorName`, `publisher`→`publisherName` on `BookEntity` / `BookResponse`. Mobile catalog rows + detail show attribution via `resolveCatalogBookAttribution`; removed `By {owner.email}` from detail. Offline stub sets both to null. |
 
 ---
 
@@ -391,6 +391,7 @@ Priority bands used:
 | --- | --- |
 | 2026-09-03 | Roadmap created after revalidation. No implementation started. Next: MG-1 on explicit approval. |
 | 2026-09-03 | **MG-1 COMPLETE.** Catalog covers from existing preview images. Next: MG-2 on explicit approval. |
+| 2026-09-03 | **MG-2 COMPLETE.** Author/publisher display from EPUB source metadata. Next: MG-3 on explicit approval. |
 
 ---
 

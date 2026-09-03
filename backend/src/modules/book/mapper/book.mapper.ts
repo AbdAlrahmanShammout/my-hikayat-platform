@@ -26,6 +26,8 @@ export class BookMapper {
       ownerId: schema.ownerId,
       owner: schema.owner === undefined ? undefined : UserMapper.toEntity(schema.owner),
       categories: schema.categories?.map((category) => CategoryMapper.toEntity(category)),
+      authorName: schema.sourceMetadata?.creator ?? null,
+      publisherName: schema.sourceMetadata?.publisher ?? null,
     });
   }
 }

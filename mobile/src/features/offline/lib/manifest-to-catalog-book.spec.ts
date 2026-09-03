@@ -21,5 +21,7 @@ describe('manifestToCatalogBook', () => {
     expect(actual.title).toBe('River Tale');
     expect(actual.layoutType).toBe('reflowable');
     expect(actual.cover).toBeNull();
+    expect(actual.authorName).toBeNull();
+    expect(actual.publisherName).toBeNull();
   });
 });

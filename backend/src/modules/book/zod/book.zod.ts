@@ -23,4 +23,6 @@ export const BookZodSchema = BaseZodSchema.extend({
   ownerId: ZodNumber,
   owner: (z.any() as z.ZodType<UserZodType | null | undefined>).optional(),
   categories: (z.any().nullish() as z.ZodType<CategoryZodType[] | null | undefined>).optional(),
+  authorName: ZodString.nullable().optional(),
+  publisherName: ZodString.nullable().optional(),
 });

@@ -14,6 +14,7 @@ import { ApiError } from '@/api/api-error';
 import { useCatalogBook } from '@/features/catalog/hooks/use-catalog-book';
 import { CatalogBookCover } from '@/features/catalog/components/catalog-book-cover';
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
+import { resolveCatalogBookAttribution } from '@/features/catalog/lib/resolve-catalog-book-attribution';
 import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book-actions';
 import { useOfflinePackage } from '@/features/offline/hooks/use-offline-packages';
 import { useConnectivity } from '@/native/connectivity/use-connectivity';
@@ -90,6 +91,7 @@ export function BookDetailScreen(): JSX.Element {
   }
 
   const categoryNames: string = book.categories.map((category) => category.name).join(', ');
+  const attribution = resolveCatalogBookAttribution(book);
   const layoutLabel: string =
     book.layoutType === 'reflowable'
       ? 'Reflowable'
@@ -106,10 +108,17 @@ export function BookDetailScreen(): JSX.Element {
       <Text style={styles.title} accessibilityRole="header">
         {book.title}
       </Text>
-      {categoryNames !== '' ? <Text style={styles.meta}>{categoryNames}</Text> : null}
-      {book.owner?.email !== undefined ? (
-        <Text style={styles.meta}>{`By ${book.owner.email}`}</Text>
+      {attribution.authorLine !== null ? (
+        <Text style={styles.meta} testID="book-detail-author">
+          {attribution.authorLine}
+        </Text>
       ) : null}
+      {attribution.publisherLine !== null ? (
+        <Text style={styles.meta} testID="book-detail-publisher">
+          {attribution.publisherLine}
+        </Text>
+      ) : null}
+      {categoryNames !== '' ? <Text style={styles.meta}>{categoryNames}</Text> : null}
       <Text style={styles.meta} testID="book-detail-layout-type">
         {layoutLabel}
       </Text>

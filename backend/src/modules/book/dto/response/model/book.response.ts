@@ -69,6 +69,22 @@ export class BookResponse extends BaseModelResponseDto {
 
   @ApiPropertyOptional({
     description:
+      'Catalog author display name from EPUB source metadata (creator). Null when missing.',
+    example: 'Sara Nour',
+    nullable: true,
+  })
+  authorName: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Catalog publisher display name from EPUB source metadata. Null when missing.',
+    example: 'Hikayat Press',
+    nullable: true,
+  })
+  publisherName: string | null;
+
+  @ApiPropertyOptional({
+    description:
       'Catalog cover from the latest preview image. Null when no preview is uploaded. URL is signed and expires.',
     type: () => BookCoverResponse,
     nullable: true,
@@ -87,6 +103,8 @@ export class BookResponse extends BaseModelResponseDto {
     this.ownerId = entity.ownerId;
     this.owner = entity.owner === undefined ? undefined : new UserResponse(entity.owner);
     this.categories = (entity.categories ?? []).map((category) => new CategoryResponse(category));
+    this.authorName = entity.authorName ?? null;
+    this.publisherName = entity.publisherName ?? null;
     this.cover = cover === null ? null : new BookCoverResponse(cover);
   }
 }

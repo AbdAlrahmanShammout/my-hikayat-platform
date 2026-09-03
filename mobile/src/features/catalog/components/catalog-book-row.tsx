@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { CatalogBook } from '@/features/catalog/api/get-catalog-book';
 import { CatalogBookCover } from '@/features/catalog/components/catalog-book-cover';
+import { resolveCatalogBookAttribution } from '@/features/catalog/lib/resolve-catalog-book-attribution';
 import { theme } from '@/theme/theme';
 
 type CatalogBookRowProps = {
@@ -15,6 +16,7 @@ type CatalogBookRowProps = {
  */
 export function CatalogBookRow({ book, onPress }: CatalogBookRowProps): JSX.Element {
   const categoryNames: string = book.categories.map((category) => category.name).join(', ');
+  const attribution = resolveCatalogBookAttribution(book);
   return (
     <Pressable
       style={styles.row}
@@ -27,6 +29,11 @@ export function CatalogBookRow({ book, onPress }: CatalogBookRowProps): JSX.Elem
       <CatalogBookCover cover={book.cover} title={book.title} size="row" />
       <View style={styles.textBlock}>
         <Text style={styles.title}>{book.title}</Text>
+        {attribution.authorLine !== null ? (
+          <Text style={styles.attribution} numberOfLines={1}>
+            {attribution.authorLine}
+          </Text>
+        ) : null}
         <Text style={styles.meta} numberOfLines={2}>
           {book.description}
         </Text>
@@ -57,6 +64,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: theme.colors.textPrimary,
+  },
+  attribution: {
+    fontSize: 15,
+    color: theme.colors.textSecondary,
   },
   meta: {
     ...theme.typography.body,

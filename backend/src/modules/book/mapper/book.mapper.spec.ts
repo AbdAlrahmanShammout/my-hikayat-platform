@@ -49,6 +49,21 @@ describe('BookMapper', () => {
           categoryWeight: new Prisma.Decimal('1.2500'),
         },
       ],
+      sourceMetadata: {
+        id: 1,
+        createdAt,
+        updatedAt,
+        deletedAt: null,
+        bookId: 8,
+        packagePath: 'OEBPS/content.opf',
+        epubVersion: '3.0',
+        identifier: 'urn:uuid:lighthouse',
+        title: 'The Last Lighthouse',
+        language: 'en',
+        creator: 'Sara Nour',
+        publisher: 'Hikayat Press',
+        description: 'A reflowable chapter book.',
+      },
     };
     const actualEntity = BookMapper.toEntity(inputSchema);
     expect(actualEntity.title).toBe('The Last Lighthouse');
@@ -63,5 +78,41 @@ describe('BookMapper', () => {
     expect(actualEntity.categories).toHaveLength(1);
     expect(actualEntity.categories?.[0].slug).toBe('picture-books');
     expect(actualEntity.categories?.[0].categoryWeight).toBe(1.25);
+    expect(actualEntity.authorName).toBe('Sara Nour');
+    expect(actualEntity.publisherName).toBe('Hikayat Press');
+  });
+
+  it('maps null author and publisher when source metadata is absent', () => {
+    const createdAt = new Date('2026-01-01T00:00:00.000Z');
+    const updatedAt = new Date('2026-01-02T00:00:00.000Z');
+    const inputSchema: BookDetailsType = {
+      id: 9,
+      createdAt,
+      updatedAt,
+      deletedAt: null,
+      title: 'Untitled Draft',
+      description: 'Still processing.',
+      layoutType: null,
+      bookType: 'standard_chapter',
+      publishingStatus: 'pending',
+      processingStatus: 'not_started',
+      publishedAt: null,
+      ownerId: 4,
+      owner: {
+        id: 4,
+        createdAt,
+        updatedAt,
+        deletedAt: null,
+        email: 'author@example.com',
+        passwordHash: 'hashed-password',
+        role: 'author',
+        isPublisher: true,
+      },
+      categories: [],
+      sourceMetadata: null,
+    };
+    const actualEntity = BookMapper.toEntity(inputSchema);
+    expect(actualEntity.authorName).toBeNull();
+    expect(actualEntity.publisherName).toBeNull();
   });
 });

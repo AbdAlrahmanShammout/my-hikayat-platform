@@ -32,9 +32,9 @@ roadmap is the ordered implementation source of truth for closing gaps. Historic
 31–54 in `docs/admin-dashboard-tasks.md` remain Complete and are not rewritten. As each `MG-*`
 task completes, this specification must be updated so it stays current.
 
-**Roadmap snapshot (2026-09-03).** **MG-1 COMPLETE** (catalog covers from author preview
-images). Next task when approved: **MG-2** (author & publisher display). Confirmed blocker:
-access tokens default to **15 minutes** with no refresh (`MG-FINAL`, last).
+**Roadmap snapshot (2026-09-03).** **MG-1** and **MG-2 COMPLETE** (covers + author/publisher
+display). Next task when approved: **MG-3** (entitlement visibility before reader). Confirmed
+blocker: access tokens default to **15 minutes** with no refresh (`MG-FINAL`, last).
 
 ---
 
@@ -255,8 +255,8 @@ design proposal — but nothing in the project defines it, so it must not be pre
 ### F-HOME-2 · Catalog browse on Home — **IMPLEMENTED**
 
 - **What it does.** Lists published books available to browse, with sort and category filter
-  controls, on the Home surface itself. Rows show cover (or placeholder), title, excerpt, and
-  categories.
+  controls, on the Home surface itself. Rows show cover (or placeholder), title, author when
+  present, excerpt, and categories.
 - **Rules.** Shows the first 20 books only — see F-CAT-4. Supports pull-to-refresh. Displays the
   total count of matching books.
 
@@ -286,9 +286,9 @@ and human-curated collections.
 - **Rules.** Only catalog-visible books appear (approved + processed + published). A book with
   incomplete processing may appear without a usable layout type and will fail to open.
 - **Critical information constraint.** **Cover images are available when an author uploaded a
-  `preview_image` (`BookResponse.cover`, signed URL, no reading entitlement).** Author name and
-  publisher name are still absent from the catalog contract — see
-  [§6.2](#62-book-metadata--what-is-actually-available) and **MG-2**.
+  `preview_image` (`BookResponse.cover`, signed URL, no reading entitlement).** Author and
+  publisher display names come from EPUB source metadata (`authorName`, `publisherName`) when
+  present — see [§6.2](#62-book-metadata--what-is-actually-available).
 
 ### F-CAT-2 · Sorting — **IMPLEMENTED**
 
@@ -315,9 +315,9 @@ This is a significant functional gap and a required design input.
 ### F-CAT-5 · Book detail — **IMPLEMENTED**
 
 - **What it does.** The evaluation and action hub for a single book.
-- **Information shown.** Cover (or placeholder); title; category names; a "By {publisher account
-  email}" line when available; a layout label ("Reflowable", "Fixed layout", or "Layout not
-  ready"); the full description; an offline notice when disconnected; and a resume hint.
+- **Information shown.** Cover (or placeholder); title; author and publisher display names when
+  present; category names; a layout label ("Reflowable", "Fixed layout", or "Layout not ready");
+  the full description; an offline notice when disconnected; and a resume hint.
 - **Actions available.** Read or Continue reading; download for offline or remove the download;
   back.
 - **Conditional behavior.** The primary action reads "Continue reading" when saved progress
@@ -770,10 +770,10 @@ what information must be present, what actions originate there, where they can g
 | **Purpose** | The decision and action point for a single book. |
 | **Access** | Signed-in users, from catalog rows, search results, or collection contents. |
 | **User accomplishes** | Decides whether to read it; starts or resumes reading; makes it available offline; removes it. |
-| **Information needed** | Cover (or placeholder); title; categories; the publisher/owner line when available; the layout type; the full description; connectivity impact on downloading; whether they already have progress (which changes the primary action's meaning) and a matching resume hint; whether it is already downloaded; download progress; the outcome of the last offline action. |
+| **Information needed** | Cover (or placeholder); title; author and publisher display names when present; categories; the layout type; the full description; connectivity impact on downloading; whether they already have progress (which changes the primary action's meaning) and a matching resume hint; whether it is already downloaded; download progress; the outcome of the last offline action. |
 | **Actions** | Read / Continue reading; download for offline; remove offline download; retry loading; back. |
 | **Navigates to** | Reader; back. |
-| **Conditions** | Primary action label switches on saved progress. Offline action has three shapes: download (online, not downloaded), disabled "connect to download" (offline, not downloaded), and remove (downloaded). Cover art shows when a preview image exists; otherwise a placeholder. Author name and publisher name are still unavailable (**MG-2**). **No entitlement information at all** — the user learns they cannot read the book only after tapping Read. |
+| **Conditions** | Primary action label switches on saved progress. Offline action has three shapes: download (online, not downloaded), disabled "connect to download" (offline, not downloaded), and remove (downloaded). Cover art shows when a preview image exists; otherwise a placeholder. Author/publisher show when EPUB metadata provides them. **No entitlement information at all** — the user learns they cannot read the book only after tapping Read. |
 
 ## 3.5 Reader context
 
@@ -1420,35 +1420,32 @@ carefully before any book-centric layout is proposed.
 | --- | --- | --- |
 | Cover image | List rows, detail, Continue reading | From author `preview_image` via `BookResponse.cover` (signed GET URL, ~1h expiry). Missing or failed load → placeholder. No reading entitlement required. Offline library does **not** cache covers yet. |
 | Title | Everywhere | Still the primary text identifier |
+| Author display name | List rows, detail | From EPUB `BookSourceMetadata.creator` via `authorName`. Null when missing. Never falls back to uploader email. |
+| Publisher display name | Detail (and searchable) | From EPUB `BookSourceMetadata.publisher` via `publisherName`. Null when missing. |
 | Description | List rows (excerpt), detail (full) | |
 | Category names | List rows, detail | May be empty |
 | Layout type | Detail | Shown as "Reflowable" / "Fixed layout" / "Layout not ready" |
-| Owner account email | Detail only | Rendered as "By {email}" — an *account address*, not an author name, and often absent |
 
 **Available in the contract but not displayed:** book type (standard chapter / picture book /
 illustrated chapter), publishing status, processing status, published date, created and updated
-dates, owner role, category slugs and weights.
+dates, owner account (`owner.email` is **not** shown on mobile catalog surfaces), category slugs
+and weights.
 
 **Not available on the reader catalog contract today** (fields absent from reader
 `BookResponse` / mobile generated types):
 
-- **No author / publisher display names on the catalog contract.** EPUB processing stores
-  `BookSourceMetadata.creator` / `.publisher` and search uses them, but catalog responses do
-  not return them. Tracked as **MG-2**.
 - **No language, page count, word count, reading level, age rating, duration estimate, series
   information, rating, or review data** on the reader contract.
 
 **Design consequences, stated plainly.**
-1. Cover-driven bookstore layouts are now possible when authors upload preview images. Books
-   without a preview still need a clear placeholder so rows stay scannable.
-2. For a product aimed at 6-year-olds, covers are the primary recognition cue — authors should
-   treat preview upload as required for discovery quality.
-3. Book detail cannot answer "who wrote this?" until **MG-2** — today it can only show
-   "which account uploaded it", and only sometimes.
-4. There is no age or reading-level information, so an adult cannot judge suitability from the app.
+1. Cover-driven bookstore layouts are possible when authors upload preview images. Books without
+   a preview still need a clear placeholder so rows stay scannable.
+2. Author/publisher lines confirm search matches and give kids/adults real book identity when
+   EPUB metadata includes them. Missing metadata yields no byline (not an email surrogate).
+3. There is no age or reading-level information, so an adult cannot judge suitability from the app.
 
-**Remediation.** Author/publisher display is next in
-`docs/MOBILE-PRODUCT-GAPS-ROADMAP.md` (**MG-2**). Cover exposure is **COMPLETE** (**MG-1**).
+**Remediation.** Cover (**MG-1**) and author/publisher (**MG-2**) exposure are **COMPLETE**. Next
+catalog UX gap is entitlement visibility before reader (**MG-3**).
 
 ## 6.3 Catalog behavior
 
@@ -1741,8 +1738,9 @@ obtains both the content key and a server-signed offline reading authorization.
 | A trusted-time reference | Device secure keystore | Underpins clock-rollback detection |
 
 **Not stored offline:** cover art (online covers are not cached into the offline package),
-categories, author or publisher information, reading progress, bookmarks, or any catalog data
-beyond the record above. This is why My books can only show a title and a layout type.
+categories, author or publisher names (online catalog fields only), reading progress, bookmarks,
+or any catalog data beyond the record above. This is why My books can only show a title and a
+layout type.
 
 **Never stored:** decrypted book content, in any form, at any time.
 
@@ -1972,12 +1970,12 @@ description only. The free plan **never** grants reading.
 ## 11.4 Book
 
 The core content entity. User-facing: **cover** (when a preview image exists; otherwise
-placeholder), **title**, **description**, **categories**, **layout type** (which silently
-determines the entire reading experience), and sometimes an **owner account email** used as an
-author surrogate.
+placeholder), **title**, **authorName** / **publisherName** when EPUB metadata provides them,
+**description**, **categories**, and **layout type** (which silently determines the entire reading
+experience).
 
-**Absent and consequential:** author name, publisher name, language, page count, reading level,
-age rating, rating, series. See [§6.2](#62-book-metadata--what-is-actually-available).
+**Absent and consequential:** language, page count, reading level, age rating, rating, series.
+See [§6.2](#62-book-metadata--what-is-actually-available).
 
 Relationships: belongs to an owner account; has many categories; has at most one reading progress
 record per user; has many bookmarks and sessions per user; may have one offline package per device.
@@ -2593,9 +2591,9 @@ hidden); publication dates; reading session and engagement data (collected, neve
    explanation, and ideally return-to-context.
 6. **The dual audience.** One interface must be operable by a six-year-old and trustworthy to the
    adult paying for it, with billing reachable but not child-triggerable.
-7. **Book identity still incomplete without author/publisher.** Covers (**MG-1**) now support
-   visual recognition when previews exist; author and publisher names remain missing until
-   **MG-2**. Books without covers still need strong placeholders.
+7. **Book identity is cover + attribution when metadata exists.** Covers (**MG-1**) and
+   author/publisher (**MG-2**) support recognition; missing EPUB metadata still needs strong
+   placeholders and title-led rows.
 8. **Empty states as instruction.** Several empty states are the only place the product explains
    how a surface gets populated.
 9. **Error differentiation.** Roughly two dozen distinct failure causes each have a different
@@ -2619,9 +2617,9 @@ These already exist in the product and are not free choices:
 - **A warm, light, paper-like base palette** with a dark reading theme available for reflowable
   content, and a dark canvas host framing fixed-layout pages.
 - **Accessibility labels and roles** on interactive elements, already established throughout.
-- **Cover art when preview exists**; placeholder when missing or load fails. **No author name or
-  publisher name** on the catalog contract yet (**MG-2**). Offline My books still has no cached
-  cover.
+- **Cover art when preview exists**; placeholder when missing or load fails. **Author and
+  publisher display names** when EPUB metadata provides them (**MG-1**, **MG-2**). Offline My
+  books still has no cached cover or attribution.
 
 These are existing product requirements, not aesthetic direction. Everything else — layout,
 composition, iconography, illustration, motion, color expression beyond the base palette,
@@ -2640,7 +2638,8 @@ sign-out with full purge; immediate sign-out on session rejection; field-level e
 **Discovery.** Catalog browse with newest/popularity sort and single-category filtering; category
 taxonomy loading; single-field metadata search over title, author, or publisher; curated
 collections list and detail with preserved backend ordering; book detail; continue-reading shelf;
-catalog covers from author preview images with placeholders when missing (**MG-1**).
+catalog covers from author preview images with placeholders when missing (**MG-1**); author and
+publisher display names from EPUB source metadata when present (**MG-2**).
 
 **Reader.** Layout-driven dual-engine selection; full open pipeline with authorization,
 integrity verification, in-memory decryption, and parsing; reflowable engine with chapter
@@ -2764,7 +2763,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 | Topic | Decision / finding | Roadmap |
 | --- | --- | --- |
 | Cover art | **COMPLETE.** Reader `BookResponse.cover` exposes signed preview URLs without reading entitlement; mobile shows cover + placeholder. | **MG-1** |
-| Author / publisher display | **Will be added** from EPUB `BookSourceMetadata.creator` / `.publisher`; stop using `owner.email` as primary public “By”. | **MG-2** |
+| Author / publisher display | **COMPLETE.** `BookResponse.authorName` / `publisherName` from EPUB `creator` / `publisher`; mobile no longer uses `owner.email` as the public byline. | **MG-2** |
 | Access token lifetime | **Confirmed 15m default**, no refresh today. Refresh architecture is mandatory and scheduled last. | **MG-FINAL** |
 | Offline lease lifetime | Equals trial end or paid `currentPeriodEnd`; already on device as `expiresAt`. | **MG-8** (UX) |
 | Sign-out purge | **Keep** security purge; require explicit confirmation when downloads exist. | **MG-9** |

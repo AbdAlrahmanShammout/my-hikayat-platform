@@ -20,6 +20,10 @@ export class BookEntity extends BaseEntity {
   ownerId!: number;
   owner?: UserEntity;
   categories?: CategoryEntity[];
+  /** EPUB source creator; catalog display name for the author. */
+  authorName?: string | null;
+  /** EPUB source publisher; catalog display name for the publisher. */
+  publisherName?: string | null;
 
   constructor(data: BookZodType) {
     super();

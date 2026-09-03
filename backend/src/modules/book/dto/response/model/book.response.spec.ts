@@ -57,7 +57,31 @@ describe('BookResponse', () => {
     expect(actualResponse.owner).not.toHaveProperty('passwordHash');
     expect(actualResponse.categories).toHaveLength(1);
     expect(actualResponse.categories[0].slug).toBe('picture-books');
+    expect(actualResponse.authorName).toBeNull();
+    expect(actualResponse.publisherName).toBeNull();
     expect(actualResponse.cover).toBeNull();
+  });
+
+  it('projects authorName and publisherName from the book entity', () => {
+    const inputEntity = new BookEntity({
+      id: 8,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      title: 'The Last Lighthouse',
+      description: 'A reflowable chapter book.',
+      layoutType: BookLayoutType.REFLOWABLE,
+      bookType: BookType.STANDARD_CHAPTER,
+      publishingStatus: BookPublishingStatus.APPROVED,
+      processingStatus: BookProcessingStatus.READY,
+      publishedAt: new Date('2026-08-15T00:00:00.000Z'),
+      ownerId: 4,
+      categories: [],
+      authorName: 'Sara Nour',
+      publisherName: 'Hikayat Press',
+    });
+    const actualResponse = new BookResponse(inputEntity);
+    expect(actualResponse.authorName).toBe('Sara Nour');
+    expect(actualResponse.publisherName).toBe('Hikayat Press');
   });
 
   it('projects an optional catalog cover when provided', () => {
