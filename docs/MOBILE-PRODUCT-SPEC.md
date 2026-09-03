@@ -32,9 +32,9 @@ roadmap is the ordered implementation source of truth for closing gaps. Historic
 31–54 in `docs/admin-dashboard-tasks.md` remain Complete and are not rewritten. As each `MG-*`
 task completes, this specification must be updated so it stays current.
 
-**Roadmap snapshot (2026-09-03).** **MG-1…MG-13 COMPLETE**. Next task when approved: **MG-14**
-(trial/subscription expiry notifications). Confirmed blocker: access tokens default to **15 minutes** with no
-refresh (`MG-FINAL`, last).
+**Roadmap snapshot (2026-09-03).** **MG-1…MG-14 COMPLETE** (MG-14 Phase A in-app only; push deferred).
+Next task when approved: **MG-FINAL** (access + refresh tokens). Confirmed: access tokens default to
+**15 minutes** with no refresh today.
 
 ---
 
@@ -482,7 +482,7 @@ Covered in depth in [§8](#8-subscription-trial--entitlement-model).
 | F-SUB-7 · Cancel a subscription from the mobile app | **AVAILABLE** — Me → Cancel subscription; access until `currentPeriodEnd` (**MG-13**) |
 | F-SUB-8 · Manage payment method / view invoices / billing history | **NOT AVAILABLE** |
 | F-SUB-9 · Native in-app purchase (App Store / Play billing) | **NOT AVAILABLE** — payment is external hosted checkout only |
-| F-SUB-10 · Renewal reminders, trial-expiry warnings, dunning notices | **NOT AVAILABLE** |
+| F-SUB-10 · Renewal reminders, trial-expiry warnings, dunning notices | **PARTIAL (MG-14 Phase A)** — in-app Home/Me banners for near-expiry and ended trial/paid; **no** push/local notifications yet |
 
 **Notable absence.** The mobile app can *start* a paid subscription and can *request a refund*, but
 it cannot *cancel* one. A user who wants to stop paying has no in-app path. This is a hard gap to
@@ -896,7 +896,7 @@ listed so the design can propose them deliberately rather than assume them.
 | Cross-book bookmark library | **PLANNED** (explicitly out of scope) | Bookmarks are only reachable inside each book |
 | Reading statistics | **NOT AVAILABLE** | Engagement data is collected but never shown |
 | Storage / download management | **PARTIALLY** — count + My books link in Settings; no byte-level storage UI | Downloads managed on My books |
-| Notification center | **NOT AVAILABLE** | No channel for trial-expiry or billing events |
+| Notification center | **NOT AVAILABLE** | No push inbox; in-app expiry banners are on Home/Me (**MG-14**) |
 | In-reader table of contents | **NOT AVAILABLE** | Chapter navigation is sequential only |
 | In-reader search | **PLANNED** (backend ready) | Cannot search within a book |
 
@@ -1018,10 +1018,10 @@ already-used. Already has paid access → trial is unnecessary and refused as su
 
 **Final state.** Trial user, converted subscriber, or lapsed free user.
 
-**Critical gap.** **There is no expiry warning of any kind.** No notification channel exists, and
-the remaining-time display is only visible if the user happens to visit Me. A trial can end
-silently, and the user discovers it by being refused a book they were reading yesterday. This is
-both a UX failure and a conversion failure.
+**Expiry awareness (**MG-14 Phase A**).** Home and Me show in-app banners when a trial or paid
+window is within **3 days** of ending, or after the server has already flipped access to free
+following a used trial or ended paid period. Push / scheduled local notifications remain deferred
+until device-token + backend push architecture exists (Phase B).
 
 ## 4.5 Paid subscriber: subscribe, read, lifecycle
 
@@ -1484,8 +1484,9 @@ and weights.
 **Remediation.** Cover (**MG-1**), author/publisher (**MG-2**), entitlement CTA (**MG-3**), trial
 discovery (**MG-4**), offline resume/bookmarks/progress sync (**MG-5…MG-7**), lease expiry UX
 (**MG-8**), sign-out/abandon confirmation (**MG-9**), catalog/search pagination (**MG-10**), and
-scoped Settings (**MG-11**), password reset (**MG-12**), and subscription cancellation (**MG-13**)
-are **COMPLETE**. Next gap in order is expiry notifications (**MG-14**).
+scoped Settings (**MG-11**), password reset (**MG-12**), subscription cancellation (**MG-13**), and
+in-app expiry awareness (**MG-14 Phase A**) are **COMPLETE**. Next gap in order is access + refresh
+tokens (**MG-FINAL**). Push expiry notifications remain deferred (MG-14 Phase B).
 
 ## 6.3 Catalog behavior
 
@@ -1628,8 +1629,9 @@ email change, no display name or avatar, and **no account deletion**.
 2. Downloads summary + link to My books
 3. About (app version)
 
-Sign-out remains on Me. Password reset is on the public auth screens (**MG-12**). Notification
-preferences remain deferred (**MG-14**).
+Sign-out remains on Me. Password reset is on the public auth screens (**MG-12**). In-app expiry
+banners are on Home/Me (**MG-14 Phase A**). Notification preferences / push remain deferred
+(Phase B).
 
 ## 7.10 Sign out
 
@@ -2760,8 +2762,8 @@ navigation. Discovery, reader engines, offline, and checkout have **no** end-to-
 4. **No account deletion or profile editing.**
 5. **~~No in-app subscription cancellation~~**, despite full support for subscribing and refunding.
    **COMPLETE (MG-13).**
-6. **No expiry warnings** for trials or subscriptions, and no notification channel to deliver
-   them.
+6. **~~No expiry warnings~~** for trials or subscriptions. **COMPLETE for in-app (MG-14 Phase A)**;
+   push channel still deferred (Phase B).
 7. **No payment-failure representation.** The platform models failed renewals; the mobile app does
    not surface them at all.
 8. **Offline reading loses progress silently.** The most user-hostile behavior in the product, and
@@ -2837,7 +2839,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 | Catalog/search pagination | **COMPLETE.** Infinite load against existing `limit`/`offset`. | **MG-10 COMPLETE** |
 | Password reset | **COMPLETE.** `POST /auth/forgot-password` + `POST /auth/reset-password`; mobile screens. | **MG-12 COMPLETE** |
 | Reader cancellation | **COMPLETE.** `POST /reader/billing/cancel`; Me confirm flow; access until period end. | **MG-13 COMPLETE** |
-| Expiry notifications | **Phase A in-app** banners from subscription fields; push only after real infra (no fakes). | **MG-14** |
+| Expiry notifications | **COMPLETE Phase A** — Home/Me banners (3-day near-expiry + ended). Push = Phase B deferred. | **MG-14 COMPLETE (A)** |
 | Settings | **COMPLETE (scoped).** Reading defaults (device-local), downloads summary, about. | **MG-11 COMPLETE** |
 
 ### Still deferred / product decisions (not in MG-1…MG-FINAL)
@@ -2868,7 +2870,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 11. **MG-11** Settings (scoped) — `COMPLETE`
 12. **MG-12** Password reset — `COMPLETE`
 13. **MG-13** Reader subscription cancellation — `COMPLETE`
-14. **MG-14** Trial/subscription expiry notifications — `TODO`
+14. **MG-14** Trial/subscription expiry notifications — `COMPLETE` (Phase A; push deferred)
 15. **MG-FINAL** Access + refresh tokens — `TODO` (last)
 
 **Working rule:** one task at a time; stop for review after each; no automatic commits.

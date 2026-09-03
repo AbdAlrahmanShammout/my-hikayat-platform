@@ -43,7 +43,7 @@
 | Settings | Absent | No settings route/screen | **Valid** — scope tightly |
 | Password reset | Present | Forgot/reset HTTP + mail + recovery JWT | **COMPLETE (MG-12)** |
 | Reader cancel | Present | `POST /reader/billing/cancel` wraps managed cancel (not refund) | **COMPLETE (MG-13)** |
-| Push notifications | Absent | No mobile push / device-token stack | **Valid** — architecture first; in-app banners possible without push |
+| Push notifications | Deferred | No mobile push / device-token stack | **Phase B deferred** — Phase A in-app banners **COMPLETE (MG-14)** |
 | Refresh tokens | Absent | Confirmed | **Valid** — FINAL task |
 
 **Deferred (not in the ordered remediation list below).**
@@ -88,10 +88,10 @@ Priority bands used:
 | 11 | **MG-11** | Settings (scoped) | `COMPLETE` | 8 | Prefer after MG-5 (reading prefs), MG-9 |
 | 12 | **MG-12** | Password reset | `COMPLETE` | 8 | — (backend mail + recovery JWT) |
 | 13 | **MG-13** | Subscription cancellation (reader) | `COMPLETE` | 7 | — (extends existing billing) |
-| 14 | **MG-14** | Trial / subscription expiration notifications | `TODO` | 5 | MG-3, MG-4 |
+| 14 | **MG-14** | Trial / subscription expiration notifications | `COMPLETE` (Phase A) | 5 | MG-3, MG-4 |
 | 15 | **MG-FINAL** | Access + refresh tokens | `TODO` | 13 | After MG-1…MG-14 |
 
-**Next task to start when approved:** **MG-14**.
+**Next task to start when approved:** **MG-FINAL**.
 
 ---
 
@@ -352,7 +352,7 @@ Priority bands used:
 
 | Field | Content |
 | --- | --- |
-| **Status** | `TODO` (push sub-scope may become `BLOCKED`) |
+| **Status** | `COMPLETE` (Phase A); Phase B push `DEFERRED` |
 | **Problem** | No channel warns before trial/subscription access ends. |
 | **Current behavior** | Remaining trial label only on Me; no push; no local scheduled notifications. |
 | **Desired behavior** | Phase A (feasible now): **in-app** expiry awareness using existing subscription fields (banners on Home/Me when trial/paid window is near end or ended). Phase B: push/local notifications **only after** documenting device-token + backend push architecture — do not fake push. |
@@ -362,7 +362,7 @@ Priority bands used:
 | **Dependencies** | **MG-3**, **MG-4** for consistent access messaging. |
 | **Implementation notes** | Prefer Phase A in this task unless push architecture is approved mid-task. Record Phase B as follow-up if deferred. |
 | **Testing** | Banner visibility matrix for trial/paid near expiry / expired. |
-| **Completion** | — |
+| **Completion** | **2026-09-03.** Phase A: `resolveSubscriptionExpiryPresentation` (3-day threshold) + Home/Me `SubscriptionExpiryBanner`; trial discovery defers to banner when approaching/ended. Phase B push deferred (no device-token/backend push architecture yet). |
 
 ---
 
@@ -403,6 +403,7 @@ Priority bands used:
 | 2026-09-03 | **MG-11 COMPLETE.** Scoped Settings (reading prefs, downloads, about). Next: MG-12 on explicit approval. |
 | 2026-09-03 | **MG-12 COMPLETE.** Forgot/reset password (recovery JWT + mail + mobile screens). Next: MG-13 on explicit approval. |
 | 2026-09-03 | **MG-13 COMPLETE.** Reader `POST /reader/billing/cancel` + Me confirm (access until period end). Next: MG-14 on explicit approval. |
+| 2026-09-03 | **MG-14 COMPLETE (Phase A).** Home/Me expiry banners (3-day near-end + ended). Push Phase B deferred. Next: MG-FINAL on explicit approval. |
 
 ---
 

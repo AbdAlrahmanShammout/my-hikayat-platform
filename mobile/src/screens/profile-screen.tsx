@@ -3,13 +3,14 @@ import { useState, type JSX } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SubscriptionExpiryBanner } from '@/features/billing/components/subscription-expiry-banner';
 import { SubscriptionStatusCard } from '@/features/billing/components/subscription-status-card';
 import { confirmOfflinePurgeIfNeeded } from '@/features/offline/lib/confirm-offline-purge-if-needed';
 import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
 
 /**
- * Profile tab: identity from /auth/me, subscription status, settings entry, and sign-out.
+ * Profile tab: identity from /auth/me, expiry awareness, subscription status, settings, sign-out.
  */
 export function ProfileScreen(): JSX.Element {
   const { user, signOut } = useSession();
@@ -45,6 +46,7 @@ export function ProfileScreen(): JSX.Element {
         <Text style={styles.value} testID="shell-profile-role">
           {user?.role ?? '—'}
         </Text>
+        <SubscriptionExpiryBanner placement="me" />
         <SubscriptionStatusCard />
         <Pressable
           style={styles.secondaryButton}

@@ -72,6 +72,19 @@ describe('resolveHomeTrialDiscovery', () => {
     });
   });
 
+  it('hides active trial discovery when near-expiry banner owns the messaging', () => {
+    const now: Date = new Date('2026-09-03T12:00:00.000Z');
+    const actual: HomeTrialDiscovery = resolveHomeTrialDiscovery(
+      createSubscription({
+        readingAccessState: 'trial',
+        trialEligible: false,
+        trialEndsAt: '2026-09-05T12:00:00.000Z',
+      }),
+      now,
+    );
+    expect(actual.kind).toBe('hidden');
+  });
+
   it('hides for paid, ineligible free, and missing subscription', () => {
     expect(
       resolveHomeTrialDiscovery(
