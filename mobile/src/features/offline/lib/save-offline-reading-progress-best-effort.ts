@@ -1,4 +1,4 @@
-import { readCurrentUserId } from '@/features/offline/lib/read-current-user-id';
+import { readCurrentUserId } from '@/session/read-current-user-id';
 import { upsertOfflineReadingProgress } from '@/features/offline/lib/offline-progress-storage';
 import type { ReadingPositionSnapshot } from '@/features/reader/lib/reading-position';
 

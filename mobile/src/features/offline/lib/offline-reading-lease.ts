@@ -7,7 +7,7 @@ import type {
   OfflineBookManifest,
   OfflineReadingLease,
 } from '@/features/offline/types/offline-book-manifest';
-import { readCurrentUserId } from '@/features/offline/lib/read-current-user-id';
+import { readCurrentUserId } from '@/session/read-current-user-id';
 import {
   recordTrustedServerTime,
   resolveTrustedNow,

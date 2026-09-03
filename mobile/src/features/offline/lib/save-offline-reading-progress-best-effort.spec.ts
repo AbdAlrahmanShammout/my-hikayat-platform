@@ -3,7 +3,7 @@ import { saveOfflineReadingProgressBestEffort } from '@/features/offline/lib/sav
 const mockReadCurrentUserId = jest.fn();
 const mockUpsertOfflineReadingProgress = jest.fn();
 
-jest.mock('@/features/offline/lib/read-current-user-id', () => ({
+jest.mock('@/session/read-current-user-id', () => ({
   readCurrentUserId: () => mockReadCurrentUserId(),
 }));
 

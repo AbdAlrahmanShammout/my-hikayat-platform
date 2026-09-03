@@ -10,9 +10,12 @@ import {
 } from 'react-native';
 
 import type { ReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
-import { createReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
-import { deleteReadingBookmark } from '@/features/reader/api/delete-reading-bookmark';
-import { listReadingBookmarkItems } from '@/features/reader/api/list-reading-bookmarks';
+import {
+  addReaderBookmark,
+  loadReaderBookmarks,
+  removeReaderBookmark,
+  type ReaderBookmarkListItem,
+} from '@/features/reader/lib/reader-bookmark-actions';
 import { theme } from '@/theme/theme';
 
 export type ReflowableBookmarkPosition = {
@@ -40,6 +43,7 @@ type ReaderBookmarksPanelProps = {
 
 /**
  * In-reader bookmarks: list, add at current position, delete, and jump.
+ * Supports offline local persistence with reconnect sync.
  */
 export function ReaderBookmarksPanel({
   bookId,
@@ -48,7 +52,7 @@ export function ReaderBookmarksPanel({
   onJump,
 }: ReaderBookmarksPanelProps): JSX.Element {
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [bookmarks, setBookmarks] = useState<readonly ReadingBookmark[]>([]);
+  const [bookmarks, setBookmarks] = useState<readonly ReaderBookmarkListItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -57,7 +61,7 @@ export function ReaderBookmarksPanel({
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const items: readonly ReadingBookmark[] = await listReadingBookmarkItems(bookId);
+      const items: readonly ReaderBookmarkListItem[] = await loadReaderBookmarks(bookId);
       setBookmarks(items);
     } catch {
       setErrorMessage('Could not load bookmarks right now.');
@@ -80,9 +84,10 @@ export function ReaderBookmarksPanel({
     setIsSaving(true);
     setErrorMessage(null);
     try {
-      await createReadingBookmark({
+      await addReaderBookmark({
         bookId,
-        body: buildCreateBody(currentPosition),
+        layoutType,
+        position: currentPosition,
       });
       await executeReload();
     } catch {
@@ -92,11 +97,15 @@ export function ReaderBookmarksPanel({
     }
   }
 
-  async function executeDelete(bookmarkId: number): Promise<void> {
+  async function executeDelete(item: ReaderBookmarkListItem): Promise<void> {
     setErrorMessage(null);
     try {
-      await deleteReadingBookmark({ bookId, bookmarkId });
-      setBookmarks((current) => current.filter((item) => item.id !== bookmarkId));
+      await removeReaderBookmark({
+        bookId,
+        localId: item.localId,
+        serverId: item.serverId,
+      });
+      setBookmarks((current) => current.filter((entry) => entry.localId !== item.localId));
     } catch {
       setErrorMessage('Could not remove that bookmark.');
     }
@@ -157,28 +166,32 @@ export function ReaderBookmarksPanel({
                     No bookmarks yet.
                   </Text>
                 ) : (
-                  bookmarks.map((bookmark) => (
-                    <View key={bookmark.id} style={styles.row} testID={`reader-bookmark-${bookmark.id}`}>
+                  bookmarks.map((item) => (
+                    <View
+                      key={item.localId}
+                      style={styles.row}
+                      testID={`reader-bookmark-${item.localId}`}
+                    >
                       <Pressable
                         style={styles.jumpButton}
                         onPress={() => {
-                          onJump(bookmark);
+                          onJump(item.bookmark);
                           setIsOpen(false);
                         }}
                         accessibilityRole="button"
-                        accessibilityLabel={`Go to bookmark ${bookmark.id}`}
-                        testID={`reader-bookmark-jump-${bookmark.id}`}
+                        accessibilityLabel={`Go to bookmark ${formatBookmarkLabel(item.bookmark)}`}
+                        testID={`reader-bookmark-jump-${item.localId}`}
                       >
-                        <Text style={styles.jumpLabel}>{formatBookmarkLabel(bookmark)}</Text>
+                        <Text style={styles.jumpLabel}>{formatBookmarkLabel(item.bookmark)}</Text>
                       </Pressable>
                       <Pressable
                         style={styles.deleteButton}
                         onPress={() => {
-                          void executeDelete(bookmark.id);
+                          void executeDelete(item);
                         }}
                         accessibilityRole="button"
-                        accessibilityLabel={`Delete bookmark ${bookmark.id}`}
-                        testID={`reader-bookmark-delete-${bookmark.id}`}
+                        accessibilityLabel={`Delete bookmark ${formatBookmarkLabel(item.bookmark)}`}
+                        testID={`reader-bookmark-delete-${item.localId}`}
                       >
                         <Text style={styles.deleteLabel}>Remove</Text>
                       </Pressable>
@@ -203,24 +216,6 @@ export function ReaderBookmarksPanel({
       </Modal>
     </>
   );
-}
-
-function buildCreateBody(position: ReaderBookmarkPosition): {
-  readonly spineIndex?: number;
-  readonly scrollOffset?: number;
-  readonly spreadIndex?: number;
-  readonly pageNumber?: number;
-} {
-  if (position.kind === 'reflowable') {
-    return {
-      spineIndex: position.spineIndex,
-      scrollOffset: position.scrollOffset,
-    };
-  }
-  return {
-    spreadIndex: position.spreadIndex,
-    pageNumber: position.pageNumber,
-  };
 }
 
 function formatBookmarkLabel(bookmark: ReadingBookmark): string {

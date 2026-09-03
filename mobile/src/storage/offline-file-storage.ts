@@ -4,6 +4,7 @@ export const OFFLINE_ROOT_DIRECTORY = `${FileSystem.documentDirectory ?? ''}offl
 export const OFFLINE_CIPHERTEXT_DIRECTORY = `${OFFLINE_ROOT_DIRECTORY}ciphertext/`;
 export const OFFLINE_MANIFEST_FILE_PATH = `${OFFLINE_ROOT_DIRECTORY}manifest.json`;
 export const OFFLINE_PROGRESS_FILE_PATH = `${OFFLINE_ROOT_DIRECTORY}progress.json`;
+export const OFFLINE_BOOKMARKS_FILE_PATH = `${OFFLINE_ROOT_DIRECTORY}bookmarks.json`;
 
 /**
  * Ensures offline storage directories exist under the app document directory.

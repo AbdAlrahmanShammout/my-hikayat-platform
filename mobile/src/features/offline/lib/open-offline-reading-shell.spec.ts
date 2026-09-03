@@ -12,7 +12,7 @@ jest.mock('@/features/offline/lib/offline-progress-storage', () => ({
   getOfflineReadingProgress: (...args: unknown[]) => mockGetOfflineReadingProgress(...args),
 }));
 
-jest.mock('@/features/offline/lib/read-current-user-id', () => ({
+jest.mock('@/session/read-current-user-id', () => ({
   readCurrentUserId: () => mockReadCurrentUserId(),
 }));
 

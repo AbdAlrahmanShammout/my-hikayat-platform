@@ -80,7 +80,7 @@ Priority bands used:
 | 3 | **MG-3** | Entitlement visibility before reader | `COMPLETE` | 4 | Prefer after MG-1/MG-2 so book detail can show access + identity together |
 | 4 | **MG-4** | Trial discovery & trial UX | `COMPLETE` | 7 | MG-3 (reuse access-state surfaces) |
 | 5 | **MG-5** | Offline reading resume (local progress) | `COMPLETE` | 5 | — |
-| 6 | **MG-6** | Offline bookmark persistence & sync | `TODO` | 5 | Prefer after MG-5 (shared local offline store patterns) |
+| 6 | **MG-6** | Offline bookmark persistence & sync | `COMPLETE` | 5 | Prefer after MG-5 (shared local offline store patterns) |
 | 7 | **MG-7** | Offline progress write queue / sync | `TODO` | 5 | **MG-5** |
 | 8 | **MG-8** | Offline lease expiration UX | `TODO` | 5 | — (lease already on device) |
 | 9 | **MG-9** | Sign-out & offline content confirmation | `TODO` | 8 | — |
@@ -91,7 +91,7 @@ Priority bands used:
 | 14 | **MG-14** | Trial / subscription expiry notifications | `TODO` | 9 | MG-3/MG-4 for in-app; push infra may be `BLOCKED` |
 | 15 | **MG-FINAL** | Access + refresh token architecture | `TODO` | 3 | After MG-1…MG-14 (largest auth change; last by requirement) |
 
-**Next task to start when approved:** **MG-6**.
+**Next task to start when approved:** **MG-7**.
 
 ---
 
@@ -206,7 +206,7 @@ Priority bands used:
 
 | Field | Content |
 | --- | --- |
-| **Status** | `TODO` |
+| **Status** | `COMPLETE` |
 | **Problem** | Offline bookmark create/delete cannot reach the server and is effectively lost. |
 | **Current behavior** | Bookmark APIs are online-only; no pending mutation queue. |
 | **Desired behavior** | Offline: create/remove bookmarks against a local store; queue mutations; on reconnect sync without duplicates; handle failures/retries. |
@@ -216,7 +216,7 @@ Priority bands used:
 | **Dependencies** | Prefer after **MG-5** (shared local persistence patterns). Independent of MG-7 but should align queue design. |
 | **Implementation notes** | Per-book local bookmarks + pending ops (`create` / `delete`). Idempotency keys or client mutation ids if needed to avoid duplicates. Do not build a generic sync framework beyond bookmarks + (MG-7) progress. |
 | **Testing** | Offline add/remove; reconnect sync; duplicate prevention; failure retry. |
-| **Completion** | — |
+| **Completion** | **2026-09-03.** `bookmarks.json` local store + pending create/delete ops; panel uses `load/add/removeReaderBookmark`; flush on reconnect/foreground with capped retries; unsynced delete cancels pending create; cleared on sign-out. |
 
 ---
 
@@ -395,6 +395,7 @@ Priority bands used:
 | 2026-09-03 | **MG-3 COMPLETE.** Book-detail access CTA from `readingAccessState`. Next: MG-4 on explicit approval. |
 | 2026-09-03 | **MG-4 COMPLETE.** Home trial discovery card + trial remaining on detail. Next: MG-5 on explicit approval. |
 | 2026-09-03 | **MG-5 COMPLETE.** Local offline reading resume via `progress.json`. Next: MG-6 on explicit approval. |
+| 2026-09-03 | **MG-6 COMPLETE.** Offline bookmark local store + reconnect sync queue. Next: MG-7 on explicit approval. |
 
 ---
 

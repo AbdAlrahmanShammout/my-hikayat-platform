@@ -3,7 +3,7 @@ import { buildOfflineReadingSession } from '@/features/offline/lib/build-offline
 import { getOfflineReadingProgress } from '@/features/offline/lib/offline-progress-storage';
 import { manifestToCatalogBook } from '@/features/offline/lib/manifest-to-catalog-book';
 import { getOfflineManifest } from '@/features/offline/lib/offline-manifest-storage';
-import { readCurrentUserId } from '@/features/offline/lib/read-current-user-id';
+import { readCurrentUserId } from '@/session/read-current-user-id';
 import type { OpenReadingShellResult } from '@/features/reader/lib/open-reading-shell';
 import {
   isBookLayoutType,

@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { bindQueryFocusManager } from '@/api/bind-query-focus-manager';
 import { bindQueryOnlineManager } from '@/api/bind-query-online-manager';
 import { createQueryClient } from '@/api/query-client';
+import { bindOfflineBookmarkSync } from '@/features/reader/lib/bind-offline-bookmark-sync';
 import { AppErrorBoundary } from '@/root/app-error-boundary';
 import { SessionProvider } from '@/session/session-provider';
 import { useSession } from '@/session/use-session';
@@ -24,6 +25,7 @@ export default function RootLayout(): JSX.Element {
   const [queryClient] = useState(() => createQueryClient());
   useEffect(() => bindQueryFocusManager(), []);
   useEffect(() => bindQueryOnlineManager(), []);
+  useEffect(() => bindOfflineBookmarkSync(), []);
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppErrorBoundary>
