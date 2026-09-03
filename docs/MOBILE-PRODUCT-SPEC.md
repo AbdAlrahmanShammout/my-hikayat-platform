@@ -32,8 +32,8 @@ roadmap is the ordered implementation source of truth for closing gaps. Historic
 31–54 in `docs/admin-dashboard-tasks.md` remain Complete and are not rewritten. As each `MG-*`
 task completes, this specification must be updated so it stays current.
 
-**Roadmap snapshot (2026-09-03).** **MG-1…MG-12 COMPLETE**. Next task when approved: **MG-13**
-(subscription cancellation). Confirmed blocker: access tokens default to **15 minutes** with no
+**Roadmap snapshot (2026-09-03).** **MG-1…MG-13 COMPLETE**. Next task when approved: **MG-14**
+(trial/subscription expiry notifications). Confirmed blocker: access tokens default to **15 minutes** with no
 refresh (`MG-FINAL`, last).
 
 ---
@@ -479,7 +479,7 @@ Covered in depth in [§8](#8-subscription-trial--entitlement-model).
 | F-SUB-4 · Subscribe via hosted external checkout | **IMPLEMENTED** |
 | F-SUB-5 · Request a refund within the refund window | **IMPLEMENTED** |
 | F-SUB-6 · Entitlement-denied recovery path into the subscribe flow | **IMPLEMENTED** |
-| F-SUB-7 · Cancel a subscription from the mobile app | **NOT AVAILABLE** — no cancel action exists in the mobile app |
+| F-SUB-7 · Cancel a subscription from the mobile app | **AVAILABLE** — Me → Cancel subscription; access until `currentPeriodEnd` (**MG-13**) |
 | F-SUB-8 · Manage payment method / view invoices / billing history | **NOT AVAILABLE** |
 | F-SUB-9 · Native in-app purchase (App Store / Play billing) | **NOT AVAILABLE** — payment is external hosted checkout only |
 | F-SUB-10 · Renewal reminders, trial-expiry warnings, dunning notices | **NOT AVAILABLE** |
@@ -749,7 +749,7 @@ what information must be present, what actions originate there, where they can g
 | **Information needed** | Email and role; **plan name and type**; **reading access level** (free / trial / paid); **subscription status** (active / canceled); **paid access end date** when there is one; **trial time remaining** when on trial; the trial offer with its terms (7 days, no card, does not itself start a paid subscription) when eligible; the purchasable plans with prices; the note that reading access is decided by the server; per-action loading and error states. |
 | **Actions** | Start free trial (only when eligible); select a plan; subscribe (opens external checkout); request refund (only for a paid plan) with a confirm step; retry loading subscription; open Settings; sign out. |
 | **Navigates to** | Settings; external hosted checkout and back; sign-in on sign-out. |
-| **Conditions** | This screen carries an unusual amount of conditional content — the trial offer, trial-remaining, period end, refund action, and post-checkout messages each appear only in specific states. It is also the destination of the entitlement-denied path, so users often **arrive here with intent**, from a book they wanted to read. It has **no cancel-subscription action** and **no parental gate**. |
+| **Conditions** | This screen carries an unusual amount of conditional content — the trial offer, trial-remaining, period end, cancel action (**MG-13**), refund action, and post-checkout messages each appear only in specific states. It is also the destination of the entitlement-denied path, so users often **arrive here with intent**, from a book they wanted to read. It has **no parental gate**. |
 
 ### S-08b · Settings — **IMPLEMENTED** (scoped)
 
@@ -891,7 +891,7 @@ listed so the design can propose them deliberately rather than assume them.
 | Settings | **IMPLEMENTED** (scoped **MG-11**) | Reading defaults, downloads summary, about — no invented toggles |
 | Profile edit | **NOT AVAILABLE** | Email and password are unchangeable in-app |
 | Password reset / forgot password | **IMPLEMENTED** (**MG-12**) | Request email → recovery token → new password |
-| Cancel subscription | **NOT AVAILABLE** | No in-app path to stop paying |
+| Cancel subscription | **AVAILABLE (MG-13)** | Stops renewal; reading continues until period end |
 | Billing history / payment method | **NOT AVAILABLE** | No record of what was charged |
 | Cross-book bookmark library | **PLANNED** (explicitly out of scope) | Bookmarks are only reachable inside each book |
 | Reading statistics | **NOT AVAILABLE** | Engagement data is collected but never shown |
@@ -1484,8 +1484,8 @@ and weights.
 **Remediation.** Cover (**MG-1**), author/publisher (**MG-2**), entitlement CTA (**MG-3**), trial
 discovery (**MG-4**), offline resume/bookmarks/progress sync (**MG-5…MG-7**), lease expiry UX
 (**MG-8**), sign-out/abandon confirmation (**MG-9**), catalog/search pagination (**MG-10**), and
-scoped Settings (**MG-11**) and password reset (**MG-12**) are **COMPLETE**. Next gap in order is
-subscription cancellation (**MG-13**).
+scoped Settings (**MG-11**), password reset (**MG-12**), and subscription cancellation (**MG-13**)
+are **COMPLETE**. Next gap in order is expiry notifications (**MG-14**).
 
 ## 6.3 Catalog behavior
 
@@ -2274,7 +2274,7 @@ technically within reach but is not a supported product feature today.
 | R-P4 | **A checkout return link never grants access.** Entitlement must be re-read from the server. |
 | R-P5 | A dismissed checkout has an genuinely unknown outcome and must be communicated as such. |
 | R-P6 | Refunds are limited to 7 days from activation, enforced entirely server-side. |
-| R-P7 | The mobile app cannot cancel a subscription. |
+| R-P7 | Readers can cancel a paid subscription in-app; access continues until period end (**MG-13**). |
 
 ## 13.6 Offline rules
 
@@ -2758,7 +2758,8 @@ navigation. Discovery, reader engines, offline, and checkout have **no** end-to-
    downloads summary, and about. Cross-device preference sync remains out of scope.
 3. **~~No password reset or account recovery.~~** **COMPLETE (MG-12).**
 4. **No account deletion or profile editing.**
-5. **No in-app subscription cancellation**, despite full support for subscribing and refunding.
+5. **~~No in-app subscription cancellation~~**, despite full support for subscribing and refunding.
+   **COMPLETE (MG-13).**
 6. **No expiry warnings** for trials or subscriptions, and no notification channel to deliver
    them.
 7. **No payment-failure representation.** The platform models failed renewals; the mobile app does
@@ -2835,7 +2836,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 | Offline resume + sync | **MG-5…MG-7 COMPLETE** (local progress, bookmark queue, progress upload with newer-timestamp conflict rule). | **MG-5**, **MG-6**, **MG-7** |
 | Catalog/search pagination | **COMPLETE.** Infinite load against existing `limit`/`offset`. | **MG-10 COMPLETE** |
 | Password reset | **COMPLETE.** `POST /auth/forgot-password` + `POST /auth/reset-password`; mobile screens. | **MG-12 COMPLETE** |
-| Reader cancellation | **Will implement** reader cancel (access until period end); distinct from refund. | **MG-13** |
+| Reader cancellation | **COMPLETE.** `POST /reader/billing/cancel`; Me confirm flow; access until period end. | **MG-13 COMPLETE** |
 | Expiry notifications | **Phase A in-app** banners from subscription fields; push only after real infra (no fakes). | **MG-14** |
 | Settings | **COMPLETE (scoped).** Reading defaults (device-local), downloads summary, about. | **MG-11 COMPLETE** |
 
@@ -2866,7 +2867,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 10. **MG-10** Catalog & search pagination — `COMPLETE`
 11. **MG-11** Settings (scoped) — `COMPLETE`
 12. **MG-12** Password reset — `COMPLETE`
-13. **MG-13** Reader subscription cancellation — `TODO`
+13. **MG-13** Reader subscription cancellation — `COMPLETE`
 14. **MG-14** Trial/subscription expiry notifications — `TODO`
 15. **MG-FINAL** Access + refresh tokens — `TODO` (last)
 

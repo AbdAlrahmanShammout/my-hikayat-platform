@@ -9,6 +9,7 @@ import {
   PlanKind,
   SubscriptionStatus,
 } from '@/modules/subscription/enum/general.enum';
+import { CancelNotEligibleException } from '@/modules/subscription/exceptions/cancel-not-eligible.exception';
 import { CheckoutReturnUrlInvalidException } from '@/modules/subscription/exceptions/checkout-return-url-invalid.exception';
 import { RefundNotEligibleException } from '@/modules/subscription/exceptions/refund-not-eligible.exception';
 import { RefundWindowExpiredException } from '@/modules/subscription/exceptions/refund-window-expired.exception';
@@ -572,6 +573,56 @@ describe('SubscriptionBillingService', () => {
       await expect(subscriptionBillingService.requestRefund(5)).rejects.toBeInstanceOf(
         RefundWindowExpiredException,
       );
+    });
+  });
+
+  describe('requestCancel', () => {
+    it('cancels a paid monthly subscription through managed cancel', async () => {
+      const paidSubscription = createSampleSubscription(
+        PlanKind.MONTHLY_PAID,
+        SubscriptionStatus.ACTIVE,
+        new Date('2026-09-01T00:00:00.000Z'),
+      );
+      paidSubscription.stripeSubscriptionId = 'sub_1';
+      const canceled = createSampleSubscription(
+        PlanKind.MONTHLY_PAID,
+        SubscriptionStatus.CANCELED,
+        new Date('2026-09-01T00:00:00.000Z'),
+      );
+      mockSubscriptionService.ensureFreeSubscription.mockResolvedValue(paidSubscription);
+      mockSubscriptionService.getSubscriptionById.mockResolvedValue(paidSubscription);
+      mockStripeManagerService.cancelPaidSubscription.mockResolvedValue(undefined);
+      mockSubscriptionService.cancelSubscription.mockResolvedValue(canceled);
+      const actualSubscription = await subscriptionBillingService.requestCancel(5);
+      expect(mockStripeManagerService.cancelPaidSubscription).toHaveBeenCalledWith({
+        stripeSubscriptionId: 'sub_1',
+      });
+      expect(mockSubscriptionService.cancelSubscription).toHaveBeenCalledWith(7, undefined);
+      expect(actualSubscription.currentPeriodEnd?.toISOString()).toBe('2026-09-01T00:00:00.000Z');
+      expect(actualSubscription.status).toBe(SubscriptionStatus.CANCELED);
+    });
+
+    it('rejects cancel for a free subscription', async () => {
+      mockSubscriptionService.ensureFreeSubscription.mockResolvedValue(createSampleSubscription());
+      await expect(subscriptionBillingService.requestCancel(5)).rejects.toBeInstanceOf(
+        CancelNotEligibleException,
+      );
+      expect(mockStripeManagerService.cancelPaidSubscription).not.toHaveBeenCalled();
+    });
+
+    it('returns the existing canceled paid subscription without rewriting', async () => {
+      const canceled = createSampleSubscription(
+        PlanKind.MONTHLY_PAID,
+        SubscriptionStatus.CANCELED,
+        new Date('2026-09-01T00:00:00.000Z'),
+      );
+      canceled.stripeSubscriptionId = 'sub_1';
+      mockSubscriptionService.ensureFreeSubscription.mockResolvedValue(canceled);
+      mockSubscriptionService.getSubscriptionById.mockResolvedValue(canceled);
+      const actualSubscription = await subscriptionBillingService.requestCancel(5);
+      expect(mockStripeManagerService.cancelPaidSubscription).not.toHaveBeenCalled();
+      expect(mockSubscriptionService.cancelSubscription).not.toHaveBeenCalled();
+      expect(actualSubscription).toBe(canceled);
     });
   });
 

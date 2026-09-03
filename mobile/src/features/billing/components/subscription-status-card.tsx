@@ -14,11 +14,12 @@ import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subsc
 import { theme } from '@/theme/theme';
 
 /**
- * Profile billing card: plan/status, free trial, plan picker, Stripe Checkout, and refund.
+ * Profile billing card: plan/status, free trial, plan picker, Stripe Checkout, cancel, and refund.
  */
 export function SubscriptionStatusCard(): JSX.Element {
   const billing = useReaderSubscription();
   const [confirmRefund, setConfirmRefund] = useState<boolean>(false);
+  const [confirmCancel, setConfirmCancel] = useState<boolean>(false);
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const effectivePlanId: number | null =
@@ -114,6 +115,11 @@ export function SubscriptionStatusCard(): JSX.Element {
           </Text>
         </>
       ) : null}
+      {display.cancelAccessNote !== null ? (
+        <Text style={styles.note} testID="billing-cancel-access-note">
+          {display.cancelAccessNote}
+        </Text>
+      ) : null}
       <Text style={styles.note}>
         Full-book reading follows your plan on the server. Ask a grown-up before
         changing billing.
@@ -174,6 +180,68 @@ export function SubscriptionStatusCard(): JSX.Element {
           {checkoutMessage}
         </Text>
       ) : null}
+      {display.canOfferCancelAction ? (
+        confirmCancel ? (
+          <View style={styles.confirmBlock}>
+            <Text style={styles.note}>
+              Cancel your subscription? You can keep reading until the paid
+              period ends. This is not a refund.
+            </Text>
+            {billing.cancelErrorMessage !== null ? (
+              <Text style={styles.error} testID="billing-cancel-error">
+                {billing.cancelErrorMessage}
+              </Text>
+            ) : null}
+            <Pressable
+              style={[styles.primaryButton, billing.isCanceling ? styles.disabled : null]}
+              disabled={billing.isCanceling}
+              onPress={() => {
+                void billing
+                  .requestCancel()
+                  .then(() => {
+                    setConfirmCancel(false);
+                  })
+                  .catch(() => {
+                    // Error surfaces via cancelErrorMessage.
+                  });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Confirm subscription cancellation"
+              testID="billing-cancel-confirm"
+            >
+              {billing.isCanceling ? (
+                <ActivityIndicator color={theme.colors.onPrimary} />
+              ) : (
+                <Text style={styles.primaryLabel}>Confirm cancel</Text>
+              )}
+            </Pressable>
+            <Pressable
+              style={styles.secondaryButton}
+              onPress={() => {
+                setConfirmCancel(false);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Keep subscription"
+              testID="billing-cancel-dismiss"
+            >
+              <Text style={styles.secondaryLabel}>Not now</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => {
+              setConfirmCancel(true);
+              setConfirmRefund(false);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Cancel subscription"
+            testID="billing-cancel-button"
+          >
+            <Text style={styles.secondaryLabel}>Cancel subscription</Text>
+          </Pressable>
+        )
+      ) : null}
       {display.canOfferRefundAction ? (
         confirmRefund ? (
           <View style={styles.confirmBlock}>
@@ -225,6 +293,7 @@ export function SubscriptionStatusCard(): JSX.Element {
             style={styles.secondaryButton}
             onPress={() => {
               setConfirmRefund(true);
+              setConfirmCancel(false);
             }}
             accessibilityRole="button"
             accessibilityLabel="Request refund"

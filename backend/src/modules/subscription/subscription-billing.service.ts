@@ -18,6 +18,7 @@ import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.e
 import { PlanKind, SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
 import { buildCheckoutReturnPage } from '@/modules/subscription/build-checkout-return-page.helper';
 import { isCheckoutReturnUrlAllowed } from '@/modules/subscription/checkout-return-url.helper';
+import { CancelNotEligibleException } from '@/modules/subscription/exceptions/cancel-not-eligible.exception';
 import { CheckoutReturnUrlInvalidException } from '@/modules/subscription/exceptions/checkout-return-url-invalid.exception';
 import { RefundNotEligibleException } from '@/modules/subscription/exceptions/refund-not-eligible.exception';
 import { RefundWindowExpiredException } from '@/modules/subscription/exceptions/refund-window-expired.exception';
@@ -96,6 +97,18 @@ export class SubscriptionBillingService {
     const subscription: SubscriptionEntity =
       await this.subscriptionService.getSubscriptionByUserId(userId);
     return this.applyPaidRefundPolicy(subscription);
+  }
+
+  async requestCancel(userId: number): Promise<SubscriptionEntity> {
+    const subscription: SubscriptionEntity =
+      await this.subscriptionService.ensureFreeSubscription(userId);
+    if (subscription.plan?.kind !== PlanKind.MONTHLY_PAID) {
+      throw new CancelNotEligibleException();
+    }
+    return this.cancelManagedSubscription({
+      subscriptionId: subscription.id,
+      actorUserId: userId,
+    });
   }
 
   async refundManagedSubscription(

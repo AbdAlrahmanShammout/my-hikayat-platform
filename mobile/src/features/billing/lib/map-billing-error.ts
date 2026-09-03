@@ -11,6 +11,11 @@ export function mapBillingError(error: unknown): string {
         ? error.message
         : 'This free trial is not available for your account.';
     }
+    if (error.code === 'CANCEL_NOT_ELIGIBLE') {
+      return error.message.trim().length > 0
+        ? error.message
+        : 'This subscription cannot be canceled right now.';
+    }
     if (error.statusCode === 404) {
       return 'No subscription is set up yet. Ask a grown-up to subscribe.';
     }

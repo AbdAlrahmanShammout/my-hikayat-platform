@@ -218,6 +218,13 @@ export interface paths {
       };
     };
   };
+  "/reader/billing/cancel": {
+    post: {
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['SubscriptionResponse'] } };
+      };
+    };
+  };
   "/webhooks/stripe": {
     post: {
       responses: {

@@ -7,8 +7,10 @@ export type SubscriptionDisplay = {
   readonly accessLabel: string;
   readonly periodLabel: string | null;
   readonly trialRemainingLabel: string | null;
+  readonly cancelAccessNote: string | null;
   readonly canOfferTrialAction: boolean;
   readonly canOfferRefundAction: boolean;
+  readonly canOfferCancelAction: boolean;
 };
 
 /**
@@ -27,8 +29,8 @@ export function formatSubscriptionDisplay(
       : planKind === 'free'
         ? `${planName} (free)`
         : planName;
-  const statusLabel: string =
-    subscription.status === 'canceled' ? 'Canceled' : 'Active';
+  const isCanceled: boolean = subscription.status === 'canceled';
+  const statusLabel: string = isCanceled ? 'Canceled' : 'Active';
   const accessLabel: string = resolveAccessLabel(subscription.readingAccessState);
   const periodEnd: string | null = coerceIsoDate(subscription.currentPeriodEnd);
   const periodLabel: string | null =
@@ -37,15 +39,36 @@ export function formatSubscriptionDisplay(
     subscription.readingAccessState === 'trial'
       ? formatTrialRemainingLabel(subscription.trialEndsAt, now)
       : null;
+  const cancelAccessNote: string | null = resolveCancelAccessNote({
+    isCanceled,
+    readingAccessState: subscription.readingAccessState,
+    periodLabel,
+  });
   return {
     planLabel,
     statusLabel,
     accessLabel,
     periodLabel,
     trialRemainingLabel,
+    cancelAccessNote,
     canOfferTrialAction: subscription.trialEligible === true,
-    canOfferRefundAction: planKind === 'monthly_paid',
+    canOfferRefundAction: planKind === 'monthly_paid' && !isCanceled,
+    canOfferCancelAction: planKind === 'monthly_paid' && !isCanceled,
   };
+}
+
+function resolveCancelAccessNote(input: {
+  readonly isCanceled: boolean;
+  readonly readingAccessState: ReaderSubscription['readingAccessState'];
+  readonly periodLabel: string | null;
+}): string | null {
+  if (!input.isCanceled) {
+    return null;
+  }
+  if (input.readingAccessState === 'paid' && input.periodLabel !== null) {
+    return `Canceled. You can keep reading until the paid period ends. ${input.periodLabel}.`;
+  }
+  return 'Canceled. Paid access has ended.';
 }
 
 function resolveAccessLabel(

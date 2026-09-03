@@ -5,6 +5,7 @@ import {
   listReaderBillingPlans,
   type ReaderBillingPlan,
 } from '@/features/billing/api/list-reader-billing-plans';
+import { requestReaderCancel } from '@/features/billing/api/request-reader-cancel';
 import { requestReaderRefund } from '@/features/billing/api/request-reader-refund';
 import { startReaderTrial } from '@/features/billing/api/start-reader-trial';
 import { executeStripeCheckoutFlow } from '@/features/billing/lib/execute-stripe-checkout-flow';
@@ -14,7 +15,7 @@ const SUBSCRIPTION_QUERY_KEY = ['reader', 'billing', 'subscription'] as const;
 const PLANS_QUERY_KEY = ['reader', 'billing', 'plans'] as const;
 
 /**
- * Loads subscription status, paid plan catalog, trial start, refund, and Stripe Checkout.
+ * Loads subscription status, paid plan catalog, trial start, cancel, refund, and Stripe Checkout.
  * Backend remains the source of truth for entitlement.
  */
 export function useReaderSubscription(): {
@@ -30,6 +31,9 @@ export function useReaderSubscription(): {
   readonly requestRefund: () => Promise<void>;
   readonly isRefunding: boolean;
   readonly refundErrorMessage: string | null;
+  readonly requestCancel: () => Promise<void>;
+  readonly isCanceling: boolean;
+  readonly cancelErrorMessage: string | null;
   readonly startCheckout: (planId: number) => Promise<string | null>;
   readonly isCheckingOut: boolean;
   readonly checkoutMessage: string | null;
@@ -56,6 +60,12 @@ export function useReaderSubscription(): {
   });
   const refundMutation = useMutation({
     mutationFn: requestReaderRefund,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY });
+    },
+  });
+  const cancelMutation = useMutation({
+    mutationFn: requestReaderCancel,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: SUBSCRIPTION_QUERY_KEY });
     },
@@ -96,6 +106,12 @@ export function useReaderSubscription(): {
     isRefunding: refundMutation.isPending,
     refundErrorMessage:
       refundMutation.error === null ? null : mapBillingError(refundMutation.error),
+    requestCancel: async () => {
+      await cancelMutation.mutateAsync();
+    },
+    isCanceling: cancelMutation.isPending,
+    cancelErrorMessage:
+      cancelMutation.error === null ? null : mapBillingError(cancelMutation.error),
     startCheckout: async (planId: number) => {
       const result = await checkoutMutation.mutateAsync(planId);
       await refetchSubscription();

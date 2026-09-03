@@ -52,6 +52,8 @@ describe('formatSubscriptionDisplay', () => {
     expect(actual.trialRemainingLabel).toBeNull();
     expect(actual.canOfferTrialAction).toBe(true);
     expect(actual.canOfferRefundAction).toBe(false);
+    expect(actual.canOfferCancelAction).toBe(false);
+    expect(actual.cancelAccessNote).toBeNull();
   });
 
   it('formats an active trial with remaining time display only', () => {
@@ -67,6 +69,7 @@ describe('formatSubscriptionDisplay', () => {
     expect(actual.trialRemainingLabel).toBe('7 days remaining');
     expect(actual.canOfferTrialAction).toBe(false);
     expect(actual.canOfferRefundAction).toBe(false);
+    expect(actual.canOfferCancelAction).toBe(false);
   });
 
   it('hides the trial CTA after the trial is used', () => {
@@ -82,7 +85,41 @@ describe('formatSubscriptionDisplay', () => {
     expect(actual.trialRemainingLabel).toBeNull();
   });
 
-  it('formats a monthly plan with period end and refund action available', () => {
+  it('formats an active monthly plan with cancel and refund actions', () => {
+    const input: ReaderSubscription = createSubscription({
+      id: 2,
+      planId: 2,
+      status: 'active',
+      currentPeriodStart: '2026-08-01T00:00:00.000Z',
+      currentPeriodEnd: '2026-09-01T00:00:00.000Z',
+      activatedAt: '2026-08-01T00:00:00.000Z',
+      readingAccessState: 'paid',
+      trialEligible: false,
+      plan: {
+        id: 2,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        slug: 'monthly',
+        name: 'Monthly',
+        description: 'Full-book reading',
+        kind: 'monthly_paid',
+        interval: 'month',
+        amountCents: 999,
+        currency: 'usd',
+      },
+    });
+    const actual: SubscriptionDisplay = formatSubscriptionDisplay(input);
+    expect(actual.planLabel).toBe('Monthly (monthly)');
+    expect(actual.statusLabel).toBe('Active');
+    expect(actual.accessLabel).toBe('Paid');
+    expect(actual.periodLabel).toContain('Paid access through');
+    expect(actual.canOfferTrialAction).toBe(false);
+    expect(actual.canOfferRefundAction).toBe(true);
+    expect(actual.canOfferCancelAction).toBe(true);
+    expect(actual.cancelAccessNote).toBeNull();
+  });
+
+  it('formats a canceled monthly plan that still has paid access', () => {
     const input: ReaderSubscription = createSubscription({
       id: 2,
       planId: 2,
@@ -112,6 +149,8 @@ describe('formatSubscriptionDisplay', () => {
     expect(actual.accessLabel).toBe('Paid');
     expect(actual.periodLabel).toContain('Paid access through');
     expect(actual.canOfferTrialAction).toBe(false);
-    expect(actual.canOfferRefundAction).toBe(true);
+    expect(actual.canOfferRefundAction).toBe(false);
+    expect(actual.canOfferCancelAction).toBe(false);
+    expect(actual.cancelAccessNote).toContain('keep reading');
   });
 });

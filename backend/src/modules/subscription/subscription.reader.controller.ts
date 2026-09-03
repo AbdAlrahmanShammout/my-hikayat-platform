@@ -118,4 +118,18 @@ export class SubscriptionReaderController {
     );
     return new SubscriptionResponse(entity);
   }
+
+  @Post('cancel')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Cancel the paid subscription without refund; reading continues until currentPeriodEnd',
+  })
+  @ApiResponse({ status: 200, type: SubscriptionResponse })
+  async requestCancel(@LoggedInUser() currentUser: UserEntity): Promise<SubscriptionResponse> {
+    const entity: SubscriptionEntity = await this.subscriptionBillingService.requestCancel(
+      currentUser.id,
+    );
+    return new SubscriptionResponse(entity);
+  }
 }

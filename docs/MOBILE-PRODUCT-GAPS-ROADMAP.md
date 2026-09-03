@@ -42,7 +42,7 @@
 | Catalog/search pagination | Infinite pages | API supports `limit`/`offset` | **COMPLETE (MG-10)** — mobile-only |
 | Settings | Absent | No settings route/screen | **Valid** — scope tightly |
 | Password reset | Present | Forgot/reset HTTP + mail + recovery JWT | **COMPLETE (MG-12)** |
-| Reader cancel | Absent | Admin `POST /admin/subscriptions/:id/cancel` exists; **no** reader cancel endpoint | **Valid** — needs backend + mobile |
+| Reader cancel | Present | `POST /reader/billing/cancel` wraps managed cancel (not refund) | **COMPLETE (MG-13)** |
 | Push notifications | Absent | No mobile push / device-token stack | **Valid** — architecture first; in-app banners possible without push |
 | Refresh tokens | Absent | Confirmed | **Valid** — FINAL task |
 
@@ -87,11 +87,11 @@ Priority bands used:
 | 10 | **MG-10** | Catalog & search pagination | `COMPLETE` | 6 | Prefer after MG-1/MG-2 so new pages include cover/author |
 | 11 | **MG-11** | Settings (scoped) | `COMPLETE` | 8 | Prefer after MG-5 (reading prefs), MG-9 |
 | 12 | **MG-12** | Password reset | `COMPLETE` | 8 | — (backend mail + recovery JWT) |
-| 13 | **MG-13** | Subscription cancellation (reader) | `TODO` | 7 | — (extends existing billing) |
-| 14 | **MG-14** | Trial / subscription expiry notifications | `TODO` | 9 | MG-3/MG-4 for in-app; push infra may be `BLOCKED` |
-| 15 | **MG-FINAL** | Access + refresh token architecture | `TODO` | 3 | After MG-1…MG-14 (largest auth change; last by requirement) |
+| 13 | **MG-13** | Subscription cancellation (reader) | `COMPLETE` | 7 | — (extends existing billing) |
+| 14 | **MG-14** | Trial / subscription expiration notifications | `TODO` | 5 | MG-3, MG-4 |
+| 15 | **MG-FINAL** | Access + refresh tokens | `TODO` | 13 | After MG-1…MG-14 |
 
-**Next task to start when approved:** **MG-13**.
+**Next task to start when approved:** **MG-14**.
 
 ---
 
@@ -333,7 +333,7 @@ Priority bands used:
 
 | Field | Content |
 | --- | --- |
-| **Status** | `TODO` |
+| **Status** | `COMPLETE` |
 | **Problem** | Users can subscribe/refund in-app but cannot cancel. |
 | **Current behavior** | Admin cancel via Stripe + local status; reader billing has plans/checkout/trial/refund only. Canceled-but-active-until-period-end rules already exist. |
 | **Desired behavior** | Reader can request cancellation; UI distinguishes canceled-but-still-active vs expired; access continues until `currentPeriodEnd` (existing rule). |
@@ -344,7 +344,7 @@ Priority bands used:
 | **Dependencies** | None. |
 | **Implementation notes** | Do not end access immediately (contrast with refund). Confirm Stripe subscription id handling matches admin path. |
 | **Testing** | Backend e2e cancel; mobile confirm flow; state display. |
-| **Completion** | — |
+| **Completion** | **2026-09-03.** `POST /reader/billing/cancel` → `requestCancel` → `cancelManagedSubscription`; free/trial → `CANCEL_NOT_ELIGIBLE`; Me confirm + canceled-until-period-end note; unit + e2e. |
 
 ---
 
@@ -402,6 +402,7 @@ Priority bands used:
 | 2026-09-03 | **MG-10 COMPLETE.** Catalog + search infinite limit/offset paging. Next: MG-11 on explicit approval. |
 | 2026-09-03 | **MG-11 COMPLETE.** Scoped Settings (reading prefs, downloads, about). Next: MG-12 on explicit approval. |
 | 2026-09-03 | **MG-12 COMPLETE.** Forgot/reset password (recovery JWT + mail + mobile screens). Next: MG-13 on explicit approval. |
+| 2026-09-03 | **MG-13 COMPLETE.** Reader `POST /reader/billing/cancel` + Me confirm (access until period end). Next: MG-14 on explicit approval. |
 
 ---
 
