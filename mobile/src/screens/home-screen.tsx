@@ -4,12 +4,13 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CatalogBookList } from '@/features/catalog/components/catalog-book-list';
+import { HomeTrialDiscoveryCard } from '@/features/billing/components/home-trial-discovery-card';
 import { ContinueReadingList } from '@/features/reader/components/continue-reading-list';
 import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
 
 /**
- * Signed-in home tab: Continue Reading + catalog browse.
+ * Signed-in home tab: trial discovery, Continue Reading, and catalog browse.
  */
 export function HomeScreen(): JSX.Element {
   const { user } = useSession();
@@ -21,6 +22,7 @@ export function HomeScreen(): JSX.Element {
       <Text style={styles.body}>
         Hello{user !== null ? `, ${user.email}` : ''}. Pick a book to learn more.
       </Text>
+      <HomeTrialDiscoveryCard />
       <ContinueReadingList
         onContinue={(bookId) => {
           router.push(`/(app)/books/read/${bookId}` as Href);

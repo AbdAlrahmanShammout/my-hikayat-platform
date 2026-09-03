@@ -12,6 +12,7 @@ import {
 
 import { ApiError } from '@/api/api-error';
 import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subscription';
+import { formatTrialRemainingLabel } from '@/features/billing/lib/format-trial-remaining-label';
 import { resolveReaderEntryCta } from '@/features/billing/lib/resolve-reader-entry-cta';
 import { useCatalogBook } from '@/features/catalog/hooks/use-catalog-book';
 import { CatalogBookCover } from '@/features/catalog/components/catalog-book-cover';
@@ -109,6 +110,10 @@ export function BookDetailScreen(): JSX.Element {
     hasProgress,
     isOnline,
   });
+  const trialRemainingLabel: string | null =
+    billing.subscription?.readingAccessState === 'trial'
+      ? formatTrialRemainingLabel(billing.subscription.trialEndsAt)
+      : null;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -134,6 +139,11 @@ export function BookDetailScreen(): JSX.Element {
       {entryCta.accessHint !== null ? (
         <Text style={styles.accessHint} testID="book-detail-access-hint">
           {`Access: ${entryCta.accessHint}`}
+        </Text>
+      ) : null}
+      {trialRemainingLabel !== null ? (
+        <Text style={styles.accessHint} testID="book-detail-trial-remaining">
+          {trialRemainingLabel}
         </Text>
       ) : null}
       <Text style={styles.body}>{book.description}</Text>

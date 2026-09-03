@@ -78,7 +78,7 @@ Priority bands used:
 | 1 | **MG-1** | Book cover / preview image on catalog | `COMPLETE` | 1–2 | — |
 | 2 | **MG-2** | Author & publisher display fields | `COMPLETE` | 1–2 | — (can parallelize with MG-1; sequential by rule) |
 | 3 | **MG-3** | Entitlement visibility before reader | `COMPLETE` | 4 | Prefer after MG-1/MG-2 so book detail can show access + identity together |
-| 4 | **MG-4** | Trial discovery & trial UX | `TODO` | 7 | MG-3 (reuse access-state surfaces) |
+| 4 | **MG-4** | Trial discovery & trial UX | `COMPLETE` | 7 | MG-3 (reuse access-state surfaces) |
 | 5 | **MG-5** | Offline reading resume (local progress) | `TODO` | 5 | — |
 | 6 | **MG-6** | Offline bookmark persistence & sync | `TODO` | 5 | Prefer after MG-5 (shared local offline store patterns) |
 | 7 | **MG-7** | Offline progress write queue / sync | `TODO` | 5 | **MG-5** |
@@ -91,7 +91,7 @@ Priority bands used:
 | 14 | **MG-14** | Trial / subscription expiry notifications | `TODO` | 9 | MG-3/MG-4 for in-app; push infra may be `BLOCKED` |
 | 15 | **MG-FINAL** | Access + refresh token architecture | `TODO` | 3 | After MG-1…MG-14 (largest auth change; last by requirement) |
 
-**Next task to start when approved:** **MG-4**.
+**Next task to start when approved:** **MG-5**.
 
 ---
 
@@ -166,7 +166,7 @@ Priority bands used:
 
 | Field | Content |
 | --- | --- |
-| **Status** | `TODO` |
+| **Status** | `COMPLETE` |
 | **Problem** | Trial is under-discovered; no post-registration or Home offer. |
 | **Current behavior** | Profile shows Start Free Trial when `trialEligible`; 7-day no-card rules already enforced server-side. |
 | **Desired behavior** | Eligible users encounter a clear trial offer after register / on Home / on entitlement-aware book CTAs, without auto-starting trial. Surface active trial remaining time outside Me where appropriate. |
@@ -178,7 +178,7 @@ Priority bands used:
 | **Dependencies** | **MG-3**. |
 | **Implementation notes** | Do not auto-start on register. Kids-friendly copy; route billing actions toward grown-up language already used. |
 | **Testing** | Eligible / ineligible / active trial UI branches; trial start mutation. |
-| **Completion** | — |
+| **Completion** | **2026-09-03.** Home `HomeTrialDiscoveryCard` shows offer when `trialEligible` or remaining time when on trial; CTA routes to Profile (no auto-start). Post-register already lands on Home. Book detail shows trial remaining under Access hint. Profile start-trial path unchanged. |
 
 ---
 
@@ -393,6 +393,7 @@ Priority bands used:
 | 2026-09-03 | **MG-1 COMPLETE.** Catalog covers from existing preview images. Next: MG-2 on explicit approval. |
 | 2026-09-03 | **MG-2 COMPLETE.** Author/publisher display from EPUB source metadata. Next: MG-3 on explicit approval. |
 | 2026-09-03 | **MG-3 COMPLETE.** Book-detail access CTA from `readingAccessState`. Next: MG-4 on explicit approval. |
+| 2026-09-03 | **MG-4 COMPLETE.** Home trial discovery card + trial remaining on detail. Next: MG-5 on explicit approval. |
 
 ---
 

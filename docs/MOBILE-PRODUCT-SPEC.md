@@ -32,9 +32,9 @@ roadmap is the ordered implementation source of truth for closing gaps. Historic
 31–54 in `docs/admin-dashboard-tasks.md` remain Complete and are not rewritten. As each `MG-*`
 task completes, this specification must be updated so it stays current.
 
-**Roadmap snapshot (2026-09-03).** **MG-1…MG-3 COMPLETE** (covers, author/publisher, entitlement
-CTA on book detail). Next task when approved: **MG-4** (trial discovery UX). Confirmed blocker:
-access tokens default to **15 minutes** with no refresh (`MG-FINAL`, last).
+**Roadmap snapshot (2026-09-03).** **MG-1…MG-4 COMPLETE**. Next task when approved: **MG-5**
+(offline local resume). Confirmed blocker: access tokens default to **15 minutes** with no refresh
+(`MG-FINAL`, last).
 
 ---
 
@@ -271,6 +271,14 @@ Home addresses the signed-in user by their email address and invites them to pic
 that greeting a 6-year-old by raw email address is a product weakness; there is no display-name or
 nickname concept in the data model.
 
+### F-HOME-4b · Trial discovery on Home — **IMPLEMENTED**
+
+- **What it does.** When the server reports `trialEligible`, Home shows a trial offer card that
+  routes to Me to start (never auto-starts). When `readingAccessState` is trial, Home shows
+  remaining trial time and a link to Me.
+- **Rules.** Hidden for paid and for free accounts that already used the trial. Soft-hides on
+  billing load error. Post-register lands on Home, so new eligible users see the offer immediately.
+
 ### F-HOME-5 · Recommendations / personalized discovery — **PLANNED / not evidenced**
 
 There is no recommendation engine, "because you read", "new for you", trending, or algorithmic
@@ -455,8 +463,8 @@ Covered in depth in [§8](#8-subscription-trial--entitlement-model).
 
 | Feature | Status |
 | --- | --- |
-| F-SUB-1 · View subscription status (plan, reading access, status, period, trial remaining) | **IMPLEMENTED** |
-| F-SUB-2 · Start a 7-day free trial with no credit card | **IMPLEMENTED** |
+| F-SUB-1 · View subscription status (plan, reading access, status, period, trial remaining) | **IMPLEMENTED** — Me plus Home/detail remaining-time surfaces |
+| F-SUB-2 · Start a 7-day free trial with no credit card | **IMPLEMENTED** — start on Me; discovery on Home + book detail |
 | F-SUB-3 · Browse purchasable plans and select one | **IMPLEMENTED** |
 | F-SUB-4 · Subscribe via hosted external checkout | **IMPLEMENTED** |
 | F-SUB-5 · Request a refund within the refund window | **IMPLEMENTED** |
@@ -900,10 +908,9 @@ unreachable at launch → indefinite splash (no timeout).
 
 **Final state.** Authenticated free user who has discovered that reading requires access.
 
-**Critical UX observation.** Book detail now surfaces access state and routes free users to
-Profile for trial/subscribe (**MG-3**). First-run trial discovery outside book detail (Home /
-post-register) remains thin — tracked as **MG-4**. Reader denial remains the authorization
-fallback.
+**Critical UX observation.** Book detail surfaces access state (**MG-3**). Home shows a trial
+offer after register and for eligible free users, plus remaining time while on trial (**MG-4**).
+Trial never auto-starts. Reader denial remains the authorization fallback.
 
 ## 4.2 Returning user: open to reading
 
@@ -953,7 +960,7 @@ context before conversion; MG-3 covers book detail as the primary anticipation s
 
 **Final state.** Either on the conversion path, or back in discovery.
 
-**Design implication.** Broader trial discovery on Home / post-register is **MG-4**.
+**Design implication.** Home trial discovery after register is **COMPLETE** (**MG-4**).
 
 ## 4.4 Trial user: start, use, expire
 
@@ -1446,9 +1453,8 @@ and weights.
    EPUB metadata includes them. Missing metadata yields no byline (not an email surrogate).
 3. There is no age or reading-level information, so an adult cannot judge suitability from the app.
 
-**Remediation.** Cover (**MG-1**) and author/publisher (**MG-2**) exposure are **COMPLETE**.
-Entitlement visibility on book detail (**MG-3**) is **COMPLETE**. Next conversion gap is trial
-discovery (**MG-4**).
+**Remediation.** Cover (**MG-1**), author/publisher (**MG-2**), entitlement CTA (**MG-3**), and
+trial discovery (**MG-4**) are **COMPLETE**. Next offline gap is local resume (**MG-5**).
 
 ## 6.3 Catalog behavior
 
@@ -1623,20 +1629,17 @@ backend; the mobile app displays the result and must never recalculate it.
 - **Terms as stated in the product.** 7 days. **No credit card required.** Explicitly does not by
   itself start a paid subscription.
 - **Eligibility.** Server-determined; **one trial per account, ever.** The offer appears on Me
-  when the server says the account is eligible, and book detail primary CTA says "Start Free Trial"
-  for the same condition (**MG-3**). Broader trial discovery (Home / post-register) is **MG-4**.
-- **Not automatic.** A trial is never started at registration; the user must choose it.
+  when the server says the account is eligible, on Home as a discovery card, and as the book-detail
+  primary CTA for the same condition (**MG-3**, **MG-4**).
+- **Not automatic.** A trial is never started at registration; the user must choose it on Me.
 - **What a trial user can do.** Everything a paid subscriber can — read any catalog book, and
   download for offline reading.
-- **Countdown.** While on trial, Me shows the remaining time, stepping down from days to hours,
-  then to an "ending soon, the server decides access" state once the end time passes. Book detail
-  shows Access: Free Trial but not the countdown digits (**MG-4** may widen remaining-time
-  surfaces).
+- **Countdown.** While on trial, Me, Home, and book detail show remaining time (display-only).
 - **Expiry.** Access reverts to free. Reading is refused again. Downloaded books lock once their
   offline authorizations expire — the offline authorization mechanism exists precisely to make
   trial downloads stop working when the trial ends.
-- **No warnings.** No notification, no in-app banner, no email path from the app. Expiry is
-  discovered by refusal (or by book-detail Subscribe CTA after state refresh).
+- **No warnings.** No push notification or email path from the app. Expiry is discovered by
+  refusal or by refreshed Subscribe CTAs after state refresh.
 
 ## 8.4 Paid subscription
 
@@ -2126,9 +2129,10 @@ it, navigation is:
 
 ## 12.5 Subscription navigation
 
-All billing lives on Me: status, trial offer, plan selection, subscribe, and refund. There is no
-dedicated subscription, paywall, or plan-comparison screen. Checkout leaves the app for a hosted
-browser session and returns to Me.
+All billing actions that change state live on Me: start trial, plan selection, subscribe, and
+refund. Home and book detail discover trial/access and route to Me; they do not auto-start trial.
+There is no dedicated subscription, paywall, or plan-comparison screen. Checkout leaves the app for
+a hosted browser session and returns to Me.
 
 The most important navigational relationship in the product: **entitlement denial in the reader
 routes directly to Me.** Me is therefore both a settings destination and a conversion landing
@@ -2655,9 +2659,11 @@ reading session lifecycle; invisible activity and visual-engagement reporting; p
 close; comprehensive cause-specific error mapping.
 
 **Billing.** Subscription status display across all states; 7-day no-card trial with server-owned
-eligibility and a stepped remaining-time display; plan listing and selection; hosted external
-checkout with three distinct return outcomes; refund request with confirmation; entitlement-denied
-recovery routing to the subscribe path; all billing errors mapped to plain language.
+eligibility and a stepped remaining-time display on Me, Home, and book detail; Home trial discovery
+card for eligible / active trial (routes to Me; never auto-starts); plan listing and selection;
+hosted external checkout with three distinct return outcomes; refund request with confirmation;
+entitlement-aware book-detail CTAs; entitlement-denied recovery routing to the subscribe path; all
+billing errors mapped to plain language.
 
 **Offline.** Per-book encrypted download with progress and integrity verification; local package
 records; server-signed offline authorization with fail-closed validation; trusted-time and
@@ -2774,7 +2780,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 | Offline lease lifetime | Equals trial end or paid `currentPeriodEnd`; already on device as `expiresAt`. | **MG-8** (UX) |
 | Sign-out purge | **Keep** security purge; require explicit confirmation when downloads exist. | **MG-9** |
 | Entitlement visibility | **COMPLETE.** Book detail shows Access hint and maps primary CTA from `readingAccessState` / `trialEligible` (Profile for trial/subscribe). Denial path kept as fallback. | **MG-3** |
-| Trial discovery | **Will improve** discovery without auto-start; keep one-trial / no-card rules. | **MG-4** |
+| Trial discovery | **COMPLETE.** Home discovery card for eligible / active trial; book detail shows remaining time; start still on Profile; no auto-start. | **MG-4** |
 | Offline resume + sync | **Will implement** local resume, then bookmark + progress sync queues. | **MG-5**, **MG-6**, **MG-7** |
 | Catalog/search pagination | **Will implement** against existing `limit`/`offset`. | **MG-10** |
 | Password reset | **Will implement** using recovery JWT + mail infrastructure. | **MG-12** |
@@ -2797,10 +2803,10 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 
 ### Ordered task list (do not reorder without updating the roadmap)
 
-1. **MG-1** Book cover / preview on catalog — `TODO`
-2. **MG-2** Author & publisher display — `TODO`
-3. **MG-3** Entitlement visibility before reader — `TODO`
-4. **MG-4** Trial discovery & trial UX — `TODO`
+1. **MG-1** Book cover / preview on catalog — `COMPLETE`
+2. **MG-2** Author & publisher display — `COMPLETE`
+3. **MG-3** Entitlement visibility before reader — `COMPLETE`
+4. **MG-4** Trial discovery & trial UX — `COMPLETE`
 5. **MG-5** Offline local resume — `TODO`
 6. **MG-6** Offline bookmark persistence & sync — `TODO`
 7. **MG-7** Offline progress write queue — `TODO` (depends on MG-5)
