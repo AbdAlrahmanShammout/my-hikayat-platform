@@ -1,10 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { BaseModelResponseDto } from '@/common/base/base-model.response.dto';
-import {
-  BookCoverInput,
-  BookCoverResponse,
-} from '@/modules/book/dto/response/model/book-cover.response';
+import { BookCatalogCover } from '@/modules/book-asset/defs/book-asset-service.defs';
+import { BookCoverResponse } from '@/modules/book/dto/response/model/book-cover.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import {
   BookLayoutType,
@@ -91,7 +89,7 @@ export class BookResponse extends BaseModelResponseDto {
   })
   cover: BookCoverResponse | null;
 
-  constructor(entity: BookEntity, cover: BookCoverInput | null = null) {
+  constructor(entity: BookEntity, cover: BookCatalogCover | null = null) {
     super(entity);
     this.title = entity.title;
     this.description = entity.description;
