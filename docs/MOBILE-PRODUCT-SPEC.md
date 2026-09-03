@@ -32,9 +32,9 @@ roadmap is the ordered implementation source of truth for closing gaps. Historic
 31–54 in `docs/admin-dashboard-tasks.md` remain Complete and are not rewritten. As each `MG-*`
 task completes, this specification must be updated so it stays current.
 
-**Roadmap snapshot (2026-09-03).** **MG-1…MG-9 COMPLETE**. Next task when approved: **MG-10**
-(catalog and search pagination). Confirmed blocker: access tokens default to **15 minutes** with no
-refresh (`MG-FINAL`, last).
+**Roadmap snapshot (2026-09-03).** **MG-1…MG-10 COMPLETE**. Next task when approved: **MG-11**
+(scoped Settings). Confirmed blocker: access tokens default to **15 minutes** with no refresh
+(`MG-FINAL`, last).
 
 ---
 
@@ -257,8 +257,8 @@ design proposal — but nothing in the project defines it, so it must not be pre
 - **What it does.** Lists published books available to browse, with sort and category filter
   controls, on the Home surface itself. Rows show cover (or placeholder), title, author when
   present, excerpt, and categories.
-- **Rules.** Shows the first 20 books only — see F-CAT-4. Supports pull-to-refresh. Displays the
-  total count of matching books.
+- **Rules.** Loads pages of 20 via infinite scroll (`limit`/`offset`) — see F-CAT-4. Supports
+  pull-to-refresh. Shows loaded-vs-total while more pages remain, then the full total at end.
 
 ### F-HOME-3 · Entry points to Search and Collections — **IMPLEMENTED**
 
@@ -311,14 +311,13 @@ ratings). Default is newest.
 - **Rules.** Single-select only — one category or "all". No multi-select, no combined filters, no
   filtering by layout type, book type, or language.
 
-### F-CAT-4 · Pagination — **PARTIALLY IMPLEMENTED**
+### F-CAT-4 · Pagination — **IMPLEMENTED**
 
-The backend API fully supports paged access (limit/offset) and the app requests a page size of 20
-and displays the true total count. **But the mobile UI never advances past the first page.** There
-is no load-more, no infinite scroll, no page controls. A catalog of 500 books surfaces 20 of them
-and truthfully reports "500 books".
-
-This is a significant functional gap and a required design input.
+The backend API supports paged access (`limit`/`offset`). Catalog and search use TanStack Query
+infinite queries with page size **20**, append on end-reach, pull-to-refresh, end-of-results footer,
+and retry on page-load failure (**MG-10**). Counts show `Showing N of T` until the last page, then
+`T books`, so the UI does not imply all matches are loaded early. Filter/sort/search changes reset
+paging.
 
 ### F-CAT-5 · Book detail — **IMPLEMENTED**
 
@@ -347,8 +346,8 @@ This is a significant functional gap and a required design input.
 - **Rules.** Exactly **one field at a time** — the field selection is a mode, not a set of
   filters. The query is whitespace-normalized; a blank query performs no request. There is **no
   minimum length** (a single character searches) and **no debounce or as-you-type search** —
-  search is submit-driven only. Results are the first 20 matches, no pagination. Default field is
-  title.
+  search is submit-driven only. Results use the same infinite paging as catalog (**MG-10**). Default
+  field is title.
 - **After use.** Results render as book rows; tapping one opens book detail.
 - **Product note.** Author and publisher are *searchable* but not *displayable* — the app can find
   a book by author but cannot show the user who the author is.
@@ -753,7 +752,7 @@ what information must be present, what actions originate there, where they can g
 | **Information needed** | Which of the three fields is currently being searched; the query; a pre-search hint explaining that they must type and then submit; result count; results; distinct idle / empty-results / error states. |
 | **Actions** | Choose a search field; type; submit; clear; open a result; go back. |
 | **Navigates to** | Book detail; back to Home. |
-| **Conditions** | One field at a time. Submit-driven, not live. First 20 results only. Blank submits do nothing. Results carry the same limited metadata as catalog rows — so a user who searched by author gets back results that never show an author. |
+| **Conditions** | One field at a time. Submit-driven, not live. Infinite paging (20 per page). Blank submits do nothing. Results use the same row metadata as catalog (cover + attribution when present). |
 
 ### S-10 · Collections list — **IMPLEMENTED**
 
@@ -1079,12 +1078,11 @@ search failed (error with retry).
 **Alternative paths.** Nothing typed yet → an idle hint teaches the submit-driven model. Blank
 submit → nothing happens. Clear → resets query, results, and field back to title.
 
-**Failure cases.** The desired book exists beyond the first 20 results → unreachable, with no
-indication that more exist. Offline → search cannot run.
+**Failure cases.** Offline → search cannot run. A later page failing to load shows retry without
+losing already-loaded results.
 
 **Design implication.** Because search does not run as the user types, the idle hint carries real
-instructional weight; and because author/publisher are searchable but never displayed, result
-lists cannot confirm *why* something matched.
+instructional weight.
 
 ## 4.8 Reading journey (full session)
 
@@ -1462,8 +1460,8 @@ and weights.
 
 **Remediation.** Cover (**MG-1**), author/publisher (**MG-2**), entitlement CTA (**MG-3**), trial
 discovery (**MG-4**), offline resume/bookmarks/progress sync (**MG-5…MG-7**), lease expiry UX
-(**MG-8**), and sign-out/abandon confirmation (**MG-9**) are **COMPLETE**. Next gap in order is
-catalog/search pagination (**MG-10**).
+(**MG-8**), sign-out/abandon confirmation (**MG-9**), and catalog/search pagination (**MG-10**) are
+**COMPLETE**. Next gap in order is scoped Settings (**MG-11**).
 
 ## 6.3 Catalog behavior
 
@@ -1473,8 +1471,8 @@ catalog/search pagination (**MG-10**).
   book, not reading time or ratings.
 - **Filter.** One category, or all. No other filter dimension exists.
 - **Page size.** 20 items.
-- **Pagination.** **Not implemented in the UI** — the first 20 only, while truthfully displaying
-  the full total count. This will read as a bug to users of any real catalog.
+- **Pagination.** Infinite load via existing `limit`/`offset` (page size 20) on catalog and search
+  (**MG-10**). End-of-results and partial counts (`Showing N of T`) until complete.
 - **Refresh.** Pull-to-refresh on the catalog.
 - **Count.** The true total of matching books is shown.
 
@@ -2287,7 +2285,7 @@ technically within reach but is not a supported product feature today.
 
 | Rule | Detail |
 | --- | --- |
-| R-D1 | Catalog and search surface only the first 20 results; there is no pagination in the UI. |
+| R-D1 | Catalog and search page via `limit`/`offset` infinite scroll (page size 20). |
 | R-D2 | Search covers exactly one of title, author, or publisher at a time. |
 | R-D3 | Search is submit-driven with no debounce and no minimum length; blank queries do nothing. |
 | R-D4 | Category filtering is single-select. |
@@ -2326,7 +2324,7 @@ Each case states the condition, what the user experiences, and the recovery the 
 | No search results | Distinct empty state inviting different words | Change the query or field |
 | Search failure | Error with retry | Retry |
 | Blank search submitted | Nothing happens; the idle hint remains | Type something |
-| Desired book beyond the first 20 results | **Silently unreachable** with no indication more exist | None |
+| Desired book beyond the first page | Load more via infinite scroll; retry if a later page fails | Keep scrolling / retry |
 | Empty collections list | Empty state explaining that editors add shelves | Retry later |
 | Collection unavailable | Distinct from a load failure | Go back |
 | Collection loaded but empty of published books | Distinct empty state | Go back |
@@ -2566,7 +2564,7 @@ destroying downloads when any exist (**MG-9**).
 10. Offline authorization validation fails closed.
 11. Offline reading resumes from device-local progress and syncs that progress on reconnect.
 12. Sign-out purges all offline content.
-13. Only the first 20 results are reachable in the catalog and in search.
+13. Catalog and search load additional pages until end-of-results (**MG-10**).
 14. Backend ordering of collections and their books must be preserved.
 
 ## 15.14 Important edge cases to design for
@@ -2577,7 +2575,7 @@ no warning; downloads locking without notice; device clock changes locking a pay
 integrity failures with no suggested repair; indefinite loading on a slow or dead network with no
 cancel; sign-out destroying downloads without confirmation when downloads exist (addressed **MG-9**);
 a book in "continue reading" that refuses to open
-because entitlement lapsed; and the catalog reporting hundreds of books while surfacing twenty.
+because entitlement lapsed; and later catalog/search page failures (retry without losing loaded rows).
 
 ## 15.15 Information that must be surfaced to users
 
@@ -2724,9 +2722,8 @@ navigation. Discovery, reader engines, offline, and checkout have **no** end-to-
 
 ## 16.3 Areas where the code or documentation is incomplete
 
-1. **Catalog and search pagination.** The API supports paging and the UI displays true totals, but
-   never advances past the first 20 results. Functionally incomplete rather than deliberately
-   scoped.
+1. **~~Catalog and search pagination.~~** **COMPLETE (MG-10).** Infinite `limit`/`offset` paging on
+   catalog and search with partial counts and end-of-results.
 2. **No settings surface at all.** No home exists for app preferences, legal content, about
    information, or storage management.
 3. **No password reset or account recovery.** A hard lockout path with no in-app remedy.
@@ -2806,7 +2803,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 | Entitlement visibility | **COMPLETE.** Book detail shows Access hint and maps primary CTA from `readingAccessState` / `trialEligible` (Profile for trial/subscribe). Denial path kept as fallback. | **MG-3** |
 | Trial discovery | **COMPLETE.** Home discovery card for eligible / active trial; book detail shows remaining time; start still on Profile; no auto-start. | **MG-4** |
 | Offline resume + sync | **MG-5…MG-7 COMPLETE** (local progress, bookmark queue, progress upload with newer-timestamp conflict rule). | **MG-5**, **MG-6**, **MG-7** |
-| Catalog/search pagination | **Will implement** against existing `limit`/`offset`. | **MG-10** |
+| Catalog/search pagination | **COMPLETE.** Infinite load against existing `limit`/`offset`. | **MG-10 COMPLETE** |
 | Password reset | **Will implement** using recovery JWT + mail infrastructure. | **MG-12** |
 | Reader cancellation | **Will implement** reader cancel (access until period end); distinct from refund. | **MG-13** |
 | Expiry notifications | **Phase A in-app** banners from subscription fields; push only after real infra (no fakes). | **MG-14** |
@@ -2836,7 +2833,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 7. **MG-7** Offline progress write queue — `COMPLETE` (depends on MG-5)
 8. **MG-8** Offline lease expiration UX — `COMPLETE`
 9. **MG-9** Sign-out confirmation for downloads — `COMPLETE`
-10. **MG-10** Catalog & search pagination — `TODO`
+10. **MG-10** Catalog & search pagination — `COMPLETE`
 11. **MG-11** Settings (scoped) — `TODO`
 12. **MG-12** Password reset — `TODO`
 13. **MG-13** Reader subscription cancellation — `TODO`

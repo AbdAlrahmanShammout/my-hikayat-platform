@@ -7,8 +7,6 @@ export const queryKeys = {
   },
   catalog: {
     books: (input: {
-      readonly limit?: number;
-      readonly offset?: number;
       readonly categoryId?: number;
       readonly sort?: 'newest' | 'popularity';
     }) => ['reader', 'catalog', 'books', input] as const,
@@ -18,8 +16,6 @@ export const queryKeys = {
   },
   search: {
     books: (input: {
-      readonly limit?: number;
-      readonly offset?: number;
       readonly title?: string;
       readonly author?: string;
       readonly publisher?: string;

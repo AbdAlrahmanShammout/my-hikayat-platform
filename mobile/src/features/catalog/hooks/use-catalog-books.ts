@@ -1,25 +1,44 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { queryKeys } from '@/api/query-keys';
 import {
   listCatalogBooks,
   type CatalogSort,
-  type GetBooksResponse,
 } from '@/features/catalog/api/list-catalog-books';
+import {
+  CATALOG_PAGE_SIZE,
+  resolveNextCatalogPageOffset,
+} from '@/features/catalog/lib/catalog-pagination';
 
 export type UseCatalogBooksInput = {
-  readonly limit?: number;
-  readonly offset?: number;
   readonly categoryId?: number;
   readonly sort?: CatalogSort;
+  readonly pageSize?: number;
 };
 
 /**
- * Loads the catalog book list for the Home browse surface.
+ * Loads catalog books with limit/offset infinite paging for the Home browse surface.
  */
 export function useCatalogBooks(input: UseCatalogBooksInput = {}) {
-  return useQuery<GetBooksResponse>({
-    queryKey: queryKeys.catalog.books(input),
-    queryFn: () => listCatalogBooks(input),
+  const pageSize: number = input.pageSize ?? CATALOG_PAGE_SIZE;
+  return useInfiniteQuery({
+    queryKey: queryKeys.catalog.books({
+      categoryId: input.categoryId,
+      sort: input.sort,
+    }),
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      listCatalogBooks({
+        limit: pageSize,
+        offset: pageParam,
+        categoryId: input.categoryId,
+        sort: input.sort,
+      }),
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      resolveNextCatalogPageOffset({
+        lastPageOffset: lastPageParam,
+        lastPageBookCount: lastPage.books.length,
+        total: lastPage.total,
+      }),
   });
 }

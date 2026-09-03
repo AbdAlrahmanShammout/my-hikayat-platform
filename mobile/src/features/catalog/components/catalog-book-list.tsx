@@ -15,24 +15,24 @@ import { CatalogBrowseFilters } from '@/features/catalog/components/catalog-brow
 import type { CatalogSort } from '@/features/catalog/api/list-catalog-books';
 import { useCatalogBooks } from '@/features/catalog/hooks/use-catalog-books';
 import { useReaderCategories } from '@/features/catalog/hooks/use-reader-categories';
+import {
+  flattenCatalogBookPages,
+  formatCatalogResultCountLabel,
+} from '@/features/catalog/lib/catalog-pagination';
 import { theme } from '@/theme/theme';
-
-const PAGE_SIZE = 20;
 
 type CatalogBookListProps = {
   readonly onOpenBook: (bookId: number) => void;
 };
 
 /**
- * Home catalog browse: filters + virtualized book list.
+ * Home catalog browse: filters + virtualized book list with infinite paging.
  */
 export function CatalogBookList({ onOpenBook }: CatalogBookListProps): JSX.Element {
   const [sort, setSort] = useState<CatalogSort>('newest');
   const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
   const categoriesQuery = useReaderCategories();
   const booksQuery = useCatalogBooks({
-    limit: PAGE_SIZE,
-    offset: 0,
     sort,
     categoryId,
   });
@@ -45,7 +45,7 @@ export function CatalogBookList({ onOpenBook }: CatalogBookListProps): JSX.Eleme
     );
   }
 
-  if (booksQuery.isError) {
+  if (booksQuery.isError && booksQuery.data === undefined) {
     return (
       <View style={styles.centered}>
         <Text style={styles.error}>{toUserFacingMessage(booksQuery.error)}</Text>
@@ -63,8 +63,14 @@ export function CatalogBookList({ onOpenBook }: CatalogBookListProps): JSX.Eleme
     );
   }
 
-  const books = booksQuery.data?.books ?? [];
-  const total = booksQuery.data?.total ?? 0;
+  const books = flattenCatalogBookPages(booksQuery.data?.pages ?? []);
+  const total: number = booksQuery.data?.pages[0]?.total ?? 0;
+  const hasNextPage: boolean = booksQuery.hasNextPage === true;
+  const countLabel: string = formatCatalogResultCountLabel({
+    loadedCount: books.length,
+    total,
+    hasNextPage,
+  });
 
   return (
     <View style={styles.container}>
@@ -83,22 +89,84 @@ export function CatalogBookList({ onOpenBook }: CatalogBookListProps): JSX.Eleme
         contentContainerStyle={books.length === 0 ? styles.emptyContent : styles.listContent}
         refreshControl={
           <RefreshControl
-            refreshing={booksQuery.isRefetching}
+            refreshing={booksQuery.isRefetching && !booksQuery.isFetchingNextPage}
             onRefresh={() => {
               void booksQuery.refetch();
             }}
             tintColor={theme.colors.primary}
           />
         }
+        onEndReachedThreshold={0.4}
+        onEndReached={() => {
+          if (!hasNextPage || booksQuery.isFetchingNextPage || booksQuery.isFetchNextPageError) {
+            return;
+          }
+          void booksQuery.fetchNextPage();
+        }}
         ListEmptyComponent={
           <Text style={styles.empty}>No books here yet. Check back after more books are published.</Text>
         }
         ListHeaderComponent={
-          total > 0 ? <Text style={styles.count}>{`${total} book${total === 1 ? '' : 's'}`}</Text> : null
+          countLabel !== '' ? (
+            <Text style={styles.count} testID="catalog-result-count">
+              {countLabel}
+            </Text>
+          ) : null
+        }
+        ListFooterComponent={
+          <CatalogListFooter
+            isFetchingNextPage={booksQuery.isFetchingNextPage}
+            isFetchNextPageError={booksQuery.isFetchNextPageError}
+            hasNextPage={hasNextPage}
+            loadedCount={books.length}
+            onRetry={() => {
+              void booksQuery.fetchNextPage();
+            }}
+          />
         }
       />
     </View>
   );
+}
+
+function CatalogListFooter(input: {
+  readonly isFetchingNextPage: boolean;
+  readonly isFetchNextPageError: boolean;
+  readonly hasNextPage: boolean;
+  readonly loadedCount: number;
+  readonly onRetry: () => void;
+}): JSX.Element | null {
+  if (input.isFetchingNextPage) {
+    return (
+      <View style={styles.footer} testID="catalog-loading-more">
+        <ActivityIndicator color={theme.colors.primary} />
+      </View>
+    );
+  }
+  if (input.isFetchNextPageError) {
+    return (
+      <View style={styles.footer}>
+        <Text style={styles.error}>Could not load more books.</Text>
+        <Pressable
+          style={styles.retryButton}
+          onPress={input.onRetry}
+          accessibilityRole="button"
+          accessibilityLabel="Try loading more"
+          testID="catalog-load-more-retry"
+        >
+          <Text style={styles.retryLabel}>Try again</Text>
+        </Pressable>
+      </View>
+    );
+  }
+  if (!input.hasNextPage && input.loadedCount > 0) {
+    return (
+      <Text style={styles.endLabel} testID="catalog-end-of-results">
+        End of results
+      </Text>
+    );
+  }
+  return null;
 }
 
 function toUserFacingMessage(error: unknown): string {
@@ -148,6 +216,17 @@ const styles = StyleSheet.create({
     ...theme.typography.body,
     color: theme.colors.danger,
     textAlign: 'center',
+  },
+  footer: {
+    paddingVertical: theme.spacing.md,
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  endLabel: {
+    ...theme.typography.label,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
+    paddingVertical: theme.spacing.md,
   },
   retryButton: {
     minHeight: theme.controlMinHeight,

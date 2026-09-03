@@ -39,7 +39,7 @@
 | Offline bookmarks / progress | Discarded | No offline write queue in `mobile/src/features/offline/` | **Valid** |
 | Offline lease expiry UX | Surfaced (active / soon / locked) | Lease `expiresAt` already stored in offline manifest | **COMPLETE (MG-8)** — UX only; crypto unchanged |
 | Sign-out purge | Confirmed when downloads exist | Confirmed purge on sign-out / abandon restore | **COMPLETE (MG-9)** — keep purge; confirm when non-empty |
-| Catalog/search pagination | First 20 only | API supports `limit`/`offset`; UI hardcodes `offset: 0` | **Valid** — mobile-only |
+| Catalog/search pagination | Infinite pages | API supports `limit`/`offset` | **COMPLETE (MG-10)** — mobile-only |
 | Settings | Absent | No settings route/screen | **Valid** — scope tightly |
 | Password reset | Absent | No forgot/reset HTTP; mail + recovery JWT infrastructure exist | **Valid** — needs backend + mobile |
 | Reader cancel | Absent | Admin `POST /admin/subscriptions/:id/cancel` exists; **no** reader cancel endpoint | **Valid** — needs backend + mobile |
@@ -84,14 +84,14 @@ Priority bands used:
 | 7 | **MG-7** | Offline progress write queue / sync | `COMPLETE` | 5 | **MG-5** |
 | 8 | **MG-8** | Offline lease expiration UX | `COMPLETE` | 5 | — (lease already on device) |
 | 9 | **MG-9** | Sign-out & offline content confirmation | `COMPLETE` | 8 | — |
-| 10 | **MG-10** | Catalog & search pagination | `TODO` | 6 | Prefer after MG-1/MG-2 so new pages include cover/author |
+| 10 | **MG-10** | Catalog & search pagination | `COMPLETE` | 6 | Prefer after MG-1/MG-2 so new pages include cover/author |
 | 11 | **MG-11** | Settings (scoped) | `TODO` | 8 | Prefer after MG-5 (reading prefs), MG-9 |
 | 12 | **MG-12** | Password reset | `TODO` | 8 | — (backend mail + recovery JWT) |
 | 13 | **MG-13** | Subscription cancellation (reader) | `TODO` | 7 | — (extends existing billing) |
 | 14 | **MG-14** | Trial / subscription expiry notifications | `TODO` | 9 | MG-3/MG-4 for in-app; push infra may be `BLOCKED` |
 | 15 | **MG-FINAL** | Access + refresh token architecture | `TODO` | 3 | After MG-1…MG-14 (largest auth change; last by requirement) |
 
-**Next task to start when approved:** **MG-10**.
+**Next task to start when approved:** **MG-11**.
 
 ---
 
@@ -278,7 +278,7 @@ Priority bands used:
 
 | Field | Content |
 | --- | --- |
-| **Status** | `TODO` |
+| **Status** | `COMPLETE` |
 | **Problem** | UI loads first 20 while showing full `total`. |
 | **Current behavior** | `limit=20`, `offset=0` only for catalog and search. |
 | **Desired behavior** | Infinite load / next page via existing `limit`/`offset`; end-of-results; load errors + retry; no duplicate rows; search query changes reset paging; UI must not imply all results are loaded until end. |
@@ -288,7 +288,7 @@ Priority bands used:
 | **Dependencies** | Prefer after **MG-1** / **MG-2** so pages include cover/author. |
 | **Implementation notes** | TanStack Query infinite query pattern preferred. Preserve pull-to-refresh. |
 | **Testing** | Page 1/2 append; empty; error retry; search reset. |
-| **Completion** | — |
+| **Completion** | **2026-09-03.** Catalog + search `useInfiniteQuery` with page size 20; `Showing N of T` until end; end footer; next-page retry; filter/search key reset; collections left as first-page-only (out of MG-10 primary scope). |
 
 ---
 
@@ -399,6 +399,7 @@ Priority bands used:
 | 2026-09-03 | **MG-7 COMPLETE.** Offline progress pendingSync + reconnect upload. Next: MG-8 on explicit approval. |
 | 2026-09-03 | **MG-8 COMPLETE.** Lease expiry labels on My books + book detail (3-day approaching). Next: MG-9 on explicit approval. |
 | 2026-09-03 | **MG-9 COMPLETE.** Sign-out/abandon confirm when downloads exist. Next: MG-10 on explicit approval. |
+| 2026-09-03 | **MG-10 COMPLETE.** Catalog + search infinite limit/offset paging. Next: MG-11 on explicit approval. |
 
 ---
 

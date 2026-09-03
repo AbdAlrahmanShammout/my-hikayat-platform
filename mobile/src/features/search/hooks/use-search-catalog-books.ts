@@ -1,24 +1,40 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { queryKeys } from '@/api/query-keys';
+import { searchCatalogBooks } from '@/features/search/api/search-catalog-books';
 import {
-  searchCatalogBooks,
-  type GetSearchBooksResponse,
-  type SearchCatalogBooksInput,
-} from '@/features/search/api/search-catalog-books';
+  CATALOG_PAGE_SIZE,
+  resolveNextCatalogPageOffset,
+} from '@/features/catalog/lib/catalog-pagination';
 
-export type UseSearchCatalogBooksInput = SearchCatalogBooksInput & {
+export type UseSearchCatalogBooksInput = {
+  readonly title?: string;
+  readonly author?: string;
+  readonly publisher?: string;
+  readonly pageSize?: number;
   readonly enabled?: boolean;
 };
 
 /**
- * Loads catalog metadata search results for the search screen.
+ * Loads catalog metadata search results with limit/offset infinite paging.
  */
 export function useSearchCatalogBooks(input: UseSearchCatalogBooksInput) {
-  const { enabled = true, ...searchInput } = input;
-  return useQuery<GetSearchBooksResponse>({
-    queryKey: queryKeys.search.books(searchInput),
-    queryFn: () => searchCatalogBooks(searchInput),
+  const { enabled = true, pageSize = CATALOG_PAGE_SIZE, ...searchFilters } = input;
+  return useInfiniteQuery({
+    queryKey: queryKeys.search.books(searchFilters),
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      searchCatalogBooks({
+        ...searchFilters,
+        limit: pageSize,
+        offset: pageParam,
+      }),
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      resolveNextCatalogPageOffset({
+        lastPageOffset: lastPageParam,
+        lastPageBookCount: lastPage.books.length,
+        total: lastPage.total,
+      }),
     enabled,
   });
 }

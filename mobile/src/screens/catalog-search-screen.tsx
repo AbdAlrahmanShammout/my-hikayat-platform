@@ -15,12 +15,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/api-error';
 import { CatalogBookRow } from '@/features/catalog/components/catalog-book-row';
+import {
+  flattenCatalogBookPages,
+  formatCatalogResultCountLabel,
+} from '@/features/catalog/lib/catalog-pagination';
 import type { SearchCatalogField } from '@/features/search/api/search-catalog-books';
 import { useSearchCatalogBooks } from '@/features/search/hooks/use-search-catalog-books';
 import { buildSearchCatalogQuery } from '@/features/search/lib/build-search-catalog-query';
 import { theme } from '@/theme/theme';
-
-const PAGE_SIZE = 20;
 
 const FIELD_OPTIONS: { readonly field: SearchCatalogField; readonly label: string }[] = [
   { field: 'title', label: 'Title' },
@@ -39,8 +41,6 @@ export function CatalogSearchScreen(): JSX.Element {
   const searchInput = buildSearchCatalogQuery({
     field: submittedField,
     query: submittedQuery,
-    limit: PAGE_SIZE,
-    offset: 0,
   });
   const searchQuery = useSearchCatalogBooks({
     ...(searchInput ?? {}),
@@ -61,8 +61,14 @@ export function CatalogSearchScreen(): JSX.Element {
   }
 
   const hasSubmitted: boolean = submittedQuery.trim().length > 0;
-  const books = searchQuery.data?.books ?? [];
-  const total = searchQuery.data?.total ?? 0;
+  const books = flattenCatalogBookPages(searchQuery.data?.pages ?? []);
+  const total: number = searchQuery.data?.pages[0]?.total ?? 0;
+  const hasNextPage: boolean = searchQuery.hasNextPage === true;
+  const countLabel: string = formatCatalogResultCountLabel({
+    loadedCount: books.length,
+    total,
+    hasNextPage,
+  });
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']} testID="search-screen">
@@ -160,7 +166,7 @@ export function CatalogSearchScreen(): JSX.Element {
               <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
           ) : null}
-          {hasSubmitted && searchQuery.isError ? (
+          {hasSubmitted && searchQuery.isError && searchQuery.data === undefined ? (
             <View style={styles.centered}>
               <Text style={styles.error} testID="search-error">
                 {toUserFacingMessage(searchQuery.error)}
@@ -178,7 +184,7 @@ export function CatalogSearchScreen(): JSX.Element {
               </Pressable>
             </View>
           ) : null}
-          {hasSubmitted && searchQuery.isSuccess ? (
+          {hasSubmitted && (searchQuery.isSuccess || searchQuery.data !== undefined) ? (
             <FlatList
               data={books}
               keyExtractor={(item) => String(item.id)}
@@ -194,10 +200,21 @@ export function CatalogSearchScreen(): JSX.Element {
               contentContainerStyle={
                 books.length === 0 ? styles.emptyContent : styles.listContent
               }
+              onEndReachedThreshold={0.4}
+              onEndReached={() => {
+                if (
+                  !hasNextPage ||
+                  searchQuery.isFetchingNextPage ||
+                  searchQuery.isFetchNextPageError
+                ) {
+                  return;
+                }
+                void searchQuery.fetchNextPage();
+              }}
               ListHeaderComponent={
-                total > 0 ? (
+                countLabel !== '' ? (
                   <Text style={styles.count} testID="search-result-count">
-                    {`${total} book${total === 1 ? '' : 's'}`}
+                    {countLabel}
                   </Text>
                 ) : null
               }
@@ -206,12 +223,63 @@ export function CatalogSearchScreen(): JSX.Element {
                   No books matched. Try different words.
                 </Text>
               }
+              ListFooterComponent={
+                <SearchListFooter
+                  isFetchingNextPage={searchQuery.isFetchingNextPage}
+                  isFetchNextPageError={searchQuery.isFetchNextPageError}
+                  hasNextPage={hasNextPage}
+                  loadedCount={books.length}
+                  onRetry={() => {
+                    void searchQuery.fetchNextPage();
+                  }}
+                />
+              }
             />
           ) : null}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
+}
+
+function SearchListFooter(input: {
+  readonly isFetchingNextPage: boolean;
+  readonly isFetchNextPageError: boolean;
+  readonly hasNextPage: boolean;
+  readonly loadedCount: number;
+  readonly onRetry: () => void;
+}): JSX.Element | null {
+  if (input.isFetchingNextPage) {
+    return (
+      <View style={styles.footer} testID="search-loading-more">
+        <ActivityIndicator color={theme.colors.primary} />
+      </View>
+    );
+  }
+  if (input.isFetchNextPageError) {
+    return (
+      <View style={styles.footer}>
+        <Text style={styles.error}>Could not load more results.</Text>
+        <Pressable
+          style={styles.primaryButton}
+          onPress={input.onRetry}
+          accessibilityRole="button"
+          accessibilityLabel="Try loading more"
+          testID="search-load-more-retry"
+        >
+          <Text style={styles.primaryLabel}>Try again</Text>
+        </Pressable>
+      </View>
+    );
+  }
+  if (!input.hasNextPage && input.loadedCount > 0) {
+    return (
+      <Text style={styles.endLabel} testID="search-end-of-results">
+        End of results
+      </Text>
+    );
+  }
+  return null;
 }
 
 function toUserFacingMessage(error: unknown): string {
@@ -370,5 +438,16 @@ const styles = StyleSheet.create({
     ...theme.typography.body,
     color: theme.colors.danger,
     textAlign: 'center',
+  },
+  footer: {
+    paddingVertical: theme.spacing.md,
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  endLabel: {
+    ...theme.typography.label,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
+    paddingVertical: theme.spacing.md,
   },
 });
