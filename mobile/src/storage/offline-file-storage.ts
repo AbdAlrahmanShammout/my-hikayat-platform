@@ -3,6 +3,7 @@ import { offlineFileSystem as FileSystem } from '@/native/offline-file-system';
 export const OFFLINE_ROOT_DIRECTORY = `${FileSystem.documentDirectory ?? ''}offline/`;
 export const OFFLINE_CIPHERTEXT_DIRECTORY = `${OFFLINE_ROOT_DIRECTORY}ciphertext/`;
 export const OFFLINE_MANIFEST_FILE_PATH = `${OFFLINE_ROOT_DIRECTORY}manifest.json`;
+export const OFFLINE_PROGRESS_FILE_PATH = `${OFFLINE_ROOT_DIRECTORY}progress.json`;
 
 /**
  * Ensures offline storage directories exist under the app document directory.

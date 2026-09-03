@@ -7,7 +7,7 @@ import type {
   OfflineBookManifest,
   OfflineReadingLease,
 } from '@/features/offline/types/offline-book-manifest';
-import { readAccessToken } from '@/session/session-store';
+import { readCurrentUserId } from '@/features/offline/lib/read-current-user-id';
 import {
   recordTrustedServerTime,
   resolveTrustedNow,
@@ -98,34 +98,11 @@ function stringifyOfflineReadingLeasePayload(lease: OfflineReadingLease): string
   });
 }
 
-function readCurrentUserId(): number | null {
-  const accessToken: string | null = readAccessToken();
-  if (accessToken === null) {
-    return null;
-  }
-  const segments: string[] = accessToken.split('.');
-  if (segments.length < 2) {
-    return null;
-  }
-  try {
-    const payload = JSON.parse(decodeBase64UrlToString(segments[1])) as Record<string, unknown>;
-    const principalId: unknown = payload.principalId;
-    return typeof principalId === 'number' && Number.isInteger(principalId) ? principalId : null;
-  } catch {
-    return null;
-  }
-}
-
 function mapInvalidReasonToMessage(reason: OfflineLeaseInvalidReason): string {
   if (reason === 'clock_rollback') {
     return 'Your device time changed. Connect to the internet to refresh this download.';
   }
   return 'This offline download is locked. Connect to the internet or Subscribe to refresh access.';
-}
-
-function decodeBase64UrlToString(value: string): string {
-  const bytes: Uint8Array = decodeBase64Url(value);
-  return String.fromCharCode(...bytes);
 }
 
 function decodeBase64Url(value: string): Uint8Array {

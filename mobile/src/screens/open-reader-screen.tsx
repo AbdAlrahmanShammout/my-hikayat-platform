@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
+import { saveOfflineReadingProgressBestEffort } from '@/features/offline/lib/save-offline-reading-progress-best-effort';
 import { FixedLayoutReaderEngine } from '@/features/reader/components/fixed-layout-reader-engine';
 import { ReflowableReaderEngine } from '@/features/reader/components/reflowable-reader-engine';
 import { endReadingSession } from '@/features/reader/api/end-reading-session';
@@ -33,9 +34,20 @@ export function OpenReaderScreen(): JSX.Element {
   const queryClient = useQueryClient();
   const [isClosing, setIsClosing] = useState<boolean>(false);
   const positionRef = useRef<ReadingPositionSnapshot | null>(null);
-  const handlePositionChange = useCallback((position: ReadingPositionSnapshot): void => {
-    positionRef.current = position;
-  }, []);
+  const isOfflinePackageRef = useRef<boolean>(false);
+  const handlePositionChange = useCallback(
+    (position: ReadingPositionSnapshot): void => {
+      positionRef.current = position;
+      if (bookId === null || !isOfflinePackageRef.current) {
+        return;
+      }
+      void saveOfflineReadingProgressBestEffort({
+        bookId,
+        position,
+      });
+    },
+    [bookId],
+  );
 
   if (bookId === null) {
     return (
@@ -111,6 +123,8 @@ export function OpenReaderScreen(): JSX.Element {
 
   const openedBookId: number = opened.book.id;
   const openedSessionId: number = opened.session.id;
+  const isOfflinePackage: boolean = opened.isOfflinePackage === true;
+  isOfflinePackageRef.current = isOfflinePackage;
 
   async function executeClose(): Promise<void> {
     if (isClosing) {
@@ -118,6 +132,21 @@ export function OpenReaderScreen(): JSX.Element {
     }
     setIsClosing(true);
     const position: ReadingPositionSnapshot | null = positionRef.current;
+    if (isOfflinePackage) {
+      if (position !== null) {
+        await saveOfflineReadingProgressBestEffort({
+          bookId: openedBookId,
+          position,
+        });
+      }
+      setIsClosing(false);
+      if (router.canGoBack()) {
+        router.back();
+        return;
+      }
+      router.replace(`/(app)/books/${openedBookId}` as Href);
+      return;
+    }
     if (position !== null) {
       await saveReadingProgressBestEffort({
         bookId: openedBookId,
