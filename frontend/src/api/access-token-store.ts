@@ -1,4 +1,5 @@
 const ACCESS_TOKEN_STORAGE_KEY = 'noory.accessToken';
+const REFRESH_TOKEN_STORAGE_KEY = 'noory.refreshToken';
 
 type AccessTokenListener = () => void;
 
@@ -8,11 +9,14 @@ const listeners: Set<AccessTokenListener> = new Set();
  * Reads the Bearer access token from session storage.
  */
 export function readAccessToken(): string | null {
-  const value: string | null = sessionStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
-  if (value === null || value.trim() === '') {
-    return null;
-  }
-  return value;
+  return readStorageValue(ACCESS_TOKEN_STORAGE_KEY);
+}
+
+/**
+ * Reads the refresh token from session storage.
+ */
+export function readRefreshToken(): string | null {
+  return readStorageValue(REFRESH_TOKEN_STORAGE_KEY);
 }
 
 /**
@@ -24,11 +28,26 @@ export function writeAccessToken(accessToken: string): void {
 }
 
 /**
- * Clears the stored access token. A 401 from the API must call this.
+ * Persists the refresh token for the current browser tab.
+ */
+export function writeRefreshToken(refreshToken: string): void {
+  sessionStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
+}
+
+/**
+ * Clears access and refresh tokens. Call after failed refresh or sign-out.
+ */
+export function clearSessionTokens(): void {
+  sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
+  sessionStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+  notifyAccessTokenListeners();
+}
+
+/**
+ * @deprecated Prefer clearSessionTokens.
  */
 export function clearAccessToken(): void {
-  sessionStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
-  notifyAccessTokenListeners();
+  clearSessionTokens();
 }
 
 /**
@@ -39,6 +58,14 @@ export function subscribeAccessToken(listener: AccessTokenListener): () => void 
   return () => {
     listeners.delete(listener);
   };
+}
+
+function readStorageValue(key: string): string | null {
+  const value: string | null = sessionStorage.getItem(key);
+  if (value === null || value.trim() === '') {
+    return null;
+  }
+  return value;
 }
 
 function notifyAccessTokenListeners(): void {

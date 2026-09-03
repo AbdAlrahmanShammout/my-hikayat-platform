@@ -27,6 +27,7 @@ function createSampleSession(): AuthSession {
   return {
     user: createSampleUser(),
     accessToken: 'signed.jwt',
+    refreshToken: 'refresh.jwt',
     expiresIn: '15m',
   };
 }
@@ -37,6 +38,8 @@ describe('AuthController', () => {
     register: jest.Mock;
     createSession: jest.Mock;
     acceptAdminInvitation: jest.Mock;
+    refreshSession: jest.Mock;
+    logout: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -44,6 +47,8 @@ describe('AuthController', () => {
       register: jest.fn(),
       createSession: jest.fn(),
       acceptAdminInvitation: jest.fn(),
+      refreshSession: jest.fn(),
+      logout: jest.fn(),
     };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
@@ -84,6 +89,7 @@ describe('AuthController', () => {
           role: UserRole.ADMIN,
         }),
         accessToken: 'signed.jwt',
+        refreshToken: 'refresh.jwt',
         expiresIn: '15m',
       });
       const actualResponse = await authController.acceptAdminInvitation({
@@ -95,19 +101,38 @@ describe('AuthController', () => {
         password: 'correct-horse-battery',
       });
       expect(actualResponse.accessToken).toBe('signed.jwt');
+      expect(actualResponse.refreshToken).toBe('refresh.jwt');
       expect(actualResponse.user.role).toBe(UserRole.ADMIN);
       expect(actualResponse.user).not.toHaveProperty('passwordHash');
     });
   });
 
   describe('login', () => {
-    it('issues a session for the authenticated principal', () => {
+    it('issues a session for the authenticated principal', async () => {
       const currentUser: UserEntity = createSampleUser();
-      mockAuthService.createSession.mockReturnValue(createSampleSession());
-      const actualResponse = authController.login(currentUser);
+      mockAuthService.createSession.mockResolvedValue(createSampleSession());
+      const actualResponse = await authController.login(currentUser);
       expect(mockAuthService.createSession).toHaveBeenCalledWith(currentUser);
       expect(actualResponse.tokenType).toBe('Bearer');
+      expect(actualResponse.refreshToken).toBe('refresh.jwt');
       expect(actualResponse.expiresIn).toBe('15m');
+    });
+  });
+
+  describe('refresh', () => {
+    it('exchanges a refresh token for a new session', async () => {
+      mockAuthService.refreshSession.mockResolvedValue(createSampleSession());
+      const actualResponse = await authController.refresh({ refreshToken: 'old.refresh.jwt' });
+      expect(mockAuthService.refreshSession).toHaveBeenCalledWith('old.refresh.jwt');
+      expect(actualResponse.accessToken).toBe('signed.jwt');
+    });
+  });
+
+  describe('logout', () => {
+    it('revokes the refresh token', async () => {
+      mockAuthService.logout.mockResolvedValue(undefined);
+      await authController.logout({ refreshToken: 'refresh.jwt' });
+      expect(mockAuthService.logout).toHaveBeenCalledWith('refresh.jwt');
     });
   });
 

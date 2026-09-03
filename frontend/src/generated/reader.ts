@@ -254,6 +254,22 @@ export interface paths {
       };
     };
   };
+  "/auth/refresh": {
+    post: {
+      requestBody: { content: { 'application/json': components['schemas']['RefreshSessionRequestDto'] } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['AuthSessionResponseDto'] } };
+      };
+    };
+  };
+  "/auth/logout": {
+    post: {
+      requestBody: { content: { 'application/json': components['schemas']['LogoutRequestDto'] } };
+      responses: {
+        "204": Record<string, never>;
+      };
+    };
+  };
   "/auth/me": {
     get: {
       responses: {
@@ -297,9 +313,11 @@ export interface components {
     GetPlansResponseDto: { plans: Array<components['schemas']['PlanResponse']>; total: number };
     SubscriptionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; planId: number; status: "active" | "canceled"; startedAt: string; currentPeriodStart?: unknown | null; currentPeriodEnd?: unknown | null; canceledAt?: unknown | null; activatedAt?: unknown | null; trialStartedAt?: unknown | null; trialEndsAt?: unknown | null; readingAccessState: "free" | "trial" | "paid"; trialEligible: boolean; plan?: components['schemas']['PlanResponse'] };
     StripeWebhookReceivedResponseDto: { received: boolean };
-    AuthSessionResponseDto: { accessToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
+    AuthSessionResponseDto: { accessToken: string; refreshToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
     RegisterRequestDto: { email: string; password: string };
     AcceptAdminInvitationRequestDto: { token: string; password: string };
     LoginRequestDto: { email: string; password: string };
+    RefreshSessionRequestDto: { refreshToken: string };
+    LogoutRequestDto: { refreshToken: string };
   };
 }

@@ -50,4 +50,22 @@ describe('JwtConfigService', () => {
       expect(mockConfigService.get).toHaveBeenCalledWith('jwt.recovery.expiresIn');
     });
   });
+
+  describe('refreshSecret', () => {
+    it('returns the configured refresh-token secret', () => {
+      mockConfigService.get.mockReturnValue('refresh-secret');
+      const actualSecret: string = jwtConfigService.refreshSecret;
+      expect(actualSecret).toBe('refresh-secret');
+      expect(mockConfigService.get).toHaveBeenCalledWith('jwt.refresh.secret');
+    });
+  });
+
+  describe('refreshExpiresIn', () => {
+    it('returns the configured refresh-token lifetime', () => {
+      mockConfigService.get.mockReturnValue('30d');
+      const actualExpiresIn: string = jwtConfigService.refreshExpiresIn;
+      expect(actualExpiresIn).toBe('30d');
+      expect(mockConfigService.get).toHaveBeenCalledWith('jwt.refresh.expiresIn');
+    });
+  });
 });

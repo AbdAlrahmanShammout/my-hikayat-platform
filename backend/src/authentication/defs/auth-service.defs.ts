@@ -18,5 +18,6 @@ export type AcceptAdminInvitationAuthInput = {
 export type AuthSession = {
   readonly user: UserEntity;
   readonly accessToken: string;
+  readonly refreshToken: string;
   readonly expiresIn: string;
 };

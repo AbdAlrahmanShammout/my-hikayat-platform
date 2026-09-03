@@ -4,5 +4,6 @@ describe('JwtTokenPurpose', () => {
   it('uses distinct lowercase purpose values', () => {
     expect(JwtTokenPurpose.ACCESS).toBe('access');
     expect(JwtTokenPurpose.RECOVERY).toBe('recovery');
+    expect(JwtTokenPurpose.REFRESH).toBe('refresh');
   });
 });

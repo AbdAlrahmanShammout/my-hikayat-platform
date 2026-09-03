@@ -1,16 +1,21 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 
-import { clearAccessToken } from '@/api/access-token-store';
+import { clearSessionTokens, readRefreshToken } from '@/api/access-token-store';
+import { logoutSession } from '@/features/auth/api/logout-session';
 
 /**
- * Clears the tab session and Query cache, then returns to login.
+ * Revokes refresh when present, clears the tab session and Query cache, then returns to login.
  */
 export function useSignOut(): () => void {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   return (): void => {
-    clearAccessToken();
+    const refreshToken: string | null = readRefreshToken();
+    if (refreshToken !== null) {
+      void logoutSession(refreshToken).catch(() => undefined);
+    }
+    clearSessionTokens();
     queryClient.clear();
     void navigate('/login', { replace: true });
   };

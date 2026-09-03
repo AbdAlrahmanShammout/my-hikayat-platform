@@ -9,6 +9,7 @@ type AccessTokenListener = () => void;
 
 const listeners: Set<AccessTokenListener> = new Set();
 let memoryAccessToken: string | null = null;
+let memoryRefreshToken: string | null = null;
 
 /**
  * Returns the in-memory Bearer access token after hydrateSessionStore.
@@ -18,10 +19,18 @@ export function readAccessToken(): string | null {
 }
 
 /**
- * Loads the persisted token into memory. Call once at app start.
+ * Returns the in-memory refresh token after hydrateSessionStore.
+ */
+export function readRefreshToken(): string | null {
+  return memoryRefreshToken;
+}
+
+/**
+ * Loads persisted tokens into memory. Call once at app start.
  */
 export async function hydrateSessionStore(): Promise<string | null> {
   memoryAccessToken = await readSecureItem(SECURE_STORAGE_KEYS.accessToken);
+  memoryRefreshToken = await readSecureItem(SECURE_STORAGE_KEYS.refreshToken);
   notifyAccessTokenListeners();
   return memoryAccessToken;
 }
@@ -36,12 +45,29 @@ export async function writeAccessToken(accessToken: string): Promise<void> {
 }
 
 /**
- * Clears the stored access token. A 401 from the API must call this.
+ * Persists the refresh token for renewing the access session.
+ */
+export async function writeRefreshToken(refreshToken: string): Promise<void> {
+  memoryRefreshToken = refreshToken;
+  await writeSecureItem(SECURE_STORAGE_KEYS.refreshToken, refreshToken);
+}
+
+/**
+ * Clears access and refresh tokens. Call after failed refresh or sign-out.
+ */
+export async function clearSessionTokens(): Promise<void> {
+  memoryAccessToken = null;
+  memoryRefreshToken = null;
+  await deleteSecureItem(SECURE_STORAGE_KEYS.accessToken);
+  await deleteSecureItem(SECURE_STORAGE_KEYS.refreshToken);
+  notifyAccessTokenListeners();
+}
+
+/**
+ * @deprecated Prefer clearSessionTokens — clears access and refresh.
  */
 export async function clearAccessToken(): Promise<void> {
-  memoryAccessToken = null;
-  await deleteSecureItem(SECURE_STORAGE_KEYS.accessToken);
-  notifyAccessTokenListeners();
+  await clearSessionTokens();
 }
 
 /**

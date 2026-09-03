@@ -32,9 +32,8 @@ roadmap is the ordered implementation source of truth for closing gaps. Historic
 31–54 in `docs/admin-dashboard-tasks.md` remain Complete and are not rewritten. As each `MG-*`
 task completes, this specification must be updated so it stays current.
 
-**Roadmap snapshot (2026-09-03).** **MG-1…MG-14 COMPLETE** (MG-14 Phase A in-app only; push deferred).
-Next task when approved: **MG-FINAL** (access + refresh tokens). Confirmed: access tokens default to
-**15 minutes** with no refresh today.
+**Roadmap snapshot (2026-09-03).** **MG-1…MG-14 COMPLETE**; **MG-FINAL COMPLETE** (access + refresh
+tokens). Access tokens remain short-lived (default **15m**); refresh tokens renew sessions.
 
 ---
 
@@ -215,15 +214,13 @@ denial happens when they try to open a book, not when they browse it.
 
 ### F-AUTH-5 · Session expiry handling — **IMPLEMENTED**
 
-- **What it does.** Any API response indicating the session is no longer valid immediately clears
-  the stored token, which drops the user to signed-out and returns them to sign-in.
-- **Rules.** There is **no token refresh mechanism**. A refresh-token storage key exists in the
-  code but is never written or read. Session expiry is therefore an abrupt sign-out rather than a
-  silent renewal.
-- **Important UX consequence.** If backend access tokens are short-lived (the platform's admin
-  documentation states a 15-minute lifetime and no refresh endpoint), a returning user could be
-  bounced to sign-in frequently, including mid-reading. See
-  [§16 open questions](#164-questions-to-answer-before-final-design).
+- **What it does.** Access tokens remain short-lived (default **15m**). Clients store a refresh
+  token and, on 401, run a **single-flight** `POST /auth/refresh` (rotation), retry the request
+  once, then clear the session only if refresh fails. Sign-out calls `POST /auth/logout` to revoke.
+- **Rules.** Refresh uses `JwtTokenPurpose.REFRESH` plus hashed jti rows (`AuthRefreshToken`).
+  Refresh/logout routes are credential-throttled. Auth credential routes skip refresh loops.
+- **Important UX consequence.** Reading sessions can continue past access expiry as long as the
+  refresh token remains valid (default **30d**) and the device can reach the API.
 
 ### F-AUTH-6 · Password reset — **IMPLEMENTED**
 
@@ -357,8 +354,8 @@ paging.
   search is submit-driven only. Results use the same infinite paging as catalog (**MG-10**). Default
   field is title.
 - **After use.** Results render as book rows; tapping one opens book detail.
-- **Product note.** Author and publisher are *searchable* but not *displayable* — the app can find
-  a book by author but cannot show the user who the author is.
+- **Product note.** Author and publisher are searchable and displayed from EPUB metadata
+  (**MG-2**); owner email is not used as a public byline.
 
 ### F-SRCH-2 · In-book full-text search — **PLANNED**
 
@@ -484,9 +481,9 @@ Covered in depth in [§8](#8-subscription-trial--entitlement-model).
 | F-SUB-9 · Native in-app purchase (App Store / Play billing) | **NOT AVAILABLE** — payment is external hosted checkout only |
 | F-SUB-10 · Renewal reminders, trial-expiry warnings, dunning notices | **PARTIAL (MG-14 Phase A)** — in-app Home/Me banners for near-expiry and ended trial/paid; **no** push/local notifications yet |
 
-**Notable absence.** The mobile app can *start* a paid subscription and can *request a refund*, but
-it cannot *cancel* one. A user who wants to stop paying has no in-app path. This is a hard gap to
-flag, not to design around silently.
+**Cancellation (**MG-13**).** The mobile app can cancel a paid subscription from Me with
+confirmation. Cancellation stops renewal but preserves reading through `currentPeriodEnd`; refund
+remains a distinct action that can end access immediately.
 
 ## 2.10 Account and settings
 
@@ -725,7 +722,7 @@ what information must be present, what actions originate there, where they can g
 | **Information needed** | Who they are; their in-progress books with a sense of where they left off; the browsable catalog with total count; the active sort and category filter; loading/empty/error states for both the resume shelf and the catalog independently (they fail separately). |
 | **Actions** | Open a continue-reading entry (straight into the reader); open a catalog book (to detail); change sort; change category filter; pull to refresh; go to search; go to collections. |
 | **Navigates to** | Reader, book detail, search, collections; and the other two tabs. |
-| **Conditions** | Two independent async regions with independent states. The catalog shows only its first page. Entitlement state is **not** represented here at all — a free user sees a full, inviting catalog with no indication they cannot read any of it. |
+| **Conditions** | Independent async regions fail separately. Catalog uses infinite `limit`/`offset` paging (**MG-10**). Trial discovery and expiry banners surface access context on Home (**MG-3**, **MG-4**, **MG-14**). |
 
 ### S-07 · My books (offline library) — **IMPLEMENTED**
 
@@ -1167,9 +1164,8 @@ up to ~15 seconds of reading is lost, and the session is never formally ended.
     this book and this account, carry a valid signature, not be expired against trusted time, and
     the device clock must not have been rolled back.
 11. Valid → the file is decrypted in memory and rendered.
-12. **The book opens at its beginning, not at the saved position** — offline reading has no access
-    to server-side progress.
-13. Reading works normally. Position and bookmark writes cannot reach the server and are lost.
+12. The book resumes from device-local progress (**MG-5**).
+13. Position and bookmark changes persist locally and queue for reconnect sync (**MG-6**, **MG-7**).
 
 **Steps — reconnecting.**
 14. Connectivity returns; server-state fetching resumes.
@@ -1485,8 +1481,8 @@ and weights.
 discovery (**MG-4**), offline resume/bookmarks/progress sync (**MG-5…MG-7**), lease expiry UX
 (**MG-8**), sign-out/abandon confirmation (**MG-9**), catalog/search pagination (**MG-10**), and
 scoped Settings (**MG-11**), password reset (**MG-12**), subscription cancellation (**MG-13**), and
-in-app expiry awareness (**MG-14 Phase A**) are **COMPLETE**. Next gap in order is access + refresh
-tokens (**MG-FINAL**). Push expiry notifications remain deferred (MG-14 Phase B).
+in-app expiry awareness (**MG-14 Phase A**) and access + refresh tokens (**MG-FINAL**) are
+**COMPLETE**. Push expiry notifications remain deferred (MG-14 Phase B).
 
 ## 6.3 Catalog behavior
 
@@ -1603,17 +1599,10 @@ every rule.
 
 ## 7.7 The user experience of an expired session
 
-This deserves explicit attention because it is currently poor:
-
-- There is **no token refresh**. Expiry is terminal.
-- The user is dropped to sign-in **without warning, explanation, or preservation of context**.
-- It can happen **mid-reading**, discarding up to ~15 seconds of unsaved position.
-- There is no "your session expired, please sign in again" message, and no return to where they
-  were after re-authenticating.
-- If backend tokens are short-lived (platform documentation for the shared auth stack states a
-  15-minute lifetime with no refresh endpoint), this could occur very frequently — potentially
-  making the app unusable for a child. **This needs confirmation before design.** See
-  [§16.4](#164-questions-to-answer-before-final-design).
+Access expiry normally renews silently through the stored refresh token (**MG-FINAL**). Concurrent
+401 responses share one refresh request, eligible requests retry once, and recursive refresh loops
+are blocked. If refresh is unavailable, invalid, expired, or revoked, the app clears the session and
+returns to sign-in. Re-authentication still does not restore the exact prior navigation context.
 
 ## 7.8 Account and profile
 
@@ -1698,7 +1687,8 @@ backend; the mobile app displays the result and must never recalculate it.
 
 ## 8.5 Cancellation, expiry and renewal
 
-- **Cancellation is not possible in the mobile app.** No cancel action exists.
+- **Cancellation is available on Me** with confirmation (**MG-13**); it stops renewal without
+  issuing a refund.
 - **A canceled subscription still grants reading until the paid period end.** Status reads
   "Canceled" while reading continues to work — the design must make this non-alarming and clear.
 - **After the period end, access stops** regardless of the recorded status.
@@ -1968,7 +1958,7 @@ idle hint).
 | --- | --- | --- |
 | **Not downloaded** | No local copy | Download offered when online; blocked when offline |
 | **Downloading** | In progress | Percentage when size is known, otherwise indeterminate |
-| **Downloaded and authorized** | Ready | Opens offline, at the beginning |
+| **Downloaded and authorized** | Ready | Opens offline at device-local saved progress |
 | **Downloaded but locked** | Authorization expired, invalid, or for another account | Listed but refuses to open; reconnect to recover |
 | **Locked by clock rollback** | Device time moved backwards | Distinct message about device time |
 | **Corrupted** | Integrity check failed | Integrity error; no automatic repair |
@@ -1979,9 +1969,9 @@ idle hint).
 | State | Reality |
 | --- | --- |
 | **Synced** | The implicit normal state while online — never surfaced |
-| **Sync pending** | **Does not exist** — no write queue |
-| **Sync conflict** | **Does not exist** — no conflict resolution |
-| **Sync failed** | Happens, silently; the user is never told |
+| **Sync pending** | Local progress/bookmark operation queued for reconnect (**MG-6**, **MG-7**) |
+| **Sync conflict** | Newer timestamp wins for progress; bookmark operations flush in queue order |
+| **Sync failed** | Queue remains for a later capped retry; no dedicated status surface |
 
 There is **no sync status surface anywhere in the product.** The user cannot tell whether their
 progress was saved.
@@ -2340,8 +2330,8 @@ Each case states the condition, what the user experiences, and the recovery the 
 | Duplicate email at registration | Backend message surfaced | Sign in instead |
 | Network failure during auth | Failure message; nothing created or changed | Retry when connected |
 | Session unconfirmable at launch | Dedicated recovery screen distinguishing a connection problem from an account problem | Retry, or start over (**purges downloads**) |
-| **Session expires mid-use** | **Immediate, unexplained sign-out** — possibly mid-page in the reader; unsaved position lost | Sign in again; **context is not restored** |
-| Forgotten password | **No in-app path exists** | None — hard lockout |
+| **Session expires mid-use** | Silent single-flight refresh and one request retry (**MG-FINAL**) | Sign in again only when refresh fails; exact context is not restored |
+| Forgotten password | Forgot/reset password flow with emailed recovery token (**MG-12**) | Request another token if invalid or expired |
 | Missing app configuration | Requests fail rather than the app refusing to start | None available to the user |
 
 ## 14.2 Content and discovery
@@ -2505,10 +2495,9 @@ reader (reflowable); reader (fixed layout); reader bookmarks panel; reader open-
 
 **External:** hosted checkout (not designable here).
 
-**Absent but reasonably expected** — propose deliberately, do not assume: onboarding; settings;
-profile edit; password reset; cancel subscription; billing history; cross-book bookmarks; reading
-statistics; storage management; notification center; in-reader table of contents; in-reader
-search.
+**Absent but reasonably expected** — propose deliberately, do not assume: onboarding; profile
+edit; billing history; cross-book bookmarks; reading statistics; detailed storage management;
+notification center/push; in-reader table of contents; in-reader search.
 
 ## 15.6 Main navigation areas
 
@@ -2612,15 +2601,11 @@ because entitlement lapsed; and later catalog/search page failures (retry withou
 ## 15.15 Information that must be surfaced to users
 
 **High priority, currently under-surfaced or absent:**
-- **Reading access state** — whether the user can read, visible outside Me. Today a free user gets
-  no signal until refusal.
-- **Trial and subscription time remaining**, visible before it becomes urgent, outside Me.
-- **Offline authorization validity** — how long downloads will keep working. Currently invisible.
-- **The consequence of signing out** — that downloads will be destroyed.
-- **Whether reading progress was actually saved**, especially that offline progress is local-only
-  until sync lands.
-- **That offline reading resumes on this device** from local progress, but does not yet sync that
-  progress to other devices or the server.
+- **Payment failure state** — failed renewals remain server-only.
+- **Sync status** — queued offline writes exist, but there is no dedicated user-visible status.
+- **Slow-network state** — long requests still lack timeout/taking-a-while guidance.
+- **Reader lifecycle recovery** — exact navigation context is not restored after failed refresh and
+  re-authentication.
 
 **Already surfaced and must be preserved:**
 - Book title, description, categories, and layout.
@@ -2766,10 +2751,10 @@ navigation. Discovery, reader engines, offline, and checkout have **no** end-to-
    push channel still deferred (Phase B).
 7. **No payment-failure representation.** The platform models failed renewals; the mobile app does
    not surface them at all.
-8. **Offline reading loses progress silently.** The most user-hostile behavior in the product, and
-   an acknowledged scope decision rather than a bug.
-9. **No offline validity visibility.** Users cannot see how long their downloads will keep working,
-   which makes locking always surprising.
+8. **~~Offline reading loses progress silently.~~** **COMPLETE (MG-5…MG-7).** Local resume plus
+   queued bookmark/progress synchronization.
+9. **~~No offline validity visibility.~~** **COMPLETE (MG-8).** Active, approaching, expired, and
+   clock-rollback states are shown.
 10. **No slow-network or timeout handling.** Hung requests produce indefinite, uncancellable
     loading, including an indefinite splash if the backend is unreachable at launch.
 11. **No reader lifecycle handling.** Backgrounding or killing the app skips the position flush and
@@ -2795,22 +2780,18 @@ navigation. Discovery, reader engines, offline, and checkout have **no** end-to-
 1. **The dual audience is real and intentional.** Inferred from the package description ("children
    from about age 6... also suitable for teens and adults") and from copy that routes decisions to
    adults. No formal persona documentation exists.
-2. **The owner account email displayed on book detail is an author surrogate**, not a deliberate
-   product decision to show publisher email addresses to children. The field is labeled "By
-   {email}" in the code; its product intent is not documented.
-3. **The access token is short-lived (CONFIRMED).** Backend default
-   `JWT_ACCESS_EXPIRES_IN` is **`15m`** (`backend/src/config/jwt/jwt-config.schema.ts`). There is
-   **no refresh token** and no refresh HTTP endpoint. The mobile app clears the session on any
-   401. Deployed environments may override the env var; treat **15m** as the product default and
-   audit production config in **MG-FINAL**. Severity is high: reading sessions longer than the
-   access lifetime are structurally at risk.
+2. **~~Owner email used as a public author surrogate.~~** **COMPLETE (MG-2).** Book surfaces use
+   EPUB creator/publisher metadata and never fall back to uploader email.
+3. **~~The access token is short-lived with no refresh.~~** **COMPLETE (MG-FINAL).** Access default
+   remains **15m**; refresh tokens (default **30d**) renew via `POST /auth/refresh` with rotation;
+   clients single-flight on 401; logout revokes.
 4. **Offline authorization lifetime equals entitlement end.** Server-issued leases expire at
    `trialEndsAt` (trial) or `currentPeriodEnd` (paid). The timestamp is stored on the device
    manifest as `offlineLease.expiresAt` and shown as active / approaching (3-day threshold) /
    locked on My books and book detail (**MG-8 COMPLETE**).
 5. **Absent features are absent, not undiscovered.** Where no code, test, or documentation
-   evidence exists (onboarding, settings, notifications, password reset), this document marks them
-   unavailable rather than inferring intent.
+   evidence exists (for example onboarding or push notification infrastructure), this document
+   marks them unavailable rather than inferring intent.
 6. **The "Complete" delivery status of steps 31–54 reflects scoped completion**, not
    feature-completeness against the full requirements. Several requirement-level capabilities
    (right-to-left support, pinch zoom, fixed-layout dark mode) are documented as required yet
@@ -2830,7 +2811,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 | --- | --- | --- |
 | Cover art | **COMPLETE.** Reader `BookResponse.cover` exposes signed preview URLs without reading entitlement; mobile shows cover + placeholder. | **MG-1** |
 | Author / publisher display | **COMPLETE.** `BookResponse.authorName` / `publisherName` from EPUB `creator` / `publisher`; mobile no longer uses `owner.email` as the public byline. | **MG-2** |
-| Access token lifetime | **Confirmed 15m default**, no refresh today. Refresh architecture is mandatory and scheduled last. | **MG-FINAL** |
+| Access token lifetime | **15m default** access JWT + **refresh** (`POST /auth/refresh`, rotate; logout revoke). | **MG-FINAL COMPLETE** |
 | Offline lease lifetime | Equals trial end or paid `currentPeriodEnd`; UX shows active / soon / locked from `expiresAt`. | **MG-8 COMPLETE** |
 | Sign-out purge | **COMPLETE.** Keep security purge; confirm when downloads exist; direct when none. | **MG-9 COMPLETE** |
 | Entitlement visibility | **COMPLETE.** Book detail shows Access hint and maps primary CTA from `readingAccessState` / `trialEligible` (Profile for trial/subscribe). Denial path kept as fallback. | **MG-3** |
@@ -2871,7 +2852,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 12. **MG-12** Password reset — `COMPLETE`
 13. **MG-13** Reader subscription cancellation — `COMPLETE`
 14. **MG-14** Trial/subscription expiry notifications — `COMPLETE` (Phase A; push deferred)
-15. **MG-FINAL** Access + refresh tokens — `TODO` (last)
+15. **MG-FINAL** Access + refresh tokens — `COMPLETE`
 
 **Working rule:** one task at a time; stop for review after each; no automatic commits.
 

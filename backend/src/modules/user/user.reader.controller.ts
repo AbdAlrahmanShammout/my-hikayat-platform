@@ -30,7 +30,7 @@ export class UserReaderController {
     const user: UserEntity = await this.userService.enablePublisherCapability({
       userId: currentUser.id,
     });
-    const session: AuthSession = this.authService.createSession(user);
+    const session: AuthSession = await this.authService.createSession(user);
     return new AuthSessionResponseDto(session);
   }
 }

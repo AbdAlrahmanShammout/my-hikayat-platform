@@ -59,10 +59,11 @@ describe('UserReaderController', () => {
       const expectedSession: AuthSession = {
         user: authorUser,
         accessToken: 'signed.jwt',
+        refreshToken: 'refresh.jwt',
         expiresIn: '15m',
       };
       mockUserService.enablePublisherCapability.mockResolvedValue(authorUser);
-      mockAuthService.createSession.mockReturnValue(expectedSession);
+      mockAuthService.createSession.mockResolvedValue(expectedSession);
       const actualResponse = await userReaderController.enablePublisherCapability(currentUser);
       expect(mockUserService.enablePublisherCapability).toHaveBeenCalledWith({ userId: 1 });
       expect(mockAuthService.createSession).toHaveBeenCalledWith(authorUser);

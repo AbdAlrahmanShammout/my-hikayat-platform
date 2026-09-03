@@ -71,6 +71,12 @@ export class JwtTokenService {
         expiresIn: this.jwtConfigService.accessExpiresIn,
       };
     }
+    if (purpose === JwtTokenPurpose.REFRESH) {
+      return {
+        secret: this.jwtConfigService.refreshSecret,
+        expiresIn: this.jwtConfigService.refreshExpiresIn,
+      };
+    }
     return {
       secret: this.jwtConfigService.recoverySecret,
       expiresIn: this.jwtConfigService.recoveryExpiresIn,

@@ -12,6 +12,7 @@ import { compareHashString } from '@/common/helpers/compare-hash-string.helper';
 import { hashString } from '@/common/helpers/hash-string.helper';
 import { JwtConfigService } from '@/config/jwt/jwt-config.service';
 import { AdminInvitationService } from '@/modules/user/admin-invitation.service';
+import { AuthRefreshTokenService } from '@/modules/user/auth-refresh-token.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserService } from '@/modules/user/user.service';
 import { JwtTokenPurpose } from '@/providers/jwt/enum/jwt-token-purpose.enum';
@@ -22,6 +23,7 @@ export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly adminInvitationService: AdminInvitationService,
+    private readonly authRefreshTokenService: AuthRefreshTokenService,
     private readonly jwtTokenService: JwtTokenService,
     private readonly jwtConfigService: JwtConfigService,
   ) {}
@@ -61,7 +63,26 @@ export class AuthService {
     return user;
   }
 
-  createSession(user: UserEntity): AuthSession {
+  async createSession(user: UserEntity): Promise<AuthSession> {
+    const payload: JwtAuthTokenPayload = {
+      principalId: user.id,
+      role: user.role,
+    };
+    const issuedRefresh = await this.authRefreshTokenService.issueForUser(user.id);
+    return {
+      user,
+      accessToken: this.jwtTokenService.createToken({
+        payload,
+        purpose: JwtTokenPurpose.ACCESS,
+      }),
+      refreshToken: issuedRefresh.refreshToken,
+      expiresIn: this.jwtConfigService.accessExpiresIn,
+    };
+  }
+
+  async refreshSession(refreshToken: string): Promise<AuthSession> {
+    const rotated = await this.authRefreshTokenService.consumeAndRotate(refreshToken);
+    const user: UserEntity = await this.userService.getUserById(rotated.userId);
     const payload: JwtAuthTokenPayload = {
       principalId: user.id,
       role: user.role,
@@ -72,7 +93,12 @@ export class AuthService {
         payload,
         purpose: JwtTokenPurpose.ACCESS,
       }),
+      refreshToken: rotated.refreshToken,
       expiresIn: this.jwtConfigService.accessExpiresIn,
     };
+  }
+
+  async logout(refreshToken: string): Promise<void> {
+    await this.authRefreshTokenService.revokePresentedToken(refreshToken);
   }
 }

@@ -157,7 +157,7 @@ export interface components {
   schemas: {
     RegisterRequestDto: { email: string; password: string };
     UserResponse: { id: number; createdAt: string; updatedAt: string; email: string; role: "reader" | "author" | "admin"; isPublisher: boolean };
-    AuthSessionResponseDto: { accessToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
+    AuthSessionResponseDto: { accessToken: string; refreshToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
     AcceptAdminInvitationRequestDto: { token: string; password: string };
     LoginRequestDto: { email: string; password: string };
     BookAssetResponse: { id: number; createdAt: string; updatedAt: string; bookId: number; kind: "source" | "processed" | "preview_image" | "promo_video" | "audio"; storageKey: string; contentType: string; byteSize: number; checksumSha256?: unknown | null; originalFileName?: unknown | null; sortOrder: number; isEncrypted: boolean };

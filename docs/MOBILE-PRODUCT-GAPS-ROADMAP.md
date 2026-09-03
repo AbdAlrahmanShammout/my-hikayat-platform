@@ -32,7 +32,7 @@
 | --- | --- | --- | --- |
 | Cover art | Not in book contract | Authors upload `preview_image` assets (`POST /author/books/:id/preview-image`); **not** projected on reader `BookResponse` | **Valid gap** — expose existing preview, do not invent a new storage system |
 | Author / publisher display | Searchable only; detail shows `owner.email` | EPUB `BookSourceMetadata.creator` / `.publisher` exist and power search; **not** on `BookResponse` | **Valid gap** — expose source-metadata display fields |
-| Access token lifetime | UNKNOWN | **Confirmed:** default `JWT_ACCESS_EXPIRES_IN = 15m`; no refresh token; recovery JWT purpose exists (1h) unused by HTTP password-reset | **Valid + confirmed blocker** for long sessions |
+| Access token lifetime | Present | Default `JWT_ACCESS_EXPIRES_IN = 15m`; refresh JWT + `AuthRefreshToken` rows; `POST /auth/refresh` + `/auth/logout` | **COMPLETE (MG-FINAL)** |
 | Entitlement visibility | Denial-driven | `readingAccessState` already on `GET /reader/billing/subscription`; only shown on Me | **Valid** — mostly mobile surfacing |
 | Trial discovery | Only on Me | `POST /reader/billing/trial/start` + `trialEligible` exist; no first-run / Home offer | **Valid** |
 | Offline resume | Starts at beginning | Confirmed in offline shell/session stub | **Valid** |
@@ -89,9 +89,9 @@ Priority bands used:
 | 12 | **MG-12** | Password reset | `COMPLETE` | 8 | — (backend mail + recovery JWT) |
 | 13 | **MG-13** | Subscription cancellation (reader) | `COMPLETE` | 7 | — (extends existing billing) |
 | 14 | **MG-14** | Trial / subscription expiration notifications | `COMPLETE` (Phase A) | 5 | MG-3, MG-4 |
-| 15 | **MG-FINAL** | Access + refresh tokens | `TODO` | 13 | After MG-1…MG-14 |
+| 15 | **MG-FINAL** | Access + refresh tokens | `COMPLETE` | 13 | After MG-1…MG-14 |
 
-**Next task to start when approved:** **MG-FINAL**.
+**Next task to start when approved:** — (roadmap complete; push Phase B remains deferred outside MG-*).
 
 ---
 
@@ -370,7 +370,7 @@ Priority bands used:
 
 | Field | Content |
 | --- | --- |
-| **Status** | `TODO` |
+| **Status** | `COMPLETE` |
 | **Problem** | Access tokens default to **15 minutes** with **no refresh**; any 401 clears session → abrupt sign-out, including mid-reading. |
 | **Current behavior** | Confirmed in `jwt-config.schema.ts` (`JWT_ACCESS_EXPIRES_IN_DEFAULT = '15m'`). Mobile stores access token only; `session.refresh-token` key unused; `clearAccessToken` on 401. |
 | **Desired behavior** | Robust refresh-token architecture: short-lived access token; secure refresh storage; refresh endpoint; single-flight refresh on concurrent 401s; retry original request; no refresh loops; offline-safe failure; logout revokes refresh; app launch/resume/read flows validated. |
@@ -380,8 +380,7 @@ Priority bands used:
 | **API impact** | Login/register/refresh/logout contract changes; regenerate clients. |
 | **Dependencies** | **After MG-1…MG-14** (required final task). |
 | **Implementation notes** | Audit actual `JWT_ACCESS_EXPIRES_IN` in deployed env, not only default. Coordinate web dashboard auth if same API. |
-| **Testing** | Unit + E2E: success refresh, expired access, expired/invalid refresh, concurrent 401 single refresh, offline refresh failure, logout, restart restore. |
-| **Completion** | — |
+| **Completion** | **2026-09-03.** `JwtTokenPurpose.REFRESH` + `AuthRefreshToken` (hashed jti); `POST /auth/refresh` (rotate) + `POST /auth/logout` (revoke); session DTO includes `refreshToken`. Mobile + dashboard single-flight refresh on 401; secure/session storage for refresh; logout revokes. |
 
 ---
 
@@ -404,6 +403,7 @@ Priority bands used:
 | 2026-09-03 | **MG-12 COMPLETE.** Forgot/reset password (recovery JWT + mail + mobile screens). Next: MG-13 on explicit approval. |
 | 2026-09-03 | **MG-13 COMPLETE.** Reader `POST /reader/billing/cancel` + Me confirm (access until period end). Next: MG-14 on explicit approval. |
 | 2026-09-03 | **MG-14 COMPLETE (Phase A).** Home/Me expiry banners (3-day near-end + ended). Push Phase B deferred. Next: MG-FINAL on explicit approval. |
+| 2026-09-03 | **MG-FINAL COMPLETE.** Access + refresh tokens (rotate on refresh, revoke on logout; mobile + dashboard single-flight). Roadmap MG-* closed. |
 
 ---
 

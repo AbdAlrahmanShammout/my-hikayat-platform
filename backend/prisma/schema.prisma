@@ -32,6 +32,22 @@ model User {
   bookRevenues             BookRevenue[]
   auditLogs                AuditLog[]
   adminInvitationsSent     AdminInvitation[]         @relation("AdminInvitationsSent")
+  authRefreshTokens        AuthRefreshToken[]
+}
+
+model AuthRefreshToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 enum AdminInvitationStatus {

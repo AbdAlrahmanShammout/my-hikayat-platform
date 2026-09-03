@@ -18,6 +18,8 @@ describe('JwtTokenService', () => {
     accessExpiresIn: '15m',
     recoverySecret: 'test-jwt-recovery-secret-not-for-production',
     recoveryExpiresIn: '1h',
+    refreshSecret: 'test-jwt-refresh-secret-not-for-production',
+    refreshExpiresIn: '30d',
   };
   let jwtTokenService: JwtTokenService;
 

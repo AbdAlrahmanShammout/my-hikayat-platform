@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 
-import { writeAccessToken } from '@/api/access-token-store';
+import { writeAccessToken, writeRefreshToken } from '@/api/access-token-store';
 import { queryKeys } from '@/api/query-keys';
 import type { AuthSession } from '@/features/auth/api/auth-session';
 import { enablePublisherCapability } from '@/features/auth/api/enable-publisher-capability';
@@ -14,6 +14,7 @@ export function useEnablePublisherCapability(): UseMutationResult<AuthSession, E
     mutationFn: (): Promise<AuthSession> => enablePublisherCapability(),
     onSuccess: (session: AuthSession) => {
       writeAccessToken(session.accessToken);
+      writeRefreshToken(session.refreshToken);
       queryClient.setQueryData(queryKeys.auth.me(), session.user);
     },
   });

@@ -19,4 +19,12 @@ export class JwtConfigService extends BaseConfigService {
   get recoveryExpiresIn(): string {
     return this.getValue<string>('jwt.recovery.expiresIn');
   }
+
+  get refreshSecret(): string {
+    return this.getValue<string>('jwt.refresh.secret');
+  }
+
+  get refreshExpiresIn(): string {
+    return this.getValue<string>('jwt.refresh.expiresIn');
+  }
 }

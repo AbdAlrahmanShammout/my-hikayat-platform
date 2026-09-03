@@ -224,4 +224,51 @@ describe('Authentication (e2e)', () => {
     expect(actualResponse.status).toBe(HttpStatus.UNAUTHORIZED);
     expect(actualResponse.body.code).toBe('JWT_INVALID');
   });
+
+  it('Given a valid refresh token, When refresh and logout run, Then rotation and revoke work', async () => {
+    const refreshEmail = `refresh-${Date.now()}@auth.test`;
+    const registerResponse = await request(getServer()).post('/auth/register').send({
+      email: refreshEmail,
+      password,
+    });
+    expect(registerResponse.status).toBe(HttpStatus.CREATED);
+    expect(registerResponse.body.refreshToken).toEqual(expect.any(String));
+    const firstRefreshToken: string = registerResponse.body.refreshToken as string;
+    const refreshResponse = await request(getServer()).post('/auth/refresh').send({
+      refreshToken: firstRefreshToken,
+    });
+    expect(refreshResponse.status).toBe(HttpStatus.OK);
+    expect(refreshResponse.body.accessToken).toEqual(expect.any(String));
+    expect(refreshResponse.body.refreshToken).toEqual(expect.any(String));
+    expect(refreshResponse.body.refreshToken).not.toBe(firstRefreshToken);
+    const meResponse = await request(getServer())
+      .get('/auth/me')
+      .set('Authorization', `Bearer ${refreshResponse.body.accessToken}`);
+    expect(meResponse.status).toBe(HttpStatus.OK);
+    expect(meResponse.body.email).toBe(refreshEmail);
+    const reusedResponse = await request(getServer()).post('/auth/refresh').send({
+      refreshToken: firstRefreshToken,
+    });
+    expect(reusedResponse.status).toBe(HttpStatus.UNAUTHORIZED);
+    expect(reusedResponse.body.code).toBe('AUTHENTICATION_FAILED');
+    const nextRefreshToken: string = refreshResponse.body.refreshToken as string;
+    const logoutResponse = await request(getServer())
+      .post('/auth/logout')
+      .send({ refreshToken: nextRefreshToken });
+    expect(logoutResponse.status).toBe(HttpStatus.NO_CONTENT);
+    const afterLogout = await request(getServer()).post('/auth/refresh').send({
+      refreshToken: nextRefreshToken,
+    });
+    expect(afterLogout.status).toBe(HttpStatus.UNAUTHORIZED);
+    const prismaProviderService: PrismaProviderService = getRunningApp().get(PrismaProviderService);
+    await deleteUsersByEmail(prismaProviderService, refreshEmail);
+  });
+
+  it('Given an invalid refresh token, When refresh is called, Then authentication fails', async () => {
+    const actualResponse = await request(getServer()).post('/auth/refresh').send({
+      refreshToken: 'not-a-refresh-token',
+    });
+    expect(actualResponse.status).toBe(HttpStatus.UNAUTHORIZED);
+    expect(actualResponse.body.code).toBe('AUTHENTICATION_FAILED');
+  });
 });

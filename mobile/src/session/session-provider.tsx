@@ -13,15 +13,18 @@ import { ApiError } from '@/api/api-error';
 import { getCurrentUser } from '@/features/auth/api/get-current-user';
 import { login } from '@/features/auth/api/login';
 import { register } from '@/features/auth/api/register';
+import { logoutSession } from '@/features/auth/api/refresh-session';
 import { purgeOfflinePackages } from '@/features/offline/lib/purge-offline-packages';
 import { clearOfflineBookmarksDocument } from '@/features/reader/lib/offline-bookmark-storage';
 import type { AuthSession } from '@/features/auth/auth.types';
 import {
-  clearAccessToken,
+  clearSessionTokens,
   hydrateSessionStore,
   readAccessToken,
+  readRefreshToken,
   subscribeAccessToken,
   writeAccessToken,
+  writeRefreshToken,
 } from '@/session/session-store';
 import type { SessionStatus, SessionValue, User } from '@/session/session.types';
 
@@ -100,6 +103,7 @@ export function SessionProvider({ children }: SessionProviderProps): JSX.Element
 
   const applySession = useCallback(async (session: AuthSession): Promise<void> => {
     await writeAccessToken(session.accessToken);
+    await writeRefreshToken(session.refreshToken);
     setUser(session.user);
     setStatus('signedIn');
     setErrorMessage(null);
@@ -124,9 +128,13 @@ export function SessionProvider({ children }: SessionProviderProps): JSX.Element
   );
 
   const signOut = useCallback(async (): Promise<void> => {
+    const refreshToken: string | null = readRefreshToken();
+    if (refreshToken !== null) {
+      await logoutSession(refreshToken).catch(() => undefined);
+    }
     await purgeOfflinePackages().catch(() => undefined);
     await clearOfflineBookmarksDocument().catch(() => undefined);
-    await clearAccessToken();
+    await clearSessionTokens();
     applySignedOut();
     setErrorMessage(null);
   }, [applySignedOut]);
@@ -140,7 +148,7 @@ export function SessionProvider({ children }: SessionProviderProps): JSX.Element
   const abandonRestore = useCallback(async (): Promise<void> => {
     await purgeOfflinePackages().catch(() => undefined);
     await clearOfflineBookmarksDocument().catch(() => undefined);
-    await clearAccessToken();
+    await clearSessionTokens();
     applySignedOut();
     setErrorMessage(null);
   }, [applySignedOut]);

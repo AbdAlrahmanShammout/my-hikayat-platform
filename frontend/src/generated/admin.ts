@@ -412,7 +412,7 @@ export interface components {
   schemas: {
     RegisterRequestDto: { email: string; password: string };
     UserResponse: { id: number; createdAt: string; updatedAt: string; email: string; role: "reader" | "author" | "admin"; isPublisher: boolean };
-    AuthSessionResponseDto: { accessToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
+    AuthSessionResponseDto: { accessToken: string; refreshToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
     AcceptAdminInvitationRequestDto: { token: string; password: string };
     LoginRequestDto: { email: string; password: string };
     AuditLogResponse: { id: number; createdAt: string; updatedAt: string; actorUserId: number; action: "book_submitted_for_review" | "book_approved" | "book_rejected" | "book_unpublished" | "book_republished" | "book_deleted" | "publisher_enabled" | "publisher_disabled" | "user_role_changed" | "user_deleted" | "subscription_canceled" | "subscription_payment_failed" | "collection_created" | "collection_updated" | "collection_deleted" | "collection_book_added" | "collection_book_removed" | "collection_reordered" | "revenue_calculated"; subjectType: "book" | "user" | "subscription" | "collection" | "revenue_period"; subjectId: number; reason?: unknown | null; metadata?: unknown | null };

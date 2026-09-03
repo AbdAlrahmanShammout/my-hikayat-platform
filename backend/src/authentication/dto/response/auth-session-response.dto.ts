@@ -11,6 +11,12 @@ export class AuthSessionResponseDto {
   })
   accessToken: string;
 
+  @ApiProperty({
+    description: 'Signed refresh token for renewing the access session',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9',
+  })
+  refreshToken: string;
+
   @ApiProperty({ description: 'Token type for the Authorization header', example: AUTH_TOKEN_TYPE })
   tokenType: string;
 
@@ -22,6 +28,7 @@ export class AuthSessionResponseDto {
 
   constructor(session: AuthSession) {
     this.accessToken = session.accessToken;
+    this.refreshToken = session.refreshToken;
     this.tokenType = AUTH_TOKEN_TYPE;
     this.expiresIn = session.expiresIn;
     this.user = new UserResponse(session.user);

@@ -4,6 +4,8 @@ import { Throttle } from '@nestjs/throttler';
 
 import { AuthSession } from '@/authentication/defs/auth-service.defs';
 import { LoginRequestDto } from '@/authentication/dto/request/login-request.dto';
+import { LogoutRequestDto } from '@/authentication/dto/request/logout-request.dto';
+import { RefreshSessionRequestDto } from '@/authentication/dto/request/refresh-session-request.dto';
 import { RegisterRequestDto } from '@/authentication/dto/request/register-request.dto';
 import { AuthSessionResponseDto } from '@/authentication/dto/response/auth-session-response.dto';
 import {
@@ -77,9 +79,38 @@ export class AuthController {
   @ApiOperation({ summary: 'Sign in with email and password' })
   @ApiBody({ type: LoginRequestDto })
   @ApiResponse({ status: 200, type: AuthSessionResponseDto })
-  login(@LoggedInUser() currentUser: UserEntity): AuthSessionResponseDto {
-    const session: AuthSession = this.authService.createSession(currentUser);
+  async login(@LoggedInUser() currentUser: UserEntity): Promise<AuthSessionResponseDto> {
+    const session: AuthSession = await this.authService.createSession(currentUser);
     return new AuthSessionResponseDto(session);
+  }
+
+  @PublicRoute()
+  @CredentialRoute()
+  @Throttle({
+    [DEFAULT_THROTTLE_NAME]: { ttl: CREDENTIAL_THROTTLE_TTL_MS, limit: CREDENTIAL_THROTTLE_LIMIT },
+  })
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Exchange a refresh token for a new access session' })
+  @ApiBody({ type: RefreshSessionRequestDto })
+  @ApiResponse({ status: 200, type: AuthSessionResponseDto })
+  async refresh(@Body() body: RefreshSessionRequestDto): Promise<AuthSessionResponseDto> {
+    const session: AuthSession = await this.authService.refreshSession(body.refreshToken);
+    return new AuthSessionResponseDto(session);
+  }
+
+  @PublicRoute()
+  @CredentialRoute()
+  @Throttle({
+    [DEFAULT_THROTTLE_NAME]: { ttl: CREDENTIAL_THROTTLE_TTL_MS, limit: CREDENTIAL_THROTTLE_LIMIT },
+  })
+  @Post('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Revoke a refresh token and end the refreshable session' })
+  @ApiBody({ type: LogoutRequestDto })
+  @ApiResponse({ status: 204, description: 'Refresh token revoked when present' })
+  async logout(@Body() body: LogoutRequestDto): Promise<void> {
+    await this.authService.logout(body.refreshToken);
   }
 
   @Get('me')

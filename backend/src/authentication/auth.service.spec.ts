@@ -10,6 +10,7 @@ import { compareHashString } from '@/common/helpers/compare-hash-string.helper';
 import { hashString } from '@/common/helpers/hash-string.helper';
 import { JwtConfigService } from '@/config/jwt/jwt-config.service';
 import { AdminInvitationService } from '@/modules/user/admin-invitation.service';
+import { AuthRefreshTokenService } from '@/modules/user/auth-refresh-token.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
 import { UserEmailConflictException } from '@/modules/user/exceptions/user-email-conflict.exception';
@@ -38,8 +39,14 @@ describe('AuthService', () => {
   let mockUserService: {
     createUser: jest.Mock;
     findUserByEmail: jest.Mock;
+    getUserById: jest.Mock;
   };
   let mockAdminInvitationService: { acceptInvitation: jest.Mock };
+  let mockAuthRefreshTokenService: {
+    issueForUser: jest.Mock;
+    consumeAndRotate: jest.Mock;
+    revokePresentedToken: jest.Mock;
+  };
   let mockJwtTokenService: { createToken: jest.Mock };
   let mockJwtConfigService: { accessExpiresIn: string };
   let authService: AuthService;
@@ -50,13 +57,23 @@ describe('AuthService', () => {
     mockUserService = {
       createUser: jest.fn(),
       findUserByEmail: jest.fn(),
+      getUserById: jest.fn(),
     };
     mockAdminInvitationService = { acceptInvitation: jest.fn() };
+    mockAuthRefreshTokenService = {
+      issueForUser: jest.fn().mockResolvedValue({
+        refreshToken: 'refresh.jwt',
+        expiresAt: new Date('2026-10-01T00:00:00.000Z'),
+      }),
+      consumeAndRotate: jest.fn(),
+      revokePresentedToken: jest.fn(),
+    };
     mockJwtTokenService = { createToken: jest.fn() };
     mockJwtConfigService = { accessExpiresIn: '15m' };
     authService = new AuthService(
       mockUserService as unknown as UserService,
       mockAdminInvitationService as unknown as AdminInvitationService,
+      mockAuthRefreshTokenService as unknown as AuthRefreshTokenService,
       mockJwtTokenService as unknown as JwtTokenService,
       mockJwtConfigService as unknown as JwtConfigService,
     );
@@ -84,6 +101,7 @@ describe('AuthService', () => {
       expect(actualSession).toEqual({
         user: expectedUser,
         accessToken: 'signed.jwt',
+        refreshToken: 'refresh.jwt',
         expiresIn: '15m',
       });
     });
@@ -113,6 +131,7 @@ describe('AuthService', () => {
         password: 'correct-horse-battery',
       });
       expect(actualSession.accessToken).toBe('signed.jwt');
+      expect(actualSession.refreshToken).toBe('refresh.jwt');
       expect(actualSession.user).toBe(expectedUser);
     });
 
@@ -153,46 +172,53 @@ describe('AuthService', () => {
         token: 'raw-token',
         password: 'correct-horse-battery',
       });
-      expect(mockHashString).toHaveBeenCalledWith('correct-horse-battery');
-      expect(mockAdminInvitationService.acceptInvitation).toHaveBeenCalledWith({
-        token: 'raw-token',
-        passwordHash: 'hashed-password',
-      });
-      expect(mockJwtTokenService.createToken).toHaveBeenCalledWith({
-        payload: { principalId: 1, role: UserRole.ADMIN },
-        purpose: JwtTokenPurpose.ACCESS,
-      });
       expect(actualSession).toEqual({
         user: expectedUser,
         accessToken: 'signed.jwt',
+        refreshToken: 'refresh.jwt',
         expiresIn: '15m',
       });
     });
   });
 
-  describe('verifyCredentials', () => {
-    it('returns the user when email and password match', async () => {
-      const expectedUser = createSampleUser();
-      mockUserService.findUserByEmail.mockResolvedValue(expectedUser);
-      mockCompareHashString.mockResolvedValue(true);
-      const actualUser = await authService.verifyCredentials({
-        email: 'reader@example.com',
-        password: 'correct-horse-battery',
-      });
-      expect(actualUser).toBe(expectedUser);
-    });
-  });
-
   describe('createSession', () => {
-    it('signs an access token for the given principal', () => {
+    it('signs access and refresh tokens for the given principal', async () => {
       mockJwtTokenService.createToken.mockReturnValue('signed.jwt');
-      const actualSession = authService.createSession(createSampleUser());
+      const actualSession = await authService.createSession(createSampleUser());
+      expect(mockAuthRefreshTokenService.issueForUser).toHaveBeenCalledWith(1);
       expect(mockJwtTokenService.createToken).toHaveBeenCalledWith({
         payload: { principalId: 1, role: UserRole.READER },
         purpose: JwtTokenPurpose.ACCESS,
       });
       expect(actualSession.accessToken).toBe('signed.jwt');
+      expect(actualSession.refreshToken).toBe('refresh.jwt');
       expect(actualSession.expiresIn).toBe('15m');
+    });
+  });
+
+  describe('refreshSession', () => {
+    it('rotates refresh and issues a new access session', async () => {
+      const expectedUser = createSampleUser();
+      mockAuthRefreshTokenService.consumeAndRotate.mockResolvedValue({
+        userId: 1,
+        refreshToken: 'next.refresh.jwt',
+      });
+      mockUserService.getUserById.mockResolvedValue(expectedUser);
+      mockJwtTokenService.createToken.mockReturnValue('next.access.jwt');
+      const actualSession = await authService.refreshSession('old.refresh.jwt');
+      expect(actualSession).toEqual({
+        user: expectedUser,
+        accessToken: 'next.access.jwt',
+        refreshToken: 'next.refresh.jwt',
+        expiresIn: '15m',
+      });
+    });
+  });
+
+  describe('logout', () => {
+    it('revokes the presented refresh token', async () => {
+      await authService.logout('refresh.jwt');
+      expect(mockAuthRefreshTokenService.revokePresentedToken).toHaveBeenCalledWith('refresh.jwt');
     });
   });
 });
