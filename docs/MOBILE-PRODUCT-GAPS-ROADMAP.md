@@ -77,7 +77,7 @@ Priority bands used:
 | --- | --- | --- | --- | --- | --- |
 | 1 | **MG-1** | Book cover / preview image on catalog | `COMPLETE` | 1–2 | — |
 | 2 | **MG-2** | Author & publisher display fields | `COMPLETE` | 1–2 | — (can parallelize with MG-1; sequential by rule) |
-| 3 | **MG-3** | Entitlement visibility before reader | `TODO` | 4 | Prefer after MG-1/MG-2 so book detail can show access + identity together |
+| 3 | **MG-3** | Entitlement visibility before reader | `COMPLETE` | 4 | Prefer after MG-1/MG-2 so book detail can show access + identity together |
 | 4 | **MG-4** | Trial discovery & trial UX | `TODO` | 7 | MG-3 (reuse access-state surfaces) |
 | 5 | **MG-5** | Offline reading resume (local progress) | `TODO` | 5 | — |
 | 6 | **MG-6** | Offline bookmark persistence & sync | `TODO` | 5 | Prefer after MG-5 (shared local offline store patterns) |
@@ -91,7 +91,7 @@ Priority bands used:
 | 14 | **MG-14** | Trial / subscription expiry notifications | `TODO` | 9 | MG-3/MG-4 for in-app; push infra may be `BLOCKED` |
 | 15 | **MG-FINAL** | Access + refresh token architecture | `TODO` | 3 | After MG-1…MG-14 (largest auth change; last by requirement) |
 
-**Next task to start when approved:** **MG-3**.
+**Next task to start when approved:** **MG-4**.
 
 ---
 
@@ -145,7 +145,7 @@ Priority bands used:
 
 | Field | Content |
 | --- | --- |
-| **Status** | `TODO` |
+| **Status** | `COMPLETE` |
 | **Problem** | Free users browse a full catalog with no access signal until open fails. |
 | **Current behavior** | Denial only inside reader open (`FULL_BOOK_ACCESS_DENIED` → Go to Subscribe). `readingAccessState` exists on subscription API but is Me-only. |
 | **Desired behavior** | User can understand access state **before** entering the reader: free / trial / paid / expired-or-restricted, with a clear path to trial or subscribe. Do **not** invent client entitlement math — display backend `readingAccessState` (and related fields). |
@@ -158,7 +158,7 @@ Priority bands used:
 | **Dependencies** | Prefer MG-1/MG-2 complete so detail screen redesign includes cover + author + access. |
 | **Implementation notes** | Reuse `useReaderSubscription`. Never treat UI labels as authorization. |
 | **Testing** | Unit tests for CTA label mapping by `readingAccessState` / `trialEligible`; manual state matrix. |
-| **Completion** | — |
+| **Completion** | **2026-09-03.** Mobile-only. `resolveReaderEntryCta` maps `readingAccessState` + `trialEligible` to book-detail primary CTA (Read/Continue vs Start Free Trial vs Subscribe to read) with Access hint. Billing actions route to Profile. Offline / unknown access still opens reader (denial fallback unchanged). Continue-reading Home path unchanged. |
 
 ---
 
@@ -392,6 +392,7 @@ Priority bands used:
 | 2026-09-03 | Roadmap created after revalidation. No implementation started. Next: MG-1 on explicit approval. |
 | 2026-09-03 | **MG-1 COMPLETE.** Catalog covers from existing preview images. Next: MG-2 on explicit approval. |
 | 2026-09-03 | **MG-2 COMPLETE.** Author/publisher display from EPUB source metadata. Next: MG-3 on explicit approval. |
+| 2026-09-03 | **MG-3 COMPLETE.** Book-detail access CTA from `readingAccessState`. Next: MG-4 on explicit approval. |
 
 ---
 

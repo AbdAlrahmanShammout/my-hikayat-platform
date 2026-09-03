@@ -32,9 +32,9 @@ roadmap is the ordered implementation source of truth for closing gaps. Historic
 31–54 in `docs/admin-dashboard-tasks.md` remain Complete and are not rewritten. As each `MG-*`
 task completes, this specification must be updated so it stays current.
 
-**Roadmap snapshot (2026-09-03).** **MG-1** and **MG-2 COMPLETE** (covers + author/publisher
-display). Next task when approved: **MG-3** (entitlement visibility before reader). Confirmed
-blocker: access tokens default to **15 minutes** with no refresh (`MG-FINAL`, last).
+**Roadmap snapshot (2026-09-03).** **MG-1…MG-3 COMPLETE** (covers, author/publisher, entitlement
+CTA on book detail). Next task when approved: **MG-4** (trial discovery UX). Confirmed blocker:
+access tokens default to **15 minutes** with no refresh (`MG-FINAL`, last).
 
 ---
 
@@ -317,15 +317,18 @@ This is a significant functional gap and a required design input.
 - **What it does.** The evaluation and action hub for a single book.
 - **Information shown.** Cover (or placeholder); title; author and publisher display names when
   present; category names; a layout label ("Reflowable", "Fixed layout", or "Layout not ready");
-  the full description; an offline notice when disconnected; and a resume hint.
-- **Actions available.** Read or Continue reading; download for offline or remove the download;
-  back.
-- **Conditional behavior.** The primary action reads "Continue reading" when saved progress
-  exists, otherwise "Read". The offline action is disabled with alternative wording when the
-  device has no network. If the book is already downloaded, the download action becomes a remove
-  action.
-- **Notable.** Book detail does **not** show a subscribe prompt, entitlement state, or progress
-  percentage. Entitlement is only discovered by attempting to open the book.
+  an Access hint from backend `readingAccessState` (Free / Free Trial / Paid) when known; the full
+  description; an offline notice when disconnected; and a resume hint.
+- **Actions available.** Primary CTA depends on access (display-only): Read / Continue reading when
+  entitled; Start Free Trial or Subscribe to read when free (routes to Profile). Download for
+  offline or remove the download; back.
+- **Conditional behavior.** The primary action reads "Continue reading" when saved progress exists
+  and the user is entitled (or access is unknown/offline), otherwise "Read". Free users see trial
+  or subscribe CTAs instead of opening the reader. The offline action is disabled with alternative
+  wording when the device has no network. If the book is already downloaded, the download action
+  becomes a remove action.
+- **Notable.** Progress percentage is still not shown. Reader open denial remains the authorization
+  fallback; UI labels never grant access.
 
 ## 2.5 Search
 
@@ -770,10 +773,10 @@ what information must be present, what actions originate there, where they can g
 | **Purpose** | The decision and action point for a single book. |
 | **Access** | Signed-in users, from catalog rows, search results, or collection contents. |
 | **User accomplishes** | Decides whether to read it; starts or resumes reading; makes it available offline; removes it. |
-| **Information needed** | Cover (or placeholder); title; author and publisher display names when present; categories; the layout type; the full description; connectivity impact on downloading; whether they already have progress (which changes the primary action's meaning) and a matching resume hint; whether it is already downloaded; download progress; the outcome of the last offline action. |
-| **Actions** | Read / Continue reading; download for offline; remove offline download; retry loading; back. |
-| **Navigates to** | Reader; back. |
-| **Conditions** | Primary action label switches on saved progress. Offline action has three shapes: download (online, not downloaded), disabled "connect to download" (offline, not downloaded), and remove (downloaded). Cover art shows when a preview image exists; otherwise a placeholder. Author/publisher show when EPUB metadata provides them. **No entitlement information at all** — the user learns they cannot read the book only after tapping Read. |
+| **Information needed** | Cover (or placeholder); title; author and publisher display names when present; categories; the layout type; access hint from `readingAccessState`; the full description; connectivity impact on downloading; whether they already have progress (which changes the primary action's meaning) and a matching resume hint; whether it is already downloaded; download progress; the outcome of the last offline action. |
+| **Actions** | Read / Continue reading (entitled); Start Free Trial / Subscribe to read (free → Profile); download for offline; remove offline download; retry loading; back. |
+| **Navigates to** | Reader; Profile (billing); back. |
+| **Conditions** | Primary CTA follows backend `readingAccessState` + `trialEligible` (display-only). Offline or unknown access still opens the reader (denial fallback). Offline download action has three shapes: download / connect to download / remove. Cover and author/publisher as in MG-1/MG-2. |
 
 ## 3.5 Reader context
 
@@ -897,10 +900,10 @@ unreachable at launch → indefinite splash (no timeout).
 
 **Final state.** Authenticated free user who has discovered that reading requires access.
 
-**Critical UX observation.** The product's onboarding is *denial-driven*: nothing tells a new user
-they need a subscription until they try to read and are refused. There is no value framing, no
-trial offer at registration, and no entitlement signal while browsing. Fixing the first-run
-narrative is the single highest-leverage design opportunity in this product.
+**Critical UX observation.** Book detail now surfaces access state and routes free users to
+Profile for trial/subscribe (**MG-3**). First-run trial discovery outside book detail (Home /
+post-register) remains thin — tracked as **MG-4**. Reader denial remains the authorization
+fallback.
 
 ## 4.2 Returning user: open to reading
 
@@ -936,22 +939,21 @@ of the affordance.
 
 **Steps.**
 1. Browses freely — catalog, search, collections, book detail all fully available.
-2. Nothing at any point indicates that reading is gated.
-3. Taps Read.
-4. Open pipeline reaches the backend entitlement check and is refused.
-5. Reader shows the access-required explanation, phrased for a child to relay to an adult, and
-   offers a direct route to the subscribe path.
-6. **Decision point.** Follow the path, or go back.
+2. On book detail, Access: Free is shown when subscription state is known. Primary CTA is
+   **Start Free Trial** (if `trialEligible`) or **Subscribe to read** (if not), routing to Profile —
+   not into the reader (**MG-3**).
+3. From Profile, the adult starts a trial or checkout.
+4. If the user still reaches the reader (Continue reading from Home, unknown access, or offline
+   open), open-pipeline denial remains the fallback with Go to Subscribe → Profile.
 
 **Outcomes.** Reaches Me → trial or subscription (§4.4, §4.5). Or abandons.
 
-**Failure cases.** The denial is discovered *inside* a full-screen reader context the user entered
-expecting content — the mode switch from "I'm about to read" to "you can't read" is abrupt.
+**Failure cases.** Home Continue reading and denial fallback can still land inside the reader
+context before conversion; MG-3 covers book detail as the primary anticipation surface.
 
 **Final state.** Either on the conversion path, or back in discovery.
 
-**Design implication.** Consider surfacing entitlement state earlier — during browsing and on book
-detail — so the wall is anticipated rather than sprung.
+**Design implication.** Broader trial discovery on Home / post-register is **MG-4**.
 
 ## 4.4 Trial user: start, use, expire
 
@@ -1444,8 +1446,9 @@ and weights.
    EPUB metadata includes them. Missing metadata yields no byline (not an email surrogate).
 3. There is no age or reading-level information, so an adult cannot judge suitability from the app.
 
-**Remediation.** Cover (**MG-1**) and author/publisher (**MG-2**) exposure are **COMPLETE**. Next
-catalog UX gap is entitlement visibility before reader (**MG-3**).
+**Remediation.** Cover (**MG-1**) and author/publisher (**MG-2**) exposure are **COMPLETE**.
+Entitlement visibility on book detail (**MG-3**) is **COMPLETE**. Next conversion gap is trial
+discovery (**MG-4**).
 
 ## 6.3 Catalog behavior
 
@@ -1620,18 +1623,20 @@ backend; the mobile app displays the result and must never recalculate it.
 - **Terms as stated in the product.** 7 days. **No credit card required.** Explicitly does not by
   itself start a paid subscription.
 - **Eligibility.** Server-determined; **one trial per account, ever.** The offer appears on Me
-  only when the server says the account is eligible.
+  when the server says the account is eligible, and book detail primary CTA says "Start Free Trial"
+  for the same condition (**MG-3**). Broader trial discovery (Home / post-register) is **MG-4**.
 - **Not automatic.** A trial is never started at registration; the user must choose it.
 - **What a trial user can do.** Everything a paid subscriber can — read any catalog book, and
   download for offline reading.
 - **Countdown.** While on trial, Me shows the remaining time, stepping down from days to hours,
-  then to an "ending soon, the server decides access" state once the end time passes. This
-  countdown is **only visible on Me** — nowhere else in the app.
+  then to an "ending soon, the server decides access" state once the end time passes. Book detail
+  shows Access: Free Trial but not the countdown digits (**MG-4** may widen remaining-time
+  surfaces).
 - **Expiry.** Access reverts to free. Reading is refused again. Downloaded books lock once their
   offline authorizations expire — the offline authorization mechanism exists precisely to make
   trial downloads stop working when the trial ends.
 - **No warnings.** No notification, no in-app banner, no email path from the app. Expiry is
-  discovered by refusal.
+  discovered by refusal (or by book-detail Subscribe CTA after state refresh).
 
 ## 8.4 Paid subscription
 
@@ -2639,7 +2644,8 @@ sign-out with full purge; immediate sign-out on session rejection; field-level e
 taxonomy loading; single-field metadata search over title, author, or publisher; curated
 collections list and detail with preserved backend ordering; book detail; continue-reading shelf;
 catalog covers from author preview images with placeholders when missing (**MG-1**); author and
-publisher display names from EPUB source metadata when present (**MG-2**).
+publisher display names from EPUB source metadata when present (**MG-2**); book-detail Access hint
+and entitlement-aware primary CTA from `readingAccessState` (**MG-3**).
 
 **Reader.** Layout-driven dual-engine selection; full open pipeline with authorization,
 integrity verification, in-memory decryption, and parsing; reflowable engine with chapter
@@ -2767,7 +2773,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 | Access token lifetime | **Confirmed 15m default**, no refresh today. Refresh architecture is mandatory and scheduled last. | **MG-FINAL** |
 | Offline lease lifetime | Equals trial end or paid `currentPeriodEnd`; already on device as `expiresAt`. | **MG-8** (UX) |
 | Sign-out purge | **Keep** security purge; require explicit confirmation when downloads exist. | **MG-9** |
-| Entitlement visibility | **Will surface** backend `readingAccessState` before reader entry (no client entitlement math). | **MG-3** |
+| Entitlement visibility | **COMPLETE.** Book detail shows Access hint and maps primary CTA from `readingAccessState` / `trialEligible` (Profile for trial/subscribe). Denial path kept as fallback. | **MG-3** |
 | Trial discovery | **Will improve** discovery without auto-start; keep one-trial / no-card rules. | **MG-4** |
 | Offline resume + sync | **Will implement** local resume, then bookmark + progress sync queues. | **MG-5**, **MG-6**, **MG-7** |
 | Catalog/search pagination | **Will implement** against existing `limit`/`offset`. | **MG-10** |

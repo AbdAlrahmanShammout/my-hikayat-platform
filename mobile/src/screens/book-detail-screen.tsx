@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 
 import { ApiError } from '@/api/api-error';
+import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subscription';
+import { resolveReaderEntryCta } from '@/features/billing/lib/resolve-reader-entry-cta';
 import { useCatalogBook } from '@/features/catalog/hooks/use-catalog-book';
 import { CatalogBookCover } from '@/features/catalog/components/catalog-book-cover';
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
@@ -23,11 +25,13 @@ import { theme } from '@/theme/theme';
 
 /**
  * Catalog book detail. Opens the reading shell; Continue reading when progress exists.
+ * Primary CTA anticipates access via backend readingAccessState (display-only).
  */
 export function BookDetailScreen(): JSX.Element {
   const params = useLocalSearchParams<{ bookId: string }>();
   const bookId: number | null = parseBookIdParam(params.bookId);
   const bookQuery = useCatalogBook(bookId);
+  const billing = useReaderSubscription();
   const offlinePackage = useOfflinePackage(bookId);
   const offlineActions = useOfflineBookActions(bookId);
   const { isOnline } = useConnectivity();
@@ -99,7 +103,12 @@ export function BookDetailScreen(): JSX.Element {
         ? 'Fixed layout'
         : 'Layout not ready';
   const hasProgress: boolean = progressQuery.data !== null && progressQuery.data !== undefined;
-  const readLabel: string = hasProgress ? 'Continue reading' : 'Read';
+  const entryCta = resolveReaderEntryCta({
+    readingAccessState: billing.subscription?.readingAccessState,
+    trialEligible: billing.subscription?.trialEligible,
+    hasProgress,
+    isOnline,
+  });
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -122,6 +131,11 @@ export function BookDetailScreen(): JSX.Element {
       <Text style={styles.meta} testID="book-detail-layout-type">
         {layoutLabel}
       </Text>
+      {entryCta.accessHint !== null ? (
+        <Text style={styles.accessHint} testID="book-detail-access-hint">
+          {`Access: ${entryCta.accessHint}`}
+        </Text>
+      ) : null}
       <Text style={styles.body}>{book.description}</Text>
       {!isOnline ? (
         <Text style={styles.note} testID="book-detail-offline-banner">
@@ -131,13 +145,17 @@ export function BookDetailScreen(): JSX.Element {
       <Pressable
         style={styles.primaryButton}
         onPress={() => {
+          if (entryCta.kind === 'go_to_billing') {
+            router.push('/(app)/(tabs)/profile' as Href);
+            return;
+          }
           router.push(`/(app)/books/read/${book.id}` as Href);
         }}
         accessibilityRole="button"
-        accessibilityLabel={readLabel}
+        accessibilityLabel={entryCta.label}
         testID="book-detail-read-button"
       >
-        <Text style={styles.primaryLabel}>{readLabel}</Text>
+        <Text style={styles.primaryLabel}>{entryCta.label}</Text>
       </Pressable>
       {offlinePackage.isDownloaded ? (
         <Pressable
@@ -263,6 +281,11 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 16,
     color: theme.colors.textMuted,
+  },
+  accessHint: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.primaryMuted,
   },
   note: {
     ...theme.typography.body,
