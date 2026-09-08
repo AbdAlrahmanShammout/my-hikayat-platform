@@ -36,7 +36,7 @@ export function AuthorBookPreviewImageUploadForm({
         <CardTitle>Preview image</CardTitle>
         <CardDescription>
           Upload a JPEG, PNG, or WebP (up to {AUTHOR_PREVIEW_IMAGE_UPLOAD.maxBytes} bytes). The API
-          stores catalog media unencrypted. This screen does not list previously stored previews.
+          stores catalog media unencrypted. The latest preview becomes the catalog cover.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

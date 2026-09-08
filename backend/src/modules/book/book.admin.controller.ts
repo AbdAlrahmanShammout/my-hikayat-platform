@@ -37,6 +37,7 @@ import { GetBookRejectionHistoryResponseDto } from '@/modules/book/dto/response/
 import { GetBooksResponseDto } from '@/modules/book/dto/response/get-books-response.dto';
 import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
+import { BookCatalogCoverService } from '@/modules/book-asset/book-catalog-cover.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
 
@@ -49,6 +50,7 @@ export class BookAdminController {
   constructor(
     private readonly bookService: BookService,
     private readonly bookPublishingStatusService: BookPublishingStatusService,
+    private readonly bookCatalogCoverService: BookCatalogCoverService,
   ) {}
 
   @Get()
@@ -60,10 +62,8 @@ export class BookAdminController {
       offset: query.offset,
       publishingStatus: query.publishingStatus,
     });
-    return new GetBooksResponseDto(
-      page.entities.map((entity) => new BookResponse(entity)),
-      page.total,
-    );
+    const books: BookResponse[] = await this.bookCatalogCoverService.toBookResponses(page.entities);
+    return new GetBooksResponseDto(books, page.total);
   }
 
   @Get(':id/rejection-history')
@@ -91,7 +91,8 @@ export class BookAdminController {
   @ApiResponse({ status: 200, type: BookResponse })
   async getBook(@Param('id', ParseIntPipe) id: number): Promise<BookResponse> {
     const entity: BookEntity = await this.bookService.getBookById(id);
-    return new BookResponse(entity);
+    const books: BookResponse[] = await this.bookCatalogCoverService.toBookResponses([entity]);
+    return books[0] ?? new BookResponse(entity, null);
   }
 
   @Patch(':id')

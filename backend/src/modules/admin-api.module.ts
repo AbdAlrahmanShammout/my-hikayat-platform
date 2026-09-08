@@ -8,6 +8,7 @@ import { AuditAdminController } from '@/modules/audit/audit.admin.controller';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { BookAdminController } from '@/modules/book/book.admin.controller';
 import { BookModule } from '@/modules/book/book.module';
+import { BookAssetModule } from '@/modules/book-asset/book-asset.module';
 import { CategoryAdminController } from '@/modules/category/category.admin.controller';
 import { CategoryModule } from '@/modules/category/category.module';
 import { CollectionAdminController } from '@/modules/collection/collection.admin.controller';
@@ -27,6 +28,7 @@ import { UserModule } from '@/modules/user/user.module';
     AuthModule,
     AuditModule,
     BookModule,
+    BookAssetModule,
     CategoryModule,
     CollectionModule,
     MonetizationModule,

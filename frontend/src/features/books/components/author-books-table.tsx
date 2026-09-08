@@ -2,6 +2,7 @@ import type { JSX } from 'react';
 import { Link } from 'react-router';
 
 import { AdminBookStatusBadge } from '@/features/books/components/admin-book-status-badge';
+import { BookCoverThumbnail } from '@/features/books/components/book-cover-thumbnail';
 import { formatBookEnumLabel } from '@/features/books/lib/format-book-enum-label';
 import { joinBookCategoryNames } from '@/features/books/lib/join-book-category-names';
 import { Button } from '@/components/ui/button';
@@ -42,7 +43,12 @@ export function AuthorBooksTable({ books }: AuthorBooksTableProps): JSX.Element 
       <TableBody>
         {books.map((book) => (
           <TableRow key={book.id}>
-            <TableCell className="font-medium">{book.title}</TableCell>
+            <TableCell>
+              <div className="flex items-center gap-4">
+                <BookCoverThumbnail title={book.title} cover={book.cover} />
+                <span className="font-medium">{book.title}</span>
+              </div>
+            </TableCell>
             <TableCell>
               <AdminBookStatusBadge value={book.publishingStatus} />
             </TableCell>

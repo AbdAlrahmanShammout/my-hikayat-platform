@@ -6,7 +6,9 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { BookPublishingStatusService } from '@/modules/book/book-publishing-status.service';
 import { BookService } from '@/modules/book/book.service';
 import { UpdateBookRequestDto } from '@/modules/book/dto/request/update-book-request.dto';
+import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
+import { BookCatalogCoverService } from '@/modules/book-asset/book-catalog-cover.service';
 import {
   BookLayoutType,
   BookProcessingStatus,
@@ -65,6 +67,7 @@ describe('BookAdminController', () => {
     unpublishBook: jest.Mock;
     republishBook: jest.Mock;
   };
+  let mockBookCatalogCoverService: { toBookResponses: jest.Mock };
 
   beforeEach(async () => {
     mockBookService = {
@@ -80,12 +83,18 @@ describe('BookAdminController', () => {
       unpublishBook: jest.fn(),
       republishBook: jest.fn(),
     };
+    mockBookCatalogCoverService = {
+      toBookResponses: jest.fn(async (books: BookEntity[]) =>
+        books.map((book) => new BookResponse(book, null)),
+      ),
+    };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       controllers: [BookAdminController],
       providers: [
         { provide: BookService, useValue: mockBookService },
         { provide: BookPublishingStatusService, useValue: mockBookPublishingStatusService },
+        { provide: BookCatalogCoverService, useValue: mockBookCatalogCoverService },
         JwtAuthGuard,
         RolesGuard,
       ],
@@ -106,8 +115,10 @@ describe('BookAdminController', () => {
         offset: 0,
         publishingStatus: undefined,
       });
+      expect(mockBookCatalogCoverService.toBookResponses).toHaveBeenCalledWith([expectedBook]);
       expect(actualResponse.total).toBe(1);
       expect(actualResponse.books[0].id).toBe(8);
+      expect(actualResponse.books[0].cover).toBeNull();
     });
 
     it('filters by publishing status when the review queue is requested', async () => {
@@ -128,11 +139,21 @@ describe('BookAdminController', () => {
   });
 
   describe('getBook', () => {
-    it('returns the requested book', async () => {
-      mockBookService.getBookById.mockResolvedValue(createSampleBook());
+    it('returns the requested book with cover enrichment', async () => {
+      const expectedBook = createSampleBook();
+      mockBookService.getBookById.mockResolvedValue(expectedBook);
+      mockBookCatalogCoverService.toBookResponses.mockResolvedValue([
+        new BookResponse(expectedBook, {
+          url: 'https://cdn.example.com/cover.jpg',
+          expiresAt: new Date('2026-09-03T13:00:00.000Z'),
+          contentType: 'image/jpeg',
+        }),
+      ]);
       const actualResponse = await bookAdminController.getBook(8);
       expect(mockBookService.getBookById).toHaveBeenCalledWith(8);
+      expect(mockBookCatalogCoverService.toBookResponses).toHaveBeenCalledWith([expectedBook]);
       expect(actualResponse.id).toBe(8);
+      expect(actualResponse.cover?.url).toBe('https://cdn.example.com/cover.jpg');
     });
   });
 

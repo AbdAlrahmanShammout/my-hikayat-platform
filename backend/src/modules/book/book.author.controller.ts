@@ -35,6 +35,7 @@ import { GetBookRejectionHistoryResponseDto } from '@/modules/book/dto/response/
 import { GetBooksResponseDto } from '@/modules/book/dto/response/get-books-response.dto';
 import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
+import { BookCatalogCoverService } from '@/modules/book-asset/book-catalog-cover.service';
 import { BookProcessingOrchestrationService } from '@/modules/book-processing/book-processing-orchestration.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
@@ -48,6 +49,7 @@ export class BookAuthorController {
   constructor(
     private readonly bookService: BookService,
     private readonly bookProcessingOrchestrationService: BookProcessingOrchestrationService,
+    private readonly bookCatalogCoverService: BookCatalogCoverService,
   ) {}
 
   @Post()
@@ -81,10 +83,8 @@ export class BookAuthorController {
       ownerId: currentUser.id,
       publishingStatus: query.publishingStatus,
     });
-    return new GetBooksResponseDto(
-      page.entities.map((entity) => new BookResponse(entity)),
-      page.total,
-    );
+    const books: BookResponse[] = await this.bookCatalogCoverService.toBookResponses(page.entities);
+    return new GetBooksResponseDto(books, page.total);
   }
 
   @Get(':id/rejection-history')
@@ -119,7 +119,8 @@ export class BookAuthorController {
       actorId: currentUser.id,
       actorRole: currentUser.role,
     });
-    return new BookResponse(entity);
+    const books: BookResponse[] = await this.bookCatalogCoverService.toBookResponses([entity]);
+    return books[0] ?? new BookResponse(entity, null);
   }
 
   @Patch(':id')

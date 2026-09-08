@@ -1,9 +1,10 @@
-import { useMutation, type UseMutationResult } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 
 import {
   uploadAuthorBookPreviewImage,
   type UploadAuthorBookPreviewImageInput,
 } from '@/features/books/api/upload-author-book-preview-image';
+import { invalidateAuthorBooksQueries } from '@/features/books/lib/invalidate-author-books-queries';
 import type { components } from '@/generated/author';
 
 /**
@@ -14,7 +15,11 @@ export function useUploadAuthorBookPreviewImage(): UseMutationResult<
   Error,
   UploadAuthorBookPreviewImageInput
 > {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: uploadAuthorBookPreviewImage,
+    onSuccess: async () => {
+      await invalidateAuthorBooksQueries(queryClient);
+    },
   });
 }

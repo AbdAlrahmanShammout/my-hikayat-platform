@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 
 import { AdminBookStatusBadge } from '@/features/books/components/admin-book-status-badge';
+import { BookCoverThumbnail } from '@/features/books/components/book-cover-thumbnail';
 import { formatBookEnumLabel } from '@/features/books/lib/format-book-enum-label';
 import { formatBookOwnerLabel } from '@/features/books/lib/format-book-owner-label';
 import { joinBookCategoryNames } from '@/features/books/lib/join-book-category-names';
@@ -22,7 +23,8 @@ export function AdminBookDetailSummary({ book }: AdminBookDetailSummaryProps): J
       <CardHeader>
         <CardTitle>Catalog record</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
+        <BookCoverThumbnail title={book.title} cover={book.cover} size="lg" />
         <dl className="grid gap-4 sm:grid-cols-2">
           <SummaryItem label="Publishing status">
             <AdminBookStatusBadge value={book.publishingStatus} />
