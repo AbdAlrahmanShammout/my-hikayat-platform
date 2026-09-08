@@ -41,5 +41,6 @@ describe('SubscriptionMapper', () => {
     expect(actualEntity.planId).toBe(1);
     expect(actualEntity.trialStartedAt).toBeNull();
     expect(actualEntity.plan?.slug).toBe('free');
+    expect(actualEntity.user).toBeUndefined();
   });
 });

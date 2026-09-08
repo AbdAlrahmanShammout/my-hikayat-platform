@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { formatSubscriptionEnumLabel } from '@/features/subscriptions/lib/format-subscription-enum-label';
 import { formatSubscriptionPlanLabel } from '@/features/subscriptions/lib/format-subscription-plan-label';
 import type { components } from '@/generated/admin';
+import { formatUserEmailLabel } from '@/lib/format-user-email-label';
 import { formatWireInstant } from '@/lib/format-wire-instant';
 import { hasWireInstant } from '@/lib/has-wire-instant';
 
@@ -43,7 +44,7 @@ export function AdminSubscriptionDetailSummary({
               className="underline-offset-4 hover:underline"
               to={`/admin/users/${subscription.userId}`}
             >
-              User #{subscription.userId}
+              {formatUserEmailLabel({ userId: subscription.userId, user: subscription.user })}
             </Link>
           </SummaryItem>
           <SummaryItem label="Started">{formatWireInstant(subscription.startedAt)}</SummaryItem>

@@ -13,6 +13,7 @@ import {
 import { formatDurationMs } from '@/features/analytics/lib/format-duration-ms';
 import { formatLayoutType } from '@/features/analytics/lib/format-layout-type';
 import type { components } from '@/generated/author';
+import { formatBookTitleLabel } from '@/lib/format-book-title-label';
 
 type AuthorAnalyticsTableProps = {
   readonly bookEngagements: ReadonlyArray<components['schemas']['BookEngagementResponse']>;
@@ -44,7 +45,7 @@ export function AuthorAnalyticsTable({ bookEngagements }: AuthorAnalyticsTablePr
                 className="underline-offset-4 hover:underline"
                 to={`/author/books/${row.bookId}`}
               >
-                Book #{row.bookId}
+                {formatBookTitleLabel({ bookId: row.bookId, book: row.book })}
               </Link>
             </TableCell>
             <TableCell>{formatLayoutType(row.layoutType)}</TableCell>

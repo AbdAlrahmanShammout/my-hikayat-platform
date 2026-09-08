@@ -190,6 +190,7 @@ describe('AuthorAnalyticsService', () => {
     it('returns the owned-book heatmap for the period window', async () => {
       const expectedHeatmap = {
         bookId: 10,
+        bookTitle: 'The Last Lighthouse',
         revenuePeriodId: 4,
         layoutType: BookLayoutType.FIXED_LAYOUT,
         spreads: [

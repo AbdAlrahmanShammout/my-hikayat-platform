@@ -8,6 +8,7 @@ function createInputHeatmap(
 ): components['schemas']['GetAdminPeriodBookHeatmapResponseDto'] {
   return {
     bookId: 10,
+    bookTitle: 'Heatmap Fixture',
     revenuePeriodId: 4,
     layoutType: 'fixed_layout',
     spreads: [{ spreadIndex: 0, pageNumber: 1, activeDurationMs: 180000, visualSceneTimeMs: 90000 }],

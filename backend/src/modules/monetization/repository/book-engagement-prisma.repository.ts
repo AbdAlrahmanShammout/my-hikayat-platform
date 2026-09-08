@@ -14,6 +14,7 @@ import {
 import { BookEngagementEntity } from '@/modules/monetization/entity/book-engagement.entity';
 import { BookEngagementMapper } from '@/modules/monetization/mapper/book-engagement.mapper';
 import { BookEngagementRepository } from '@/modules/monetization/repository/book-engagement.repository';
+import { bookEngagementDetailsInclude } from '@/modules/monetization/types/book-engagement-details.include';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 import {
   PrismaClientLike,
@@ -43,6 +44,7 @@ export class BookEngagementPrismaRepository implements BookEngagementRepository 
     const [rows, total] = await this.prismaProviderService.$transaction([
       this.prismaProviderService.bookEngagement.findMany({
         where,
+        include: bookEngagementDetailsInclude,
         orderBy: [{ weightedEngagement: 'desc' }, { bookId: 'asc' }],
         take: input.limit,
         skip: input.offset,

@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/table';
 import { formatAuthorCentsLabel } from '@/features/earnings/lib/format-author-cents-label';
 import type { components } from '@/generated/author';
+import { formatBookTitleLabel } from '@/lib/format-book-title-label';
 
 type AuthorEarningsTableProps = {
   readonly bookRevenues: ReadonlyArray<components['schemas']['BookRevenueResponse']>;
@@ -39,7 +40,7 @@ export function AuthorEarningsTable({ bookRevenues }: AuthorEarningsTableProps):
                 className="underline-offset-4 hover:underline"
                 to={`/author/books/${row.bookId}`}
               >
-                Book #{row.bookId}
+                {formatBookTitleLabel({ bookId: row.bookId, book: row.book })}
               </Link>
             </TableCell>
             <TableCell>{String(row.weightedEngagement)}</TableCell>

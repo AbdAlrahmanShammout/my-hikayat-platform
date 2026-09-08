@@ -12,6 +12,7 @@ import { AdminInvitationEntity } from '@/modules/user/entity/admin-invitation.en
 import { AdminInvitationStatus } from '@/modules/user/enum/admin-invitation-status.enum';
 import { AdminInvitationMapper } from '@/modules/user/mapper/admin-invitation.mapper';
 import { AdminInvitationRepository } from '@/modules/user/repository/admin-invitation.repository';
+import { adminInvitationDetailsInclude } from '@/modules/user/types/admin-invitation-details.include';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 import { resolvePrismaTransactionClient } from '@/providers/database/prisma/prisma-transaction-runner';
 
@@ -70,6 +71,7 @@ export class AdminInvitationPrismaRepository implements AdminInvitationRepositor
     const [rows, total] = await this.prismaProviderService.$transaction([
       this.prismaProviderService.adminInvitation.findMany({
         where,
+        include: adminInvitationDetailsInclude,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: input.limit,
         skip: input.offset,

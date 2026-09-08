@@ -1,5 +1,7 @@
-import type { BookRevenue } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 import { OptionalRelations } from '@/common/base/base.entity';
 
-export type BookRevenueType = OptionalRelations<BookRevenue>;
+export type BookRevenueType = OptionalRelations<
+  Prisma.BookRevenueGetPayload<{ include: { book: true; owner: true } }>
+>;

@@ -50,7 +50,7 @@ function AuthorBookHeatmapContent({
     return (
       <>
         <PageHeader
-          title={`Book #${String(bookId)} heatmap`}
+          title="Heatmap"
           description="Layout-aware engagement cells for this period."
           actions={backAction}
         />
@@ -62,7 +62,7 @@ function AuthorBookHeatmapContent({
     return (
       <>
         <PageHeader
-          title={`Book #${String(bookId)} heatmap`}
+          title="Heatmap"
           description="Layout-aware engagement cells for this period."
           actions={backAction}
         />
@@ -79,7 +79,7 @@ function AuthorBookHeatmapContent({
   return (
     <>
       <PageHeader
-        title={`Book #${String(heatmap.bookId)} heatmap`}
+        title={`${heatmap.bookTitle} heatmap`}
         description={`layoutType ${formatLayoutType(heatmap.layoutType)}. Visual scene time is not paid.`}
         actions={backAction}
       />

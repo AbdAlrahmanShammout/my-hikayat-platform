@@ -27,6 +27,7 @@ export class BookHeatmapService {
         await this.readingIntelligenceService.listSpreadEngagementTotalsForBook(range);
       return {
         bookId: input.book.id,
+        bookTitle: input.book.title,
         revenuePeriodId: input.period.id,
         layoutType: input.book.layoutType,
         spreads,
@@ -40,6 +41,7 @@ export class BookHeatmapService {
       ]);
       return {
         bookId: input.book.id,
+        bookTitle: input.book.title,
         revenuePeriodId: input.period.id,
         layoutType: input.book.layoutType,
         spreads: [],
@@ -48,6 +50,7 @@ export class BookHeatmapService {
     }
     return {
       bookId: input.book.id,
+      bookTitle: input.book.title,
       revenuePeriodId: input.period.id,
       layoutType: input.book.layoutType,
       spreads: [],

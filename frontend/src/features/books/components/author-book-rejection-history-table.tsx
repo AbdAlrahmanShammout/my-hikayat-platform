@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/table';
 import { formatBookRejectionReason } from '@/features/books/lib/format-book-rejection-reason';
 import type { components } from '@/generated/author';
+import { formatUserEmailLabel } from '@/lib/format-user-email-label';
 import { formatWireInstant } from '@/lib/format-wire-instant';
 
 type AuthorBookRejectionHistoryTableProps = {
@@ -35,7 +36,9 @@ export function AuthorBookRejectionHistoryTable({
         {rejections.map((rejection) => (
           <TableRow key={rejection.id}>
             <TableCell>{formatWireInstant(rejection.createdAt)}</TableCell>
-            <TableCell>{`User #${rejection.actorUserId}`}</TableCell>
+            <TableCell>
+              {formatUserEmailLabel({ userId: rejection.actorUserId, user: rejection.actor })}
+            </TableCell>
             <TableCell className="max-w-md whitespace-normal">
               {formatBookRejectionReason(rejection.reason)}
             </TableCell>

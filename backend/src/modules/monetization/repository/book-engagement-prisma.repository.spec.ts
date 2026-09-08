@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client';
+
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import { BookEngagementMapper } from '@/modules/monetization/mapper/book-engagement.mapper';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
@@ -13,12 +15,12 @@ describe('BookEngagementPrismaRepository', () => {
     deletedAt: null,
     revenuePeriodId: 4,
     bookId: 8,
-    layoutType: BookLayoutType.REFLOWABLE,
+    layoutType: 'reflowable' as const,
     activeReadingMs: 120000,
     activeSpreadMs: 0,
     visualSceneTimeMs: 0,
-    categoryWeight: 1.25,
-    weightedEngagement: 2.5,
+    categoryWeight: new Prisma.Decimal('1.2500'),
+    weightedEngagement: new Prisma.Decimal('2.50000000'),
   };
   let mockPrismaProviderService: {
     $transaction: jest.Mock;

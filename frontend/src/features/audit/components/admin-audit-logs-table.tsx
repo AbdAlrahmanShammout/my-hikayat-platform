@@ -13,6 +13,7 @@ import {
 import { formatAuditEnumLabel } from '@/features/audit/lib/format-audit-enum-label';
 import { getAdminAuditSubjectPath } from '@/features/audit/lib/get-admin-audit-subject-path';
 import type { components } from '@/generated/admin';
+import { formatUserEmailLabel } from '@/lib/format-user-email-label';
 import { formatWireInstant } from '@/lib/format-wire-instant';
 
 type AdminAuditLogsTableProps = {
@@ -43,7 +44,7 @@ export function AdminAuditLogsTable({ auditLogs }: AdminAuditLogsTableProps): JS
                 className="underline-offset-4 hover:underline"
                 to={`/admin/users/${auditLog.actorUserId}`}
               >
-                User #{auditLog.actorUserId}
+                {formatUserEmailLabel({ userId: auditLog.actorUserId, user: auditLog.actor })}
               </Link>
             </TableCell>
             <TableCell>{formatAuditEnumLabel(auditLog.action)}</TableCell>
@@ -65,7 +66,7 @@ function renderSubjectCell(auditLog: components['schemas']['AuditLogResponse']):
     auditLog.subjectType,
     auditLog.subjectId,
   );
-  const label = `${formatAuditEnumLabel(auditLog.subjectType)} #${String(auditLog.subjectId)}`;
+  const label = formatAuditEnumLabel(auditLog.subjectType);
   if (subjectPath === null) {
     return <span>{label}</span>;
   }

@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { BaseModelResponseDto } from '@/common/base/base-model.response.dto';
+import { UserResponse } from '@/modules/user/dto/response/model/user.response';
 import { AdminInvitationEntity } from '@/modules/user/entity/admin-invitation.entity';
 import { AdminInvitationStatus } from '@/modules/user/enum/admin-invitation-status.enum';
 
@@ -31,6 +32,12 @@ export class AdminInvitationResponse extends BaseModelResponseDto {
   })
   acceptedAt: Date | null;
 
+  @ApiPropertyOptional({
+    description: 'Inviting admin projection when loaded',
+    type: () => UserResponse,
+  })
+  invitedBy?: UserResponse;
+
   constructor(entity: AdminInvitationEntity) {
     super(entity);
     this.email = entity.email;
@@ -38,5 +45,7 @@ export class AdminInvitationResponse extends BaseModelResponseDto {
     this.expiresAt = entity.expiresAt;
     this.invitedByUserId = entity.invitedByUserId;
     this.acceptedAt = entity.acceptedAt;
+    this.invitedBy =
+      entity.invitedBy === undefined ? undefined : new UserResponse(entity.invitedBy);
   }
 }

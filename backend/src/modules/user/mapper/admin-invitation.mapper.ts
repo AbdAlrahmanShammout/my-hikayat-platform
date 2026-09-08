@@ -1,5 +1,6 @@
 import { AdminInvitationEntity } from '@/modules/user/entity/admin-invitation.entity';
 import { AdminInvitationStatus } from '@/modules/user/enum/admin-invitation-status.enum';
+import { UserMapper } from '@/modules/user/mapper/user.mapper';
 import { AdminInvitationType } from '@/modules/user/types/admin-invitation-details-schema.type';
 
 export class AdminInvitationMapper {
@@ -15,6 +16,8 @@ export class AdminInvitationMapper {
       expiresAt: schema.expiresAt,
       invitedByUserId: schema.invitedByUserId,
       acceptedAt: schema.acceptedAt,
+      invitedBy:
+        schema.invitedBy === undefined ? undefined : UserMapper.toEntity(schema.invitedBy),
     });
   }
 }

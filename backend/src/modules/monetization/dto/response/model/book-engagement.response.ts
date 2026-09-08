@@ -1,6 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { BaseModelResponseDto } from '@/common/base/base-model.response.dto';
+import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import { BookEngagementEntity } from '@/modules/monetization/entity/book-engagement.entity';
 
@@ -48,6 +49,12 @@ export class BookEngagementResponse extends BaseModelResponseDto {
   })
   weightedEngagement: number;
 
+  @ApiPropertyOptional({
+    description: 'Book projection when loaded',
+    type: () => BookResponse,
+  })
+  book?: BookResponse;
+
   constructor(entity: BookEngagementEntity) {
     super(entity);
     this.revenuePeriodId = entity.revenuePeriodId;
@@ -58,5 +65,6 @@ export class BookEngagementResponse extends BaseModelResponseDto {
     this.visualSceneTimeMs = entity.visualSceneTimeMs;
     this.categoryWeight = entity.categoryWeight;
     this.weightedEngagement = entity.weightedEngagement;
+    this.book = entity.book === undefined ? undefined : new BookResponse(entity.book);
   }
 }

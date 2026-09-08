@@ -13,6 +13,7 @@ import {
 import { formatDurationMs } from '@/features/revenue/lib/format-duration-ms';
 import { formatLayoutType } from '@/features/revenue/lib/format-layout-type';
 import type { components } from '@/generated/admin';
+import { formatBookTitleLabel } from '@/lib/format-book-title-label';
 
 type AdminPeriodAnalyticsTableProps = {
   readonly revenuePeriodId: number;
@@ -48,7 +49,7 @@ export function AdminPeriodAnalyticsTable({
                 className="underline-offset-4 hover:underline"
                 to={`/admin/books/${row.bookId}`}
               >
-                Book #{row.bookId}
+                {formatBookTitleLabel({ bookId: row.bookId, book: row.book })}
               </Link>
             </TableCell>
             <TableCell>{formatLayoutType(row.layoutType)}</TableCell>

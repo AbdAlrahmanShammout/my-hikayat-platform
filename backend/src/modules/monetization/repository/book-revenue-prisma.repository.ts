@@ -12,6 +12,7 @@ import {
 import { BookRevenueEntity } from '@/modules/monetization/entity/book-revenue.entity';
 import { BookRevenueMapper } from '@/modules/monetization/mapper/book-revenue.mapper';
 import { BookRevenueRepository } from '@/modules/monetization/repository/book-revenue.repository';
+import { bookRevenueDetailsInclude } from '@/modules/monetization/types/book-revenue-details.include';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 import {
   PrismaClientLike,
@@ -46,6 +47,7 @@ export class BookRevenuePrismaRepository implements BookRevenueRepository {
     const [rows, total] = await this.prismaProviderService.$transaction([
       this.prismaProviderService.bookRevenue.findMany({
         where,
+        include: bookRevenueDetailsInclude,
         orderBy: [{ authorCents: 'desc' }, { bookId: 'asc' }],
         take: input.limit,
         skip: input.offset,
@@ -61,6 +63,7 @@ export class BookRevenuePrismaRepository implements BookRevenueRepository {
   async findById(id: number): Promise<BookRevenueEntity | null> {
     const result = await this.prismaProviderService.bookRevenue.findFirst({
       where: { id, deletedAt: null },
+      include: bookRevenueDetailsInclude,
     });
     if (result === null) {
       return null;

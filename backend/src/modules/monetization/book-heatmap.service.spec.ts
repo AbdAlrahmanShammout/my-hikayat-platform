@@ -95,6 +95,7 @@ describe('BookHeatmapService', () => {
     expect(mockBookProcessingService.listBookChapters).not.toHaveBeenCalled();
     expect(actualHeatmap).toEqual({
       bookId: 10,
+      bookTitle: 'Heatmap Fixture',
       revenuePeriodId: 4,
       layoutType: BookLayoutType.FIXED_LAYOUT,
       spreads: expectedSpreads,
@@ -115,6 +116,7 @@ describe('BookHeatmapService', () => {
     expect(mockReadingIntelligenceService.listSpreadEngagementTotalsForBook).not.toHaveBeenCalled();
     expect(actualHeatmap).toEqual({
       bookId: 10,
+      bookTitle: 'Heatmap Fixture',
       revenuePeriodId: 4,
       layoutType: BookLayoutType.REFLOWABLE,
       spreads: [],

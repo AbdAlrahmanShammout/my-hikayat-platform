@@ -1,7 +1,8 @@
-import { PlanMapper } from '@/modules/subscription/mapper/plan.mapper';
 import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.entity';
 import { SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
+import { PlanMapper } from '@/modules/subscription/mapper/plan.mapper';
 import { SubscriptionDetailsType } from '@/modules/subscription/types/subscription-details-schema.type';
+import { UserMapper } from '@/modules/user/mapper/user.mapper';
 
 export class SubscriptionMapper {
   static toEntity(schema: SubscriptionDetailsType): SubscriptionEntity {
@@ -23,6 +24,7 @@ export class SubscriptionMapper {
       stripeCustomerId: schema.stripeCustomerId,
       stripeSubscriptionId: schema.stripeSubscriptionId,
       plan: schema.plan === undefined ? undefined : PlanMapper.toEntity(schema.plan),
+      user: schema.user === undefined ? undefined : UserMapper.toEntity(schema.user),
     });
   }
 }

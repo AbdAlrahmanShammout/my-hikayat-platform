@@ -10,6 +10,7 @@ import {
 import { AuditLogEntity } from '@/modules/audit/entity/audit-log.entity';
 import { AuditLogMapper } from '@/modules/audit/mapper/audit-log.mapper';
 import { AuditLogRepository } from '@/modules/audit/repository/audit-log.repository';
+import { auditLogDetailsInclude } from '@/modules/audit/types/audit-log-details.include';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 import { resolvePrismaTransactionClient } from '@/providers/database/prisma/prisma-transaction-runner';
 
@@ -40,6 +41,7 @@ export class AuditLogPrismaRepository implements AuditLogRepository {
   async findById(id: number): Promise<AuditLogEntity | null> {
     const result = await this.prismaProviderService.auditLog.findFirst({
       where: { id },
+      include: auditLogDetailsInclude,
     });
     if (result === null) {
       return null;
@@ -64,6 +66,7 @@ export class AuditLogPrismaRepository implements AuditLogRepository {
     const [rows, total] = await this.prismaProviderService.$transaction([
       this.prismaProviderService.auditLog.findMany({
         where,
+        include: auditLogDetailsInclude,
         orderBy: { createdAt: 'desc' },
         take: input.limit,
         skip: input.offset,

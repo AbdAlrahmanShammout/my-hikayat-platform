@@ -1,4 +1,5 @@
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
+import { BookMapper } from '@/modules/book/mapper/book.mapper';
 import { BookEngagementEntity } from '@/modules/monetization/entity/book-engagement.entity';
 import { BookEngagementType } from '@/modules/monetization/types/book-engagement-details-schema.type';
 
@@ -17,6 +18,13 @@ export class BookEngagementMapper {
       visualSceneTimeMs: schema.visualSceneTimeMs,
       categoryWeight: Number(schema.categoryWeight),
       weightedEngagement: Number(schema.weightedEngagement),
+      book:
+        schema.book === undefined
+          ? undefined
+          : BookMapper.toEntity({
+              ...schema.book,
+              sourceMetadata: null,
+            }),
     });
   }
 }

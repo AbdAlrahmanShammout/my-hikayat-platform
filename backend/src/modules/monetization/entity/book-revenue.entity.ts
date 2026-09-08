@@ -1,5 +1,7 @@
 import { BaseEntity } from '@/common/base/base.entity';
+import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookRevenueZodType } from '@/modules/monetization/zod/book-revenue.zod';
+import { UserEntity } from '@/modules/user/entity/user.entity';
 
 export class BookRevenueEntity extends BaseEntity {
   revenuePeriodId!: number;
@@ -9,6 +11,8 @@ export class BookRevenueEntity extends BaseEntity {
   poolShareCents!: number;
   platformCutCents!: number;
   authorCents!: number;
+  book?: BookEntity;
+  owner?: UserEntity;
 
   constructor(data: BookRevenueZodType) {
     super();

@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { formatBookRejectionReason } from '@/features/books/lib/format-book-rejection-reason';
 import type { components } from '@/generated/admin';
+import { formatUserEmailLabel } from '@/lib/format-user-email-label';
 import { formatWireInstant } from '@/lib/format-wire-instant';
 
 type AdminBookRejectionHistoryTableProps = {
@@ -43,7 +44,7 @@ export function AdminBookRejectionHistoryTable({
                 className="underline-offset-4 hover:underline"
                 to={`/admin/users/${rejection.actorUserId}`}
               >
-                User #{rejection.actorUserId}
+                {formatUserEmailLabel({ userId: rejection.actorUserId, user: rejection.actor })}
               </Link>
             </TableCell>
             <TableCell className="max-w-md whitespace-normal">

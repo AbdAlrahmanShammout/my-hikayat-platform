@@ -91,6 +91,7 @@ describe('MonetizationAuthorController', () => {
     it('maps the book id, period, and principal onto the analytics service', async () => {
       mockAuthorAnalyticsService.getAuthorBookHeatmap.mockResolvedValue({
         bookId: 10,
+        bookTitle: 'The Last Lighthouse',
         revenuePeriodId: 4,
         layoutType: BookLayoutType.FIXED_LAYOUT,
         spreads: [

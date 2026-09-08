@@ -9,6 +9,7 @@ import {
   ReadingAccessState,
   resolveReadingAccessState,
 } from '@/modules/subscription/resolve-reading-access-state.helper';
+import { UserResponse } from '@/modules/user/dto/response/model/user.response';
 
 export class SubscriptionResponse extends BaseModelResponseDto {
   @ApiProperty({ description: 'Subscriber user id', example: 5 })
@@ -92,6 +93,12 @@ export class SubscriptionResponse extends BaseModelResponseDto {
   })
   plan?: PlanResponse;
 
+  @ApiPropertyOptional({
+    description: 'Subscriber projection when loaded',
+    type: () => UserResponse,
+  })
+  user?: UserResponse;
+
   constructor(entity: SubscriptionEntity) {
     super(entity);
     this.userId = entity.userId;
@@ -107,5 +114,6 @@ export class SubscriptionResponse extends BaseModelResponseDto {
     this.readingAccessState = resolveReadingAccessState(entity);
     this.trialEligible = isTrialEligible(entity);
     this.plan = entity.plan === undefined ? undefined : new PlanResponse(entity.plan);
+    this.user = entity.user === undefined ? undefined : new UserResponse(entity.user);
   }
 }

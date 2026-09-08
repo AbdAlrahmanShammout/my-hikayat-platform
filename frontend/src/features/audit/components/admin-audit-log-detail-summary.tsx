@@ -7,6 +7,7 @@ import { formatAuditMetadata } from '@/features/audit/lib/format-audit-metadata'
 import { formatAuditReason } from '@/features/audit/lib/format-audit-reason';
 import { getAdminAuditSubjectPath } from '@/features/audit/lib/get-admin-audit-subject-path';
 import type { components } from '@/generated/admin';
+import { formatUserEmailLabel } from '@/lib/format-user-email-label';
 import { formatWireInstant } from '@/lib/format-wire-instant';
 
 type AdminAuditLogDetailSummaryProps = {
@@ -36,7 +37,7 @@ export function AdminAuditLogDetailSummary({
               className="underline-offset-4 hover:underline"
               to={`/admin/users/${auditLog.actorUserId}`}
             >
-              User #{auditLog.actorUserId}
+              {formatUserEmailLabel({ userId: auditLog.actorUserId, user: auditLog.actor })}
             </Link>
           </SummaryItem>
           <SummaryItem label="Action">{formatAuditEnumLabel(auditLog.action)}</SummaryItem>
@@ -64,7 +65,7 @@ function renderSubject(auditLog: components['schemas']['AuditLogResponse']): JSX
     auditLog.subjectType,
     auditLog.subjectId,
   );
-  const label = `${formatAuditEnumLabel(auditLog.subjectType)} #${String(auditLog.subjectId)}`;
+  const label = formatAuditEnumLabel(auditLog.subjectType);
   if (subjectPath === null) {
     return <span>{label}</span>;
   }

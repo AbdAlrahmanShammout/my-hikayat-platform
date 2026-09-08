@@ -1,6 +1,7 @@
 import { BaseEntity } from '@/common/base/base.entity';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { AuditLogZodType } from '@/modules/audit/zod/audit-log.zod';
+import { UserEntity } from '@/modules/user/entity/user.entity';
 
 export class AuditLogEntity extends BaseEntity {
   actorUserId!: number;
@@ -9,6 +10,7 @@ export class AuditLogEntity extends BaseEntity {
   subjectId!: number;
   reason!: string | null;
   metadata!: unknown;
+  actor?: UserEntity;
 
   constructor(data: AuditLogZodType) {
     super();

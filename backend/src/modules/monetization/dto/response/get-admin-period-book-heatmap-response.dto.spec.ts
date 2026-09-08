@@ -6,6 +6,7 @@ describe('GetAdminPeriodBookHeatmapResponseDto', () => {
   it('maps spread cells onto the additive heatmap envelope', () => {
     const actualResponse = new GetAdminPeriodBookHeatmapResponseDto({
       bookId: 10,
+      bookTitle: 'Heatmap Fixture',
       revenuePeriodId: 4,
       layoutType: BookLayoutType.FIXED_LAYOUT,
       spreads: [

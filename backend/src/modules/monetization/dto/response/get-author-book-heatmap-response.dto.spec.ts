@@ -6,6 +6,7 @@ describe('GetAuthorBookHeatmapResponseDto', () => {
   it('maps spread and chapter cells onto the additive heatmap envelope', () => {
     const actualResponse = new GetAuthorBookHeatmapResponseDto({
       bookId: 10,
+      bookTitle: 'Heatmap Fixture',
       revenuePeriodId: 4,
       layoutType: BookLayoutType.REFLOWABLE,
       spreads: [],

@@ -8,6 +8,7 @@ import {
   ZodString,
 } from '@/common/base/base.zod';
 import { AdminInvitationStatus } from '@/modules/user/enum/admin-invitation-status.enum';
+import { UserZodType } from '@/modules/user/zod/user.zod';
 
 export type AdminInvitationZodType = z.infer<typeof AdminInvitationZodSchema>;
 
@@ -18,4 +19,5 @@ export const AdminInvitationZodSchema = BaseZodSchema.extend({
   expiresAt: ZodDate,
   invitedByUserId: ZodNumber,
   acceptedAt: ZodDateNullable,
+  invitedBy: (z.any().nullish() as z.ZodType<UserZodType | null | undefined>).optional(),
 });

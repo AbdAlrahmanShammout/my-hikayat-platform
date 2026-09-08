@@ -3,6 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BaseModelResponseDto } from '@/common/base/base-model.response.dto';
 import { AuditLogEntity } from '@/modules/audit/entity/audit-log.entity';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
+import { UserResponse } from '@/modules/user/dto/response/model/user.response';
 
 export class AuditLogResponse extends BaseModelResponseDto {
   @ApiProperty({ description: 'User who performed the action', example: 9 })
@@ -38,6 +39,12 @@ export class AuditLogResponse extends BaseModelResponseDto {
   })
   metadata: unknown;
 
+  @ApiPropertyOptional({
+    description: 'Actor projection when loaded',
+    type: () => UserResponse,
+  })
+  actor?: UserResponse;
+
   constructor(entity: AuditLogEntity) {
     super(entity);
     this.actorUserId = entity.actorUserId;
@@ -46,5 +53,6 @@ export class AuditLogResponse extends BaseModelResponseDto {
     this.subjectId = entity.subjectId;
     this.reason = entity.reason;
     this.metadata = entity.metadata;
+    this.actor = entity.actor === undefined ? undefined : new UserResponse(entity.actor);
   }
 }

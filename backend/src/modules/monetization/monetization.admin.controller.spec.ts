@@ -125,6 +125,7 @@ describe('MonetizationAdminController', () => {
     it('maps the period id and book id onto the analytics service', async () => {
       mockAdminAnalyticsService.getPeriodBookHeatmap.mockResolvedValue({
         bookId: 10,
+        bookTitle: 'The Last Lighthouse',
         revenuePeriodId: 4,
         layoutType: BookLayoutType.FIXED_LAYOUT,
         spreads: [

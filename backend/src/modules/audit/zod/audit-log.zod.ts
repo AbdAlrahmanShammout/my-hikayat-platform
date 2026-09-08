@@ -7,6 +7,7 @@ import {
   ZodJsonNullable,
 } from '@/common/base/base.zod';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
+import { UserZodType } from '@/modules/user/zod/user.zod';
 
 export type AuditLogZodType = z.infer<typeof AuditLogZodSchema>;
 
@@ -17,4 +18,5 @@ export const AuditLogZodSchema = BaseZodSchema.extend({
   subjectId: ZodNumber,
   reason: ZodStringNullable,
   metadata: ZodJsonNullable,
+  actor: (z.any().nullish() as z.ZodType<UserZodType | null | undefined>).optional(),
 });

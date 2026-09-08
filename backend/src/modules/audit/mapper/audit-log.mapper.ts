@@ -1,6 +1,7 @@
-import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { AuditLogEntity } from '@/modules/audit/entity/audit-log.entity';
+import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { AuditLogType } from '@/modules/audit/types/audit-log-details-schema.type';
+import { UserMapper } from '@/modules/user/mapper/user.mapper';
 
 export class AuditLogMapper {
   static toEntity(schema: AuditLogType): AuditLogEntity {
@@ -15,6 +16,7 @@ export class AuditLogMapper {
       subjectId: schema.subjectId,
       reason: schema.reason,
       metadata: schema.metadata,
+      actor: schema.actor === undefined ? undefined : UserMapper.toEntity(schema.actor),
     });
   }
 }

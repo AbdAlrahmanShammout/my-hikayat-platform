@@ -17,6 +17,7 @@ export type BookHeatmapChapterCell = {
 
 export type BookHeatmap = {
   readonly bookId: number;
+  readonly bookTitle: string;
   readonly revenuePeriodId: number;
   readonly layoutType: BookLayoutType | null;
   readonly spreads: SpreadVisualDurationTotal[];

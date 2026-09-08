@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table';
 import { formatInvitationStatusLabel } from '@/features/invitations/lib/format-invitation-status-label';
 import type { components } from '@/generated/admin';
+import { formatUserEmailLabel } from '@/lib/format-user-email-label';
 import { formatWireInstant } from '@/lib/format-wire-instant';
 
 type AdminInvitationsTableProps = {
@@ -45,7 +46,10 @@ export function AdminInvitationsTable({ invitations }: AdminInvitationsTableProp
                 className="underline-offset-4 hover:underline"
                 to={`/admin/users/${invitation.invitedByUserId}`}
               >
-                User {invitation.invitedByUserId}
+                {formatUserEmailLabel({
+                  userId: invitation.invitedByUserId,
+                  user: invitation.invitedBy,
+                })}
               </Link>
             </TableCell>
           </TableRow>

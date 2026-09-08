@@ -1,7 +1,9 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { BaseModelResponseDto } from '@/common/base/base-model.response.dto';
+import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookRevenueEntity } from '@/modules/monetization/entity/book-revenue.entity';
+import { UserResponse } from '@/modules/user/dto/response/model/user.response';
 
 export class BookRevenueResponse extends BaseModelResponseDto {
   @ApiProperty({ description: 'Revenue period id', example: 4 })
@@ -37,6 +39,18 @@ export class BookRevenueResponse extends BaseModelResponseDto {
   })
   authorCents: number;
 
+  @ApiPropertyOptional({
+    description: 'Book projection when loaded',
+    type: () => BookResponse,
+  })
+  book?: BookResponse;
+
+  @ApiPropertyOptional({
+    description: 'Owning publisher projection when loaded',
+    type: () => UserResponse,
+  })
+  owner?: UserResponse;
+
   constructor(entity: BookRevenueEntity) {
     super(entity);
     this.revenuePeriodId = entity.revenuePeriodId;
@@ -46,5 +60,7 @@ export class BookRevenueResponse extends BaseModelResponseDto {
     this.poolShareCents = entity.poolShareCents;
     this.platformCutCents = entity.platformCutCents;
     this.authorCents = entity.authorCents;
+    this.book = entity.book === undefined ? undefined : new BookResponse(entity.book);
+    this.owner = entity.owner === undefined ? undefined : new UserResponse(entity.owner);
   }
 }

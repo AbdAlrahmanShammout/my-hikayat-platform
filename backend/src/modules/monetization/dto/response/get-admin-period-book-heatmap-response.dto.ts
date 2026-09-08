@@ -9,6 +9,9 @@ export class GetAdminPeriodBookHeatmapResponseDto {
   @ApiProperty({ description: 'Book id', example: 10 })
   bookId: number;
 
+  @ApiProperty({ description: 'Book title', example: 'The Last Lighthouse' })
+  bookTitle: string;
+
   @ApiProperty({ description: 'Revenue period id', example: 4 })
   revenuePeriodId: number;
 
@@ -28,6 +31,7 @@ export class GetAdminPeriodBookHeatmapResponseDto {
 
   constructor(heatmap: BookHeatmap) {
     this.bookId = heatmap.bookId;
+    this.bookTitle = heatmap.bookTitle;
     this.revenuePeriodId = heatmap.revenuePeriodId;
     this.layoutType = heatmap.layoutType;
     this.spreads = heatmap.spreads.map((cell) => new AuthorBookHeatmapCellResponse(cell));
