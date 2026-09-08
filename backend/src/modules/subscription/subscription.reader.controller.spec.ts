@@ -4,6 +4,7 @@ import type { Request } from 'express';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { resolveTrialEndsAt } from '@/modules/subscription/consts/trial-window.constant';
 import { StartCheckoutResponseDto } from '@/modules/subscription/dto/response/start-checkout-response.dto';
 import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.entity';
 import { SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
@@ -133,6 +134,8 @@ describe('SubscriptionReaderController', () => {
   });
 
   it('starts the free trial for the authenticated user', async () => {
+    const trialStartedAt: Date = new Date();
+    const trialEndsAt: Date = resolveTrialEndsAt(trialStartedAt);
     const entity = new SubscriptionEntity({
       id: 7,
       createdAt: new Date('2026-01-01T00:00:00.000Z'),
@@ -145,8 +148,8 @@ describe('SubscriptionReaderController', () => {
       currentPeriodEnd: null,
       canceledAt: null,
       activatedAt: null,
-      trialStartedAt: new Date('2026-08-29T12:00:00.000Z'),
-      trialEndsAt: new Date('2026-09-05T12:00:00.000Z'),
+      trialStartedAt,
+      trialEndsAt,
       stripeCustomerId: null,
       stripeSubscriptionId: null,
       plan: undefined,
