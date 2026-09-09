@@ -32,6 +32,7 @@ import {
 } from '@/features/reader/lib/reflowable-reader-settings-storage';
 import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-reading-progress-best-effort';
 import type { ReadingPositionSnapshot } from '@/features/reader/lib/reading-position';
+import { resolveReflowableContentProgress } from '@/features/reader/lib/resolve-reflowable-content-progress';
 import { ReaderBookmarksPanel } from '@/features/reader/components/reader-bookmarks-panel';
 import { ReflowableReaderSettingsControls } from '@/features/reader/components/reflowable-reader-settings-controls';
 import type { ReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
@@ -231,6 +232,10 @@ export function ReflowableReaderEngine({
   });
   const canGoPrevious: boolean = spineIndex > 0;
   const canGoNext: boolean = spineIndex < loadState.epub.chapters.length - 1;
+  const contentProgressPercent: number = resolveReflowableContentProgress({
+    spineIndex,
+    chapters: loadState.epub.chapters,
+  });
   const webBackground: string = readerSettings.theme === 'dark' ? '#1a1714' : '#f7f3ea';
 
   return (
@@ -244,7 +249,7 @@ export function ReflowableReaderEngine({
           {chapter.title}
         </Text>
         <Text style={styles.meta} testID="reader-spine-index">
-          {`Chapter ${spineIndex + 1} of ${loadState.epub.chapters.length}`}
+          {`Chapter ${spineIndex + 1} of ${loadState.epub.chapters.length} · ${contentProgressPercent}%`}
         </Text>
       </View>
       <View style={styles.settingsRow}>

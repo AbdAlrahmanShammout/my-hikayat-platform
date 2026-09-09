@@ -1354,17 +1354,19 @@ they exist.**
 | | Reflowable | Fixed layout |
 | --- | --- | --- |
 | Position is | Which chapter + how far scrolled in it | Which spread + which page |
+| In-reader progress conveys | Content-based percent at the current spine | Spread number (real pages) |
 | Continue-reading label conveys | Chapter number | Spread number |
 | Bookmark label conveys | Chapter and scroll offset | Spread and page |
 | Saved | Every ~15s and on close | Every ~15s and on close |
 
-Progress is **server-side and cross-device**. There is no page-number concept for reflowable books
-anywhere in the system — no page counts, no percentage complete, and no time-remaining estimate.
-This is a deliberate, documented platform decision, not an oversight.
+Progress is **server-side and cross-device** for position (`spineIndex` + `scrollOffset` for
+reflowable; spread + page for fixed layout). Reflowable books have **no canonical page number**.
+In-reader progress percent is **content-based**: chapter text length up to the current spine, not
+`current rendered page / current rendered page count`. Font size and screen size must not rewrite
+that percent. Continue Reading still uses a coarse chapter or spread label.
 
-**What the user is never shown:** a percentage complete, pages remaining, time remaining, minutes
-read, reading speed, streaks, or any reading statistic. The continue-reading label's coarse
-chapter or spread number is the only progress information in the entire product.
+**What the user is never shown:** pages remaining, time remaining, minutes read, reading speed,
+streaks, or pages/minute. Do not present a reflowable visual page number as progress.
 
 ## 5.8 Reading sessions
 
@@ -2728,8 +2730,9 @@ conflict resolution; a local sync cache; a cross-book bookmark library screen; d
 licenses; instant refund revocation while fully offline; automatic trial start at registration.
 
 **Documented in requirements but absent from both engines:** right-to-left reading support; a
-magnifying-glass inspection tool for fixed-layout content; reflowable page numbers and
-reading-speed metrics (deliberately deferred pending a client pagination contract).
+magnifying-glass inspection tool for fixed-layout content. Reflowable page numbers and
+pages/minute are **intentionally deferred** (no product requirement for a pagination contract;
+see `docs/FUTURE.md`).
 
 **Out of scope for this release entirely:** AI audiobooks with mobile playback and offline audio
 (a separate documented product phase); advanced formatting and typesetting.

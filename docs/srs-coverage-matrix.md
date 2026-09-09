@@ -35,8 +35,8 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 
 | SRS Requirement | Status | Reason |
 | --- | --- | --- |
-| §5.1 Reflowable time per page | Future / out of scope for current Part 1 | No stable server-side page definition exists for reflowable content. |
-| §5.1 Reading speed (pages/minute) | Future / out of scope for current Part 1 | No stable server-side page definition exists for reflowable content. |
+| §5.1 Reflowable time per page | Future / intentionally deferred | No product requirement for a reflowable pagination contract. Reading time stays active-time based. See `docs/FUTURE.md`. |
+| §5.1 Reading speed (pages/minute) | Future / intentionally deferred | Not a canonical reflowable metric. Content-based progress + active time are the foundation. See `docs/FUTURE.md`. |
 
 ## Matrix
 
@@ -101,8 +101,8 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 | §5.1 Reflowable total reading time and session counts | Session active ms aggregated into `BookEngagement` | `book-engagement.e2e-spec.ts`, `reading-session.e2e-spec.ts` | Complete |
 | §5.1 Reflowable idle-time detection | `idleDurationMs` on session ingest/end | `reading-intelligence.e2e-spec.ts` | Complete |
 | §5.1 Reflowable time per chapter (active ms per spine index) | Chapter engagement piggybacks on session activity; payload spine or session fallback; unmatched spines allowed; session totals remain monetization source | `reading-chapter-engagement.e2e-spec.ts`, `reading-intelligence.service.spec.ts` | Complete |
-| §5.1 Reflowable time per page | Out of scope for current Part 1. Reflowable unit is spine/chapter (`spineIndex` + `scrollOffset`); no server-side page definition. See `docs/FUTURE.md`. | — | Future |
-| §5.1 Reading speed (pages/minute) | Out of scope for current Part 1. Pages/minute needs the same client pagination contract. See `docs/FUTURE.md`. | — | Future |
+| §5.1 Reflowable time per page | Intentionally deferred. No product requirement for a reflowable pagination contract. Active reading time is the metric. See `docs/FUTURE.md`. | — | Future |
+| §5.1 Reading speed (pages/minute) | Intentionally deferred. Not a canonical reflowable metric. See `docs/FUTURE.md`. | — | Future |
 | §5.1 Fixed-layout time per page/spread, active spread time, visual scene time, idle | `ReadingVisualEngagement` + session idle | `reading-visual-engagement.e2e-spec.ts` | Complete |
 | §5.2 Session tracking model (start/end, bookId, active vs idle, layout, layout-specific position) | `ReadingSession` | `reading-session.e2e-spec.ts`, `reading-intelligence.e2e-spec.ts` | Complete |
 | §5.2 Reflowable chapter attribution from session activity | Recorded with the session; idle is not copied onto chapter rows | `reading-chapter-engagement.e2e-spec.ts` | Complete |
@@ -158,6 +158,6 @@ Tracked in `docs/FUTURE.md`. The SRS requirements remain in `docs/SRS.md`.
 - Starter categories are inserted by migration. Admin HTTP create and rename exist; author and reader lists are read-only; delete is not part of that seed.
 - Book rejection requires a non-empty reason stored on the existing append-only audit row. Rejection history is that same audit log, filtered by `book_rejected` and book id.
 - Admin refund uses the same 7-day activation window and eligibility as the reader refund. It is audited as `subscription_canceled` with `refunded: true`. The admin dashboard still has no refund button.
-- Reflowable time-per-page and reading speed remain SRS requirements. They are Future / out of scope for current Part 1 because there is no stable server-side page definition. See `docs/FUTURE.md`.
+- Reflowable time-per-page and pages/minute remain SRS lines. They are **intentionally deferred**: there is no product requirement for a stable reflowable pagination contract. Position stays `spineIndex` + `scrollOffset`; progress is content-based; revenue stays active time. See `docs/FUTURE.md`.
 - `bookType` is author-selected content metadata. `layoutType` is detected from the source. Reader engine, engagement, heatmaps, and revenue follow `layoutType`. Typical layout per book type is not a technical guarantee. See SRS §3.
 - Dashboard Home KPIs reuse catalog visibility, `isPublisher`, `BookEngagement` active-ms totals, and `BookRevenue.authorCents`. They are not live session sums and not a second payout formula. See SRS §2.3 and §12.0.

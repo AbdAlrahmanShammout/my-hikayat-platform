@@ -12,6 +12,7 @@ describe('readingPosition mappers', () => {
       scrollOffset: 90,
     };
     expect(toSaveProgressBody(input)).toEqual({ spineIndex: 2, scrollOffset: 90 });
+    expect(toSaveProgressBody(input)).not.toHaveProperty('pageNumber');
     expect(toEndSessionBody(input)).toEqual({ spineIndex: 2, scrollOffset: 90 });
   });
 

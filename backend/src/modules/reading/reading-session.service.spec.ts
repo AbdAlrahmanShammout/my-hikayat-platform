@@ -114,6 +114,21 @@ describe('ReadingSessionService', () => {
       expect(actualSession).toBe(expectedSession);
     });
 
+    it('rejects a reflowable pageNumber instead of storing visual pagination', async () => {
+      mockUserService.getUserById.mockResolvedValue({ id: 7 });
+      mockBookService.getBookById.mockResolvedValue(createSampleBook(BookLayoutType.REFLOWABLE));
+      await expect(
+        readingSessionService.startReadingSession({
+          userId: 7,
+          bookId: 8,
+          spineIndex: 1,
+          scrollOffset: 120,
+          pageNumber: 3,
+        }),
+      ).rejects.toBeInstanceOf(ReadingSessionInvalidPositionException);
+      expect(mockReadingSessionRepository.create).not.toHaveBeenCalled();
+    });
+
     it('rejects a second open session for the same user and book', async () => {
       mockUserService.getUserById.mockResolvedValue({ id: 7 });
       mockBookService.getBookById.mockResolvedValue(createSampleBook(BookLayoutType.REFLOWABLE));

@@ -112,6 +112,21 @@ describe('ReadingProgressService', () => {
       expect(actualProgress).toBe(expectedProgress);
     });
 
+    it('rejects a reflowable pageNumber instead of storing visual pagination', async () => {
+      mockUserService.getUserById.mockResolvedValue({ id: 7 });
+      mockBookService.getBookById.mockResolvedValue(createSampleBook(BookLayoutType.REFLOWABLE));
+      await expect(
+        readingProgressService.saveReadingProgress({
+          userId: 7,
+          bookId: 8,
+          spineIndex: 1,
+          scrollOffset: 120,
+          pageNumber: 3,
+        }),
+      ).rejects.toBeInstanceOf(ReadingProgressInvalidPositionException);
+      expect(mockReadingProgressRepository.create).not.toHaveBeenCalled();
+    });
+
     it('updates existing fixed-layout progress from spread and page number', async () => {
       const existing = createSampleProgress();
       const expectedProgress = new ReadingProgressEntity({

@@ -101,6 +101,21 @@ describe('ReadingBookmarkService', () => {
       expect(actualBookmark).toBe(expectedBookmark);
     });
 
+    it('rejects a reflowable pageNumber instead of storing visual pagination', async () => {
+      mockUserService.getUserById.mockResolvedValue({ id: 7 });
+      mockBookService.getBookById.mockResolvedValue(createSampleBook(BookLayoutType.REFLOWABLE));
+      await expect(
+        readingBookmarkService.createReadingBookmark({
+          userId: 7,
+          bookId: 8,
+          spineIndex: 1,
+          scrollOffset: 120,
+          pageNumber: 3,
+        }),
+      ).rejects.toBeInstanceOf(ReadingBookmarkInvalidPositionException);
+      expect(mockReadingBookmarkRepository.create).not.toHaveBeenCalled();
+    });
+
     it('rejects reflowable fields on a fixed-layout book', async () => {
       mockUserService.getUserById.mockResolvedValue({ id: 7 });
       mockBookService.getBookById.mockResolvedValue(createSampleBook(BookLayoutType.FIXED_LAYOUT));
