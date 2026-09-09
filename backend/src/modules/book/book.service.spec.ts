@@ -96,6 +96,7 @@ describe('BookService', () => {
     list: jest.Mock;
     listCatalog: jest.Mock;
     listCatalogByIds: jest.Mock;
+    listByIds: jest.Mock;
     countCatalogVisible: jest.Mock;
   };
   let mockCategoryService: { getCategoryById: jest.Mock };
@@ -113,6 +114,7 @@ describe('BookService', () => {
       list: jest.fn(),
       listCatalog: jest.fn(),
       listCatalogByIds: jest.fn(),
+      listByIds: jest.fn(),
       countCatalogVisible: jest.fn(),
     };
     mockCategoryService = { getCategoryById: jest.fn() };
@@ -584,6 +586,22 @@ describe('BookService', () => {
       mockBookRepository.listCatalogByIds.mockResolvedValue([expectedBook]);
       const actualBooks = await bookService.listCatalogBooksByIds([8, 8]);
       expect(mockBookRepository.listCatalogByIds).toHaveBeenCalledWith({ ids: [8] });
+      expect(actualBooks).toEqual([expectedBook]);
+    });
+  });
+
+  describe('listBooksByIds', () => {
+    it('returns an empty list without querying when no ids are provided', async () => {
+      const actualBooks = await bookService.listBooksByIds([]);
+      expect(mockBookRepository.listByIds).not.toHaveBeenCalled();
+      expect(actualBooks).toEqual([]);
+    });
+
+    it('loads unique managed books by id without catalog visibility', async () => {
+      const expectedBook = createSampleBook();
+      mockBookRepository.listByIds.mockResolvedValue([expectedBook]);
+      const actualBooks = await bookService.listBooksByIds([8, 8]);
+      expect(mockBookRepository.listByIds).toHaveBeenCalledWith({ ids: [8] });
       expect(actualBooks).toEqual([expectedBook]);
     });
   });

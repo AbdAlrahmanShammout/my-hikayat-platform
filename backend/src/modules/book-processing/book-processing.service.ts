@@ -17,6 +17,7 @@ import {
 import { BookChapterEntity } from '@/modules/book-processing/entity/book-chapter.entity';
 import { BookPageEntity } from '@/modules/book-processing/entity/book-page.entity';
 import { BookPageTextLayerEntity } from '@/modules/book-processing/entity/book-page-text-layer.entity';
+import { BookSpreadEntity } from '@/modules/book-processing/entity/book-spread.entity';
 import { BookSourceMetadataEntity } from '@/modules/book-processing/entity/book-source-metadata.entity';
 import { EpubFixedLayoutTextHelper } from '@/modules/book-processing/epub-fixed-layout-text.helper';
 import { EpubFixedLayoutHelper } from '@/modules/book-processing/epub-fixed-layout.helper';
@@ -36,6 +37,7 @@ import { PdfSourceHelper } from '@/modules/book-processing/pdf-source.helper';
 import { BookChapterRepository } from '@/modules/book-processing/repository/book-chapter.repository';
 import { BookPageRepository } from '@/modules/book-processing/repository/book-page.repository';
 import { BookPageTextLayerRepository } from '@/modules/book-processing/repository/book-page-text-layer.repository';
+import { BookSpreadRepository } from '@/modules/book-processing/repository/book-spread.repository';
 import { BookSourceMetadataRepository } from '@/modules/book-processing/repository/book-source-metadata.repository';
 import { DecryptBufferResult } from '@/providers/encryption/defs/encryption-manager.defs';
 import { EncryptionManagerService } from '@/providers/encryption/encryption-manager.service';
@@ -52,6 +54,7 @@ export class BookProcessingService {
     private readonly bookChapterRepository: BookChapterRepository,
     private readonly bookPageRepository: BookPageRepository,
     private readonly bookPageTextLayerRepository: BookPageTextLayerRepository,
+    private readonly bookSpreadRepository: BookSpreadRepository,
     private readonly bookService: BookService,
     private readonly storageManagerService: StorageManagerService,
     private readonly encryptionManagerService: EncryptionManagerService,
@@ -118,6 +121,18 @@ export class BookProcessingService {
   async listBookChapters(bookId: number): Promise<BookChapterEntity[]> {
     await this.bookService.getBookById(bookId);
     return this.bookChapterRepository.listByBookId(bookId);
+  }
+
+  async listChaptersByBookIds(bookIds: readonly number[]): Promise<BookChapterEntity[]> {
+    return this.bookChapterRepository.listByBookIds(bookIds);
+  }
+
+  async listPagesByBookIds(bookIds: readonly number[]): Promise<BookPageEntity[]> {
+    return this.bookPageRepository.listByBookIds(bookIds);
+  }
+
+  async listSpreadsByBookIds(bookIds: readonly number[]): Promise<BookSpreadEntity[]> {
+    return this.bookSpreadRepository.listByBookIds(bookIds);
   }
 
   async extractEpubFixedLayout(bookId: number): Promise<BookFixedLayoutStructure> {

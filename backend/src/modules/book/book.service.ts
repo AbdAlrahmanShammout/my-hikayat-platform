@@ -189,6 +189,14 @@ export class BookService {
     return this.bookRepository.listCatalogByIds({ ids: uniqueIds });
   }
 
+  async listBooksByIds(ids: readonly number[]): Promise<BookEntity[]> {
+    const uniqueIds: number[] = BookService.uniqueIds(ids);
+    if (uniqueIds.length === 0) {
+      return [];
+    }
+    return this.bookRepository.listByIds({ ids: uniqueIds });
+  }
+
   private async assertOwnerCanOwnBook(ownerId: number): Promise<UserEntity> {
     const owner: UserEntity = await this.userService.getUserById(ownerId);
     if (!owner.isPublisher) {

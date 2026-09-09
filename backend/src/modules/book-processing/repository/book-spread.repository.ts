@@ -2,4 +2,5 @@ import { BookSpreadEntity } from '@/modules/book-processing/entity/book-spread.e
 
 export abstract class BookSpreadRepository {
   abstract listByBookId(bookId: number): Promise<BookSpreadEntity[]>;
+  abstract listByBookIds(bookIds: readonly number[]): Promise<BookSpreadEntity[]>;
 }

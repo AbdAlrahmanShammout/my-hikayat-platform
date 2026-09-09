@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveBookCoverUrl } from '@/features/books/lib/resolve-book-cover-url';
+import { resolveBookCoverUrl } from '@/lib/resolve-book-cover-url';
 
 describe('resolveBookCoverUrl', () => {
   it('returns the signed cover URL when the API sent one', () => {

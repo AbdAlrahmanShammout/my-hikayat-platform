@@ -375,7 +375,7 @@ export interface paths {
     get: {
       parameters: { path: { id: number } };
       responses: {
-        "200": { content: { 'application/json': components['schemas']['UserResponse'] } };
+        "200": { content: { 'application/json': components['schemas']['GetAdminUserDetailResponseDto'] } };
       };
     };
     patch: {
@@ -453,6 +453,9 @@ export interface components {
     SubscriptionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; planId: number; status: "active" | "canceled"; startedAt: string; currentPeriodStart?: unknown | null; currentPeriodEnd?: unknown | null; canceledAt?: unknown | null; activatedAt?: unknown | null; trialStartedAt?: unknown | null; trialEndsAt?: unknown | null; readingAccessState: "free" | "trial" | "paid"; trialEligible: boolean; plan?: components['schemas']['PlanResponse']; user?: components['schemas']['UserResponse'] };
     GetSubscriptionsResponseDto: { subscriptions: Array<components['schemas']['SubscriptionResponse']>; total: number };
     GetUsersResponseDto: { users: Array<components['schemas']['UserResponse']>; total: number };
+    AdminUserSubscriptionPeriodResponse: { periodStartedAt?: unknown | null; periodEndsAt?: unknown | null; remainingMs?: number | null; elapsedPercent?: number | null };
+    AdminUserReadingProgressItemResponse: { book: components['schemas']['BookResponse']; layoutType: "reflowable" | "fixed_layout"; contentProgressPercent: number; locationLabel?: unknown | null; spineIndex?: unknown | null; scrollOffset?: unknown | null; spreadIndex?: unknown | null; pageNumber?: unknown | null; activeDurationMs: number; lastSessionAt: string };
+    GetAdminUserDetailResponseDto: { user: components['schemas']['UserResponse']; subscription?: components['schemas']['SubscriptionResponse'] | null; subscriptionPeriod: components['schemas']['AdminUserSubscriptionPeriodResponse']; readingProgress: Array<components['schemas']['AdminUserReadingProgressItemResponse']> };
     UpdateManagedUserRequestDto: { role?: "reader" | "author" | "admin"; isPublisher?: boolean };
     AdminInvitationResponse: { id: number; createdAt: string; updatedAt: string; email: string; status: "pending" | "accepted"; expiresAt: string; invitedByUserId: number; acceptedAt?: unknown | null; invitedBy?: components['schemas']['UserResponse'] };
     GetAdminInvitationsResponseDto: { invitations: Array<components['schemas']['AdminInvitationResponse']>; total: number };

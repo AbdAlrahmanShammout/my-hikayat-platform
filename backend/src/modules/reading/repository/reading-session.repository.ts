@@ -24,4 +24,5 @@ export abstract class ReadingSessionRepository {
   abstract sumActiveDurationByBookInRange(
     input: SumReadingSessionActiveDurationRepoInput,
   ): Promise<BookActiveDurationTotal[]>;
+  abstract sumActiveDurationByBookForUser(userId: number): Promise<BookActiveDurationTotal[]>;
 }

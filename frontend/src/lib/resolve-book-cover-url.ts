@@ -3,7 +3,7 @@ type BookCoverUrlSource = {
 };
 
 /**
- * Reads the signed cover URL from BookResponse.cover. Null when the API has no cover.
+ * Reads a signed cover URL. Null when the API has no cover.
  */
 export function resolveBookCoverUrl(
   cover: BookCoverUrlSource | null | undefined,

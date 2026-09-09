@@ -17,4 +17,15 @@ export class BookSpreadPrismaRepository implements BookSpreadRepository {
     });
     return rows.map((row) => BookSpreadMapper.toEntity(row));
   }
+
+  async listByBookIds(bookIds: readonly number[]): Promise<BookSpreadEntity[]> {
+    if (bookIds.length === 0) {
+      return [];
+    }
+    const rows: BookSpreadType[] = await this.prismaProviderService.bookSpread.findMany({
+      where: { bookId: { in: [...bookIds] }, deletedAt: null },
+      orderBy: [{ bookId: 'asc' }, { spreadIndex: 'asc' }, { id: 'asc' }],
+    });
+    return rows.map((row) => BookSpreadMapper.toEntity(row));
+  }
 }

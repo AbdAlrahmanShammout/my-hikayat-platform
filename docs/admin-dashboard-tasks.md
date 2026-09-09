@@ -235,10 +235,12 @@ to the list.
 **Routes:** `/admin/users`, `/admin/users/:id`
 
 **Written:** filterable `GET /admin/users` table (`role`, `isPublisher`, exact `email`,
-`limit`/`offset`) and a detail screen at `/admin/users/:userId`. PATCH is limited to
-`role` and `isPublisher`. Reader/author publisher coupling is reflected in the form and
-still enforced by the API (`USER_INVALID_CAPABILITY`; SRS §2.5). An admin cannot change or delete
-their own account (`USER_SELF_MANAGEMENT`). The last remaining admin cannot be demoted
+`limit`/`offset`) and a detail screen at `/admin/users/:userId`. GET `:id` returns the user plus
+canonical subscription fields (`readingAccessState`, period dates, remaining time) and saved
+reading progress (content-based percent for reflowable; page/spread percent for fixed-layout).
+PATCH is limited to `role` and `isPublisher`. Reader/author publisher coupling is reflected in the
+form and still enforced by the API (`USER_INVALID_CAPABILITY`; SRS §2.5). An admin cannot change or
+delete their own account (`USER_SELF_MANAGEMENT`). The last remaining admin cannot be demoted
 or deleted (`USER_LAST_ADMIN`); 400/409 from the API still surface. Soft-delete returns
 to the list.
 

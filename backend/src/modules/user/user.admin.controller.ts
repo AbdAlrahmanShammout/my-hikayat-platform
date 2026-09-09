@@ -25,12 +25,15 @@ import { Roles } from '@/common/decorators/route/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { UserPage } from '@/modules/user/defs/user-repository.defs';
+import { AdminUserDetail } from '@/modules/user/defs/user-admin-detail-service.defs';
 import { ListUsersRequestDto } from '@/modules/user/dto/request/list-users-request.dto';
 import { UpdateManagedUserRequestDto } from '@/modules/user/dto/request/update-managed-user-request.dto';
+import { GetAdminUserDetailResponseDto } from '@/modules/user/dto/response/get-admin-user-detail-response.dto';
 import { GetUsersResponseDto } from '@/modules/user/dto/response/get-users-response.dto';
 import { UserResponse } from '@/modules/user/dto/response/model/user.response';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
+import { UserAdminDetailService } from '@/modules/user/user-admin-detail.service';
 import { UserService } from '@/modules/user/user.service';
 
 @ApiTags('Admin - Users')
@@ -39,7 +42,10 @@ import { UserService } from '@/modules/user/user.service';
 @Roles(UserRole.ADMIN)
 @ApiBearerAuth()
 export class UserAdminController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly userAdminDetailService: UserAdminDetailService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'List platform users' })
@@ -56,12 +62,12 @@ export class UserAdminController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a platform user' })
+  @ApiOperation({ summary: 'Get a platform user with subscription and reading progress' })
   @ApiParam({ name: 'id', type: Number })
-  @ApiResponse({ status: 200, type: UserResponse })
-  async getUser(@Param('id', ParseIntPipe) id: number): Promise<UserResponse> {
-    const entity: UserEntity = await this.userService.getUserById(id);
-    return new UserResponse(entity);
+  @ApiResponse({ status: 200, type: GetAdminUserDetailResponseDto })
+  async getUser(@Param('id', ParseIntPipe) id: number): Promise<GetAdminUserDetailResponseDto> {
+    const detail: AdminUserDetail = await this.userAdminDetailService.getAdminUserDetail(id);
+    return new GetAdminUserDetailResponseDto(detail);
   }
 
   @Patch(':id')

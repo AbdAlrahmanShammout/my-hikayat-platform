@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
+import { UserAdminDetailService } from '@/modules/user/user-admin-detail.service';
 import { UserService } from '@/modules/user/user.service';
 
 import { UserAdminController } from './user.admin.controller';
@@ -41,6 +42,9 @@ describe('UserAdminController', () => {
     updateManagedUser: jest.Mock;
     deleteManagedUser: jest.Mock;
   };
+  let mockUserAdminDetailService: {
+    getAdminUserDetail: jest.Mock;
+  };
 
   beforeEach(async () => {
     mockUserService = {
@@ -49,10 +53,18 @@ describe('UserAdminController', () => {
       updateManagedUser: jest.fn(),
       deleteManagedUser: jest.fn(),
     };
+    mockUserAdminDetailService = {
+      getAdminUserDetail: jest.fn(),
+    };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       controllers: [UserAdminController],
-      providers: [{ provide: UserService, useValue: mockUserService }, JwtAuthGuard, RolesGuard],
+      providers: [
+        { provide: UserService, useValue: mockUserService },
+        { provide: UserAdminDetailService, useValue: mockUserAdminDetailService },
+        JwtAuthGuard,
+        RolesGuard,
+      ],
     }).compile();
     userAdminController = moduleRef.get(UserAdminController);
   });
@@ -82,11 +94,23 @@ describe('UserAdminController', () => {
   });
 
   describe('getUser', () => {
-    it('returns the requested user', async () => {
-      mockUserService.getUserById.mockResolvedValue(createSampleUser());
+    it('returns the requested user with subscription and reading progress', async () => {
+      mockUserAdminDetailService.getAdminUserDetail.mockResolvedValue({
+        user: createSampleUser(),
+        subscription: null,
+        periodProgress: {
+          periodStartedAt: null,
+          periodEndsAt: null,
+          remainingMs: null,
+          elapsedPercent: null,
+        },
+        readingItems: [],
+      });
       const actualResponse = await userAdminController.getUser(1);
-      expect(mockUserService.getUserById).toHaveBeenCalledWith(1);
-      expect(actualResponse.email).toBe('reader@example.com');
+      expect(mockUserAdminDetailService.getAdminUserDetail).toHaveBeenCalledWith(1);
+      expect(actualResponse.user.email).toBe('reader@example.com');
+      expect(actualResponse.subscription).toBeNull();
+      expect(actualResponse.readingProgress).toEqual([]);
     });
   });
 

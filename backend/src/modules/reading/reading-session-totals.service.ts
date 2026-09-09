@@ -15,4 +15,8 @@ export class ReadingSessionTotalsService {
   ): Promise<BookActiveDurationTotal[]> {
     return this.readingSessionRepository.sumActiveDurationByBookInRange(input);
   }
+
+  async sumActiveDurationByBookForUser(userId: number): Promise<BookActiveDurationTotal[]> {
+    return this.readingSessionRepository.sumActiveDurationByBookForUser(userId);
+  }
 }

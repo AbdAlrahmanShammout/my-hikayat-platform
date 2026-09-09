@@ -123,7 +123,11 @@ describe('Admin users (e2e)', () => {
       .get(`/admin/users/${getReaderUserId()}`)
       .set('Authorization', `Bearer ${getAdminAccessToken()}`);
     expect(detailResponse.status).toBe(HttpStatus.OK);
-    expect(detailResponse.body.email).toBe(readerEmail);
+    expect(detailResponse.body.user.email).toBe(readerEmail);
+    expect(detailResponse.body.user).not.toHaveProperty('passwordHash');
+    expect(detailResponse.body).toHaveProperty('subscription');
+    expect(detailResponse.body).toHaveProperty('subscriptionPeriod');
+    expect(Array.isArray(detailResponse.body.readingProgress)).toBe(true);
     const publisherResponse = await request(getServer())
       .patch(`/admin/users/${getReaderUserId()}`)
       .set('Authorization', `Bearer ${getAdminAccessToken()}`)

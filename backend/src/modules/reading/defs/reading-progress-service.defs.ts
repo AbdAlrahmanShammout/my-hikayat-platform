@@ -17,4 +17,6 @@ export type ListReadingProgressesServiceInput = {
   readonly userId: number;
   readonly bookId?: number;
   readonly updatedSince?: Date;
+  readonly limit?: number;
+  readonly offset?: number;
 };

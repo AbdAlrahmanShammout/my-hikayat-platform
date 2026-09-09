@@ -4,4 +4,5 @@ import { BookChapterEntity } from '@/modules/book-processing/entity/book-chapter
 export abstract class BookChapterRepository {
   abstract replaceByBookId(input: ReplaceBookChaptersRepoInput): Promise<BookChapterEntity[]>;
   abstract listByBookId(bookId: number): Promise<BookChapterEntity[]>;
+  abstract listByBookIds(bookIds: readonly number[]): Promise<BookChapterEntity[]>;
 }

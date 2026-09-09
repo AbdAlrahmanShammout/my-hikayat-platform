@@ -4,6 +4,7 @@ import {
   CountCatalogVisibleBooksRepoInput,
   CreateBookRepoInput,
   ListBooksRepoInput,
+  ListBooksByIdsRepoInput,
   ListCatalogBooksByIdsRepoInput,
   ListCatalogBooksRepoInput,
   UpdateBookRepoInput,
@@ -18,5 +19,6 @@ export abstract class BookRepository {
   abstract list(input: ListBooksRepoInput): Promise<BookPage>;
   abstract listCatalog(input: ListCatalogBooksRepoInput): Promise<BookPage>;
   abstract listCatalogByIds(input: ListCatalogBooksByIdsRepoInput): Promise<BookEntity[]>;
+  abstract listByIds(input: ListBooksByIdsRepoInput): Promise<BookEntity[]>;
   abstract countCatalogVisible(input: CountCatalogVisibleBooksRepoInput): Promise<number>;
 }

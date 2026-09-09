@@ -116,4 +116,20 @@ export class ReadingSessionPrismaRepository implements ReadingSessionRepository 
       activeDurationMs: row._sum.activeDurationMs ?? 0,
     }));
   }
+
+  async sumActiveDurationByBookForUser(userId: number): Promise<BookActiveDurationTotal[]> {
+    const rows = await this.prismaProviderService.readingSession.groupBy({
+      by: ['bookId'],
+      where: {
+        userId,
+        deletedAt: null,
+      },
+      _sum: { activeDurationMs: true },
+      orderBy: { bookId: 'asc' },
+    });
+    return rows.map((row) => ({
+      bookId: row.bookId,
+      activeDurationMs: row._sum.activeDurationMs ?? 0,
+    }));
+  }
 }

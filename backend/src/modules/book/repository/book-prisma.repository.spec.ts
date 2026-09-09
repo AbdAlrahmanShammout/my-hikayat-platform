@@ -246,6 +246,26 @@ describe('BookPrismaRepository', () => {
     expect(actualBooks).toEqual([BookMapper.toEntity(persistenceRow)]);
   });
 
+  it('lists managed books by id without catalog visibility', async () => {
+    mockPrismaProviderService.book.findMany.mockResolvedValue([persistenceRow]);
+    const actualBooks = await bookPrismaRepository.listByIds({ ids: [8, 9] });
+    expect(mockPrismaProviderService.book.findMany).toHaveBeenCalledWith({
+      where: {
+        deletedAt: null,
+        id: { in: [8, 9] },
+      },
+      include: bookDetailsInclude,
+      orderBy: [{ id: 'asc' }],
+    });
+    expect(actualBooks).toEqual([BookMapper.toEntity(persistenceRow)]);
+  });
+
+  it('returns an empty list without querying when listByIds receives no ids', async () => {
+    const actualBooks = await bookPrismaRepository.listByIds({ ids: [] });
+    expect(mockPrismaProviderService.book.findMany).not.toHaveBeenCalled();
+    expect(actualBooks).toEqual([]);
+  });
+
   it('counts catalog-visible books using the same visibility predicate', async () => {
     mockPrismaProviderService.book.count.mockResolvedValue(2);
     const actualCount = await bookPrismaRepository.countCatalogVisible({});

@@ -21,6 +21,7 @@ import { SubscriptionAdminController } from '@/modules/subscription/subscription
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { AdminInvitationAdminController } from '@/modules/user/admin-invitation.admin.controller';
 import { UserAdminController } from '@/modules/user/user.admin.controller';
+import { UserAdminDetailModule } from '@/modules/user/user-admin-detail.module';
 import { UserModule } from '@/modules/user/user.module';
 
 @Module({
@@ -34,6 +35,7 @@ import { UserModule } from '@/modules/user/user.module';
     MonetizationModule,
     SubscriptionModule,
     UserModule,
+    UserAdminDetailModule,
   ],
   controllers: [
     AuditAdminController,

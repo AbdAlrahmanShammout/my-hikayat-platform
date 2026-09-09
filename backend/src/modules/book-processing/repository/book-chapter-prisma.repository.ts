@@ -39,6 +39,17 @@ export class BookChapterPrismaRepository implements BookChapterRepository {
     return rows.map((row) => BookChapterMapper.toEntity(row));
   }
 
+  async listByBookIds(bookIds: readonly number[]): Promise<BookChapterEntity[]> {
+    if (bookIds.length === 0) {
+      return [];
+    }
+    const rows: BookChapterType[] = await this.prismaProviderService.bookChapter.findMany({
+      where: { bookId: { in: [...bookIds] }, deletedAt: null },
+      orderBy: [{ bookId: 'asc' }, { spineIndex: 'asc' }, { id: 'asc' }],
+    });
+    return rows.map((row) => BookChapterMapper.toEntity(row));
+  }
+
   private static toCreateData(
     bookId: number,
     chapter: CreateBookChapterRepoInput,

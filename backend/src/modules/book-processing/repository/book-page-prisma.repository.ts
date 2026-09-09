@@ -57,6 +57,17 @@ export class BookPagePrismaRepository implements BookPageRepository {
     return rows.map((row) => BookPageMapper.toEntity(row));
   }
 
+  async listByBookIds(bookIds: readonly number[]): Promise<BookPageEntity[]> {
+    if (bookIds.length === 0) {
+      return [];
+    }
+    const rows: BookPageType[] = await this.prismaProviderService.bookPage.findMany({
+      where: { bookId: { in: [...bookIds] }, deletedAt: null },
+      orderBy: [{ bookId: 'asc' }, { spineIndex: 'asc' }, { id: 'asc' }],
+    });
+    return rows.map((row) => BookPageMapper.toEntity(row));
+  }
+
   private static toPageCreateData(
     bookId: number,
     page: CreateBookPageRepoInput,

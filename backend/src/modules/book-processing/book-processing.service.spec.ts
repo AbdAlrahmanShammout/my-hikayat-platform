@@ -282,9 +282,18 @@ describe('BookProcessingService', () => {
     update: jest.Mock;
     findByBookId: jest.Mock;
   };
-  let mockBookChapterRepository: { replaceByBookId: jest.Mock; listByBookId: jest.Mock };
-  let mockBookPageRepository: { replaceByBookId: jest.Mock; listByBookId: jest.Mock };
+  let mockBookChapterRepository: {
+    replaceByBookId: jest.Mock;
+    listByBookId: jest.Mock;
+    listByBookIds: jest.Mock;
+  };
+  let mockBookPageRepository: {
+    replaceByBookId: jest.Mock;
+    listByBookId: jest.Mock;
+    listByBookIds: jest.Mock;
+  };
   let mockBookPageTextLayerRepository: { replaceByBookId: jest.Mock };
+  let mockBookSpreadRepository: { listByBookId: jest.Mock; listByBookIds: jest.Mock };
   let mockBookService: { updateBook: jest.Mock; getBookById: jest.Mock };
   let mockStorageManagerService: { getObject: jest.Mock };
   let mockEncryptionManagerService: { unwrapDataKey: jest.Mock; decryptWithDataKey: jest.Mock };
@@ -297,9 +306,18 @@ describe('BookProcessingService', () => {
       update: jest.fn(),
       findByBookId: jest.fn(),
     };
-    mockBookChapterRepository = { replaceByBookId: jest.fn(), listByBookId: jest.fn() };
-    mockBookPageRepository = { replaceByBookId: jest.fn(), listByBookId: jest.fn() };
+    mockBookChapterRepository = {
+      replaceByBookId: jest.fn(),
+      listByBookId: jest.fn(),
+      listByBookIds: jest.fn(),
+    };
+    mockBookPageRepository = {
+      replaceByBookId: jest.fn(),
+      listByBookId: jest.fn(),
+      listByBookIds: jest.fn(),
+    };
     mockBookPageTextLayerRepository = { replaceByBookId: jest.fn(), listByBookId: jest.fn() };
+    mockBookSpreadRepository = { listByBookId: jest.fn(), listByBookIds: jest.fn() };
     mockBookService = { updateBook: jest.fn(), getBookById: jest.fn() };
     mockStorageManagerService = { getObject: jest.fn() };
     mockEncryptionManagerService = {
@@ -312,6 +330,7 @@ describe('BookProcessingService', () => {
       mockBookChapterRepository,
       mockBookPageRepository,
       mockBookPageTextLayerRepository,
+      mockBookSpreadRepository,
       mockBookService as unknown as BookService,
       mockStorageManagerService as unknown as StorageManagerService,
       mockEncryptionManagerService as unknown as EncryptionManagerService,
@@ -618,6 +637,17 @@ describe('BookProcessingService', () => {
         ResourceNotFoundException,
       );
       expect(mockBookChapterRepository.listByBookId).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('listChaptersByBookIds', () => {
+    it('delegates chapter batching without a per-book get', async () => {
+      const expectedChapters = [createSampleChapter()];
+      mockBookChapterRepository.listByBookIds.mockResolvedValue(expectedChapters);
+      const actualChapters = await bookProcessingService.listChaptersByBookIds([8, 9]);
+      expect(mockBookChapterRepository.listByBookIds).toHaveBeenCalledWith([8, 9]);
+      expect(mockBookService.getBookById).not.toHaveBeenCalled();
+      expect(actualChapters).toBe(expectedChapters);
     });
   });
 

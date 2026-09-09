@@ -12,6 +12,8 @@ import { useCurrentUser } from '@/features/auth/hooks/use-current-user';
 import { AdminUserActions } from '@/features/users/components/admin-user-actions';
 import { AdminUserDetailSummary } from '@/features/users/components/admin-user-detail-summary';
 import { AdminUserEditForm } from '@/features/users/components/admin-user-edit-form';
+import { AdminUserReadingProgressCard } from '@/features/users/components/admin-user-reading-progress-card';
+import { AdminUserSubscriptionCard } from '@/features/users/components/admin-user-subscription-card';
 import { useAdminUser } from '@/features/users/hooks/use-admin-user';
 import { useAdminUsersList } from '@/features/users/hooks/use-admin-users-list';
 import { getAdminUserActionAvailability } from '@/features/users/lib/get-admin-user-action-availability';
@@ -19,7 +21,7 @@ import { parsePositiveInt } from '@/lib/parse-positive-int';
 import { USER_ROLES } from '@/types/user-role';
 
 /**
- * Admin user detail: role, publisher capability, and soft-delete.
+ * Admin user detail: profile, subscription, reading progress, role, and soft-delete.
  */
 export function AdminUserDetailPage(): JSX.Element {
   const { userId: userIdParam } = useParams();
@@ -27,7 +29,7 @@ export function AdminUserDetailPage(): JSX.Element {
   if (userId === null) {
     return (
       <>
-        <PageHeader title="User" description="Change role and publisher capability." />
+        <PageHeader title="User" description="Profile, subscription, and reading progress." />
         <ErrorState
           title="Invalid user id"
           message="The user id in the URL must be a positive integer."
@@ -48,7 +50,7 @@ function AdminUserDetailContent({ userId }: { readonly userId: number }): JSX.El
   if (userQuery.isPending) {
     return (
       <>
-        <PageHeader title="User" description="Change role and publisher capability." />
+        <PageHeader title="User" description="Profile, subscription, and reading progress." />
         <PageSkeleton />
       </>
     );
@@ -58,7 +60,7 @@ function AdminUserDetailContent({ userId }: { readonly userId: number }): JSX.El
       <>
         <PageHeader
           title="User"
-          description="Change role and publisher capability."
+          description="Profile, subscription, and reading progress."
           actions={backToUsersAction()}
         />
         <ErrorState
@@ -70,7 +72,8 @@ function AdminUserDetailContent({ userId }: { readonly userId: number }): JSX.El
       </>
     );
   }
-  const user = userQuery.data;
+  const detail = userQuery.data;
+  const user = detail.user;
   const availability = getAdminUserActionAvailability({
     targetUserId: user.id,
     targetRole: user.role,
@@ -81,12 +84,17 @@ function AdminUserDetailContent({ userId }: { readonly userId: number }): JSX.El
     <>
       <PageHeader
         title={user.email}
-        description="Change role and publisher capability."
+        description="Profile, subscription, and reading progress."
         actions={backToUsersAction()}
       />
       <div className="space-y-6">
         <AdminUserActions user={user} availability={availability} />
         <AdminUserDetailSummary user={user} />
+        <AdminUserSubscriptionCard
+          subscription={detail.subscription ?? null}
+          subscriptionPeriod={detail.subscriptionPeriod}
+        />
+        <AdminUserReadingProgressCard items={detail.readingProgress} />
         <AdminUserEditForm
           key={`${user.id}-${user.updatedAt}`}
           user={user}

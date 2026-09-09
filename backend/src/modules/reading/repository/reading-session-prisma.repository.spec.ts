@@ -100,4 +100,21 @@ describe('ReadingSessionPrismaRepository', () => {
     });
     expect(actualTotals).toEqual([{ bookId: 8, activeDurationMs: 120000 }]);
   });
+
+  it('sums all-time active duration by book for one user', async () => {
+    mockPrismaProviderService.readingSession.groupBy.mockResolvedValue([
+      { bookId: 8, _sum: { activeDurationMs: 720000 } },
+    ]);
+    const actualTotals = await readingSessionPrismaRepository.sumActiveDurationByBookForUser(4);
+    expect(mockPrismaProviderService.readingSession.groupBy).toHaveBeenCalledWith({
+      by: ['bookId'],
+      where: {
+        userId: 4,
+        deletedAt: null,
+      },
+      _sum: { activeDurationMs: true },
+      orderBy: { bookId: 'asc' },
+    });
+    expect(actualTotals).toEqual([{ bookId: 8, activeDurationMs: 720000 }]);
+  });
 });

@@ -23,4 +23,18 @@ describe('ReadingSessionTotalsService', () => {
     );
     expect(actualTotals).toBe(expectedTotals);
   });
+
+  it('delegates all-time active-duration totals for one user', async () => {
+    const expectedTotals = [{ bookId: 8, activeDurationMs: 720000 }];
+    const mockReadingSessionRepository = {
+      sumActiveDurationByBookInRange: jest.fn(),
+      sumActiveDurationByBookForUser: jest.fn().mockResolvedValue(expectedTotals),
+    };
+    const readingSessionTotalsService = new ReadingSessionTotalsService(
+      mockReadingSessionRepository,
+    );
+    const actualTotals = await readingSessionTotalsService.sumActiveDurationByBookForUser(4);
+    expect(mockReadingSessionRepository.sumActiveDurationByBookForUser).toHaveBeenCalledWith(4);
+    expect(actualTotals).toBe(expectedTotals);
+  });
 });

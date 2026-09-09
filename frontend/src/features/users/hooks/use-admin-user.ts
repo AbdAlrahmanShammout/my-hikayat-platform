@@ -9,7 +9,7 @@ import type { components } from '@/generated/admin';
  */
 export function useAdminUser(
   userId: number,
-): UseQueryResult<components['schemas']['UserResponse'], Error> {
+): UseQueryResult<components['schemas']['GetAdminUserDetailResponseDto'], Error> {
   return useQuery({
     queryKey: queryKeys.admin.users.detail(userId),
     queryFn: () => getAdminUser(userId),

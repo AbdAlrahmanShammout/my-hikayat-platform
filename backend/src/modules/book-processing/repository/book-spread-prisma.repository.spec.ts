@@ -40,4 +40,14 @@ describe('BookSpreadPrismaRepository', () => {
     });
     expect(actualSpreads).toEqual([BookSpreadMapper.toEntity(persistenceRow)]);
   });
+
+  it('lists operational spreads for many books in one query', async () => {
+    mockPrismaProviderService.bookSpread.findMany.mockResolvedValue([persistenceRow]);
+    const actualSpreads = await bookSpreadPrismaRepository.listByBookIds([8, 9]);
+    expect(mockPrismaProviderService.bookSpread.findMany).toHaveBeenCalledWith({
+      where: { bookId: { in: [8, 9] }, deletedAt: null },
+      orderBy: [{ bookId: 'asc' }, { spreadIndex: 'asc' }, { id: 'asc' }],
+    });
+    expect(actualSpreads).toEqual([BookSpreadMapper.toEntity(persistenceRow)]);
+  });
 });

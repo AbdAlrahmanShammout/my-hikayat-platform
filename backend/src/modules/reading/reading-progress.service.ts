@@ -74,6 +74,8 @@ export class ReadingProgressService {
       userId: input.userId,
       bookId: input.bookId,
       updatedSince: input.updatedSince,
+      limit: input.limit,
+      offset: input.offset,
     });
   }
 

@@ -9,4 +9,5 @@ export abstract class BookPageRepository {
     input: ReplaceBookFixedLayoutRepoInput,
   ): Promise<BookFixedLayoutStructure>;
   abstract listByBookId(bookId: number): Promise<BookPageEntity[]>;
+  abstract listByBookIds(bookIds: readonly number[]): Promise<BookPageEntity[]>;
 }

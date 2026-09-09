@@ -231,6 +231,8 @@ describe('ReadingProgressService', () => {
         userId: 7,
         bookId: undefined,
         updatedSince: new Date('2026-08-15T00:00:00.000Z'),
+        limit: undefined,
+        offset: undefined,
       });
       expect(actualPage).toBe(expectedPage);
       expect(mockEntitlementService.assertCanAccessFullBook).not.toHaveBeenCalled();

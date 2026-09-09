@@ -85,4 +85,14 @@ describe('BookChapterPrismaRepository', () => {
     });
     expect(actualEntities).toEqual([BookChapterMapper.toEntity(persistenceRow)]);
   });
+
+  it('lists operational chapters for many books in one query', async () => {
+    mockPrismaProviderService.bookChapter.findMany.mockResolvedValue([persistenceRow]);
+    const actualEntities = await bookChapterPrismaRepository.listByBookIds([8, 9]);
+    expect(mockPrismaProviderService.bookChapter.findMany).toHaveBeenCalledWith({
+      where: { bookId: { in: [8, 9] }, deletedAt: null },
+      orderBy: [{ bookId: 'asc' }, { spineIndex: 'asc' }, { id: 'asc' }],
+    });
+    expect(actualEntities).toEqual([BookChapterMapper.toEntity(persistenceRow)]);
+  });
 });

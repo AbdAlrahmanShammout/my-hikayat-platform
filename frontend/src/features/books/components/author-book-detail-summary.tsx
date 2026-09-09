@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 
 import { AdminBookStatusBadge } from '@/features/books/components/admin-book-status-badge';
-import { BookCoverThumbnail } from '@/features/books/components/book-cover-thumbnail';
+import { BookCoverThumbnail } from '@/components/book-cover-thumbnail';
 import { formatBookEnumLabel } from '@/features/books/lib/format-book-enum-label';
 import { formatBookOwnerLabel } from '@/features/books/lib/format-book-owner-label';
 import { joinBookCategoryNames } from '@/features/books/lib/join-book-category-names';

@@ -114,4 +114,14 @@ describe('BookPagePrismaRepository', () => {
     });
     expect(actualPages).toEqual([BookPageMapper.toEntity(pageRow)]);
   });
+
+  it('lists operational pages for many books in one query', async () => {
+    mockPrismaProviderService.bookPage.findMany.mockResolvedValue([pageRow]);
+    const actualPages = await bookPagePrismaRepository.listByBookIds([8, 9]);
+    expect(mockPrismaProviderService.bookPage.findMany).toHaveBeenCalledWith({
+      where: { bookId: { in: [8, 9] }, deletedAt: null },
+      orderBy: [{ bookId: 'asc' }, { spineIndex: 'asc' }, { id: 'asc' }],
+    });
+    expect(actualPages).toEqual([BookPageMapper.toEntity(pageRow)]);
+  });
 });

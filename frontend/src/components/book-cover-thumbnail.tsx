@@ -1,8 +1,8 @@
 import { BookOpen } from 'lucide-react';
 import { useEffect, useState, type JSX } from 'react';
 
-import { resolveBookCoverUrl } from '@/features/books/lib/resolve-book-cover-url';
 import { cn } from '@/lib/cn';
+import { resolveBookCoverUrl } from '@/lib/resolve-book-cover-url';
 
 type BookCoverThumbnailSize = 'sm' | 'lg';
 

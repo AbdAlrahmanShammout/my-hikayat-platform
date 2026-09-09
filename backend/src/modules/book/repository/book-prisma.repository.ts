@@ -7,6 +7,7 @@ import {
   CountCatalogVisibleBooksRepoInput,
   CreateBookRepoInput,
   ListBooksRepoInput,
+  ListBooksByIdsRepoInput,
   ListCatalogBooksByIdsRepoInput,
   ListCatalogBooksRepoInput,
   UpdateBookRepoInput,
@@ -159,6 +160,21 @@ export class BookPrismaRepository implements BookRepository {
     const rows = await this.prismaProviderService.book.findMany({
       where: {
         ...BookPrismaRepository.buildCatalogVisibilityWhere(),
+        id: { in: [...input.ids] },
+      },
+      include: bookDetailsInclude,
+      orderBy: [{ id: 'asc' }],
+    });
+    return rows.map((row) => BookMapper.toEntity(row));
+  }
+
+  async listByIds(input: ListBooksByIdsRepoInput): Promise<BookEntity[]> {
+    if (input.ids.length === 0) {
+      return [];
+    }
+    const rows = await this.prismaProviderService.book.findMany({
+      where: {
+        deletedAt: null,
         id: { in: [...input.ids] },
       },
       include: bookDetailsInclude,
