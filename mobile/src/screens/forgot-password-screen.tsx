@@ -3,14 +3,12 @@ import { router, type Href } from 'expo-router';
 import { useState, type JSX } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +20,10 @@ import {
   type ForgotPasswordFormValues,
 } from '@/features/auth/schemas/forgot-password-schema';
 import { theme } from '@/theme/theme';
+import { FormError } from '@/ui/forms/form-error';
+import { TextField } from '@/ui/forms/text-field';
+import { BackHeader } from '@/ui/primitives/back-header';
+import { Button } from '@/ui/primitives/button';
 
 /**
  * Requests a password-reset email. Always shows the enumeration-safe acknowledgement.
@@ -38,6 +40,14 @@ export function ForgotPasswordScreen(): JSX.Element {
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: { email: '' },
   });
+
+  function navigateBackToSignIn(): void {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(public)/sign-in');
+  }
 
   async function executeRequest(values: ForgotPasswordFormValues): Promise<void> {
     setAckMessage(null);
@@ -63,76 +73,53 @@ export function ForgotPasswordScreen(): JSX.Element {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <Pressable
-            style={styles.backButton}
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-                return;
-              }
-              router.replace('/(public)/sign-in');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            testID="auth-forgot-back"
-          >
-            <Text style={styles.backLabel}>Back</Text>
-          </Pressable>
+          <BackHeader title="" onPressBack={navigateBackToSignIn} backTestID="auth-forgot-back" />
           <Text style={styles.title} accessibilityRole="header">
-            Forgot password
+            Forgot password?
           </Text>
           <Text style={styles.body}>
             Enter your email. If an account exists, we will send reset instructions.
           </Text>
+          {errors.root?.message !== undefined ? (
+            <FormError message={errors.root.message} testID="auth-forgot-error" />
+          ) : null}
+          {ackMessage !== null ? (
+            <View style={styles.ackBanner}>
+              <Text style={styles.success} testID="auth-forgot-ack">
+                {ackMessage}
+              </Text>
+            </View>
+          ) : null}
           <Controller
             control={control}
             name="email"
             render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={styles.input}
+              <TextField
+                label="Email address"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="your@email.com"
+                keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
-                keyboardType="email-address"
-                placeholder="Email"
-                placeholderTextColor={theme.colors.textPlaceholder}
-                value={value}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                editable={!isSubmitting}
+                autoComplete="email"
+                isDisabled={isSubmitting}
+                errorMessage={errors.email?.message}
                 testID="auth-forgot-email-input"
                 accessibilityLabel="Email"
               />
             )}
           />
-          {errors.email?.message !== undefined ? (
-            <Text style={styles.error}>{errors.email.message}</Text>
-          ) : null}
-          {errors.root?.message !== undefined ? (
-            <Text style={styles.error} testID="auth-forgot-error">
-              {errors.root.message}
-            </Text>
-          ) : null}
-          {ackMessage !== null ? (
-            <Text style={styles.success} testID="auth-forgot-ack">
-              {ackMessage}
-            </Text>
-          ) : null}
-          <Pressable
-            style={[styles.primaryButton, isSubmitting ? styles.buttonDisabled : null]}
+          <Button
+            label="Send reset instructions"
             onPress={() => {
               void handleSubmit(executeRequest)();
             }}
-            disabled={isSubmitting}
+            isLoading={isSubmitting}
             testID="auth-forgot-submit"
-            accessibilityRole="button"
             accessibilityLabel="Send reset instructions"
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color={theme.colors.onPrimary} />
-            ) : (
-              <Text style={styles.primaryLabel}>Send reset instructions</Text>
-            )}
-          </Pressable>
+          />
           <Pressable
             style={styles.secondaryButton}
             onPress={() => {
@@ -154,7 +141,7 @@ export function ForgotPasswordScreen(): JSX.Element {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.canvas,
   },
   flex: {
     flex: 1,
@@ -163,68 +150,38 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.xl,
-    gap: theme.spacing.sm,
-    justifyContent: 'center',
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  backLabel: {
-    ...theme.typography.link,
-    color: theme.colors.primaryMuted,
+    gap: theme.spacing.md,
   },
   title: {
     ...theme.typography.title,
+    fontSize: theme.typography.scale['2xl'],
+    fontStyle: 'italic',
+    fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
   },
   body: {
     ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.sm,
+    color: theme.colors.textMuted,
   },
-  input: {
-    minHeight: theme.controlMinHeight,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radii.control,
-    paddingHorizontal: theme.spacing.md,
-    fontSize: 18,
-    color: theme.colors.textPrimary,
-    backgroundColor: theme.colors.surface,
-  },
-  error: {
-    ...theme.typography.body,
-    color: theme.colors.danger,
+  ackBanner: {
+    backgroundColor: theme.colors.successBg,
+    borderRadius: theme.radii.lg,
+    padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.success,
   },
   success: {
     ...theme.typography.body,
-    color: theme.colors.primaryMuted,
-  },
-  primaryButton: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: theme.spacing.sm,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  primaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
+    color: theme.colors.success,
   },
   secondaryButton: {
-    minHeight: 52,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryLabel: {
     ...theme.typography.link,
-    color: theme.colors.primaryMuted,
+    color: theme.colors.primary,
   },
   spacer: {
     height: theme.spacing.xl,

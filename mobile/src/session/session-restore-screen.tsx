@@ -1,10 +1,11 @@
 import { useState, type JSX } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { confirmOfflinePurgeIfNeeded } from '@/features/offline/lib/confirm-offline-purge-if-needed';
 import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
+import { Button } from '@/ui/primitives/button';
 
 /**
  * Shown when a stored token exists but /auth/me could not be restored (non-401).
@@ -45,39 +46,34 @@ export function SessionRestoreScreen(): JSX.Element {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'right', 'bottom', 'left']}>
       <View style={styles.container}>
+        <View style={styles.iconWell} accessibilityElementsHidden>
+          <Text style={styles.iconMark}>!</Text>
+        </View>
         <Text style={styles.title} accessibilityRole="header">
           Could not restore your session
         </Text>
         <Text style={styles.body}>
           {errorMessage ?? 'Check your connection, then try again.'}
         </Text>
-        <Pressable
-          style={[styles.primaryButton, isBusy ? styles.buttonDisabled : null]}
+        <Button
+          label="Try again"
           onPress={() => {
             void handleRetry();
           }}
-          disabled={isBusy}
-          accessibilityRole="button"
+          isLoading={isRetrying}
+          isDisabled={isBusy}
           accessibilityLabel="Try again"
-        >
-          {isRetrying ? (
-            <ActivityIndicator color={theme.colors.onPrimary} />
-          ) : (
-            <Text style={styles.primaryLabel}>Try again</Text>
-          )}
-        </Pressable>
-        <Pressable
-          style={styles.secondaryButton}
+        />
+        <Button
+          label="Sign in instead"
           onPress={() => {
             void handleSignInInsteadPress();
           }}
-          disabled={isBusy}
-          accessibilityRole="button"
+          variant="secondary"
+          isDisabled={isBusy}
           accessibilityLabel="Sign in instead"
           testID="session-restore-abandon-button"
-        >
-          <Text style={styles.secondaryLabel}>Sign in instead</Text>
-        </Pressable>
+        />
       </View>
     </SafeAreaView>
   );
@@ -86,44 +82,41 @@ export function SessionRestoreScreen(): JSX.Element {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.canvas,
   },
   container: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xxl,
     gap: theme.spacing.sm,
+    alignItems: 'stretch',
+  },
+  iconWell: {
+    alignSelf: 'center',
+    width: theme.spacing.xxxl + theme.spacing.lg,
+    height: theme.spacing.xxxl + theme.spacing.lg,
+    borderRadius: theme.radii.full,
+    backgroundColor: theme.colors.warningBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: theme.spacing.xs,
+  },
+  iconMark: {
+    ...theme.typography.title,
+    color: theme.colors.warning,
   },
   title: {
     ...theme.typography.title,
+    fontSize: theme.typography.scale['2xl'],
+    fontStyle: 'italic',
+    fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
+    textAlign: 'center',
   },
   body: {
     ...theme.typography.body,
-    color: theme.colors.textSecondary,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
     marginBottom: theme.spacing.sm,
-  },
-  primaryButton: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  primaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
-  },
-  secondaryButton: {
-    minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryLabel: {
-    ...theme.typography.link,
-    color: theme.colors.primaryMuted,
   },
 });

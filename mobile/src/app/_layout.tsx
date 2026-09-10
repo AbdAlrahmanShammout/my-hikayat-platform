@@ -36,7 +36,6 @@ export default function RootLayout(): JSX.Element {
             <SessionProvider>
               <SplashVisibilityGate>
                 <Stack screenOptions={{ headerShown: false }} />
-                <StatusBar style="dark" />
               </SplashVisibilityGate>
             </SessionProvider>
           </QueryClientProvider>
@@ -61,5 +60,10 @@ function SplashVisibilityGate({ children }: SplashVisibilityGateProps): JSX.Elem
     }
     void SplashScreen.hideAsync();
   }, [status]);
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <StatusBar style={status === 'loading' ? 'light' : 'dark'} />
+    </>
+  );
 }

@@ -1,7 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 import type { JSX } from 'react';
-import { View } from 'react-native';
 
+import { SessionSplash } from '@/session/session-splash';
 import { useSession } from '@/session/use-session';
 
 /**
@@ -10,7 +10,7 @@ import { useSession } from '@/session/use-session';
 export default function PublicLayout(): JSX.Element {
   const { status } = useSession();
   if (status === 'loading' || status === 'restoreFailed') {
-    return <View style={{ flex: 1 }} accessibilityLabel="Loading" />;
+    return <SessionSplash />;
   }
   if (status === 'signedIn') {
     return <Redirect href="/(app)/(tabs)/home" />;

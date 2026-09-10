@@ -1,8 +1,8 @@
 import { Redirect } from 'expo-router';
 import type { JSX } from 'react';
-import { View } from 'react-native';
 
 import { SessionRestoreScreen } from '@/session/session-restore-screen';
+import { SessionSplash } from '@/session/session-splash';
 import { useSession } from '@/session/use-session';
 
 /**
@@ -11,7 +11,7 @@ import { useSession } from '@/session/use-session';
 export default function IndexRoute(): JSX.Element {
   const { status } = useSession();
   if (status === 'loading') {
-    return <View style={{ flex: 1 }} accessibilityLabel="Loading" />;
+    return <SessionSplash />;
   }
   if (status === 'restoreFailed') {
     return <SessionRestoreScreen />;
