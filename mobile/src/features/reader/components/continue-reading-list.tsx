@@ -1,13 +1,16 @@
 import { useQueries } from '@tanstack/react-query';
 import type { JSX } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { getCatalogBook } from '@/features/catalog/api/get-catalog-book';
-import { CatalogBookCover } from '@/features/catalog/components/catalog-book-cover';
+import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-catalog-cover-presentation';
 import type { ReadingProgress } from '@/features/reader/api/get-reading-progress';
 import { useContinueReading } from '@/features/reader/hooks/use-continue-reading';
 import { formatContinueReadingLabel } from '@/features/reader/lib/continue-reading';
 import { theme } from '@/theme/theme';
+import { ErrorState } from '@/ui/feedback/error-state';
+import { BookCard } from '@/ui/primitives/book-card';
+import { Skeleton } from '@/ui/primitives/skeleton';
 
 type ContinueReadingListProps = {
   readonly onContinue: (bookId: number) => void;
@@ -30,7 +33,7 @@ export function ContinueReadingList({ onContinue }: ContinueReadingListProps): J
     return (
       <View style={styles.block} testID="continue-reading-loading">
         <Text style={styles.heading}>Continue reading</Text>
-        <ActivityIndicator color={theme.colors.primary} />
+        <Skeleton height={110} width="100%" radius={theme.radii.lg} />
       </View>
     );
   }
@@ -39,16 +42,14 @@ export function ContinueReadingList({ onContinue }: ContinueReadingListProps): J
     return (
       <View style={styles.block} testID="continue-reading-error">
         <Text style={styles.heading}>Continue reading</Text>
-        <Text style={styles.error}>Could not load your reading list.</Text>
-        <Pressable
-          style={styles.retryButton}
-          onPress={continueQuery.refetch}
-          accessibilityRole="button"
-          accessibilityLabel="Retry continue reading"
-          testID="continue-reading-retry"
-        >
-          <Text style={styles.retryLabel}>Try again</Text>
-        </Pressable>
+        <ErrorState
+          description="Could not load your reading list."
+          onRetry={() => {
+            void continueQuery.refetch();
+          }}
+          retryLabel="Try again"
+          retryTestID="continue-reading-retry"
+        />
       </View>
     );
   }
@@ -68,25 +69,21 @@ export function ContinueReadingList({ onContinue }: ContinueReadingListProps): J
       {continueQuery.items.map((item: ReadingProgress, index: number) => {
         const book = titleQueries[index]?.data;
         const title: string = book?.title ?? `Book ${item.bookId}`;
+        const cover = resolveCatalogCoverPresentation(book?.cover);
         return (
-          <Pressable
+          <BookCard
             key={item.id}
-            style={styles.row}
+            variant="continue"
+            title={title}
+            authorName={book?.authorName}
+            coverUri={cover.kind === 'image' ? cover.url : null}
+            progressLabel={formatContinueReadingLabel(item)}
             onPress={() => {
               onContinue(item.bookId);
             }}
-            accessibilityRole="button"
             accessibilityLabel={`Continue reading ${title}`}
             testID={`continue-reading-item-${item.bookId}`}
-          >
-            <CatalogBookCover cover={book?.cover} title={title} size="row" />
-            <View style={styles.textBlock}>
-              <Text style={styles.bookTitle} numberOfLines={2}>
-                {title}
-              </Text>
-              <Text style={styles.meta}>{formatContinueReadingLabel(item)}</Text>
-            </View>
-          </Pressable>
+          />
         );
       })}
     </View>
@@ -96,55 +93,17 @@ export function ContinueReadingList({ onContinue }: ContinueReadingListProps): J
 const styles = StyleSheet.create({
   block: {
     gap: theme.spacing.sm,
-    marginBottom: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
   },
   heading: {
     ...theme.typography.label,
-    color: theme.colors.primaryMuted,
+    fontWeight: theme.typography.weights.bold,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: theme.colors.textMuted,
   },
   empty: {
     ...theme.typography.body,
-    color: theme.colors.textMuted,
-  },
-  error: {
-    ...theme.typography.body,
-    color: theme.colors.danger,
-  },
-  retryButton: {
-    minHeight: 48,
-    borderRadius: theme.radii.control,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  retryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.primary,
-  },
-  row: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    gap: theme.spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  textBlock: {
-    flex: 1,
-    gap: 2,
-  },
-  bookTitle: {
-    ...theme.typography.button,
-    color: theme.colors.textPrimary,
-  },
-  meta: {
-    fontSize: 14,
     color: theme.colors.textMuted,
   },
 });

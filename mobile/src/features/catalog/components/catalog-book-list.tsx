@@ -1,16 +1,8 @@
-import { useState, type JSX } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { useState, type JSX, type ReactNode } from 'react';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { ApiError } from '@/api/api-error';
-import { CatalogBookRow } from '@/features/catalog/components/catalog-book-row';
+import type { CatalogBook } from '@/features/catalog/api/get-catalog-book';
 import { CatalogBrowseFilters } from '@/features/catalog/components/catalog-browse-filters';
 import type { CatalogSort } from '@/features/catalog/api/list-catalog-books';
 import { useCatalogBooks } from '@/features/catalog/hooks/use-catalog-books';
@@ -19,16 +11,24 @@ import {
   flattenCatalogBookPages,
   formatCatalogResultCountLabel,
 } from '@/features/catalog/lib/catalog-pagination';
+import { resolveCatalogBookAttribution } from '@/features/catalog/lib/resolve-catalog-book-attribution';
+import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-catalog-cover-presentation';
 import { theme } from '@/theme/theme';
+import { EmptyState } from '@/ui/feedback/empty-state';
+import { ErrorState } from '@/ui/feedback/error-state';
+import { BookCard } from '@/ui/primitives/book-card';
+import { Button } from '@/ui/primitives/button';
+import { Skeleton } from '@/ui/primitives/skeleton';
 
 type CatalogBookListProps = {
   readonly onOpenBook: (bookId: number) => void;
+  readonly header?: ReactNode;
 };
 
 /**
  * Home catalog browse: filters + virtualized book list with infinite paging.
  */
-export function CatalogBookList({ onOpenBook }: CatalogBookListProps): JSX.Element {
+export function CatalogBookList({ onOpenBook, header }: CatalogBookListProps): JSX.Element {
   const [sort, setSort] = useState<CatalogSort>('newest');
   const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
   const categoriesQuery = useReaderCategories();
@@ -36,29 +36,36 @@ export function CatalogBookList({ onOpenBook }: CatalogBookListProps): JSX.Eleme
     sort,
     categoryId,
   });
+  const catalogHeading: string = sort === 'newest' ? 'New in My Hikayat' : 'Browse Stories';
 
   if (booksQuery.isLoading) {
     return (
-      <View style={styles.centered} accessibilityLabel="Loading books">
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+      <View style={styles.container}>
+        {header}
+        <View style={styles.catalogPad} accessibilityLabel="Loading books">
+          <Text style={styles.sectionLabel}>{catalogHeading}</Text>
+          <View style={styles.gridSkeleton}>
+            <Skeleton height={210} width="48%" radius={theme.radii.sm} />
+            <Skeleton height={210} width="48%" radius={theme.radii.sm} />
+            <Skeleton height={210} width="48%" radius={theme.radii.sm} />
+            <Skeleton height={210} width="48%" radius={theme.radii.sm} />
+          </View>
+        </View>
       </View>
     );
   }
 
   if (booksQuery.isError && booksQuery.data === undefined) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.error}>{toUserFacingMessage(booksQuery.error)}</Text>
-        <Pressable
-          style={styles.retryButton}
-          onPress={() => {
+      <View style={styles.container}>
+        {header}
+        <ErrorState
+          description={toUserFacingMessage(booksQuery.error)}
+          onRetry={() => {
             void booksQuery.refetch();
           }}
-          accessibilityRole="button"
-          accessibilityLabel="Try again"
-        >
-          <Text style={styles.retryLabel}>Try again</Text>
-        </Pressable>
+          retryLabel="Try again"
+        />
       </View>
     );
   }
@@ -73,59 +80,92 @@ export function CatalogBookList({ onOpenBook }: CatalogBookListProps): JSX.Eleme
   });
 
   return (
-    <View style={styles.container}>
-      <CatalogBrowseFilters
-        sort={sort}
-        categoryId={categoryId}
-        categories={categoriesQuery.data?.categories ?? []}
-        onChangeSort={setSort}
-        onChangeCategoryId={setCategoryId}
-      />
-      <FlatList
-        data={books}
-        keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => <CatalogBookRow book={item} onPress={onOpenBook} />}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        contentContainerStyle={books.length === 0 ? styles.emptyContent : styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={booksQuery.isRefetching && !booksQuery.isFetchingNextPage}
-            onRefresh={() => {
-              void booksQuery.refetch();
-            }}
-            tintColor={theme.colors.primary}
-          />
+    <FlatList
+      style={styles.container}
+      data={books}
+      keyExtractor={(item) => String(item.id)}
+      numColumns={2}
+      columnWrapperStyle={styles.column}
+      renderItem={({ item }) => (
+        <View style={styles.gridItem}>
+          <CatalogGridCard book={item} onPress={onOpenBook} />
+        </View>
+      )}
+      contentContainerStyle={books.length === 0 ? styles.emptyContent : styles.listContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={booksQuery.isRefetching && !booksQuery.isFetchingNextPage}
+          onRefresh={() => {
+            void booksQuery.refetch();
+          }}
+          tintColor={theme.colors.primary}
+        />
+      }
+      onEndReachedThreshold={0.4}
+      onEndReached={() => {
+        if (!hasNextPage || booksQuery.isFetchingNextPage || booksQuery.isFetchNextPageError) {
+          return;
         }
-        onEndReachedThreshold={0.4}
-        onEndReached={() => {
-          if (!hasNextPage || booksQuery.isFetchingNextPage || booksQuery.isFetchNextPageError) {
-            return;
-          }
-          void booksQuery.fetchNextPage();
-        }}
-        ListEmptyComponent={
-          <Text style={styles.empty}>No books here yet. Check back after more books are published.</Text>
-        }
-        ListHeaderComponent={
-          countLabel !== '' ? (
-            <Text style={styles.count} testID="catalog-result-count">
-              {countLabel}
-            </Text>
-          ) : null
-        }
-        ListFooterComponent={
-          <CatalogListFooter
-            isFetchingNextPage={booksQuery.isFetchingNextPage}
-            isFetchNextPageError={booksQuery.isFetchNextPageError}
-            hasNextPage={hasNextPage}
-            loadedCount={books.length}
-            onRetry={() => {
-              void booksQuery.fetchNextPage();
-            }}
-          />
-        }
-      />
-    </View>
+        void booksQuery.fetchNextPage();
+      }}
+      ListEmptyComponent={
+        <EmptyState
+          title="No books here yet. Check back after more books are published."
+          description="New stories will appear here when they are ready to read."
+        />
+      }
+      ListHeaderComponent={
+        <View>
+          {header}
+          <View style={styles.catalogPad}>
+            <Text style={styles.sectionLabel}>{catalogHeading}</Text>
+            <CatalogBrowseFilters
+              sort={sort}
+              categoryId={categoryId}
+              categories={categoriesQuery.data?.categories ?? []}
+              onChangeSort={setSort}
+              onChangeCategoryId={setCategoryId}
+            />
+            {countLabel !== '' ? (
+              <Text style={styles.count} testID="catalog-result-count">
+                {countLabel}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      }
+      ListFooterComponent={
+        <CatalogListFooter
+          isFetchingNextPage={booksQuery.isFetchingNextPage}
+          isFetchNextPageError={booksQuery.isFetchNextPageError}
+          hasNextPage={hasNextPage}
+          loadedCount={books.length}
+          onRetry={() => {
+            void booksQuery.fetchNextPage();
+          }}
+        />
+      }
+    />
+  );
+}
+
+function CatalogGridCard(input: {
+  readonly book: CatalogBook;
+  readonly onPress: (bookId: number) => void;
+}): JSX.Element {
+  const attribution = resolveCatalogBookAttribution(input.book);
+  const cover = resolveCatalogCoverPresentation(input.book.cover);
+  return (
+    <BookCard
+      title={input.book.title}
+      authorName={attribution.authorLine}
+      coverUri={cover.kind === 'image' ? cover.url : null}
+      variant="grid"
+      onPress={() => {
+        input.onPress(input.book.id);
+      }}
+      accessibilityLabel={`Open ${input.book.title}`}
+    />
   );
 }
 
@@ -139,23 +179,20 @@ function CatalogListFooter(input: {
   if (input.isFetchingNextPage) {
     return (
       <View style={styles.footer} testID="catalog-loading-more">
-        <ActivityIndicator color={theme.colors.primary} />
+        <Skeleton height={16} width="40%" />
       </View>
     );
   }
   if (input.isFetchNextPageError) {
     return (
       <View style={styles.footer}>
-        <Text style={styles.error}>Could not load more books.</Text>
-        <Pressable
-          style={styles.retryButton}
+        <Text style={styles.footerError}>Could not load more books.</Text>
+        <Button
+          label="Try again"
           onPress={input.onRetry}
-          accessibilityRole="button"
           accessibilityLabel="Try loading more"
           testID="catalog-load-more-retry"
-        >
-          <Text style={styles.retryLabel}>Try again</Text>
-        </Pressable>
+        />
       </View>
     );
   }
@@ -183,62 +220,60 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.sm,
+  catalogPad: {
     paddingHorizontal: theme.spacing.lg,
+    gap: theme.spacing.sm,
+    paddingBottom: theme.spacing.sm,
+  },
+  sectionLabel: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: theme.colors.textMuted,
+  },
+  column: {
+    gap: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+  },
+  gridItem: {
+    flex: 1,
+    maxWidth: '48%',
+  },
+  gridSkeleton: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: theme.spacing.md,
   },
   listContent: {
     paddingBottom: theme.spacing.xxxl,
-    gap: 0,
+    gap: theme.spacing.md,
   },
   emptyContent: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingBottom: theme.spacing.xxxl,
   },
-  separator: {
-    height: theme.spacing.sm,
-  },
   count: {
     ...theme.typography.label,
     color: theme.colors.textMuted,
-    marginBottom: theme.spacing.xs,
-  },
-  empty: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-  },
-  error: {
-    ...theme.typography.body,
-    color: theme.colors.danger,
-    textAlign: 'center',
   },
   footer: {
     paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
     alignItems: 'center',
     gap: theme.spacing.sm,
+  },
+  footerError: {
+    ...theme.typography.body,
+    color: theme.colors.error,
+    textAlign: 'center',
   },
   endLabel: {
     ...theme.typography.label,
     color: theme.colors.textMuted,
     textAlign: 'center',
     paddingVertical: theme.spacing.md,
-  },
-  retryButton: {
-    minHeight: theme.controlMinHeight,
-    minWidth: 160,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-  },
-  retryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
   },
 });

@@ -1,10 +1,12 @@
 import { router, type Href } from 'expo-router';
 import type { JSX } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subscription';
 import { resolveHomeTrialDiscovery } from '@/features/billing/lib/resolve-home-trial-discovery';
 import { theme } from '@/theme/theme';
+import { Button } from '@/ui/primitives/button';
+import { Skeleton } from '@/ui/primitives/skeleton';
 
 /**
  * Home trial discovery: eligible offer or active remaining time. Never auto-starts trial.
@@ -13,8 +15,8 @@ export function HomeTrialDiscoveryCard(): JSX.Element | null {
   const billing = useReaderSubscription();
   if (billing.isLoading) {
     return (
-      <View style={styles.card} testID="home-trial-discovery-loading">
-        <ActivityIndicator color={theme.colors.primary} />
+      <View style={styles.loading} testID="home-trial-discovery-loading">
+        <Skeleton height={72} width="100%" radius={theme.radii.xl} />
       </View>
     );
   }
@@ -25,22 +27,34 @@ export function HomeTrialDiscoveryCard(): JSX.Element | null {
   if (discovery.kind === 'hidden') {
     return null;
   }
+  if (discovery.kind === 'active') {
+    return (
+      <View style={styles.activeCard} testID="home-trial-discovery-active">
+        <Text style={styles.activeTitle}>{discovery.title}</Text>
+        <Text style={styles.activeBody}>{discovery.body}</Text>
+        {discovery.remainingLabel !== null ? (
+          <Text style={styles.activeRemaining} testID="home-trial-discovery-remaining">
+            {discovery.remainingLabel}
+          </Text>
+        ) : null}
+        <Button
+          label={discovery.actionLabel}
+          variant="secondary"
+          onPress={() => {
+            router.push('/(app)/(tabs)/profile' as Href);
+          }}
+          accessibilityLabel={discovery.actionLabel}
+          testID="home-trial-discovery-action"
+        />
+      </View>
+    );
+  }
   return (
-    <View
-      style={styles.card}
-      testID={
-        discovery.kind === 'offer' ? 'home-trial-discovery-offer' : 'home-trial-discovery-active'
-      }
-    >
-      <Text style={styles.title}>{discovery.title}</Text>
-      <Text style={styles.body}>{discovery.body}</Text>
-      {discovery.kind === 'active' && discovery.remainingLabel !== null ? (
-        <Text style={styles.remaining} testID="home-trial-discovery-remaining">
-          {discovery.remainingLabel}
-        </Text>
-      ) : null}
+    <View style={styles.offerCard} testID="home-trial-discovery-offer">
+      <Text style={styles.offerTitle}>{discovery.title}</Text>
+      <Text style={styles.offerBody}>{discovery.body}</Text>
       <Pressable
-        style={styles.button}
+        style={styles.offerButton}
         onPress={() => {
           router.push('/(app)/(tabs)/profile' as Href);
         }}
@@ -48,46 +62,65 @@ export function HomeTrialDiscoveryCard(): JSX.Element | null {
         accessibilityLabel={discovery.actionLabel}
         testID="home-trial-discovery-action"
       >
-        <Text style={styles.buttonLabel}>{discovery.actionLabel}</Text>
+        <Text style={styles.offerButtonLabel}>{discovery.actionLabel}</Text>
       </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: theme.radii.control,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+  loading: {
+    marginBottom: theme.spacing.xs,
+  },
+  offerCard: {
+    borderRadius: theme.radii.xl,
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
-    gap: theme.spacing.xs,
+    gap: theme.spacing.sm,
   },
-  title: {
+  offerTitle: {
     ...theme.typography.button,
-    color: theme.colors.textPrimary,
+    color: theme.colors.textOnBrand,
   },
-  body: {
+  offerBody: {
     ...theme.typography.body,
-    color: theme.colors.textSecondary,
+    color: theme.colors.textOnBrand,
   },
-  remaining: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: theme.colors.primaryMuted,
-  },
-  button: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
+  offerButton: {
+    minHeight: 44,
+    borderRadius: theme.radii.full,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.md,
-    marginTop: theme.spacing.xs,
   },
-  buttonLabel: {
+  offerButtonLabel: {
     ...theme.typography.button,
-    color: theme.colors.onPrimary,
+    fontSize: theme.typography.scale.lg,
+    color: theme.colors.primary,
+  },
+  activeCard: {
+    borderRadius: theme.radii.md,
+    backgroundColor: theme.colors.successBg,
+    borderWidth: 1,
+    borderColor: theme.colors.success,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    gap: theme.spacing.xs,
+  },
+  activeTitle: {
+    ...theme.typography.button,
+    fontSize: theme.typography.scale.lg,
+    color: theme.colors.success,
+  },
+  activeBody: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+  },
+  activeRemaining: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.success,
   },
 });

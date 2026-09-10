@@ -1,14 +1,19 @@
 import { router, type Href } from 'expo-router';
 import type { JSX } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CatalogBookList } from '@/features/catalog/components/catalog-book-list';
 import { HomeTrialDiscoveryCard } from '@/features/billing/components/home-trial-discovery-card';
 import { SubscriptionExpiryBanner } from '@/features/billing/components/subscription-expiry-banner';
+import { CatalogBookList } from '@/features/catalog/components/catalog-book-list';
+import { CollectionListRow } from '@/features/collections/components/collection-list-row';
+import { useDiscoveryCollections } from '@/features/collections/hooks/use-discovery-collections';
 import { ContinueReadingList } from '@/features/reader/components/continue-reading-list';
 import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
+import { Skeleton } from '@/ui/primitives/skeleton';
+
+const HOME_COLLECTION_LIMIT = 20;
 
 /**
  * Signed-in home tab: expiry awareness, trial discovery, Continue Reading, and catalog browse.
@@ -16,22 +21,32 @@ import { theme } from '@/theme/theme';
 export function HomeScreen(): JSX.Element {
   const { user } = useSession();
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']} testID="shell-home-screen">
-      <Text style={styles.title} accessibilityRole="header" testID="shell-home-title">
-        Home
-      </Text>
-      <Text style={styles.body}>
-        Hello{user !== null ? `, ${user.email}` : ''}. Pick a book to learn more.
-      </Text>
-      <SubscriptionExpiryBanner placement="home" />
-      <HomeTrialDiscoveryCard />
-      <ContinueReadingList
-        onContinue={(bookId) => {
-          router.push(`/(app)/books/read/${bookId}` as Href);
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']} testID="shell-home-screen">
+      <CatalogBookList
+        onOpenBook={(bookId) => {
+          router.push(`/(app)/books/${bookId}`);
         }}
+        header={
+          <HomeDiscoveryHeader
+            email={user?.email ?? '—'}
+          />
+        }
       />
+    </SafeAreaView>
+  );
+}
+
+function HomeDiscoveryHeader(input: { readonly email: string }): JSX.Element {
+  return (
+    <View style={styles.header}>
+      <Text style={styles.greeting} accessibilityRole="header" testID="shell-home-title">
+        Hello
+      </Text>
+      <Text style={styles.identity} numberOfLines={1}>
+        {input.email}
+      </Text>
       <Pressable
-        style={styles.searchButton}
+        style={styles.searchAffordance}
         onPress={() => {
           router.push('/(app)/search');
         }}
@@ -39,55 +54,128 @@ export function HomeScreen(): JSX.Element {
         accessibilityLabel="Search books"
         testID="home-search-button"
       >
-        <Text style={styles.searchButtonLabel}>Search books</Text>
+        <Text style={styles.searchAffordanceLabel}>Search books</Text>
       </Pressable>
-      <Pressable
-        style={styles.searchButton}
-        onPress={() => {
-          router.push('/(app)/collections' as Href);
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="Browse collections"
-        testID="home-collections-button"
-      >
-        <Text style={styles.searchButtonLabel}>Collections</Text>
-      </Pressable>
-      <CatalogBookList
-        onOpenBook={(bookId) => {
-          router.push(`/(app)/books/${bookId}`);
+      <SubscriptionExpiryBanner placement="home" />
+      <HomeTrialDiscoveryCard />
+      <ContinueReadingList
+        onContinue={(bookId) => {
+          router.push(`/(app)/books/read/${bookId}` as Href);
         }}
       />
-    </SafeAreaView>
+      <HomeCollectionsShelf />
+    </View>
+  );
+}
+
+function HomeCollectionsShelf(): JSX.Element {
+  const collectionsQuery = useDiscoveryCollections({
+    limit: HOME_COLLECTION_LIMIT,
+    offset: 0,
+  });
+  const collections = collectionsQuery.data?.collections ?? [];
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionLabel}>Collections</Text>
+        <Pressable
+          onPress={() => {
+            router.push('/(app)/collections' as Href);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Browse collections"
+          testID="home-collections-button"
+          hitSlop={8}
+        >
+          <Text style={styles.sectionAction}>All collections</Text>
+        </Pressable>
+      </View>
+      {collectionsQuery.isLoading ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf}>
+          <Skeleton width={160} height={150} radius={theme.radii.lg} />
+          <Skeleton width={160} height={150} radius={theme.radii.lg} />
+        </ScrollView>
+      ) : null}
+      {!collectionsQuery.isLoading && !collectionsQuery.isError && collections.length > 0 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf}>
+          {collections.map((collection) => (
+            <CollectionListRow
+              key={collection.id}
+              collection={collection}
+              variant="shelf"
+              onPress={(collectionId) => {
+                router.push(`/(app)/collections/${collectionId}` as Href);
+              }}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.lg,
-    gap: theme.spacing.sm,
+    backgroundColor: theme.colors.canvas,
   },
-  title: {
+  header: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.xs,
+    gap: theme.spacing.sm,
+    paddingBottom: theme.spacing.md,
+  },
+  greeting: {
     ...theme.typography.title,
+    fontSize: theme.typography.scale['2xl'],
+    fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
   },
-  body: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
+  identity: {
+    ...theme.typography.title,
+    fontSize: theme.typography.scale.xl,
+    fontStyle: 'italic',
+    fontWeight: theme.typography.weights.regular,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.xs,
   },
-  searchButton: {
+  searchAffordance: {
     minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
+    borderRadius: theme.radii.full,
+    borderWidth: 1.5,
+    borderColor: theme.colors.borderDefault,
     backgroundColor: theme.colors.surface,
-    alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.md,
   },
-  searchButtonLabel: {
-    ...theme.typography.button,
+  searchAffordanceLabel: {
+    ...theme.typography.body,
+    color: theme.colors.textMuted,
+  },
+  section: {
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+  },
+  sectionLabel: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: theme.colors.textMuted,
+  },
+  sectionAction: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
     color: theme.colors.primary,
+  },
+  shelf: {
+    gap: theme.spacing.sm,
+    paddingRight: theme.spacing.lg,
   },
 });

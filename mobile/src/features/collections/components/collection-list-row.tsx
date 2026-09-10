@@ -6,9 +6,12 @@ import type { DiscoveryCollection } from '@/features/collections/api/get-discove
 import { theme } from '@/theme/theme';
 import { toViewShadow } from '@/ui/lib/to-view-shadow';
 
+type CollectionListRowVariant = 'list' | 'shelf';
+
 type CollectionListRowProps = {
   readonly collection: DiscoveryCollection;
   readonly onPress: (collectionId: number) => void;
+  readonly variant?: CollectionListRowVariant;
 };
 
 const MOSAIC_SLOT_COUNT = 4;
@@ -16,31 +19,47 @@ const MOSAIC_SLOT_COUNT = 4;
 /**
  * One curated collection card with a mosaic of available book covers.
  */
-export function CollectionListRow({ collection, onPress }: CollectionListRowProps): JSX.Element {
+export function CollectionListRow({
+  collection,
+  onPress,
+  variant = 'list',
+}: CollectionListRowProps): JSX.Element {
   const bookCount: number = collection.books.length;
+  const isShelf: boolean = variant === 'shelf';
   return (
     <Pressable
-      style={[styles.card, toViewShadow(theme.shadows.sm)]}
+      style={[
+        styles.card,
+        toViewShadow(theme.shadows.sm),
+        isShelf ? styles.shelfCard : null,
+      ]}
       onPress={() => {
         onPress(collection.id);
       }}
       accessibilityRole="button"
       accessibilityLabel={`Open collection ${collection.title}`}
-      testID={`collections-item-${collection.id}`}
+      testID={isShelf ? undefined : `collections-item-${collection.id}`}
     >
-      <View style={styles.mosaic} accessibilityElementsHidden>
+      <View style={[styles.mosaic, isShelf ? styles.shelfMosaic : null]} accessibilityElementsHidden>
         {Array.from({ length: MOSAIC_SLOT_COUNT }, (_, index) => (
-          <CollectionMosaicCell key={index} collection={collection} index={index} />
+          <CollectionMosaicCell
+            key={index}
+            collection={collection}
+            index={index}
+            isShelf={isShelf}
+          />
         ))}
       </View>
-      <View style={styles.info}>
+      <View style={[styles.info, isShelf ? styles.shelfInfo : null]}>
         <View style={styles.textBlock}>
-          <Text style={styles.title}>{collection.title}</Text>
+          <Text style={[styles.title, isShelf ? styles.shelfTitle : null]} numberOfLines={2}>
+            {collection.title}
+          </Text>
           <Text style={styles.meta}>
             {`${bookCount} book${bookCount === 1 ? '' : 's'}`}
           </Text>
         </View>
-        <Text style={styles.chevron}>›</Text>
+        {isShelf ? null : <Text style={styles.chevron}>›</Text>}
       </View>
     </Pressable>
   );
@@ -49,17 +68,19 @@ export function CollectionListRow({ collection, onPress }: CollectionListRowProp
 function CollectionMosaicCell(input: {
   readonly collection: DiscoveryCollection;
   readonly index: number;
+  readonly isShelf: boolean;
 }): JSX.Element {
+  const cellStyle = input.isShelf ? styles.shelfMosaicCell : styles.mosaicCell;
   const book = input.collection.books[input.index];
   if (book === undefined) {
-    return <View style={styles.mosaicCell} />;
+    return <View style={cellStyle} />;
   }
   const cover = resolveCatalogCoverPresentation(book.cover);
   if (cover.kind !== 'image') {
-    return <View style={styles.mosaicCell} />;
+    return <View style={cellStyle} />;
   }
   return (
-    <View style={styles.mosaicCell}>
+    <View style={cellStyle}>
       <Image source={{ uri: cover.url }} style={styles.mosaicImage} resizeMode="cover" />
     </View>
   );
@@ -115,5 +136,25 @@ const styles = StyleSheet.create({
     ...theme.typography.title,
     fontSize: theme.typography.scale.xl,
     color: theme.colors.textFaint,
+  },
+  shelfCard: {
+    width: 160,
+  },
+  shelfMosaic: {
+    height: 84,
+  },
+  shelfMosaicCell: {
+    width: '50%',
+    height: 42,
+    backgroundColor: theme.colors.canvasWarm,
+  },
+  shelfInfo: {
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm,
+  },
+  shelfTitle: {
+    fontSize: theme.typography.scale.base,
+    fontStyle: 'normal',
+    fontWeight: theme.typography.weights.bold,
   },
 });

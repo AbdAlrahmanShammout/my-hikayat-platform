@@ -95,6 +95,9 @@ const styles = StyleSheet.create({
   },
   label: {
     ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
     color: theme.colors.textMuted,
   },
   row: {
@@ -106,9 +109,9 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: 44,
     paddingHorizontal: theme.spacing.md,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
+    borderRadius: theme.radii.full,
+    borderWidth: 1.5,
+    borderColor: theme.colors.borderDefault,
     backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -118,11 +121,11 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
   },
   chipLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.semibold,
     color: theme.colors.textPrimary,
   },
   chipLabelSelected: {
-    color: theme.colors.onPrimary,
+    color: theme.colors.textOnBrand,
   },
 });
