@@ -29,8 +29,11 @@ import type {
 import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-reading-progress-best-effort';
 import type { ReadingPositionSnapshot } from '@/features/reader/lib/reading-position';
 import { ReaderBookmarksPanel } from '@/features/reader/components/reader-bookmarks-panel';
+import { ReaderChromeButton } from '@/features/reader/components/reader-chrome-button';
 import type { ReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
 import { theme } from '@/theme/theme';
+import { Button } from '@/ui/primitives/button';
+import { ErrorState } from '@/ui/feedback/error-state';
 
 type FixedLayoutReaderEngineProps = {
   readonly book: CatalogBook;
@@ -49,6 +52,7 @@ const ACTIVITY_TICK_MS = 15_000;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
 const ZOOM_STEP = 0.25;
+const SPREAD_DOT_LIMIT = 12;
 
 /**
  * Fixed-layout EPUB canvas engine: decrypt in memory, parse spreads, aspect-fit render with zoom.
@@ -77,6 +81,7 @@ export function FixedLayoutReaderEngine({
     height: 1,
   });
   const [reloadToken, setReloadToken] = useState<number>(0);
+  const [isChromeVisible, setIsChromeVisible] = useState<boolean>(true);
   const epubRef = useRef<ParsedFixedLayoutEpub | null>(null);
   const spreadIndexRef = useRef<number>(spreadIndex);
   const pageNumberRef = useRef<number>(pageNumber);
@@ -183,18 +188,14 @@ export function FixedLayoutReaderEngine({
   if (loadState.status === 'error') {
     return (
       <View style={styles.centered} testID="reader-fixed-layout-error">
-        <Text style={styles.error}>{loadState.message}</Text>
-        <Pressable
-          style={styles.primaryButton}
-          onPress={() => {
+        <ErrorState
+          description={loadState.message}
+          retryLabel="Try again"
+          onRetry={() => {
             setReloadToken((token) => token + 1);
           }}
-          accessibilityRole="button"
-          accessibilityLabel="Try again"
-          testID="reader-fixed-layout-retry"
-        >
-          <Text style={styles.primaryLabel}>Try again</Text>
-        </Pressable>
+          retryTestID="reader-fixed-layout-retry"
+        />
         <CloseButton onClose={onClose} />
       </View>
     );
@@ -245,18 +246,6 @@ export function FixedLayoutReaderEngine({
 
   return (
     <View style={styles.container} testID="reader-fixed-layout-engine">
-      <View style={styles.header}>
-        <Text style={styles.engineLabel}>Fixed-layout reader</Text>
-        <Text style={styles.title} accessibilityRole="header" numberOfLines={2}>
-          {book.title}
-        </Text>
-        <Text style={styles.meta} testID="reader-spread-title">
-          {spreadTitle}
-        </Text>
-        <Text style={styles.meta} testID="reader-spread-index">
-          {`Spread ${spreadIndex + 1} of ${loadState.epub.spreads.length} · Page ${pageNumber}`}
-        </Text>
-      </View>
       <View
         style={styles.canvasHost}
         testID="reader-fixed-layout-canvas"
@@ -296,93 +285,155 @@ export function FixedLayoutReaderEngine({
           </View>
         </ScrollView>
       </View>
-      <View style={styles.footer}>
+      {loadState.epub.spreads.length <= SPREAD_DOT_LIMIT ? (
         <Pressable
-          style={[styles.navButton, !canGoPrevious ? styles.navButtonDisabled : null]}
-          disabled={!canGoPrevious}
+          style={styles.dots}
           onPress={() => {
-            const nextSpread: number = Math.max(0, spreadIndex - 1);
-            setSpreadIndex(nextSpread);
-            setPageNumber(resolvePageNumberForSpread(loadState.epub, nextSpread, 1));
-            setZoom(MIN_ZOOM);
-            activeStartedAtRef.current = Date.now();
+            setIsChromeVisible((current) => !current);
           }}
           accessibilityRole="button"
-          accessibilityLabel="Previous spread"
-          testID="reader-prev-spread"
+          accessibilityLabel={isChromeVisible ? 'Hide reader controls' : 'Show reader controls'}
         >
-          <Text style={styles.navLabel}>Previous</Text>
+          {loadState.epub.spreads.map((entry, index) => (
+            <View
+              key={`${entry.leftSpineIndex ?? 'l'}-${entry.rightSpineIndex ?? 'r'}-${entry.centerSpineIndex ?? 'c'}-${index}`}
+              style={[styles.dot, index === spreadIndex ? styles.dotActive : null]}
+            />
+          ))}
         </Pressable>
+      ) : null}
+      {isChromeVisible ? (
+        <View style={styles.topChrome}>
+          <Pressable
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close reader"
+            testID="reader-close-button"
+            style={styles.closeHit}
+          >
+            <Text style={styles.closeText}>Close</Text>
+          </Pressable>
+          <View style={styles.topTitles} pointerEvents="none">
+            <Text style={styles.topTitle} numberOfLines={1} accessibilityRole="header">
+              {book.title}
+            </Text>
+            <Text style={styles.topSubtitle} numberOfLines={1} testID="reader-spread-title">
+              {spreadTitle}
+            </Text>
+          </View>
+          <ReaderBookmarksPanel
+            bookId={book.id}
+            layoutType="fixed_layout"
+            tone="dark"
+            currentPosition={{
+              kind: 'fixed_layout',
+              spreadIndex,
+              pageNumber,
+            }}
+            onJump={(bookmark: ReadingBookmark) => {
+              const nextSpread: number = clampIndex(
+                coerceNonNegativeInt(bookmark.spreadIndex, 0),
+                loadState.epub.spreads.length,
+              );
+              setSpreadIndex(nextSpread);
+              setPageNumber(
+                resolvePageNumberForSpread(
+                  loadState.epub,
+                  nextSpread,
+                  coercePositiveInt(bookmark.pageNumber, 1),
+                ),
+              );
+              setZoom(MIN_ZOOM);
+              activeStartedAtRef.current = Date.now();
+            }}
+          />
+        </View>
+      ) : (
         <Pressable
-          style={[styles.navButton, !canGoNext ? styles.navButtonDisabled : null]}
-          disabled={!canGoNext}
+          style={styles.revealTop}
           onPress={() => {
-            const nextSpread: number = Math.min(
-              loadState.epub.spreads.length - 1,
-              spreadIndex + 1,
-            );
-            setSpreadIndex(nextSpread);
-            setPageNumber(resolvePageNumberForSpread(loadState.epub, nextSpread, 1));
-            setZoom(MIN_ZOOM);
-            activeStartedAtRef.current = Date.now();
+            setIsChromeVisible(true);
           }}
           accessibilityRole="button"
-          accessibilityLabel="Next spread"
-          testID="reader-next-spread"
-        >
-          <Text style={styles.navLabel}>Next</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.navButton, !canZoomOut ? styles.navButtonDisabled : null]}
-          disabled={!canZoomOut}
-          onPress={() => {
-            setZoom((current) => clampZoom(current - ZOOM_STEP));
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Zoom out"
-          testID="reader-zoom-out"
-        >
-          <Text style={styles.navLabel}>Zoom −</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.navButton, !canZoomIn ? styles.navButtonDisabled : null]}
-          disabled={!canZoomIn}
-          onPress={() => {
-            setZoom((current) => clampZoom(current + ZOOM_STEP));
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Zoom in"
-          testID="reader-zoom-in"
-        >
-          <Text style={styles.navLabel}>Zoom +</Text>
-        </Pressable>
-        <ReaderBookmarksPanel
-          bookId={book.id}
-          layoutType="fixed_layout"
-          currentPosition={{
-            kind: 'fixed_layout',
-            spreadIndex,
-            pageNumber,
-          }}
-          onJump={(bookmark: ReadingBookmark) => {
-            const nextSpread: number = clampIndex(
-              coerceNonNegativeInt(bookmark.spreadIndex, 0),
-              loadState.epub.spreads.length,
-            );
-            setSpreadIndex(nextSpread);
-            setPageNumber(
-              resolvePageNumberForSpread(
-                loadState.epub,
-                nextSpread,
-                coercePositiveInt(bookmark.pageNumber, 1),
-              ),
-            );
-            setZoom(MIN_ZOOM);
-            activeStartedAtRef.current = Date.now();
-          }}
+          accessibilityLabel="Show reader controls"
         />
-        <CloseButton onClose={onClose} />
-      </View>
+      )}
+      {isChromeVisible ? (
+        <>
+          <View style={styles.sideNavLeft} pointerEvents="box-none">
+            <ReaderChromeButton
+              label="‹"
+              accessibilityLabel="Previous spread"
+              testID="reader-prev-spread"
+              tone="dark"
+              isDisabled={!canGoPrevious}
+              onPress={() => {
+                const nextSpread: number = Math.max(0, spreadIndex - 1);
+                setSpreadIndex(nextSpread);
+                setPageNumber(resolvePageNumberForSpread(loadState.epub, nextSpread, 1));
+                setZoom(MIN_ZOOM);
+                activeStartedAtRef.current = Date.now();
+              }}
+            />
+          </View>
+          <View style={styles.sideNavRight} pointerEvents="box-none">
+            <ReaderChromeButton
+              label="›"
+              accessibilityLabel="Next spread"
+              testID="reader-next-spread"
+              tone="dark"
+              isDisabled={!canGoNext}
+              onPress={() => {
+                const nextSpread: number = Math.min(
+                  loadState.epub.spreads.length - 1,
+                  spreadIndex + 1,
+                );
+                setSpreadIndex(nextSpread);
+                setPageNumber(resolvePageNumberForSpread(loadState.epub, nextSpread, 1));
+                setZoom(MIN_ZOOM);
+                activeStartedAtRef.current = Date.now();
+              }}
+            />
+          </View>
+          <View style={styles.bottomChrome}>
+            <Text style={styles.spreadIndex} testID="reader-spread-index">
+              {`Spread ${spreadIndex + 1} of ${loadState.epub.spreads.length} · Page ${pageNumber}`}
+            </Text>
+            <View style={styles.zoomRow}>
+              <ReaderChromeButton
+                label="−"
+                accessibilityLabel="Zoom out"
+                testID="reader-zoom-out"
+                tone="dark"
+                isDisabled={!canZoomOut}
+                onPress={() => {
+                  setZoom((current) => clampZoom(current - ZOOM_STEP));
+                }}
+              />
+              <Text style={styles.zoomLabel}>{`${zoom}×`}</Text>
+              <ReaderChromeButton
+                label="+"
+                accessibilityLabel="Zoom in"
+                testID="reader-zoom-in"
+                tone="dark"
+                isDisabled={!canZoomIn}
+                onPress={() => {
+                  setZoom((current) => clampZoom(current + ZOOM_STEP));
+                }}
+              />
+            </View>
+          </View>
+        </>
+      ) : (
+        <Pressable
+          style={styles.revealBottom}
+          onPress={() => {
+            setIsChromeVisible(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Show reader controls"
+        />
+      )}
     </View>
   );
 }
@@ -418,15 +469,14 @@ function PageWebView(input: {
 
 function CloseButton({ onClose }: { readonly onClose: () => void }): JSX.Element {
   return (
-    <Pressable
-      style={styles.closeButton}
+    <Button
+      label="Close"
       onPress={onClose}
-      accessibilityRole="button"
+      variant="secondary"
+      isFullWidth={false}
       accessibilityLabel="Close reader"
       testID="reader-close-button"
-    >
-      <Text style={styles.closeLabel}>Close</Text>
-    </Pressable>
+    />
   );
 }
 
@@ -539,7 +589,7 @@ function mapLoadError(error: unknown): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.navBg,
   },
   centered: {
     flex: 1,
@@ -547,28 +597,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
-  },
-  header: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.sm,
-    gap: 4,
-  },
-  engineLabel: {
-    ...theme.typography.label,
-    color: theme.colors.primaryMuted,
-  },
-  title: {
-    ...theme.typography.title,
-    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.canvas,
   },
   body: {
     ...theme.typography.body,
     color: theme.colors.textSecondary,
-  },
-  meta: {
-    fontSize: 16,
-    color: theme.colors.textMuted,
   },
   error: {
     ...theme.typography.body,
@@ -577,7 +610,7 @@ const styles = StyleSheet.create({
   },
   canvasHost: {
     flex: 1,
-    backgroundColor: '#1a1714',
+    backgroundColor: theme.colors.navBg,
   },
   canvasScroll: {
     flex: 1,
@@ -590,59 +623,122 @@ const styles = StyleSheet.create({
   },
   spreadFrame: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
     overflow: 'hidden',
   },
-  footer: {
+  dots: {
+    minHeight: theme.controlMinHeight,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-  },
-  navButton: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    gap: theme.spacing.scale.xs,
+    paddingVertical: theme.spacing.sm,
+  },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: theme.radii.full,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  dotActive: {
+    width: 16,
+    backgroundColor: theme.colors.primary,
+  },
+  topChrome: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.sm,
+    paddingBottom: theme.spacing.sm,
+    backgroundColor: 'rgba(14,10,8,0.92)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+    gap: theme.spacing.xs,
+  },
+  closeHit: {
+    minHeight: theme.controlMinHeight,
+    minWidth: theme.controlMinHeight,
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  closeText: {
+    ...theme.typography.body,
+    color: theme.colors.textOnDark,
+  },
+  topTitles: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+  },
+  topTitle: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textOnDark,
+    textAlign: 'center',
+  },
+  topSubtitle: {
+    ...theme.typography.label,
+    color: theme.colors.navMuted,
+    textAlign: 'center',
+  },
+  sideNavLeft: {
+    position: 'absolute',
+    left: theme.spacing.sm,
+    top: '50%',
+    marginTop: -28,
+  },
+  sideNavRight: {
+    position: 'absolute',
+    right: theme.spacing.sm,
+    top: '50%',
+    marginTop: -28,
+  },
+  bottomChrome: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    backgroundColor: 'rgba(14,10,8,0.92)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.06)',
+    gap: theme.spacing.sm,
   },
-  navButtonDisabled: {
-    opacity: 0.45,
+  spreadIndex: {
+    ...theme.typography.label,
+    color: theme.colors.navMuted,
+    flex: 1,
   },
-  navLabel: {
-    ...theme.typography.button,
-    color: theme.colors.primary,
-  },
-  primaryButton: {
-    minHeight: theme.controlMinHeight,
-    minWidth: 160,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
+  zoomRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
+    gap: theme.spacing.scale.xs,
   },
-  primaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
+  zoomLabel: {
+    ...theme.typography.label,
+    color: theme.colors.textOnDark,
+    minWidth: 40,
+    textAlign: 'center',
   },
-  closeButton: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    marginLeft: 'auto',
+  revealTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: theme.controlMinHeight,
   },
-  closeLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
+  revealBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: theme.controlMinHeight,
   },
 });

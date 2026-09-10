@@ -1,12 +1,7 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState, type JSX } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
@@ -23,6 +18,7 @@ import {
 } from '@/features/reader/lib/reading-position';
 import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-reading-progress-best-effort';
 import { theme } from '@/theme/theme';
+import { Button } from '@/ui/primitives/button';
 
 /**
  * Opens a reading session and routes to a layout-specific engine.
@@ -82,29 +78,25 @@ export function OpenReaderScreen(): JSX.Element {
           {mapped.message}
         </Text>
         {mapped.kind === 'entitlement_denied' ? (
-          <Pressable
-            style={styles.primaryButton}
+          <Button
+            label="Go to Subscribe"
             onPress={() => {
               router.replace('/(app)/(tabs)/profile' as Href);
             }}
-            accessibilityRole="button"
+            isFullWidth={false}
             accessibilityLabel="Go to subscription on Profile"
             testID="reader-subscribe-profile-button"
-          >
-            <Text style={styles.primaryLabel}>Go to Subscribe</Text>
-          </Pressable>
+          />
         ) : (
-          <Pressable
-            style={styles.primaryButton}
+          <Button
+            label="Try again"
             onPress={() => {
               void openQuery.refetch();
             }}
-            accessibilityRole="button"
+            isFullWidth={false}
             accessibilityLabel="Try again"
             testID="reader-retry-button"
-          >
-            <Text style={styles.primaryLabel}>Try again</Text>
-          </Pressable>
+          />
         )}
         <CloseWithoutSession />
       </SafeAreaView>
@@ -216,8 +208,8 @@ export function OpenReaderScreen(): JSX.Element {
 
 function CloseWithoutSession(): JSX.Element {
   return (
-    <Pressable
-      style={styles.secondaryButton}
+    <Button
+      label="Back"
       onPress={() => {
         if (router.canGoBack()) {
           router.back();
@@ -225,23 +217,22 @@ function CloseWithoutSession(): JSX.Element {
         }
         router.replace('/(app)/(tabs)/home');
       }}
-      accessibilityRole="button"
+      variant="secondary"
+      isFullWidth={false}
       accessibilityLabel="Back"
       testID="reader-back-button"
-    >
-      <Text style={styles.secondaryLabel}>Back</Text>
-    </Pressable>
+    />
   );
 }
 
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.canvas,
   },
   centered: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.canvas,
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.sm,
@@ -255,33 +246,5 @@ const styles = StyleSheet.create({
     ...theme.typography.body,
     color: theme.colors.danger,
     textAlign: 'center',
-  },
-  primaryButton: {
-    minHeight: theme.controlMinHeight,
-    minWidth: 160,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-  },
-  primaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
-  },
-  secondaryButton: {
-    minHeight: theme.controlMinHeight,
-    minWidth: 160,
-    borderRadius: theme.radii.control,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-  },
-  secondaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.primary,
   },
 });

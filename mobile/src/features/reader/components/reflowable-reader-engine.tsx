@@ -34,9 +34,13 @@ import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-readin
 import type { ReadingPositionSnapshot } from '@/features/reader/lib/reading-position';
 import { resolveReflowableContentProgress } from '@/features/reader/lib/resolve-reflowable-content-progress';
 import { ReaderBookmarksPanel } from '@/features/reader/components/reader-bookmarks-panel';
+import { ReaderChromeButton } from '@/features/reader/components/reader-chrome-button';
 import { ReflowableReaderSettingsControls } from '@/features/reader/components/reflowable-reader-settings-controls';
 import type { ReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
 import { theme } from '@/theme/theme';
+import { BottomSheet } from '@/ui/layout/bottom-sheet';
+import { Button } from '@/ui/primitives/button';
+import { ErrorState } from '@/ui/feedback/error-state';
 
 type ReflowableReaderEngineProps = {
   readonly book: CatalogBook;
@@ -78,6 +82,8 @@ export function ReflowableReaderEngine({
     DEFAULT_REFLOWABLE_READER_SETTINGS,
   );
   const [reloadToken, setReloadToken] = useState<number>(0);
+  const [isChromeVisible, setIsChromeVisible] = useState<boolean>(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const epubRef = useRef<ParsedEpubBook | null>(null);
   const spineIndexRef = useRef<number>(spineIndex);
   const scrollOffsetRef = useRef<number>(scrollOffset);
@@ -195,18 +201,14 @@ export function ReflowableReaderEngine({
   if (loadState.status === 'error') {
     return (
       <View style={styles.centered} testID="reader-reflowable-error">
-        <Text style={styles.error}>{loadState.message}</Text>
-        <Pressable
-          style={styles.primaryButton}
-          onPress={() => {
+        <ErrorState
+          description={loadState.message}
+          retryLabel="Try again"
+          onRetry={() => {
             setReloadToken((token) => token + 1);
           }}
-          accessibilityRole="button"
-          accessibilityLabel="Try again"
-          testID="reader-reflowable-retry"
-        >
-          <Text style={styles.primaryLabel}>Try again</Text>
-        </Pressable>
+          retryTestID="reader-reflowable-retry"
+        />
         <CloseButton onClose={onClose} />
       </View>
     );
@@ -236,48 +238,12 @@ export function ReflowableReaderEngine({
     spineIndex,
     chapters: loadState.epub.chapters,
   });
-  const webBackground: string = readerSettings.theme === 'dark' ? '#1a1714' : '#f7f3ea';
+  const isDarkChrome: boolean = readerSettings.theme === 'dark';
+  const webBackground: string = isDarkChrome ? theme.colors.navBg : theme.colors.canvas;
+  const chromeTone: 'light' | 'dark' = isDarkChrome ? 'dark' : 'light';
 
   return (
-    <View style={styles.container} testID="reader-reflowable-engine">
-      <View style={styles.header}>
-        <Text style={styles.engineLabel}>Reflowable reader</Text>
-        <Text style={styles.title} accessibilityRole="header" numberOfLines={2}>
-          {book.title}
-        </Text>
-        <Text style={styles.meta} testID="reader-chapter-title">
-          {chapter.title}
-        </Text>
-        <Text style={styles.meta} testID="reader-spine-index">
-          {`Chapter ${spineIndex + 1} of ${loadState.epub.chapters.length} · ${contentProgressPercent}%`}
-        </Text>
-      </View>
-      <View style={styles.settingsRow}>
-        <ReflowableReaderSettingsControls
-          settings={readerSettings}
-          onDecreaseFont={() => {
-            applyReaderSettings(decreaseFontScale(readerSettings));
-          }}
-          onIncreaseFont={() => {
-            applyReaderSettings(increaseFontScale(readerSettings));
-          }}
-          onDecreaseLine={() => {
-            applyReaderSettings(decreaseLineHeight(readerSettings));
-          }}
-          onIncreaseLine={() => {
-            applyReaderSettings(increaseLineHeight(readerSettings));
-          }}
-          onDecreaseMargin={() => {
-            applyReaderSettings(decreaseMargin(readerSettings));
-          }}
-          onIncreaseMargin={() => {
-            applyReaderSettings(increaseMargin(readerSettings));
-          }}
-          onToggleTheme={() => {
-            applyReaderSettings(toggleReaderTheme(readerSettings));
-          }}
-        />
-      </View>
+    <View style={[styles.container, { backgroundColor: webBackground }]} testID="reader-reflowable-engine">
       <WebView
         style={[styles.webview, { backgroundColor: webBackground }]}
         originWhitelist={['about:blank']}
@@ -298,70 +264,201 @@ export function ReflowableReaderEngine({
           setScrollOffset(nextOffset);
         }}
       />
-      <View style={styles.footer}>
+      {isChromeVisible ? (
+        <View
+          style={[
+            styles.topChrome,
+            isDarkChrome ? styles.topChromeDark : styles.topChromeLight,
+          ]}
+        >
+          <Pressable
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close reader"
+            testID="reader-close-button"
+            style={styles.closeHit}
+          >
+            <Text style={[styles.closeText, isDarkChrome ? styles.closeTextDark : null]}>
+              Close
+            </Text>
+          </Pressable>
+          <View style={styles.topTitles} pointerEvents="none">
+            <Text
+              style={[styles.topTitle, isDarkChrome ? styles.closeTextDark : null]}
+              numberOfLines={1}
+              accessibilityRole="header"
+            >
+              {chapter.title}
+            </Text>
+            <Text
+              style={[styles.topSubtitle, isDarkChrome ? styles.progressLabelDark : null]}
+              numberOfLines={1}
+            >
+              {book.title}
+            </Text>
+          </View>
+          <View style={styles.topActions}>
+            <ReaderBookmarksPanel
+              bookId={book.id}
+              layoutType="reflowable"
+              tone={chromeTone}
+              currentPosition={{
+                kind: 'reflowable',
+                spineIndex,
+                scrollOffset,
+              }}
+              onJump={(bookmark: ReadingBookmark) => {
+                const nextSpine: number = clampSpineIndex(
+                  coerceNonNegativeInt(bookmark.spineIndex, 0),
+                  loadState.epub.chapters.length,
+                );
+                setSpineIndex(nextSpine);
+                setScrollOffset(coerceNonNegativeInt(bookmark.scrollOffset, 0));
+                activeStartedAtRef.current = Date.now();
+              }}
+            />
+            <ReaderChromeButton
+              label="Aa"
+              accessibilityLabel="Reading settings"
+              tone={chromeTone}
+              onPress={() => {
+                setIsSettingsOpen(true);
+              }}
+            />
+          </View>
+        </View>
+      ) : (
         <Pressable
-          style={[styles.navButton, !canGoPrevious ? styles.navButtonDisabled : null]}
-          disabled={!canGoPrevious}
+          style={styles.revealTop}
           onPress={() => {
-            setSpineIndex((current) => Math.max(0, current - 1));
-            setScrollOffset(0);
-            activeStartedAtRef.current = Date.now();
+            setIsChromeVisible(true);
           }}
           accessibilityRole="button"
-          accessibilityLabel="Previous chapter"
-          testID="reader-prev-chapter"
-        >
-          <Text style={styles.navLabel}>Previous</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.navButton, !canGoNext ? styles.navButtonDisabled : null]}
-          disabled={!canGoNext}
-          onPress={() => {
-            setSpineIndex((current) => Math.min(loadState.epub.chapters.length - 1, current + 1));
-            setScrollOffset(0);
-            activeStartedAtRef.current = Date.now();
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Next chapter"
-          testID="reader-next-chapter"
-        >
-          <Text style={styles.navLabel}>Next</Text>
-        </Pressable>
-        <ReaderBookmarksPanel
-          bookId={book.id}
-          layoutType="reflowable"
-          currentPosition={{
-            kind: 'reflowable',
-            spineIndex,
-            scrollOffset,
-          }}
-          onJump={(bookmark: ReadingBookmark) => {
-            const nextSpine: number = clampSpineIndex(
-              coerceNonNegativeInt(bookmark.spineIndex, 0),
-              loadState.epub.chapters.length,
-            );
-            setSpineIndex(nextSpine);
-            setScrollOffset(coerceNonNegativeInt(bookmark.scrollOffset, 0));
-            activeStartedAtRef.current = Date.now();
-          }}
+          accessibilityLabel="Show reader controls"
         />
-        <CloseButton onClose={onClose} />
-      </View>
+      )}
+      {isChromeVisible ? (
+        <View
+          style={[
+            styles.bottomChrome,
+            isDarkChrome ? styles.bottomChromeDark : styles.bottomChromeLight,
+          ]}
+        >
+          <ReaderChromeButton
+            label="‹"
+            accessibilityLabel="Previous chapter"
+            testID="reader-prev-chapter"
+            tone={chromeTone}
+            isDisabled={!canGoPrevious}
+            onPress={() => {
+              setSpineIndex((current) => Math.max(0, current - 1));
+              setScrollOffset(0);
+              activeStartedAtRef.current = Date.now();
+            }}
+          />
+          <Pressable
+            style={styles.progressHit}
+            onPress={() => {
+              setIsChromeVisible(false);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Hide reader controls"
+          >
+            <Text
+              style={[styles.progressLabel, isDarkChrome ? styles.progressLabelDark : null]}
+              testID="reader-chapter-title"
+            >
+              {chapter.title}
+            </Text>
+            <Text
+              style={[styles.progressMeta, isDarkChrome ? styles.progressLabelDark : null]}
+              testID="reader-spine-index"
+            >
+              {`Chapter ${spineIndex + 1} of ${loadState.epub.chapters.length} · ${contentProgressPercent}%`}
+            </Text>
+          </Pressable>
+          <ReaderChromeButton
+            label="›"
+            accessibilityLabel="Next chapter"
+            testID="reader-next-chapter"
+            tone={chromeTone}
+            isDisabled={!canGoNext}
+            onPress={() => {
+              setSpineIndex((current) => Math.min(loadState.epub.chapters.length - 1, current + 1));
+              setScrollOffset(0);
+              activeStartedAtRef.current = Date.now();
+            }}
+          />
+        </View>
+      ) : (
+        <Pressable
+          style={styles.revealBottom}
+          onPress={() => {
+            setIsChromeVisible(true);
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Show reader controls"
+        />
+      )}
+      <BottomSheet
+        isVisible={isSettingsOpen}
+        onDismiss={() => {
+          setIsSettingsOpen(false);
+        }}
+        accessibilityLabel="Reading Settings"
+      >
+        <View style={styles.settingsSheet}>
+          <Text style={styles.settingsTitle}>Reading Settings</Text>
+          <Text style={styles.settingsMeta}>
+            {`Font ${readerSettings.fontScalePercent}% · Line ${readerSettings.lineHeight} · Margin ${readerSettings.marginPx}px`}
+          </Text>
+          <ReflowableReaderSettingsControls
+            settings={readerSettings}
+            onDecreaseFont={() => {
+              applyReaderSettings(decreaseFontScale(readerSettings));
+            }}
+            onIncreaseFont={() => {
+              applyReaderSettings(increaseFontScale(readerSettings));
+            }}
+            onDecreaseLine={() => {
+              applyReaderSettings(decreaseLineHeight(readerSettings));
+            }}
+            onIncreaseLine={() => {
+              applyReaderSettings(increaseLineHeight(readerSettings));
+            }}
+            onDecreaseMargin={() => {
+              applyReaderSettings(decreaseMargin(readerSettings));
+            }}
+            onIncreaseMargin={() => {
+              applyReaderSettings(increaseMargin(readerSettings));
+            }}
+            onToggleTheme={() => {
+              applyReaderSettings(toggleReaderTheme(readerSettings));
+            }}
+          />
+          <Button
+            label="Done"
+            onPress={() => {
+              setIsSettingsOpen(false);
+            }}
+            variant="secondary"
+          />
+        </View>
+      </BottomSheet>
     </View>
   );
 }
 
 function CloseButton({ onClose }: { readonly onClose: () => void }): JSX.Element {
   return (
-    <Pressable
-      style={styles.closeButton}
+    <Button
+      label="Close"
       onPress={onClose}
-      accessibilityRole="button"
+      variant="secondary"
+      isFullWidth={false}
       accessibilityLabel="Close reader"
       testID="reader-close-button"
-    >
-      <Text style={styles.closeLabel}>Close</Text>
-    </Pressable>
+    />
   );
 }
 
@@ -424,7 +521,7 @@ function mapLoadError(error: unknown): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.canvas,
   },
   centered: {
     flex: 1,
@@ -432,95 +529,144 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
-  },
-  header: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    paddingBottom: theme.spacing.sm,
-    gap: 4,
-  },
-  engineLabel: {
-    ...theme.typography.label,
-    color: theme.colors.primaryMuted,
-  },
-  title: {
-    ...theme.typography.title,
-    color: theme.colors.textPrimary,
+    backgroundColor: theme.colors.canvas,
   },
   body: {
     ...theme.typography.body,
     color: theme.colors.textSecondary,
-  },
-  meta: {
-    fontSize: 16,
-    color: theme.colors.textMuted,
   },
   error: {
     ...theme.typography.body,
     color: theme.colors.danger,
     textAlign: 'center',
   },
-  settingsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.sm,
-  },
   webview: {
     flex: 1,
-    backgroundColor: '#f7f3ea',
+    backgroundColor: theme.colors.canvas,
   },
-  footer: {
+  topChrome: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.sm,
+    paddingBottom: theme.spacing.sm,
+    gap: theme.spacing.xs,
   },
-  navButton: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
+  topChromeLight: {
     backgroundColor: theme.colors.surface,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.borderSubtle,
+  },
+  topChromeDark: {
+    backgroundColor: theme.colors.navBg,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  closeHit: {
+    minHeight: theme.controlMinHeight,
+    minWidth: theme.controlMinHeight,
     justifyContent: 'center',
+    zIndex: 1,
+  },
+  closeText: {
+    ...theme.typography.body,
+    color: theme.colors.textPrimary,
+  },
+  closeTextDark: {
+    color: theme.colors.textOnDark,
+  },
+  topTitles: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+  },
+  topTitle: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+  },
+  topSubtitle: {
+    ...theme.typography.label,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
+  },
+  topActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.scale.xs,
+    zIndex: 1,
+  },
+  bottomChrome: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    gap: theme.spacing.sm,
   },
-  navButtonDisabled: {
-    opacity: 0.45,
+  bottomChromeLight: {
+    backgroundColor: theme.colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.borderSubtle,
   },
-  navLabel: {
-    ...theme.typography.button,
-    color: theme.colors.primary,
+  bottomChromeDark: {
+    backgroundColor: theme.colors.navBg,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
-  primaryButton: {
+  progressHit: {
+    flex: 1,
     minHeight: theme.controlMinHeight,
-    minWidth: 160,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
   },
-  primaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
+  progressLabel: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
   },
-  closeButton: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    marginLeft: 'auto',
+  progressMeta: {
+    ...theme.typography.label,
+    color: theme.colors.textMuted,
+    textAlign: 'center',
   },
-  closeLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
+  progressLabelDark: {
+    color: theme.colors.textOnDark,
+  },
+  revealTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: theme.controlMinHeight,
+  },
+  revealBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: theme.controlMinHeight,
+  },
+  settingsSheet: {
+    gap: theme.spacing.sm,
+  },
+  settingsTitle: {
+    ...theme.typography.title,
+    fontSize: theme.typography.scale.xl,
+    fontStyle: 'italic',
+    fontWeight: theme.typography.weights.regular,
+    color: theme.colors.textPrimary,
+  },
+  settingsMeta: {
+    ...theme.typography.label,
+    color: theme.colors.textMuted,
   },
 });

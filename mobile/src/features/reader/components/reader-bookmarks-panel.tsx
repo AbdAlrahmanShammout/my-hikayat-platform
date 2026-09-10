@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useState, type JSX } from 'react';
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { ReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
 import {
@@ -17,6 +9,8 @@ import {
   type ReaderBookmarkListItem,
 } from '@/features/reader/lib/reader-bookmark-actions';
 import { theme } from '@/theme/theme';
+import { BottomSheet } from '@/ui/layout/bottom-sheet';
+import { Button } from '@/ui/primitives/button';
 
 export type ReflowableBookmarkPosition = {
   readonly kind: 'reflowable';
@@ -39,6 +33,7 @@ type ReaderBookmarksPanelProps = {
   readonly layoutType: 'reflowable' | 'fixed_layout';
   readonly currentPosition: ReaderBookmarkPosition;
   readonly onJump: (bookmark: ReadingBookmark) => void;
+  readonly tone?: 'light' | 'dark';
 };
 
 /**
@@ -50,13 +45,13 @@ export function ReaderBookmarksPanel({
   layoutType,
   currentPosition,
   onJump,
+  tone = 'light',
 }: ReaderBookmarksPanelProps): JSX.Element {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [bookmarks, setBookmarks] = useState<readonly ReaderBookmarkListItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
   const executeReload = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     setErrorMessage(null);
@@ -69,14 +64,12 @@ export function ReaderBookmarksPanel({
       setIsLoading(false);
     }
   }, [bookId]);
-
   useEffect(() => {
     if (!isOpen) {
       return;
     }
     void executeReload();
   }, [executeReload, isOpen]);
-
   async function executeAdd(): Promise<void> {
     if (isSaving) {
       return;
@@ -96,7 +89,6 @@ export function ReaderBookmarksPanel({
       setIsSaving(false);
     }
   }
-
   async function executeDelete(item: ReaderBookmarkListItem): Promise<void> {
     setErrorMessage(null);
     try {
@@ -110,11 +102,10 @@ export function ReaderBookmarksPanel({
       setErrorMessage('Could not remove that bookmark.');
     }
   }
-
   return (
     <>
       <Pressable
-        style={styles.openButton}
+        style={[styles.openButton, tone === 'dark' ? styles.openButtonDark : null]}
         onPress={() => {
           setIsOpen(true);
         }}
@@ -122,98 +113,91 @@ export function ReaderBookmarksPanel({
         accessibilityLabel="Open bookmarks"
         testID="reader-bookmarks-open"
       >
-        <Text style={styles.openLabel}>Bookmarks</Text>
+        <Text style={[styles.openLabel, tone === 'dark' ? styles.openLabelDark : null]}>
+          Bookmarks
+        </Text>
       </Pressable>
-      <Modal
-        visible={isOpen}
-        animationType="slide"
-        transparent
-        onRequestClose={() => {
+      <BottomSheet
+        isVisible={isOpen}
+        onDismiss={() => {
           setIsOpen(false);
         }}
+        accessibilityLabel="Bookmarks"
       >
-        <View style={styles.backdrop}>
-          <View style={styles.sheet} testID="reader-bookmarks-panel">
-            <Text style={styles.title} accessibilityRole="header">
-              Bookmarks
-            </Text>
-            <Text style={styles.subtitle}>
-              {layoutType === 'reflowable'
-                ? 'Save and jump to chapter positions.'
-                : 'Save and jump to spreads.'}
-            </Text>
-            <Pressable
-              style={[styles.primaryButton, isSaving ? styles.disabled : null]}
-              disabled={isSaving}
-              onPress={() => {
-                void executeAdd();
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Add bookmark here"
-              testID="reader-bookmark-add"
-            >
-              <Text style={styles.primaryLabel}>
-                {isSaving ? 'Saving…' : 'Add bookmark here'}
-              </Text>
-            </Pressable>
-            {errorMessage !== null ? <Text style={styles.error}>{errorMessage}</Text> : null}
-            {isLoading ? (
-              <ActivityIndicator color={theme.colors.primary} style={styles.loader} />
-            ) : (
-              <ScrollView style={styles.list} testID="reader-bookmarks-list">
-                {bookmarks.length === 0 ? (
-                  <Text style={styles.empty} testID="reader-bookmarks-empty">
-                    No bookmarks yet.
-                  </Text>
-                ) : (
-                  bookmarks.map((item) => (
-                    <View
-                      key={item.localId}
-                      style={styles.row}
-                      testID={`reader-bookmark-${item.localId}`}
+        <View style={styles.sheet} testID="reader-bookmarks-panel">
+          <Text style={styles.title} accessibilityRole="header">
+            Bookmarks
+          </Text>
+          <Text style={styles.subtitle}>
+            {layoutType === 'reflowable'
+              ? 'Save and jump to chapter positions.'
+              : 'Save and jump to spreads.'}
+          </Text>
+          <Button
+            label={isSaving ? 'Saving…' : 'Add bookmark here'}
+            onPress={() => {
+              void executeAdd();
+            }}
+            isDisabled={isSaving}
+            isLoading={isSaving}
+            accessibilityLabel="Add bookmark here"
+            testID="reader-bookmark-add"
+          />
+          {errorMessage !== null ? <Text style={styles.error}>{errorMessage}</Text> : null}
+          {isLoading ? (
+            <ActivityIndicator color={theme.colors.primary} style={styles.loader} />
+          ) : (
+            <ScrollView style={styles.list} testID="reader-bookmarks-list">
+              {bookmarks.length === 0 ? (
+                <Text style={styles.empty} testID="reader-bookmarks-empty">
+                  No bookmarks yet.
+                </Text>
+              ) : (
+                bookmarks.map((item) => (
+                  <View
+                    key={item.localId}
+                    style={styles.row}
+                    testID={`reader-bookmark-${item.localId}`}
+                  >
+                    <Pressable
+                      style={styles.jumpButton}
+                      onPress={() => {
+                        onJump(item.bookmark);
+                        setIsOpen(false);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Go to bookmark ${formatBookmarkLabel(item.bookmark)}`}
+                      testID={`reader-bookmark-jump-${item.localId}`}
                     >
-                      <Pressable
-                        style={styles.jumpButton}
-                        onPress={() => {
-                          onJump(item.bookmark);
-                          setIsOpen(false);
-                        }}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Go to bookmark ${formatBookmarkLabel(item.bookmark)}`}
-                        testID={`reader-bookmark-jump-${item.localId}`}
-                      >
-                        <Text style={styles.jumpLabel}>{formatBookmarkLabel(item.bookmark)}</Text>
-                      </Pressable>
-                      <Pressable
-                        style={styles.deleteButton}
-                        onPress={() => {
-                          void executeDelete(item);
-                        }}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Delete bookmark ${formatBookmarkLabel(item.bookmark)}`}
-                        testID={`reader-bookmark-delete-${item.localId}`}
-                      >
-                        <Text style={styles.deleteLabel}>Remove</Text>
-                      </Pressable>
-                    </View>
-                  ))
-                )}
-              </ScrollView>
-            )}
-            <Pressable
-              style={styles.closeButton}
-              onPress={() => {
-                setIsOpen(false);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Close bookmarks"
-              testID="reader-bookmarks-close"
-            >
-              <Text style={styles.closeLabel}>Close</Text>
-            </Pressable>
-          </View>
+                      <Text style={styles.jumpLabel}>{formatBookmarkLabel(item.bookmark)}</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.deleteButton}
+                      onPress={() => {
+                        void executeDelete(item);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Delete bookmark ${formatBookmarkLabel(item.bookmark)}`}
+                      testID={`reader-bookmark-delete-${item.localId}`}
+                    >
+                      <Text style={styles.deleteLabel}>Remove</Text>
+                    </Pressable>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+          )}
+          <Button
+            label="Close"
+            onPress={() => {
+              setIsOpen(false);
+            }}
+            variant="secondary"
+            accessibilityLabel="Close bookmarks"
+            testID="reader-bookmarks-close"
+          />
         </View>
-      </Modal>
+      </BottomSheet>
     </>
   );
 }
@@ -235,55 +219,41 @@ function formatBookmarkLabel(bookmark: ReadingBookmark): string {
 const styles = StyleSheet.create({
   openButton: {
     minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
+    minWidth: theme.controlMinHeight,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.radii.full,
     backgroundColor: theme.colors.surface,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: theme.spacing.md,
+  },
+  openButtonDark: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.15)',
   },
   openLabel: {
-    ...theme.typography.button,
-    color: theme.colors.primary,
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
   },
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
+  openLabelDark: {
+    color: theme.colors.textOnDark,
   },
   sheet: {
-    maxHeight: '78%',
-    backgroundColor: theme.colors.background,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.lg,
-    paddingBottom: theme.spacing.lg,
     gap: theme.spacing.sm,
+    maxHeight: 480,
   },
   title: {
     ...theme.typography.title,
+    fontSize: theme.typography.scale.xl,
+    fontStyle: 'italic',
+    fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
   },
   subtitle: {
     ...theme.typography.body,
     color: theme.colors.textSecondary,
-  },
-  primaryButton: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-  },
-  primaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
-  },
-  disabled: {
-    opacity: 0.55,
   },
   error: {
     ...theme.typography.body,
@@ -308,43 +278,32 @@ const styles = StyleSheet.create({
   },
   jumpButton: {
     flex: 1,
-    minHeight: 48,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.surface,
+    minHeight: theme.controlMinHeight,
+    borderRadius: theme.radii.md,
+    backgroundColor: theme.colors.canvasWarm,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.borderSubtle,
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.md,
   },
   jumpLabel: {
-    fontSize: 16,
+    ...theme.typography.body,
     color: theme.colors.textPrimary,
   },
   deleteButton: {
-    minHeight: 48,
-    borderRadius: theme.radii.control,
+    minHeight: theme.controlMinHeight,
+    minWidth: theme.controlMinHeight,
+    borderRadius: theme.radii.md,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: theme.colors.error,
+    backgroundColor: theme.colors.errorBg,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.sm,
   },
   deleteLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: theme.colors.danger,
-  },
-  closeButton: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeLabel: {
-    ...theme.typography.button,
-    color: theme.colors.primary,
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.error,
   },
 });
