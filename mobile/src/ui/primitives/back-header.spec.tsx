@@ -15,4 +15,11 @@ describe('BackHeader', () => {
     expect(onPressBack).toHaveBeenCalledTimes(1);
     expect(tree.root.findByProps({ children: 'Settings' })).toBeTruthy();
   });
+
+  it('forwards titleTestID onto the title', () => {
+    const tree = renderElement(
+      <BackHeader title="Settings" onPressBack={() => undefined} titleTestID="settings-title" />,
+    );
+    expect(tree.root.findByProps({ testID: 'settings-title' }).props.children).toBe('Settings');
+  });
 });

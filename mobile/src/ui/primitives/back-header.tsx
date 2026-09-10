@@ -14,6 +14,7 @@ type BackHeaderProps = {
   readonly backLabel?: string;
   readonly testID?: string;
   readonly backTestID?: string;
+  readonly titleTestID?: string;
 };
 
 /**
@@ -30,6 +31,7 @@ export function BackHeader({
   backLabel = 'Back',
   testID,
   backTestID,
+  titleTestID,
 }: BackHeaderProps): JSX.Element {
   const insets = useSafeAreaInsets();
   const foreground = isDark ? theme.colors.textOnDark : theme.colors.textPrimary;
@@ -49,9 +51,16 @@ export function BackHeader({
         <Text style={[styles.backLabel, { color: foreground }]}>{backLabel}</Text>
       </Pressable>
       <View style={styles.titles} pointerEvents="none">
-        <Text style={[styles.title, { color: foreground }]} numberOfLines={1}>
-          {title}
-        </Text>
+        {title.length > 0 ? (
+          <Text
+            style={[styles.title, { color: foreground }]}
+            numberOfLines={1}
+            accessibilityRole="header"
+            testID={titleTestID}
+          >
+            {title}
+          </Text>
+        ) : null}
         {subtitle !== undefined ? (
           <Text style={[styles.subtitle, { color: foreground }]} numberOfLines={1}>
             {subtitle}

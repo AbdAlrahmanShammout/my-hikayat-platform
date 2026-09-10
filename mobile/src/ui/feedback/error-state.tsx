@@ -10,6 +10,7 @@ type ErrorStateProps = {
   readonly icon?: ReactNode;
   readonly retryLabel?: string;
   readonly onRetry?: () => void;
+  readonly retryTestID?: string;
   readonly secondaryActionLabel?: string;
   readonly onSecondaryAction?: () => void;
   readonly testID?: string;
@@ -24,6 +25,7 @@ export function ErrorState({
   icon,
   retryLabel = 'Try Again',
   onRetry,
+  retryTestID,
   secondaryActionLabel,
   onSecondaryAction,
   testID,
@@ -34,7 +36,13 @@ export function ErrorState({
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
       {onRetry !== undefined ? (
-        <Button label={retryLabel} onPress={onRetry} variant="secondary" isFullWidth={false} />
+        <Button
+          label={retryLabel}
+          onPress={onRetry}
+          variant="secondary"
+          isFullWidth={false}
+          testID={retryTestID}
+        />
       ) : null}
       {secondaryActionLabel !== undefined && onSecondaryAction !== undefined ? (
         <Button

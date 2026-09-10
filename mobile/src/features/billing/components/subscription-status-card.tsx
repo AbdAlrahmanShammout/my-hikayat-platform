@@ -1,17 +1,20 @@
 import { useState, type JSX } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { ReaderBillingPlan } from '@/features/billing/api/list-reader-billing-plans';
 import { formatPlanPriceLabel } from '@/features/billing/lib/format-plan-price-label';
-import { formatSubscriptionDisplay } from '@/features/billing/lib/format-subscription-display';
+import {
+  formatSubscriptionDisplay,
+  type SubscriptionDisplay,
+} from '@/features/billing/lib/format-subscription-display';
 import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subscription';
 import { theme } from '@/theme/theme';
+import { FormError } from '@/ui/forms/form-error';
+import { BottomSheet } from '@/ui/layout/bottom-sheet';
+import { toViewShadow } from '@/ui/lib/to-view-shadow';
+import { Button } from '@/ui/primitives/button';
+import { Pill, type PillVariant } from '@/ui/primitives/pill';
+import { Skeleton } from '@/ui/primitives/skeleton';
 
 /**
  * Profile billing card: plan/status, free trial, plan picker, Stripe Checkout, cancel, and refund.
@@ -28,8 +31,10 @@ export function SubscriptionStatusCard(): JSX.Element {
   if (billing.isLoading) {
     return (
       <View style={styles.card} testID="billing-subscription-loading">
-        <Text style={styles.heading}>Subscription</Text>
-        <ActivityIndicator color={theme.colors.primary} />
+        <Skeleton height={20} width="42%" />
+        <Skeleton height={16} width="70%" />
+        <Skeleton height={16} width="54%" />
+        <Skeleton height={theme.controlMinHeight} width="100%" />
       </View>
     );
   }
@@ -38,20 +43,18 @@ export function SubscriptionStatusCard(): JSX.Element {
     return (
       <View style={styles.card} testID="billing-subscription-error">
         <Text style={styles.heading}>Subscription</Text>
-        <Text style={styles.error}>
-          {billing.errorMessage ?? 'Could not load subscription.'}
-        </Text>
-        <Pressable
-          style={styles.secondaryButton}
+        <FormError
+          message={billing.errorMessage ?? 'Could not load subscription.'}
+        />
+        <Button
+          label="Try again"
+          variant="secondary"
           onPress={() => {
             void billing.refetch();
           }}
-          accessibilityRole="button"
           accessibilityLabel="Retry subscription"
           testID="billing-subscription-retry"
-        >
-          <Text style={styles.secondaryLabel}>Try again</Text>
-        </Pressable>
+        />
         <PlanPicker
           plans={billing.plans}
           selectedPlanId={effectivePlanId}
@@ -79,10 +82,14 @@ export function SubscriptionStatusCard(): JSX.Element {
   }
 
   const display = formatSubscriptionDisplay(billing.subscription);
+  const statusPresentation = resolveStatusPresentation(display);
 
   return (
     <View style={styles.card} testID="billing-subscription-card">
-      <Text style={styles.heading}>Subscription</Text>
+      <View style={styles.statusHeader}>
+        <Text style={styles.headline}>{statusPresentation.headline}</Text>
+        <Pill label={statusPresentation.pillLabel} variant={statusPresentation.pillVariant} />
+      </View>
       <Text style={styles.label}>Plan</Text>
       <Text style={styles.value} testID="billing-plan-label">
         {display.planLabel}
@@ -131,31 +138,19 @@ export function SubscriptionStatusCard(): JSX.Element {
             subscription by itself.
           </Text>
           {billing.trialErrorMessage !== null ? (
-            <Text style={styles.error} testID="billing-trial-error">
-              {billing.trialErrorMessage}
-            </Text>
+            <FormError message={billing.trialErrorMessage} testID="billing-trial-error" />
           ) : null}
-          <Pressable
-            style={[
-              styles.primaryButton,
-              billing.isStartingTrial ? styles.disabled : null,
-            ]}
-            disabled={billing.isStartingTrial}
+          <Button
+            label="Start Free Trial"
+            isLoading={billing.isStartingTrial}
             onPress={() => {
               void billing.startTrial().catch(() => {
                 // Error surfaces via trialErrorMessage; subscription is refreshed.
               });
             }}
-            accessibilityRole="button"
             accessibilityLabel="Start free trial"
             testID="billing-start-trial-button"
-          >
-            {billing.isStartingTrial ? (
-              <ActivityIndicator color={theme.colors.onPrimary} />
-            ) : (
-              <Text style={styles.primaryLabel}>Start Free Trial</Text>
-            )}
-          </Pressable>
+          />
         </View>
       ) : null}
       <PlanPicker
@@ -181,130 +176,153 @@ export function SubscriptionStatusCard(): JSX.Element {
         </Text>
       ) : null}
       {display.canOfferCancelAction ? (
-        confirmCancel ? (
-          <View style={styles.confirmBlock}>
-            <Text style={styles.note}>
-              Cancel your subscription? You can keep reading until the paid
-              period ends. This is not a refund.
-            </Text>
-            {billing.cancelErrorMessage !== null ? (
-              <Text style={styles.error} testID="billing-cancel-error">
-                {billing.cancelErrorMessage}
-              </Text>
-            ) : null}
-            <Pressable
-              style={[styles.primaryButton, billing.isCanceling ? styles.disabled : null]}
-              disabled={billing.isCanceling}
-              onPress={() => {
-                void billing
-                  .requestCancel()
-                  .then(() => {
-                    setConfirmCancel(false);
-                  })
-                  .catch(() => {
-                    // Error surfaces via cancelErrorMessage.
-                  });
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Confirm subscription cancellation"
-              testID="billing-cancel-confirm"
-            >
-              {billing.isCanceling ? (
-                <ActivityIndicator color={theme.colors.onPrimary} />
-              ) : (
-                <Text style={styles.primaryLabel}>Confirm cancel</Text>
-              )}
-            </Pressable>
-            <Pressable
-              style={styles.secondaryButton}
-              onPress={() => {
-                setConfirmCancel(false);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Keep subscription"
-              testID="billing-cancel-dismiss"
-            >
-              <Text style={styles.secondaryLabel}>Not now</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <Pressable
-            style={styles.secondaryButton}
-            onPress={() => {
-              setConfirmCancel(true);
-              setConfirmRefund(false);
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Cancel subscription"
-            testID="billing-cancel-button"
-          >
-            <Text style={styles.secondaryLabel}>Cancel subscription</Text>
-          </Pressable>
-        )
+        <Button
+          label="Cancel subscription"
+          variant="secondary"
+          onPress={() => {
+            setConfirmCancel(true);
+            setConfirmRefund(false);
+          }}
+          accessibilityLabel="Cancel subscription"
+          testID="billing-cancel-button"
+        />
       ) : null}
       {display.canOfferRefundAction ? (
-        confirmRefund ? (
-          <View style={styles.confirmBlock}>
-            <Text style={styles.note}>
-              Request a refund? The server checks the 7-day window.
-            </Text>
-            {billing.refundErrorMessage !== null ? (
-              <Text style={styles.error} testID="billing-refund-error">
-                {billing.refundErrorMessage}
-              </Text>
-            ) : null}
-            <Pressable
-              style={[styles.primaryButton, billing.isRefunding ? styles.disabled : null]}
-              disabled={billing.isRefunding}
-              onPress={() => {
-                void billing
-                  .requestRefund()
-                  .then(() => {
-                    setConfirmRefund(false);
-                  })
-                  .catch(() => {
-                    // Error surfaces via refundErrorMessage.
-                  });
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Confirm refund request"
-              testID="billing-refund-confirm"
-            >
-              {billing.isRefunding ? (
-                <ActivityIndicator color={theme.colors.onPrimary} />
-              ) : (
-                <Text style={styles.primaryLabel}>Confirm refund</Text>
-              )}
-            </Pressable>
-            <Pressable
-              style={styles.secondaryButton}
-              onPress={() => {
-                setConfirmRefund(false);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Cancel refund"
-              testID="billing-refund-cancel"
-            >
-              <Text style={styles.secondaryLabel}>Not now</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <Pressable
-            style={styles.secondaryButton}
+        <Button
+          label="Request refund"
+          variant="secondary"
+          onPress={() => {
+            setConfirmRefund(true);
+            setConfirmCancel(false);
+          }}
+          accessibilityLabel="Request refund"
+          testID="billing-refund-button"
+        />
+      ) : null}
+      <BottomSheet
+        isVisible={confirmCancel}
+        onDismiss={() => {
+          setConfirmCancel(false);
+        }}
+        accessibilityLabel="Cancel subscription"
+      >
+        <View style={styles.sheetBody}>
+          <Text style={styles.sheetTitle}>Cancel subscription?</Text>
+          <Text style={styles.sheetMessage}>
+            Cancel your subscription? You can keep reading until the paid
+            period ends. This is not a refund.
+          </Text>
+          {billing.cancelErrorMessage !== null ? (
+            <FormError message={billing.cancelErrorMessage} testID="billing-cancel-error" />
+          ) : null}
+          <Button
+            label="Confirm cancel"
+            variant="destructive"
+            isLoading={billing.isCanceling}
             onPress={() => {
-              setConfirmRefund(true);
+              void billing
+                .requestCancel()
+                .then(() => {
+                  setConfirmCancel(false);
+                })
+                .catch(() => {
+                  // Error surfaces via cancelErrorMessage.
+                });
+            }}
+            accessibilityLabel="Confirm subscription cancellation"
+            testID="billing-cancel-confirm"
+          />
+          <Button
+            label="Not now"
+            variant="secondary"
+            isDisabled={billing.isCanceling}
+            onPress={() => {
               setConfirmCancel(false);
             }}
-            accessibilityRole="button"
-            accessibilityLabel="Request refund"
-            testID="billing-refund-button"
-          >
-            <Text style={styles.secondaryLabel}>Request refund</Text>
-          </Pressable>
-        )
-      ) : null}
+            accessibilityLabel="Keep subscription"
+            testID="billing-cancel-dismiss"
+          />
+        </View>
+      </BottomSheet>
+      <BottomSheet
+        isVisible={confirmRefund}
+        onDismiss={() => {
+          setConfirmRefund(false);
+        }}
+        accessibilityLabel="Request refund"
+      >
+        <View style={styles.sheetBody}>
+          <Text style={styles.sheetTitle}>Request a refund?</Text>
+          <Text style={styles.sheetMessage}>
+            Request a refund? The server checks the 7-day window.
+          </Text>
+          {billing.refundErrorMessage !== null ? (
+            <FormError message={billing.refundErrorMessage} testID="billing-refund-error" />
+          ) : null}
+          <Button
+            label="Confirm refund"
+            variant="destructive"
+            isLoading={billing.isRefunding}
+            onPress={() => {
+              void billing
+                .requestRefund()
+                .then(() => {
+                  setConfirmRefund(false);
+                })
+                .catch(() => {
+                  // Error surfaces via refundErrorMessage.
+                });
+            }}
+            accessibilityLabel="Confirm refund request"
+            testID="billing-refund-confirm"
+          />
+          <Button
+            label="Not now"
+            variant="secondary"
+            isDisabled={billing.isRefunding}
+            onPress={() => {
+              setConfirmRefund(false);
+            }}
+            accessibilityLabel="Cancel refund"
+            testID="billing-refund-cancel"
+          />
+        </View>
+      </BottomSheet>
     </View>
   );
+}
+
+function resolveStatusPresentation(display: SubscriptionDisplay): {
+  readonly headline: string;
+  readonly pillLabel: string;
+  readonly pillVariant: PillVariant;
+} {
+  if (display.trialRemainingLabel !== null) {
+    return {
+      headline: 'Free trial',
+      pillLabel: display.accessLabel,
+      pillVariant: 'success',
+    };
+  }
+  if (display.statusLabel === 'Canceled') {
+    return {
+      headline: 'Canceled',
+      pillLabel: display.statusLabel,
+      pillVariant: 'warning',
+    };
+  }
+  if (display.accessLabel === 'Paid') {
+    return {
+      headline: 'Subscribed',
+      pillLabel: display.accessLabel,
+      pillVariant: 'primary',
+    };
+  }
+  return {
+    headline: 'Free browsing',
+    pillLabel: display.accessLabel,
+    pillVariant: 'neutral',
+  };
 }
 
 function PlanPicker(input: {
@@ -354,82 +372,88 @@ function SubscribeButton(input: {
   readonly disabled: boolean;
   readonly onPress: () => Promise<void>;
 }): JSX.Element {
-  const isDisabled: boolean = input.isCheckingOut || input.disabled;
   return (
-    <Pressable
-      style={[styles.primaryButton, isDisabled ? styles.disabled : null]}
-      disabled={isDisabled}
+    <Button
+      label="Subscribe"
+      isLoading={input.isCheckingOut}
+      isDisabled={input.disabled}
       onPress={() => {
         void input.onPress();
       }}
-      accessibilityRole="button"
       accessibilityLabel="Subscribe with Stripe Checkout"
       testID="billing-subscribe-button"
-    >
-      {input.isCheckingOut ? (
-        <ActivityIndicator color={theme.colors.onPrimary} />
-      ) : (
-        <Text style={styles.primaryLabel}>Subscribe</Text>
-      )}
-    </Pressable>
+    />
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    gap: theme.spacing.xs,
-    marginBottom: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
+    gap: theme.spacing.sm,
+    padding: theme.spacing.cardInner,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.borderSubtle,
+    ...toViewShadow(theme.shadows.sm),
   },
   heading: {
     ...theme.typography.label,
-    color: theme.colors.primaryMuted,
-    marginBottom: theme.spacing.xs,
+    fontWeight: theme.typography.weights.bold,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: theme.colors.textMuted,
+  },
+  statusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+  },
+  headline: {
+    ...theme.typography.title,
+    fontSize: theme.typography.scale['2xl'],
+    fontStyle: 'italic',
+    fontWeight: theme.typography.weights.regular,
+    color: theme.colors.textPrimary,
+    flex: 1,
   },
   label: {
     ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
     color: theme.colors.textMuted,
     marginTop: theme.spacing.xs,
   },
   value: {
-    fontSize: 18,
+    ...theme.typography.body,
     color: theme.colors.textPrimary,
   },
   note: {
     ...theme.typography.body,
     color: theme.colors.textMuted,
-    marginTop: theme.spacing.sm,
-  },
-  error: {
-    ...theme.typography.body,
-    color: theme.colors.danger,
   },
   trialBlock: {
     gap: theme.spacing.sm,
-    marginTop: theme.spacing.sm,
-  },
-  confirmBlock: {
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.sm,
   },
   planList: {
     gap: theme.spacing.sm,
-    marginTop: theme.spacing.sm,
   },
   planOption: {
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.sm,
-    gap: 4,
+    borderWidth: 1.5,
+    borderColor: theme.colors.borderDefault,
+    borderRadius: theme.radii.md,
+    backgroundColor: theme.colors.surfaceAlt,
+    padding: theme.spacing.md,
+    gap: theme.spacing.scale.xs,
   },
   planOptionSelected: {
     borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primaryDim,
   },
   planName: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...theme.typography.body,
+    fontWeight: theme.typography.weights.semibold,
     color: theme.colors.textPrimary,
   },
   planDescription: {
@@ -438,37 +462,23 @@ const styles = StyleSheet.create({
   },
   planPrice: {
     ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
     color: theme.colors.primary,
   },
-  primaryButton: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.sm,
+  sheetBody: {
+    gap: theme.spacing.sm,
+    paddingTop: theme.spacing.xs,
   },
-  primaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
+  sheetTitle: {
+    ...theme.typography.title,
+    fontSize: theme.typography.scale.xl,
+    fontStyle: 'italic',
+    fontWeight: theme.typography.weights.regular,
+    color: theme.colors.textPrimary,
   },
-  secondaryButton: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.sm,
-  },
-  secondaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.primary,
-  },
-  disabled: {
-    opacity: 0.7,
+  sheetMessage: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.xs,
   },
 });

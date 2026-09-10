@@ -1,10 +1,11 @@
 import { router, type Href } from 'expo-router';
 import type { JSX } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subscription';
 import { resolveSubscriptionExpiryPresentation } from '@/features/billing/lib/resolve-subscription-expiry-presentation';
 import { theme } from '@/theme/theme';
+import { Button } from '@/ui/primitives/button';
 
 export type SubscriptionExpiryBannerPlacement = 'home' | 'me';
 
@@ -23,70 +24,70 @@ export function SubscriptionExpiryBanner(input: {
     return null;
   }
   const showAction: boolean = input.placement === 'home';
+  const tone = resolveBannerTone(presentation.kind);
   return (
     <View
-      style={styles.card}
+      style={[styles.card, { backgroundColor: tone.background, borderColor: tone.border }]}
       testID={`subscription-expiry-banner-${presentation.kind}`}
     >
-      <Text style={styles.title}>{presentation.title}</Text>
+      <Text style={[styles.title, { color: tone.title }]}>{presentation.title}</Text>
       <Text style={styles.body}>{presentation.body}</Text>
       {presentation.detailLabel !== null ? (
-        <Text style={styles.detail} testID="subscription-expiry-detail">
+        <Text style={[styles.detail, { color: tone.title }]} testID="subscription-expiry-detail">
           {presentation.detailLabel}
         </Text>
       ) : null}
       {showAction ? (
-        <Pressable
-          style={styles.button}
+        <Button
+          label={presentation.actionLabel}
           onPress={() => {
             router.push('/(app)/(tabs)/profile' as Href);
           }}
-          accessibilityRole="button"
           accessibilityLabel={presentation.actionLabel}
           testID="subscription-expiry-action"
-        >
-          <Text style={styles.buttonLabel}>{presentation.actionLabel}</Text>
-        </Pressable>
+        />
       ) : null}
     </View>
   );
 }
 
+function resolveBannerTone(kind: 'trial_approaching' | 'paid_approaching' | 'trial_ended' | 'paid_ended'): {
+  readonly background: string;
+  readonly border: string;
+  readonly title: string;
+} {
+  if (kind === 'trial_ended' || kind === 'paid_ended') {
+    return {
+      background: theme.colors.errorBg,
+      border: theme.colors.error,
+      title: theme.colors.error,
+    };
+  }
+  return {
+    background: theme.colors.warningBg,
+    border: theme.colors.warning,
+    title: theme.colors.warning,
+  };
+}
+
 const styles = StyleSheet.create({
   card: {
-    borderRadius: theme.radii.control,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii.lg,
+    borderWidth: 1,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
     gap: theme.spacing.xs,
-    marginBottom: theme.spacing.xs,
   },
   title: {
     ...theme.typography.button,
-    color: theme.colors.textPrimary,
+    fontSize: theme.typography.scale.lg,
   },
   body: {
     ...theme.typography.body,
     color: theme.colors.textSecondary,
   },
   detail: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: theme.colors.primaryMuted,
-  },
-  button: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.md,
-    marginTop: theme.spacing.xs,
-  },
-  buttonLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.semibold,
   },
 });
