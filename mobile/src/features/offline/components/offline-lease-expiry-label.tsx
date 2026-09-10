@@ -1,16 +1,14 @@
-import { useEffect, useState, type JSX } from 'react';
+import type { JSX } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
-import {
-  resolveOfflineLeaseExpiryPresentation,
-  type OfflineLeaseExpiryPresentation,
-  type OfflineLeaseExpiryState,
-} from '@/features/offline/lib/resolve-offline-lease-expiry-presentation';
-import { resolveTrustedNow } from '@/storage/offline-trusted-time-storage';
+import { useOfflineLeaseExpiryPresentation } from '@/features/offline/hooks/use-offline-lease-expiry-presentation';
+import type { OfflineLeaseExpiryState } from '@/features/offline/lib/resolve-offline-lease-expiry-presentation';
 import { theme } from '@/theme/theme';
+import { Pill, type PillVariant } from '@/ui/primitives/pill';
 
 type OfflineLeaseExpiryLabelProps = {
   readonly expiresAt: string | null | undefined;
+  readonly appearance?: 'text' | 'chip';
   readonly testID?: string;
 };
 
@@ -21,29 +19,18 @@ type OfflineLeaseExpiryLabelProps = {
 export function OfflineLeaseExpiryLabel(
   props: OfflineLeaseExpiryLabelProps,
 ): JSX.Element | null {
-  const [presentation, setPresentation] = useState<OfflineLeaseExpiryPresentation | null>(
-    null,
-  );
-  useEffect(() => {
-    let isCancelled = false;
-    void resolveTrustedNow().then((trusted) => {
-      if (isCancelled) {
-        return;
-      }
-      setPresentation(
-        resolveOfflineLeaseExpiryPresentation({
-          expiresAt: props.expiresAt,
-          nowMs: trusted.nowMs,
-          isClockRollbackDetected: trusted.isClockRollbackDetected,
-        }),
-      );
-    });
-    return () => {
-      isCancelled = true;
-    };
-  }, [props.expiresAt]);
+  const presentation = useOfflineLeaseExpiryPresentation(props.expiresAt);
   if (presentation === null) {
     return null;
+  }
+  if (props.appearance === 'chip') {
+    return (
+      <Pill
+        label={presentation.label}
+        variant={resolveChipVariant(presentation.state)}
+        testID={props.testID}
+      />
+    );
   }
   return (
     <Text
@@ -64,6 +51,16 @@ function resolveLabelColor(state: OfflineLeaseExpiryState): string {
     return theme.colors.primaryMuted;
   }
   return theme.colors.textMuted;
+}
+
+function resolveChipVariant(state: OfflineLeaseExpiryState): PillVariant {
+  if (state === 'active') {
+    return 'success';
+  }
+  if (state === 'approaching' || state === 'clock_rollback') {
+    return 'warning';
+  }
+  return 'locked';
 }
 
 const styles = StyleSheet.create({

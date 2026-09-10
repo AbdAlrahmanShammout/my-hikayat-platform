@@ -1,21 +1,19 @@
 import { router, type Href } from 'expo-router';
 import { useState, type JSX } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { OfflineLeaseExpiryLabel } from '@/features/offline/components/offline-lease-expiry-label';
+import { OfflineLibraryBookRow } from '@/features/offline/components/offline-library-book-row';
+import { RemoveOfflineDownloadSheet } from '@/features/offline/components/remove-offline-download-sheet';
+import { useIsClockRollbackDetected } from '@/features/offline/hooks/use-is-clock-rollback-detected';
 import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book-actions';
 import { useOfflinePackages } from '@/features/offline/hooks/use-offline-packages';
 import type { OfflineBookManifest } from '@/features/offline/types/offline-book-manifest';
 import { useConnectivity } from '@/native/connectivity/use-connectivity';
 import { theme } from '@/theme/theme';
+import { EmptyState } from '@/ui/feedback/empty-state';
+import { ErrorState } from '@/ui/feedback/error-state';
+import { Skeleton } from '@/ui/primitives/skeleton';
 
 /**
  * Library tab: downloaded encrypted books available for offline reading.
@@ -23,6 +21,13 @@ import { theme } from '@/theme/theme';
 export function LibraryScreen(): JSX.Element {
   const offline = useOfflinePackages();
   const { isOnline } = useConnectivity();
+  const [removeTarget, setRemoveTarget] = useState<OfflineBookManifest | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const isClockRollbackDetected: boolean = useIsClockRollbackDetected();
+  const actions = useOfflineBookActions(removeTarget?.bookId ?? null);
+  const packageCount: number = offline.packages.length;
+  const showCountBanner: boolean =
+    !offline.isLoading && !offline.isError && packageCount > 0 && !isClockRollbackDetected;
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']} testID="shell-library-screen">
       <ScrollView contentContainerStyle={styles.content}>
@@ -34,106 +39,123 @@ export function LibraryScreen(): JSX.Element {
           access ends.
         </Text>
         {!isOnline ? (
-          <Text style={styles.note} testID="library-offline-banner">
-            You are offline. You can still open downloaded books.
-          </Text>
-        ) : null}
-        {offline.isLoading ? (
-          <ActivityIndicator color={theme.colors.primary} testID="library-offline-loading" />
-        ) : null}
-        {offline.isError ? (
-          <View style={styles.block}>
-            <Text style={styles.error}>Could not load downloaded books.</Text>
-            <Pressable
-              style={styles.secondaryButton}
-              onPress={() => {
-                void offline.refetch();
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Retry library"
-              testID="library-offline-retry"
-            >
-              <Text style={styles.secondaryLabel}>Try again</Text>
-            </Pressable>
+          <View style={styles.offlineBanner} testID="library-offline-banner">
+            <Text style={styles.offlineBannerText}>
+              You are offline. You can still open downloaded books.
+            </Text>
           </View>
         ) : null}
-        {!offline.isLoading && !offline.isError && offline.packages.length === 0 ? (
-          <Text style={styles.body} testID="library-offline-empty">
-            No downloads yet. Open a book and choose Download for offline on its detail page.
-          </Text>
+        {isClockRollbackDetected && packageCount > 0 ? (
+          <View style={styles.clockBanner}>
+            <Text style={styles.clockTitle}>Device time changed</Text>
+            <Text style={styles.clockBody}>
+              Connect to the internet to verify your offline access.
+            </Text>
+          </View>
+        ) : null}
+        {showCountBanner ? (
+          <View style={styles.countBanner}>
+            <Text style={styles.countBannerText}>{formatAvailableOfflineCount(packageCount)}</Text>
+          </View>
+        ) : null}
+        {offline.isLoading ? (
+          <View style={styles.loadingBlock} testID="library-offline-loading">
+            <LibraryRowSkeleton />
+            <LibraryRowSkeleton />
+          </View>
+        ) : null}
+        {offline.isError ? (
+          <ErrorState
+            description="Could not load downloaded books."
+            retryLabel="Try again"
+            onRetry={() => {
+              void offline.refetch();
+            }}
+            retryTestID="library-offline-retry"
+          />
+        ) : null}
+        {!offline.isLoading && !offline.isError && packageCount === 0 ? (
+          <EmptyState
+            title="No downloads yet"
+            description="Open a book and choose Download for offline on its detail page."
+            actionLabel="Browse library"
+            onAction={() => {
+              router.push('/(app)/(tabs)/home' as Href);
+            }}
+            testID="library-offline-empty"
+          />
         ) : null}
         {offline.packages.map((entry) => (
-          <OfflineBookRow key={entry.bookId} manifest={entry} onChanged={() => offline.refetch()} />
+          <OfflineLibraryBookRow
+            key={entry.bookId}
+            manifest={entry}
+            isRemoving={removeTarget?.bookId === entry.bookId && actions.isRemoving}
+            onOpen={() => {
+              router.push(`/(app)/books/read/${entry.bookId}` as Href);
+            }}
+            onRequestRemove={() => {
+              setRemoveError(null);
+              setRemoveTarget(entry);
+            }}
+          />
         ))}
+        {packageCount > 0 ? (
+          <Text style={styles.footer}>
+            Downloaded books are authorized for offline reading. Authorization may expire.
+          </Text>
+        ) : null}
+        {removeError !== null ? <Text style={styles.error}>{removeError}</Text> : null}
       </ScrollView>
+      <RemoveOfflineDownloadSheet
+        bookTitle={removeTarget?.title ?? null}
+        isRemoving={actions.isRemoving}
+        onConfirm={() => {
+          void actions
+            .remove()
+            .then(async () => {
+              setRemoveTarget(null);
+              await offline.refetch();
+            })
+            .catch((error: unknown) => {
+              setRemoveError(
+                error instanceof Error ? error.message : 'Could not remove the download.',
+              );
+            });
+        }}
+        onCancel={() => {
+          if (!actions.isRemoving) {
+            setRemoveTarget(null);
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }
 
-function OfflineBookRow(input: {
-  readonly manifest: OfflineBookManifest;
-  readonly onChanged: () => Promise<void>;
-}): JSX.Element {
-  const actions = useOfflineBookActions(input.manifest.bookId);
-  const [message, setMessage] = useState<string | null>(null);
-  const layoutLabel: string =
-    input.manifest.layoutType === 'reflowable' ? 'Reflowable' : 'Fixed layout';
+function LibraryRowSkeleton(): JSX.Element {
   return (
-    <View style={styles.row} testID={`library-offline-book-${input.manifest.bookId}`}>
-      <Text style={styles.rowTitle}>{input.manifest.title}</Text>
-      <Text style={styles.meta}>{layoutLabel}</Text>
-      <OfflineLeaseExpiryLabel
-        expiresAt={input.manifest.offlineLease?.expiresAt}
-        testID={`library-offline-lease-${input.manifest.bookId}`}
-      />
-      <View style={styles.actions}>
-        <Pressable
-          style={styles.primaryButton}
-          onPress={() => {
-            router.push(`/(app)/books/read/${input.manifest.bookId}` as Href);
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={`Open ${input.manifest.title}`}
-          testID={`library-offline-open-${input.manifest.bookId}`}
-        >
-          <Text style={styles.primaryLabel}>Open</Text>
-        </Pressable>
-        <Pressable
-          style={styles.secondaryButton}
-          disabled={actions.isRemoving}
-          onPress={() => {
-            void actions
-              .remove()
-              .then(async () => {
-                setMessage('Download removed from this device.');
-                await input.onChanged();
-              })
-              .catch((error: unknown) => {
-                setMessage(
-                  error instanceof Error ? error.message : 'Could not remove the download.',
-                );
-              });
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={`Remove download for ${input.manifest.title}`}
-          testID={`library-offline-remove-${input.manifest.bookId}`}
-        >
-          {actions.isRemoving ? (
-            <ActivityIndicator color={theme.colors.primary} />
-          ) : (
-            <Text style={styles.secondaryLabel}>Remove</Text>
-          )}
-        </Pressable>
+    <View style={styles.skeletonRow}>
+      <Skeleton width={52} height={78} radius={theme.radii.sm} />
+      <View style={styles.skeletonInfo}>
+        <Skeleton height={18} width="70%" />
+        <Skeleton height={14} width="40%" />
+        <Skeleton height={14} width="55%" />
       </View>
-      {message !== null ? <Text style={styles.note}>{message}</Text> : null}
     </View>
   );
+}
+
+function formatAvailableOfflineCount(count: number): string {
+  if (count === 1) {
+    return '1 book available offline';
+  }
+  return `${count} books available offline`;
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.canvas,
   },
   content: {
     paddingHorizontal: theme.spacing.lg,
@@ -142,72 +164,81 @@ const styles = StyleSheet.create({
   },
   title: {
     ...theme.typography.title,
+    fontStyle: 'italic',
+    fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
-    marginBottom: theme.spacing.xs,
   },
   lead: {
     ...theme.typography.body,
     color: theme.colors.textMuted,
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.xs,
   },
-  body: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
+  offlineBanner: {
+    backgroundColor: theme.colors.infoBg,
+    borderRadius: theme.radii.md,
+    borderWidth: 1,
+    borderColor: theme.colors.info,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
   },
-  block: {
-    gap: theme.spacing.sm,
+  offlineBannerText: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.info,
   },
-  row: {
-    gap: theme.spacing.xs,
+  clockBanner: {
+    backgroundColor: theme.colors.warningBg,
+    borderRadius: theme.radii.md,
+    borderWidth: 1,
+    borderColor: theme.colors.warning,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    gap: theme.spacing.scale.xs,
+  },
+  clockTitle: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.warning,
+  },
+  clockBody: {
+    ...theme.typography.label,
+    color: theme.colors.warning,
+  },
+  countBanner: {
+    backgroundColor: theme.colors.successBg,
+    borderRadius: theme.radii.md,
+    borderWidth: 1,
+    borderColor: theme.colors.success,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+  },
+  countBannerText: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.success,
+  },
+  loadingBlock: {
+    gap: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.border,
   },
-  rowTitle: {
-    fontSize: 18,
-    color: theme.colors.textPrimary,
+  skeletonRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
   },
-  meta: {
-    fontSize: 16,
-    color: theme.colors.textMuted,
+  skeletonInfo: {
+    flex: 1,
+    gap: theme.spacing.sm,
+    justifyContent: 'center',
   },
-  note: {
-    ...theme.typography.body,
-    color: theme.colors.textMuted,
+  footer: {
+    ...theme.typography.label,
+    color: theme.colors.textFaint,
+    textAlign: 'center',
+    marginTop: theme.spacing.md,
+    lineHeight: 20,
   },
   error: {
     ...theme.typography.body,
     color: theme.colors.danger,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.xs,
-  },
-  primaryButton: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-  },
-  primaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
-  },
-  secondaryButton: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-  },
-  secondaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.primary,
   },
 });
