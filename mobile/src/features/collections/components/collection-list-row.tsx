@@ -1,22 +1,26 @@
 import type { JSX } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-catalog-cover-presentation';
 import type { DiscoveryCollection } from '@/features/collections/api/get-discovery-collection';
 import { theme } from '@/theme/theme';
+import { toViewShadow } from '@/ui/lib/to-view-shadow';
 
 type CollectionListRowProps = {
   readonly collection: DiscoveryCollection;
   readonly onPress: (collectionId: number) => void;
 };
 
+const MOSAIC_SLOT_COUNT = 4;
+
 /**
- * One curated collection row with a large tap target.
+ * One curated collection card with a mosaic of available book covers.
  */
 export function CollectionListRow({ collection, onPress }: CollectionListRowProps): JSX.Element {
   const bookCount: number = collection.books.length;
   return (
     <Pressable
-      style={styles.row}
+      style={[styles.card, toViewShadow(theme.shadows.sm)]}
       onPress={() => {
         onPress(collection.id);
       }}
@@ -24,36 +28,92 @@ export function CollectionListRow({ collection, onPress }: CollectionListRowProp
       accessibilityLabel={`Open collection ${collection.title}`}
       testID={`collections-item-${collection.id}`}
     >
-      <View style={styles.textBlock}>
-        <Text style={styles.title}>{collection.title}</Text>
-        <Text style={styles.meta}>
-          {`${bookCount} book${bookCount === 1 ? '' : 's'}`}
-        </Text>
+      <View style={styles.mosaic} accessibilityElementsHidden>
+        {Array.from({ length: MOSAIC_SLOT_COUNT }, (_, index) => (
+          <CollectionMosaicCell key={index} collection={collection} index={index} />
+        ))}
+      </View>
+      <View style={styles.info}>
+        <View style={styles.textBlock}>
+          <Text style={styles.title}>{collection.title}</Text>
+          <Text style={styles.meta}>
+            {`${bookCount} book${bookCount === 1 ? '' : 's'}`}
+          </Text>
+        </View>
+        <Text style={styles.chevron}>›</Text>
       </View>
     </Pressable>
   );
 }
 
+function CollectionMosaicCell(input: {
+  readonly collection: DiscoveryCollection;
+  readonly index: number;
+}): JSX.Element {
+  const book = input.collection.books[input.index];
+  if (book === undefined) {
+    return <View style={styles.mosaicCell} />;
+  }
+  const cover = resolveCatalogCoverPresentation(book.cover);
+  if (cover.kind !== 'image') {
+    return <View style={styles.mosaicCell} />;
+  }
+  return (
+    <View style={styles.mosaicCell}>
+      <Image source={{ uri: cover.url }} style={styles.mosaicImage} resizeMode="cover" />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  row: {
-    minHeight: theme.controlMinHeight,
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.radii.control,
+  card: {
     backgroundColor: theme.colors.surface,
+    borderRadius: theme.radii.xl,
     borderWidth: 1,
     borderColor: theme.colors.borderSubtle,
+    overflow: 'hidden',
+  },
+  mosaic: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    height: 130,
+    backgroundColor: theme.colors.canvasWarm,
+  },
+  mosaicCell: {
+    width: '50%',
+    height: 65,
+    backgroundColor: theme.colors.canvasWarm,
+  },
+  mosaicImage: {
+    width: '100%',
+    height: '100%',
+  },
+  info: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
   },
   textBlock: {
-    gap: theme.spacing.xxs,
+    flex: 1,
+    minWidth: 0,
+    gap: theme.spacing.scale.xs,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700',
+    ...theme.typography.title,
+    fontSize: theme.typography.scale.lg,
+    fontStyle: 'italic',
+    fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
   },
   meta: {
-    fontSize: 16,
+    ...theme.typography.label,
     color: theme.colors.textMuted,
+  },
+  chevron: {
+    ...theme.typography.title,
+    fontSize: theme.typography.scale.xl,
+    color: theme.colors.textFaint,
   },
 });

@@ -5,7 +5,7 @@ import { theme } from '@/theme/theme';
 import { toViewShadow } from '@/ui/lib/to-view-shadow';
 import { BookCover, type BookCoverSize } from '@/ui/primitives/book-cover';
 
-export type BookCardVariant = 'grid' | 'compact' | 'continue';
+export type BookCardVariant = 'grid' | 'compact' | 'continue' | 'row';
 
 type BookCardProps = {
   readonly title: string;
@@ -43,6 +43,7 @@ export function BookCard({
   accessibilityLabel,
 }: BookCardProps): JSX.Element {
   const isContinue = variant === 'continue';
+  const isRow = variant === 'row';
   const coverSize = resolveCoverSize(variant);
   const allowProgress = isContinue && showCoverProgress;
   return (
@@ -54,6 +55,7 @@ export function BookCard({
       style={[
         variant === 'compact' ? styles.compact : null,
         variant === 'grid' ? styles.grid : null,
+        isRow ? styles.row : null,
         isContinue ? [styles.continue, toViewShadow(theme.shadows.sm)] : null,
       ]}
     >
@@ -67,7 +69,7 @@ export function BookCard({
         showProgress={allowProgress}
         progressFraction={progressFraction}
       />
-      <View style={isContinue ? styles.continueText : styles.stackText}>
+      <View style={isContinue || isRow ? styles.continueText : styles.stackText}>
         <Text style={styles.title} numberOfLines={2}>
           {title}
         </Text>
@@ -92,7 +94,7 @@ export function BookCard({
 }
 
 function resolveCoverSize(variant: BookCardVariant): BookCoverSize {
-  if (variant === 'continue') {
+  if (variant === 'continue' || variant === 'row') {
     return 'sm';
   }
   if (variant === 'compact') {
@@ -109,6 +111,14 @@ const styles = StyleSheet.create({
   compact: {
     width: 100,
     gap: theme.spacing.xs,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm,
+    alignSelf: 'stretch',
+    minHeight: 44,
   },
   continue: {
     flexDirection: 'row',

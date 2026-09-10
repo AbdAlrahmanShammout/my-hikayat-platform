@@ -1,20 +1,20 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import type { JSX } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/api-error';
-import { CatalogBookRow } from '@/features/catalog/components/catalog-book-row';
+import type { CatalogBook } from '@/features/catalog/api/get-catalog-book';
+import { resolveCatalogBookAttribution } from '@/features/catalog/lib/resolve-catalog-book-attribution';
+import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-catalog-cover-presentation';
 import { useDiscoveryCollection } from '@/features/collections/hooks/use-discovery-collection';
 import { parseCollectionIdParam } from '@/features/collections/lib/parse-collection-id-param';
 import { theme } from '@/theme/theme';
+import { EmptyState } from '@/ui/feedback/empty-state';
+import { ErrorState } from '@/ui/feedback/error-state';
+import { BackHeader } from '@/ui/primitives/back-header';
+import { BookCard } from '@/ui/primitives/book-card';
+import { Skeleton } from '@/ui/primitives/skeleton';
 
 /**
  * One curated collection with books in backend editorial order.
@@ -26,69 +26,63 @@ export function CollectionDetailScreen(): JSX.Element {
 
   if (collectionId === null) {
     return (
-      <SafeAreaView style={styles.centered} edges={['top', 'left', 'right', 'bottom']}>
-        <Text style={styles.error} testID="collection-detail-invalid">
-          That collection link is not valid.
-        </Text>
-        <BackButton />
-      </SafeAreaView>
+      <CollectionDetailStatus
+        description="That collection link is not valid."
+        testID="collection-detail-invalid"
+      />
     );
   }
-
   if (collectionQuery.isLoading) {
     return (
       <SafeAreaView
-        style={styles.centered}
+        style={styles.safe}
         edges={['top', 'left', 'right', 'bottom']}
         accessibilityLabel="Loading collection"
       >
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <BackHeader title="" onPressBack={navigateBackToCollections} backTestID="collection-detail-back-button" />
+        <View style={styles.header}>
+          <Skeleton height={28} width="70%" />
+          <Skeleton height={16} width="30%" />
+        </View>
+        <View style={styles.gridSkeleton}>
+          <Skeleton height={210} width="48%" radius={theme.radii.sm} />
+          <Skeleton height={210} width="48%" radius={theme.radii.sm} />
+          <Skeleton height={210} width="48%" radius={theme.radii.sm} />
+          <Skeleton height={210} width="48%" radius={theme.radii.sm} />
+        </View>
       </SafeAreaView>
     );
   }
-
   if (collectionQuery.isError) {
     return (
-      <SafeAreaView style={styles.centered} edges={['top', 'left', 'right', 'bottom']}>
-        <Text style={styles.error} testID="collection-detail-error">
-          {toUserFacingMessage(collectionQuery.error)}
-        </Text>
-        <Pressable
-          style={styles.retryButton}
-          onPress={() => {
-            void collectionQuery.refetch();
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Try again"
-          testID="collection-detail-retry-button"
-        >
-          <Text style={styles.retryLabel}>Try again</Text>
-        </Pressable>
-        <BackButton />
-      </SafeAreaView>
+      <CollectionDetailStatus
+        description={toUserFacingMessage(collectionQuery.error)}
+        testID="collection-detail-error"
+        onRetry={() => {
+          void collectionQuery.refetch();
+        }}
+        retryTestID="collection-detail-retry-button"
+      />
     );
   }
-
   const collection = collectionQuery.data;
   if (collection === undefined) {
     return (
-      <SafeAreaView style={styles.centered} edges={['top', 'left', 'right', 'bottom']}>
-        <Text style={styles.error} testID="collection-detail-missing">
-          Collection not found.
-        </Text>
-        <BackButton />
-      </SafeAreaView>
+      <CollectionDetailStatus
+        description="Collection not found."
+        testID="collection-detail-missing"
+      />
     );
   }
-
   return (
     <SafeAreaView
       style={styles.safe}
       edges={['top', 'left', 'right', 'bottom']}
       testID="collection-detail-screen"
     >
+      <BackHeader title="" onPressBack={navigateBackToCollections} backTestID="collection-detail-back-button" />
       <View style={styles.header}>
-        <BackButton />
+        <Text style={styles.kicker}>Collection</Text>
         <Text style={styles.title} accessibilityRole="header" testID="collection-detail-title">
           {collection.title}
         </Text>
@@ -100,22 +94,27 @@ export function CollectionDetailScreen(): JSX.Element {
         style={styles.list}
         data={collection.books}
         keyExtractor={(item) => String(item.id)}
+        numColumns={2}
+        columnWrapperStyle={styles.column}
         renderItem={({ item }) => (
-          <CatalogBookRow
-            book={item}
-            onPress={(bookId) => {
-              router.push(`/(app)/books/${bookId}`);
-            }}
-          />
+          <View style={styles.gridItem}>
+            <CollectionBookCard
+              book={item}
+              onPress={() => {
+                router.push(`/(app)/books/${item.id}`);
+              }}
+            />
+          </View>
         )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
         contentContainerStyle={
           collection.books.length === 0 ? styles.emptyContent : styles.listContent
         }
         ListEmptyComponent={
-          <Text style={styles.empty} testID="collection-detail-empty-books">
-            This collection has no published books right now.
-          </Text>
+          <EmptyState
+            title="This collection has no published books right now."
+            description="Check back after editors add stories to this shelf."
+            testID="collection-detail-empty-books"
+          />
         }
         testID="collection-detail-books"
       />
@@ -123,24 +122,50 @@ export function CollectionDetailScreen(): JSX.Element {
   );
 }
 
-function BackButton(): JSX.Element {
+function CollectionBookCard(input: {
+  readonly book: CatalogBook;
+  readonly onPress: () => void;
+}): JSX.Element {
+  const attribution = resolveCatalogBookAttribution(input.book);
+  const cover = resolveCatalogCoverPresentation(input.book.cover);
   return (
-    <Pressable
-      style={styles.backButton}
-      onPress={() => {
-        if (router.canGoBack()) {
-          router.back();
-          return;
-        }
-        router.replace('/(app)/collections' as Href);
-      }}
-      accessibilityRole="button"
-      accessibilityLabel="Back"
-      testID="collection-detail-back-button"
-    >
-      <Text style={styles.backLabel}>Back</Text>
-    </Pressable>
+    <BookCard
+      title={input.book.title}
+      authorName={attribution.authorLine}
+      coverUri={cover.kind === 'image' ? cover.url : null}
+      variant="grid"
+      onPress={input.onPress}
+      accessibilityLabel={`Open ${input.book.title}`}
+    />
   );
+}
+
+function CollectionDetailStatus(input: {
+  readonly description: string;
+  readonly testID: string;
+  readonly onRetry?: () => void;
+  readonly retryTestID?: string;
+}): JSX.Element {
+  return (
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
+      <BackHeader title="" onPressBack={navigateBackToCollections} backTestID="collection-detail-back-button" />
+      <ErrorState
+        description={input.description}
+        onRetry={input.onRetry}
+        retryLabel="Try again"
+        retryTestID={input.retryTestID}
+        testID={input.testID}
+      />
+    </SafeAreaView>
+  );
+}
+
+function navigateBackToCollections(): void {
+  if (router.canGoBack()) {
+    router.back();
+    return;
+  }
+  router.replace('/(app)/collections' as Href);
 }
 
 function toUserFacingMessage(error: unknown): string {
@@ -159,74 +184,55 @@ function toUserFacingMessage(error: unknown): string {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.canvas,
   },
   header: {
     paddingHorizontal: theme.spacing.lg,
-    gap: theme.spacing.xs,
-    paddingBottom: theme.spacing.sm,
+    gap: theme.spacing.scale.xs,
+    paddingBottom: theme.spacing.md,
   },
-  list: {
-    flex: 1,
-    paddingHorizontal: theme.spacing.lg,
-  },
-  centered: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.lg,
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  backLabel: {
-    ...theme.typography.link,
-    color: theme.colors.primaryMuted,
+  kicker: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+    color: theme.colors.textMuted,
   },
   title: {
     ...theme.typography.title,
+    fontStyle: 'italic',
+    fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
   },
   body: {
     ...theme.typography.body,
     color: theme.colors.textSecondary,
   },
+  list: {
+    flex: 1,
+    paddingHorizontal: theme.spacing.lg,
+  },
+  column: {
+    gap: theme.spacing.md,
+  },
+  gridItem: {
+    flex: 1,
+    maxWidth: '48%',
+  },
   listContent: {
     paddingBottom: theme.spacing.xxxl,
+    gap: theme.spacing.md,
   },
   emptyContent: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingBottom: theme.spacing.xxxl,
   },
-  separator: {
-    height: theme.spacing.sm,
-  },
-  empty: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-  },
-  error: {
-    ...theme.typography.body,
-    color: theme.colors.danger,
-    textAlign: 'center',
-  },
-  retryButton: {
-    minHeight: theme.controlMinHeight,
-    minWidth: 160,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  gridSkeleton: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     paddingHorizontal: theme.spacing.lg,
-  },
-  retryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
+    gap: theme.spacing.md,
   },
 });

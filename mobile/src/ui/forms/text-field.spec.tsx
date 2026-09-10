@@ -26,4 +26,21 @@ describe('TextField', () => {
     expect(onChangeText).toHaveBeenCalledWith('new@b.com');
     expect(tree.root.findByProps({ children: 'Please enter a valid email address.' })).toBeTruthy();
   });
+
+  it('forwards search submit from the keyboard', () => {
+    const onSubmitEditing = jest.fn();
+    const tree = renderElement(
+      <TextField
+        label="Search text"
+        isLabelHidden
+        value="kancil"
+        onChangeText={() => undefined}
+        onSubmitEditing={onSubmitEditing}
+        testID="search-query-input"
+      />,
+    );
+    const input = findHostByTestId(tree, 'search-query-input');
+    expect(input.props.onSubmitEditing).toBe(onSubmitEditing);
+    expect(() => tree.root.findByProps({ children: 'Search text' })).toThrow();
+  });
 });

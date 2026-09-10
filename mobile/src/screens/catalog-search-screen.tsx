@@ -1,28 +1,35 @@
 import { router } from 'expo-router';
 import { useState, type JSX } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/api-error';
-import { CatalogBookRow } from '@/features/catalog/components/catalog-book-row';
+import type { CatalogBook } from '@/features/catalog/api/get-catalog-book';
 import {
   flattenCatalogBookPages,
   formatCatalogResultCountLabel,
 } from '@/features/catalog/lib/catalog-pagination';
+import { resolveCatalogBookAttribution } from '@/features/catalog/lib/resolve-catalog-book-attribution';
+import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-catalog-cover-presentation';
 import type { SearchCatalogField } from '@/features/search/api/search-catalog-books';
 import { useSearchCatalogBooks } from '@/features/search/hooks/use-search-catalog-books';
 import { buildSearchCatalogQuery } from '@/features/search/lib/build-search-catalog-query';
 import { theme } from '@/theme/theme';
+import { EmptyState } from '@/ui/feedback/empty-state';
+import { ErrorState } from '@/ui/feedback/error-state';
+import { TextField } from '@/ui/forms/text-field';
+import { BackHeader } from '@/ui/primitives/back-header';
+import { BookCard } from '@/ui/primitives/book-card';
+import { Button } from '@/ui/primitives/button';
+import { Skeleton } from '@/ui/primitives/skeleton';
 
 const FIELD_OPTIONS: { readonly field: SearchCatalogField; readonly label: string }[] = [
   { field: 'title', label: 'Title' },
@@ -76,57 +83,49 @@ export function CatalogSearchScreen(): JSX.Element {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        <BackHeader
+          title="Search"
+          titleTestID="search-title"
+          backTestID="search-back-button"
+          onPressBack={() => {
+            if (router.canGoBack()) {
+              router.back();
+              return;
+            }
+            router.replace('/(app)/(tabs)/home');
+          }}
+        />
         <View style={styles.header}>
-          <Pressable
-            style={styles.backButton}
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-                return;
-              }
-              router.replace('/(app)/(tabs)/home');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            testID="search-back-button"
-          >
-            <Text style={styles.backLabel}>Back</Text>
-          </Pressable>
-          <Text style={styles.title} accessibilityRole="header" testID="search-title">
-            Search books
-          </Text>
           <Text style={styles.body}>Find a book by title, author, or publisher.</Text>
           <Text style={styles.label}>Search by</Text>
           <View style={styles.row}>
-            {FIELD_OPTIONS.map((option) => (
-              <Pressable
-                key={option.field}
-                style={[styles.chip, draftField === option.field ? styles.chipSelected : null]}
-                onPress={() => {
-                  setDraftField(option.field);
-                }}
-                accessibilityRole="button"
-                accessibilityState={{ selected: draftField === option.field }}
-                accessibilityLabel={`Search by ${option.label}`}
-                testID={`search-field-${option.field}`}
-              >
-                <Text
-                  style={[
-                    styles.chipLabel,
-                    draftField === option.field ? styles.chipLabelSelected : null,
-                  ]}
+            {FIELD_OPTIONS.map((option) => {
+              const isSelected: boolean = draftField === option.field;
+              return (
+                <Pressable
+                  key={option.field}
+                  style={[styles.chip, isSelected ? styles.chipSelected : null]}
+                  onPress={() => {
+                    setDraftField(option.field);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={`Search by ${option.label}`}
+                  testID={`search-field-${option.field}`}
                 >
-                  {option.label}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text style={[styles.chipLabel, isSelected ? styles.chipLabelSelected : null]}>
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
-          <TextInput
-            style={styles.input}
+          <TextField
+            label="Search text"
+            isLabelHidden
             value={draftQuery}
             onChangeText={setDraftQuery}
             placeholder="Type words to search"
-            placeholderTextColor={theme.colors.textPlaceholder}
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
@@ -135,24 +134,22 @@ export function CatalogSearchScreen(): JSX.Element {
             testID="search-query-input"
           />
           <View style={styles.actions}>
-            <Pressable
-              style={styles.primaryButton}
-              onPress={executeSearch}
-              accessibilityRole="button"
-              accessibilityLabel="Search"
-              testID="search-submit-button"
-            >
-              <Text style={styles.primaryLabel}>Search</Text>
-            </Pressable>
-            <Pressable
-              style={styles.secondaryButton}
+            <View style={styles.flex}>
+              <Button
+                label="Search"
+                onPress={executeSearch}
+                accessibilityLabel="Search"
+                testID="search-submit-button"
+              />
+            </View>
+            <Button
+              label="Clear"
+              variant="secondary"
+              isFullWidth={false}
               onPress={clearSearch}
-              accessibilityRole="button"
               accessibilityLabel="Clear search"
               testID="search-clear-button"
-            >
-              <Text style={styles.secondaryLabel}>Clear</Text>
-            </Pressable>
+            />
           </View>
         </View>
         <View style={styles.results} testID="search-results">
@@ -162,37 +159,33 @@ export function CatalogSearchScreen(): JSX.Element {
             </Text>
           ) : null}
           {hasSubmitted && searchQuery.isLoading ? (
-            <View style={styles.centered} accessibilityLabel="Loading search results">
-              <ActivityIndicator size="large" color={theme.colors.primary} />
+            <View style={styles.loadingBlock} accessibilityLabel="Loading search results">
+              <SearchResultSkeleton />
+              <SearchResultSkeleton />
+              <SearchResultSkeleton />
+              <SearchResultSkeleton />
             </View>
           ) : null}
           {hasSubmitted && searchQuery.isError && searchQuery.data === undefined ? (
-            <View style={styles.centered}>
-              <Text style={styles.error} testID="search-error">
-                {toUserFacingMessage(searchQuery.error)}
-              </Text>
-              <Pressable
-                style={styles.primaryButton}
-                onPress={() => {
-                  void searchQuery.refetch();
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="Try again"
-                testID="search-retry-button"
-              >
-                <Text style={styles.primaryLabel}>Try again</Text>
-              </Pressable>
-            </View>
+            <ErrorState
+              description={toUserFacingMessage(searchQuery.error)}
+              onRetry={() => {
+                void searchQuery.refetch();
+              }}
+              retryLabel="Try again"
+              retryTestID="search-retry-button"
+              testID="search-error"
+            />
           ) : null}
           {hasSubmitted && (searchQuery.isSuccess || searchQuery.data !== undefined) ? (
             <FlatList
               data={books}
               keyExtractor={(item) => String(item.id)}
               renderItem={({ item }) => (
-                <CatalogBookRow
+                <SearchBookRow
                   book={item}
-                  onPress={(bookId) => {
-                    router.push(`/(app)/books/${bookId}`);
+                  onPress={() => {
+                    router.push(`/(app)/books/${item.id}`);
                   }}
                 />
               )}
@@ -219,9 +212,11 @@ export function CatalogSearchScreen(): JSX.Element {
                 ) : null
               }
               ListEmptyComponent={
-                <Text style={styles.empty} testID="search-empty">
-                  No books matched. Try different words.
-                </Text>
+                <EmptyState
+                  title="No books matched. Try different words."
+                  description="Try a different title, author, or publisher."
+                  testID="search-empty"
+                />
               }
               ListFooterComponent={
                 <SearchListFooter
@@ -242,6 +237,36 @@ export function CatalogSearchScreen(): JSX.Element {
   );
 }
 
+function SearchBookRow(input: {
+  readonly book: CatalogBook;
+  readonly onPress: () => void;
+}): JSX.Element {
+  const attribution = resolveCatalogBookAttribution(input.book);
+  const cover = resolveCatalogCoverPresentation(input.book.cover);
+  return (
+    <BookCard
+      title={input.book.title}
+      authorName={attribution.authorLine}
+      coverUri={cover.kind === 'image' ? cover.url : null}
+      variant="row"
+      onPress={input.onPress}
+      accessibilityLabel={`Open ${input.book.title}`}
+    />
+  );
+}
+
+function SearchResultSkeleton(): JSX.Element {
+  return (
+    <View style={styles.skeletonRow}>
+      <Skeleton width={52} height={78} radius={theme.radii.sm} />
+      <View style={styles.skeletonText}>
+        <Skeleton height={16} width="70%" />
+        <Skeleton height={14} width="40%" />
+      </View>
+    </View>
+  );
+}
+
 function SearchListFooter(input: {
   readonly isFetchingNextPage: boolean;
   readonly isFetchNextPageError: boolean;
@@ -252,23 +277,20 @@ function SearchListFooter(input: {
   if (input.isFetchingNextPage) {
     return (
       <View style={styles.footer} testID="search-loading-more">
-        <ActivityIndicator color={theme.colors.primary} />
+        <Skeleton height={16} width="40%" />
       </View>
     );
   }
   if (input.isFetchNextPageError) {
     return (
       <View style={styles.footer}>
-        <Text style={styles.error}>Could not load more results.</Text>
-        <Pressable
-          style={styles.primaryButton}
+        <Text style={styles.footerError}>Could not load more results.</Text>
+        <Button
+          label="Try again"
           onPress={input.onRetry}
-          accessibilityRole="button"
           accessibilityLabel="Try loading more"
           testID="search-load-more-retry"
-        >
-          <Text style={styles.primaryLabel}>Try again</Text>
-        </Pressable>
+        />
       </View>
     );
   }
@@ -295,7 +317,7 @@ function toUserFacingMessage(error: unknown): string {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.canvas,
   },
   flex: {
     flex: 1,
@@ -305,27 +327,17 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs,
     paddingBottom: theme.spacing.sm,
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  backLabel: {
-    ...theme.typography.link,
-    color: theme.colors.primaryMuted,
-  },
-  title: {
-    ...theme.typography.title,
-    color: theme.colors.textPrimary,
-  },
   body: {
     ...theme.typography.body,
     color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.xs,
   },
   label: {
     ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
     color: theme.colors.textMuted,
+    marginTop: theme.spacing.xs,
   },
   row: {
     flexDirection: 'row',
@@ -335,9 +347,9 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: 44,
     paddingHorizontal: theme.spacing.md,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
+    borderRadius: theme.radii.full,
+    borderWidth: 1.5,
+    borderColor: theme.colors.borderDefault,
     backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
@@ -347,56 +359,18 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
   },
   chipLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.semibold,
     color: theme.colors.textPrimary,
   },
   chipLabelSelected: {
-    color: theme.colors.onPrimary,
-  },
-  input: {
-    minHeight: theme.controlMinHeight,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radii.control,
-    paddingHorizontal: theme.spacing.md,
-    fontSize: 18,
-    color: theme.colors.textPrimary,
-    backgroundColor: theme.colors.surface,
-    marginTop: theme.spacing.xs,
+    color: theme.colors.textOnBrand,
   },
   actions: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: theme.spacing.sm,
     marginTop: theme.spacing.xs,
-  },
-  primaryButton: {
-    flex: 1,
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.md,
-  },
-  primaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
-  },
-  secondaryButton: {
-    minHeight: theme.controlMinHeight,
-    minWidth: 96,
-    borderRadius: theme.radii.control,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.md,
-  },
-  secondaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.textPrimary,
   },
   results: {
     flex: 1,
@@ -407,11 +381,18 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
     marginTop: theme.spacing.sm,
   },
-  centered: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  loadingBlock: {
     gap: theme.spacing.sm,
+    paddingTop: theme.spacing.sm,
+  },
+  skeletonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  skeletonText: {
+    flex: 1,
+    gap: theme.spacing.xs,
   },
   listContent: {
     paddingBottom: theme.spacing.xxxl,
@@ -422,27 +403,23 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.xxxl,
   },
   separator: {
-    height: theme.spacing.sm,
+    height: 1,
+    backgroundColor: theme.colors.borderSubtle,
   },
   count: {
     ...theme.typography.label,
     color: theme.colors.textMuted,
     marginBottom: theme.spacing.xs,
   },
-  empty: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-  },
-  error: {
-    ...theme.typography.body,
-    color: theme.colors.danger,
-    textAlign: 'center',
-  },
   footer: {
     paddingVertical: theme.spacing.md,
     alignItems: 'center',
     gap: theme.spacing.sm,
+  },
+  footerError: {
+    ...theme.typography.body,
+    color: theme.colors.error,
+    textAlign: 'center',
   },
   endLabel: {
     ...theme.typography.label,

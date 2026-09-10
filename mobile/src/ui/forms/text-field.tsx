@@ -27,6 +27,9 @@ type TextFieldProps = {
   readonly autoComplete?: TextInputProps['autoComplete'];
   readonly autoCorrect?: boolean;
   readonly onBlur?: () => void;
+  readonly onSubmitEditing?: TextInputProps['onSubmitEditing'];
+  readonly returnKeyType?: TextInputProps['returnKeyType'];
+  readonly isLabelHidden?: boolean;
   readonly testID?: string;
   readonly accessibilityLabel?: string;
 };
@@ -51,6 +54,9 @@ export function TextField({
   autoComplete,
   autoCorrect,
   onBlur,
+  onSubmitEditing,
+  returnKeyType,
+  isLabelHidden = false,
   testID,
   accessibilityLabel,
 }: TextFieldProps): JSX.Element {
@@ -59,7 +65,7 @@ export function TextField({
   const borderColor = resolveBorderColor(hasError, isFocused);
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>{label}</Text>
+      {isLabelHidden ? null : <Text style={styles.label}>{label}</Text>}
       <View
         style={[
           styles.field,
@@ -81,6 +87,8 @@ export function TextField({
           autoCapitalize={autoCapitalize}
           autoComplete={autoComplete}
           autoCorrect={autoCorrect}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
           testID={testID}
           accessibilityLabel={accessibilityLabel ?? label}
           accessibilityState={{ disabled: isDisabled }}

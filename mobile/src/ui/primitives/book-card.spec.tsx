@@ -35,4 +35,19 @@ describe('BookCard', () => {
     pressHost(findHostByTestId(tree, 'continue-card'));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
+
+  it('renders a horizontal row without continue-reading chrome', () => {
+    const tree = renderElement(
+      <BookCard
+        title="Sang Kancil"
+        authorName="Zaleha Ahmad"
+        variant="row"
+        onPress={() => undefined}
+        testID="search-row"
+      />,
+    );
+    expect(findHostByTestId(tree, 'search-row')).toBeTruthy();
+    expect(tree.root.findByProps({ children: 'Zaleha Ahmad' })).toBeTruthy();
+    expect(() => tree.root.findByProps({ children: '▶' })).toThrow();
+  });
 });
