@@ -43,4 +43,20 @@ describe('TextField', () => {
     expect(input.props.onSubmitEditing).toBe(onSubmitEditing);
     expect(() => tree.root.findByProps({ children: 'Search text' })).toThrow();
   });
+
+  it('supports multiline token paste without owning validation', () => {
+    const tree = renderElement(
+      <TextField
+        label="Reset token"
+        value="abc"
+        onChangeText={() => undefined}
+        isMultiline
+        numberOfLines={4}
+        testID="auth-reset-token-input"
+      />,
+    );
+    const input = findHostByTestId(tree, 'auth-reset-token-input');
+    expect(input.props.multiline).toBe(true);
+    expect(input.props.numberOfLines).toBe(4);
+  });
 });

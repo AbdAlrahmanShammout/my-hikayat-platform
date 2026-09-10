@@ -14,6 +14,7 @@ import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
 import { resolveCatalogBookAttribution } from '@/features/catalog/lib/resolve-catalog-book-attribution';
 import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-catalog-cover-presentation';
 import { OfflineLeaseExpiryLabel } from '@/features/offline/components/offline-lease-expiry-label';
+import { RemoveOfflineDownloadSheet } from '@/features/offline/components/remove-offline-download-sheet';
 import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book-actions';
 import { useOfflinePackage } from '@/features/offline/hooks/use-offline-packages';
 import { findReadingProgress } from '@/features/reader/lib/find-reading-progress';
@@ -39,6 +40,7 @@ export function BookDetailScreen(): JSX.Element {
   const offlineActions = useOfflineBookActions(bookId);
   const { isOnline } = useConnectivity();
   const [offlineMessage, setOfflineMessage] = useState<string | null>(null);
+  const [isRemoveConfirmVisible, setIsRemoveConfirmVisible] = useState<boolean>(false);
   const progressQuery = useQuery({
     queryKey: ['reader', 'progress', bookId],
     queryFn: async () => {
@@ -164,17 +166,7 @@ export function BookDetailScreen(): JSX.Element {
               variant="secondary"
               isLoading={offlineActions.isRemoving}
               onPress={() => {
-                void offlineActions
-                  .remove()
-                  .then(async () => {
-                    setOfflineMessage('Download removed from this device.');
-                    await offlinePackage.invalidate();
-                  })
-                  .catch((error: unknown) => {
-                    setOfflineMessage(
-                      error instanceof Error ? error.message : 'Could not remove the download.',
-                    );
-                  });
+                setIsRemoveConfirmVisible(true);
               }}
               accessibilityLabel="Remove offline download"
               testID="book-detail-remove-offline-button"
@@ -215,6 +207,29 @@ export function BookDetailScreen(): JSX.Element {
         <Text style={styles.sectionLabel}>About this book</Text>
         <Text style={styles.body}>{book.description}</Text>
       </ScrollView>
+      <RemoveOfflineDownloadSheet
+        bookTitle={isRemoveConfirmVisible ? book.title : null}
+        isRemoving={offlineActions.isRemoving}
+        onConfirm={() => {
+          void offlineActions
+            .remove()
+            .then(async () => {
+              setIsRemoveConfirmVisible(false);
+              setOfflineMessage('Download removed from this device.');
+              await offlinePackage.invalidate();
+            })
+            .catch((error: unknown) => {
+              setOfflineMessage(
+                error instanceof Error ? error.message : 'Could not remove the download.',
+              );
+            });
+        }}
+        onCancel={() => {
+          if (!offlineActions.isRemoving) {
+            setIsRemoveConfirmVisible(false);
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }

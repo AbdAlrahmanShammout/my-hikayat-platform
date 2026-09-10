@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState, type JSX } from 'react';
-import { ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
@@ -72,9 +72,20 @@ export function OpenReaderScreen(): JSX.Element {
 
   if (openQuery.isError) {
     const mapped = mapOpenReaderError(openQuery.error);
+    const isClockTamper: boolean = mapped.message.toLowerCase().includes('device time changed');
     return (
       <SafeAreaView style={styles.centered} edges={['top', 'left', 'right', 'bottom']}>
-        <Text style={styles.error} testID="reader-open-error">
+        {isClockTamper ? (
+          <View style={styles.clockWell} accessibilityElementsHidden>
+            <Text style={styles.clockMark}>!</Text>
+          </View>
+        ) : null}
+        {isClockTamper ? (
+          <Text style={styles.clockTitle} accessibilityRole="header">
+            Your device time changed
+          </Text>
+        ) : null}
+        <Text style={isClockTamper ? styles.clockBody : styles.error} testID="reader-open-error">
           {mapped.message}
         </Text>
         {mapped.kind === 'entitlement_denied' ? (
@@ -245,6 +256,31 @@ const styles = StyleSheet.create({
   error: {
     ...theme.typography.body,
     color: theme.colors.danger,
+    textAlign: 'center',
+  },
+  clockWell: {
+    width: theme.spacing.xxxl + theme.spacing.lg,
+    height: theme.spacing.xxxl + theme.spacing.lg,
+    borderRadius: theme.radii.full,
+    backgroundColor: theme.colors.warningBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clockMark: {
+    ...theme.typography.title,
+    color: theme.colors.warning,
+  },
+  clockTitle: {
+    ...theme.typography.title,
+    fontSize: theme.typography.scale['2xl'],
+    fontStyle: 'italic',
+    fontWeight: theme.typography.weights.regular,
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
+  },
+  clockBody: {
+    ...theme.typography.body,
+    color: theme.colors.textMuted,
     textAlign: 'center',
   },
 });

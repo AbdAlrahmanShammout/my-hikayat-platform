@@ -30,6 +30,8 @@ type TextFieldProps = {
   readonly onSubmitEditing?: TextInputProps['onSubmitEditing'];
   readonly returnKeyType?: TextInputProps['returnKeyType'];
   readonly isLabelHidden?: boolean;
+  readonly isMultiline?: boolean;
+  readonly numberOfLines?: number;
   readonly testID?: string;
   readonly accessibilityLabel?: string;
 };
@@ -57,6 +59,8 @@ export function TextField({
   onSubmitEditing,
   returnKeyType,
   isLabelHidden = false,
+  isMultiline = false,
+  numberOfLines,
   testID,
   accessibilityLabel,
 }: TextFieldProps): JSX.Element {
@@ -69,6 +73,7 @@ export function TextField({
       <View
         style={[
           styles.field,
+          isMultiline ? styles.multilineField : null,
           { borderColor },
           isFocused && !hasError ? styles.focusRing : null,
           hasError && isFocused ? styles.errorRing : null,
@@ -89,6 +94,9 @@ export function TextField({
           autoCorrect={autoCorrect}
           returnKeyType={returnKeyType}
           onSubmitEditing={onSubmitEditing}
+          multiline={isMultiline}
+          numberOfLines={numberOfLines}
+          textAlignVertical={isMultiline ? 'top' : 'center'}
           testID={testID}
           accessibilityLabel={accessibilityLabel ?? label}
           accessibilityState={{ disabled: isDisabled }}
@@ -99,7 +107,7 @@ export function TextField({
             setIsFocused(false);
             onBlur?.();
           }}
-          style={styles.input}
+          style={[styles.input, isMultiline ? styles.multilineInput : null]}
         />
         {trailing}
       </View>
@@ -141,6 +149,14 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     borderWidth: 1.5,
     borderRadius: theme.radii.md,
+  },
+  multilineField: {
+    minHeight: 96,
+    alignItems: 'flex-start',
+    paddingVertical: theme.spacing.sm,
+  },
+  multilineInput: {
+    minHeight: 72,
   },
   focusRing: {
     borderWidth: theme.shadows.focus.spread,

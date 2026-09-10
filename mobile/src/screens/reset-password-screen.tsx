@@ -3,14 +3,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState, type JSX } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +19,10 @@ import {
   type ResetPasswordFormValues,
 } from '@/features/auth/schemas/reset-password-schema';
 import { theme } from '@/theme/theme';
+import { FormError } from '@/ui/forms/form-error';
+import { TextField } from '@/ui/forms/text-field';
+import { BackHeader } from '@/ui/primitives/back-header';
+import { Button } from '@/ui/primitives/button';
 
 function readTokenParam(value: string | string[] | undefined): string {
   if (typeof value === 'string') {
@@ -52,6 +53,7 @@ export function ResetPasswordScreen(): JSX.Element {
       password: '',
     },
   });
+  const isLocked: boolean = isSubmitting || successMessage !== null;
 
   async function executeReset(values: ResetPasswordFormValues): Promise<void> {
     setSuccessMessage(null);
@@ -73,6 +75,14 @@ export function ResetPasswordScreen(): JSX.Element {
     }
   }
 
+  function navigateBackToSignIn(): void {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/(public)/sign-in');
+  }
+
   return (
     <SafeAreaView
       style={styles.safe}
@@ -84,110 +94,82 @@ export function ResetPasswordScreen(): JSX.Element {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          <Pressable
-            style={styles.backButton}
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-                return;
-              }
-              router.replace('/(public)/sign-in');
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            testID="auth-reset-back"
-          >
-            <Text style={styles.backLabel}>Back</Text>
-          </Pressable>
+          <BackHeader title="" onPressBack={navigateBackToSignIn} backTestID="auth-reset-back" />
           <Text style={styles.title} accessibilityRole="header">
             Choose a new password
           </Text>
           <Text style={styles.body}>
             Paste the reset token from your email if it is not already filled in.
           </Text>
+          {errors.root?.message !== undefined ? (
+            <FormError message={errors.root.message} testID="auth-reset-error" />
+          ) : null}
+          {successMessage !== null ? (
+            <View style={styles.successBanner}>
+              <Text style={styles.success} testID="auth-reset-success">
+                {successMessage}
+              </Text>
+            </View>
+          ) : null}
           <Controller
             control={control}
             name="token"
             render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[styles.input, styles.tokenInput]}
+              <TextField
+                label="Reset token"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="Reset token"
                 autoCapitalize="none"
                 autoCorrect={false}
-                placeholder="Reset token"
-                placeholderTextColor={theme.colors.textPlaceholder}
-                value={value}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                editable={!isSubmitting && successMessage === null}
-                multiline
+                isDisabled={isLocked}
+                isMultiline
+                numberOfLines={4}
+                errorMessage={errors.token?.message}
                 testID="auth-reset-token-input"
                 accessibilityLabel="Reset token"
               />
             )}
           />
-          {errors.token?.message !== undefined ? (
-            <Text style={styles.error}>{errors.token.message}</Text>
-          ) : null}
           <Controller
             control={control}
             name="password"
             render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={styles.input}
-                secureTextEntry
-                placeholder="New password"
-                placeholderTextColor={theme.colors.textPlaceholder}
+              <TextField
+                label="New password"
                 value={value}
-                onBlur={onBlur}
                 onChangeText={onChange}
-                editable={!isSubmitting && successMessage === null}
+                onBlur={onBlur}
+                placeholder="New password"
+                isSecure
+                isDisabled={isLocked}
+                errorMessage={errors.password?.message}
                 testID="auth-reset-password-input"
                 accessibilityLabel="New password"
               />
             )}
           />
-          {errors.password?.message !== undefined ? (
-            <Text style={styles.error}>{errors.password.message}</Text>
-          ) : null}
-          {errors.root?.message !== undefined ? (
-            <Text style={styles.error} testID="auth-reset-error">
-              {errors.root.message}
-            </Text>
-          ) : null}
-          {successMessage !== null ? (
-            <Text style={styles.success} testID="auth-reset-success">
-              {successMessage}
-            </Text>
-          ) : null}
           {successMessage === null ? (
-            <Pressable
-              style={[styles.primaryButton, isSubmitting ? styles.buttonDisabled : null]}
+            <Button
+              label="Save new password"
               onPress={() => {
                 void handleSubmit(executeReset)();
               }}
-              disabled={isSubmitting}
+              isLoading={isSubmitting}
+              isDisabled={isSubmitting}
               testID="auth-reset-submit"
-              accessibilityRole="button"
               accessibilityLabel="Save new password"
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color={theme.colors.onPrimary} />
-              ) : (
-                <Text style={styles.primaryLabel}>Save new password</Text>
-              )}
-            </Pressable>
+            />
           ) : (
-            <Pressable
-              style={styles.primaryButton}
+            <Button
+              label="Back to sign in"
               onPress={() => {
                 router.replace('/(public)/sign-in');
               }}
-              accessibilityRole="button"
-              accessibilityLabel="Back to sign in"
               testID="auth-reset-go-sign-in"
-            >
-              <Text style={styles.primaryLabel}>Back to sign in</Text>
-            </Pressable>
+              accessibilityLabel="Back to sign in"
+            />
           )}
           <View style={styles.spacer} />
         </ScrollView>
@@ -199,7 +181,7 @@ export function ResetPasswordScreen(): JSX.Element {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.canvas,
   },
   flex: {
     flex: 1,
@@ -208,64 +190,29 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.xl,
-    gap: theme.spacing.sm,
-    justifyContent: 'center',
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  backLabel: {
-    ...theme.typography.link,
-    color: theme.colors.primaryMuted,
+    gap: theme.spacing.md,
   },
   title: {
     ...theme.typography.title,
+    fontSize: theme.typography.scale['2xl'],
+    fontStyle: 'italic',
+    fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
   },
   body: {
     ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.sm,
+    color: theme.colors.textMuted,
   },
-  input: {
-    minHeight: theme.controlMinHeight,
-    borderWidth: 2,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radii.control,
-    paddingHorizontal: theme.spacing.md,
-    fontSize: 18,
-    color: theme.colors.textPrimary,
-    backgroundColor: theme.colors.surface,
-  },
-  tokenInput: {
-    minHeight: 96,
-    paddingVertical: theme.spacing.sm,
-    textAlignVertical: 'top',
-  },
-  error: {
-    ...theme.typography.body,
-    color: theme.colors.danger,
+  successBanner: {
+    backgroundColor: theme.colors.successBg,
+    borderRadius: theme.radii.lg,
+    padding: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.success,
   },
   success: {
     ...theme.typography.body,
-    color: theme.colors.primaryMuted,
-  },
-  primaryButton: {
-    minHeight: theme.controlMinHeight,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: theme.spacing.sm,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  primaryLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
+    color: theme.colors.success,
   },
   spacer: {
     height: theme.spacing.xl,

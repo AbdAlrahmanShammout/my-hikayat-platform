@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textOnBrand,
   },
   offerButton: {
-    minHeight: 44,
+    minHeight: theme.controlMinHeight,
     borderRadius: theme.radii.full,
     backgroundColor: theme.colors.surface,
     alignItems: 'center',

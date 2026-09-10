@@ -1,7 +1,8 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { theme } from '@/theme/theme';
+import { ErrorState } from '@/ui/feedback/error-state';
 
 type AppErrorBoundaryProps = {
   readonly children: ReactNode;
@@ -33,18 +34,12 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
     if (this.state.hasError) {
       return (
         <View style={styles.container} accessibilityLabel="Something went wrong">
-          <Text style={styles.title} accessibilityRole="header">
-            Something went wrong
-          </Text>
-          <Text style={styles.body}>Please try again. If this keeps happening, restart the app.</Text>
-          <Pressable
-            style={styles.button}
-            onPress={this.handleRetry}
-            accessibilityRole="button"
-            accessibilityLabel="Try again"
-          >
-            <Text style={styles.buttonLabel}>Try again</Text>
-          </Pressable>
+          <ErrorState
+            title="Something went wrong"
+            description="Please try again. If this keeps happening, restart the app."
+            retryLabel="Try again"
+            onRetry={this.handleRetry}
+          />
         </View>
       );
     }
@@ -55,34 +50,9 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.canvas,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.lg,
-    gap: theme.spacing.sm,
-  },
-  title: {
-    ...theme.typography.title,
-    color: theme.colors.textPrimary,
-    textAlign: 'center',
-  },
-  body: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
-  },
-  button: {
-    marginTop: theme.spacing.sm,
-    minHeight: theme.controlMinHeight,
-    minWidth: 160,
-    borderRadius: theme.radii.control,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.lg,
-  },
-  buttonLabel: {
-    ...theme.typography.button,
-    color: theme.colors.onPrimary,
   },
 });
