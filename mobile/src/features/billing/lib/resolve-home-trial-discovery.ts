@@ -39,18 +39,18 @@ export function resolveHomeTrialDiscovery(
   if (subscription.readingAccessState === 'trial') {
     return {
       kind: 'active',
-      title: 'You’re on a free trial',
-      body: 'Full books are open while the trial lasts. Ask a grown-up to manage billing on Me.',
+      title: 'Free trial active',
+      body: 'Full books are open while the trial lasts.',
       remainingLabel: formatTrialRemainingLabel(subscription.trialEndsAt, now),
-      actionLabel: 'View on Me',
+      actionLabel: 'Subscribe',
     };
   }
   if (subscription.trialEligible === true) {
     return {
       kind: 'offer',
-      title: 'Try full books free',
-      body: '7 days free — no credit card. Ask a grown-up to start the free trial on Me.',
-      actionLabel: 'Start Free Trial',
+      title: 'Start your free trial',
+      body: '7 days free · No credit card needed',
+      actionLabel: 'Try free',
     };
   }
   return { kind: 'hidden' };

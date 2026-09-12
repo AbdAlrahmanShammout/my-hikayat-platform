@@ -27,5 +27,29 @@ describe('ReadingProgressResponse', () => {
     expect(actualResponse.spreadIndex).toBeNull();
     expect(actualResponse.pageNumber).toBeNull();
     expect(actualResponse.lastSessionAt).toEqual(new Date('2026-08-15T02:00:00.000Z'));
+    expect(actualResponse.contentProgressPercent).toBeNull();
+    expect(actualResponse.locationLabel).toBeNull();
+  });
+
+  it('attaches content percent and location when presentation is provided', () => {
+    const inputEntity = new ReadingProgressEntity({
+      id: 3,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      userId: 7,
+      bookId: 8,
+      layoutType: BookLayoutType.REFLOWABLE,
+      spineIndex: 2,
+      scrollOffset: 640,
+      spreadIndex: null,
+      pageNumber: null,
+      lastSessionAt: new Date('2026-08-15T02:00:00.000Z'),
+    });
+    const actualResponse = new ReadingProgressResponse(inputEntity, {
+      contentProgressPercent: 42,
+      locationLabel: 'Harbor',
+    });
+    expect(actualResponse.contentProgressPercent).toBe(42);
+    expect(actualResponse.locationLabel).toBe('Harbor');
   });
 });

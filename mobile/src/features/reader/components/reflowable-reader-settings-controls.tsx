@@ -1,10 +1,11 @@
 import type { JSX } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import {
   applyFontSizePreset,
   applyLineSpacingPreset,
   applyMarginPreset,
+  applyReaderTheme,
   resolveFontSizePresetId,
   resolveLineSpacingPresetId,
   resolveMarginPresetId,
@@ -19,6 +20,7 @@ type ReflowableReaderSettingsControlsProps = {
   readonly settings: ReflowableReaderSettings;
   readonly onApplySettings: (next: ReflowableReaderSettings) => void;
   readonly onToggleTheme: () => void;
+  readonly themeControl?: 'switch' | 'chips';
   readonly testIDPrefix?: string;
 };
 
@@ -40,6 +42,11 @@ const MARGIN_PRESETS: { readonly id: MarginPresetId; readonly label: string }[] 
   { id: 'wide', label: 'Wide' },
 ];
 
+const THEME_CHIPS: { readonly id: 'light' | 'dark'; readonly label: string }[] = [
+  { id: 'light', label: 'Light' },
+  { id: 'dark', label: 'Dark' },
+];
+
 /**
  * Shared Figma-mapped chips for reflowable font, spacing, margin, and theme.
  */
@@ -47,6 +54,7 @@ export function ReflowableReaderSettingsControls(
   props: ReflowableReaderSettingsControlsProps,
 ): JSX.Element {
   const prefix: string = props.testIDPrefix ?? 'reader';
+  const themeControl: 'switch' | 'chips' = props.themeControl ?? 'chips';
   const selectedFont: FontSizePresetId = resolveFontSizePresetId(props.settings.fontScalePercent);
   const selectedLine: LineSpacingPresetId = resolveLineSpacingPresetId(props.settings.lineHeight);
   const selectedMargin: MarginPresetId = resolveMarginPresetId(props.settings.marginPx);
@@ -79,17 +87,29 @@ export function ReflowableReaderSettingsControls(
           props.onApplySettings(applyMarginPreset(props.settings, id));
         }}
       />
-      <Pressable
-        style={styles.themeButton}
-        onPress={props.onToggleTheme}
-        accessibilityRole="button"
-        accessibilityLabel="Toggle reading theme"
-        testID={`${prefix}-theme-toggle`}
-      >
-        <Text style={styles.themeLabel}>
-          {props.settings.theme === 'light' ? 'Dark pages' : 'Light pages'}
-        </Text>
-      </Pressable>
+      {themeControl === 'switch' ? (
+        <View style={styles.switchRow} testID={`${prefix}-theme-switch-row`}>
+          <Text style={styles.switchLabel}>Dark reading theme</Text>
+          <Switch
+            value={props.settings.theme === 'dark'}
+            onValueChange={props.onToggleTheme}
+            trackColor={{ false: theme.colors.borderDefault, true: theme.colors.primary }}
+            thumbColor={theme.colors.surface}
+            accessibilityLabel="Dark reading theme"
+            testID={`${prefix}-theme-toggle`}
+          />
+        </View>
+      ) : (
+        <PresetRow
+          label="Theme"
+          testID={`${prefix}-theme-presets`}
+          options={THEME_CHIPS}
+          selectedId={props.settings.theme}
+          onSelect={(id) => {
+            props.onApplySettings(applyReaderTheme(props.settings, id));
+          }}
+        />
+      )}
     </View>
   );
 }
@@ -152,12 +172,13 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: 44,
     paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.radii.full,
+    borderRadius: theme.radii.sm,
     borderWidth: 1.5,
     borderColor: theme.colors.borderDefault,
     backgroundColor: theme.colors.canvasWarm,
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
   },
   chipSelected: {
     borderColor: theme.colors.primary,
@@ -171,20 +192,16 @@ const styles = StyleSheet.create({
   chipLabelSelected: {
     color: theme.colors.textOnBrand,
   },
-  themeButton: {
+  switchRow: {
     minHeight: 44,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.radii.md,
-    borderWidth: 1.5,
-    borderColor: theme.colors.borderDefault,
-    backgroundColor: theme.colors.canvasWarm,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'flex-start',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
   },
-  themeLabel: {
-    ...theme.typography.label,
-    fontWeight: theme.typography.weights.semibold,
+  switchLabel: {
+    ...theme.typography.body,
     color: theme.colors.textPrimary,
+    flex: 1,
   },
 });

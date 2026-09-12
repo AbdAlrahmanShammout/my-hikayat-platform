@@ -19,7 +19,7 @@ function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>): JS
 }
 
 function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>): JSX.Element {
-  return <h2 className={cn('text-lg font-semibold tracking-tight', className)} {...props} />;
+  return <h2 className={cn('font-display text-lg font-semibold italic tracking-tight', className)} {...props} />;
 }
 
 function CardDescription({

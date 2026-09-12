@@ -25,7 +25,7 @@ export function ForbiddenPanel({
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="flex max-w-md flex-col gap-4">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="font-display text-2xl font-semibold italic tracking-tight">{title}</h1>
         <p className="text-sm text-muted-foreground">{description}</p>
         {homePath !== undefined ? (
           <Button asChild>

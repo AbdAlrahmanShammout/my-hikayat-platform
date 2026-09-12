@@ -65,6 +65,7 @@ export function SettingsScreen(): JSX.Element {
                 settings={readingPrefs.settings}
                 onApplySettings={readingPrefs.applySettings}
                 onToggleTheme={readingPrefs.toggleTheme}
+                themeControl="switch"
                 testIDPrefix="settings"
               />
               <Button

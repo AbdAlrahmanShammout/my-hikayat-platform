@@ -1,5 +1,6 @@
 import {
   applyFontSizePreset,
+  applyReaderTheme,
   decreaseFontScale,
   decreaseLineHeight,
   decreaseMargin,
@@ -20,10 +21,10 @@ describe('reflowableReaderSettings', () => {
     expect(settings.fontScalePercent).toBe(160);
   });
 
-  it('toggles theme between light and dark', () => {
-    const dark = toggleReaderTheme(DEFAULT_REFLOWABLE_READER_SETTINGS);
+  it('sets an explicit reading theme', () => {
+    const dark = applyReaderTheme(DEFAULT_REFLOWABLE_READER_SETTINGS, 'dark');
     expect(dark.theme).toBe('dark');
-    expect(toggleReaderTheme(dark).theme).toBe('light');
+    expect(applyReaderTheme(dark, 'light').theme).toBe('light');
   });
 
   it('adjusts line height and margin within bounds', () => {

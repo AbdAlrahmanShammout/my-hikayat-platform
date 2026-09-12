@@ -64,7 +64,7 @@ function resolveTrialApproaching(
     title: 'Free trial ending soon',
     body: 'Ask a grown-up to subscribe on Me so full-book reading can continue after the trial.',
     detailLabel: formatTrialRemainingLabel(subscription.trialEndsAt, now),
-    actionLabel: 'View on Me',
+    actionLabel: 'Subscribe',
   };
 }
 
@@ -89,7 +89,7 @@ function resolvePaidApproaching(
       ? 'Your canceled plan still lets you read until the paid period ends. Ask a grown-up to resubscribe on Me if you want to keep going.'
       : 'Ask a grown-up to check billing on Me before paid access ends.',
     detailLabel: `Paid access through ${dateLabel}`,
-    actionLabel: 'View on Me',
+    actionLabel: 'Subscribe',
   };
 }
 
@@ -108,7 +108,7 @@ function resolveEndedAccess(
       title: 'Free trial ended',
       body: 'Full-book reading needs a subscription now. Ask a grown-up to subscribe on Me.',
       detailLabel: null,
-      actionLabel: 'View on Me',
+      actionLabel: 'Subscribe',
     };
   }
   const periodEndMs: number | null = parseIsoMs(subscription.currentPeriodEnd);
@@ -120,7 +120,7 @@ function resolveEndedAccess(
       title: 'Paid access ended',
       body: 'Full-book reading needs an active subscription. Ask a grown-up to subscribe on Me.',
       detailLabel: null,
-      actionLabel: 'View on Me',
+      actionLabel: 'Subscribe',
     };
   }
   return { kind: 'hidden' };

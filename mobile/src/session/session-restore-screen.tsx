@@ -10,6 +10,7 @@ import { listOfflineManifests } from '@/features/offline/lib/offline-manifest-st
 import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
 import { BottomSheet } from '@/ui/layout/bottom-sheet';
+import { SheetHeader } from '@/ui/layout/sheet-header';
 import { Button } from '@/ui/primitives/button';
 
 /**
@@ -96,10 +97,11 @@ export function SessionRestoreScreen(): JSX.Element {
       >
         {purgeCopy !== null ? (
           <View style={styles.sheetBody}>
-            <View style={styles.sheetIcon} accessibilityElementsHidden>
-              <Text style={styles.iconMark}>!</Text>
-            </View>
-            <Text style={styles.sheetTitle}>{purgeCopy.title}</Text>
+            <SheetHeader
+              title={purgeCopy.title}
+              tone="warning"
+              icon={<Text style={styles.iconMark}>!</Text>}
+            />
             <Text style={styles.sheetMessage}>{purgeCopy.message}</Text>
             <Button
               label={purgeCopy.confirmLabel}
@@ -167,21 +169,6 @@ const styles = StyleSheet.create({
   sheetBody: {
     gap: theme.spacing.sm,
     paddingTop: theme.spacing.xs,
-  },
-  sheetIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: theme.radii.full,
-    backgroundColor: theme.colors.warningBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetTitle: {
-    ...theme.typography.title,
-    fontSize: theme.typography.scale.xl,
-    fontStyle: 'italic',
-    fontWeight: theme.typography.weights.regular,
-    color: theme.colors.textPrimary,
   },
   sheetMessage: {
     ...theme.typography.body,

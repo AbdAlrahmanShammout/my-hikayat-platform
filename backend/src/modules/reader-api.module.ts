@@ -20,6 +20,7 @@ import { PlatformSettingReaderController } from '@/modules/platform-setting/plat
 import { ReadingIntelligenceModule } from '@/modules/reading-intelligence/reading-intelligence.module';
 import { ReadingIntelligenceReaderController } from '@/modules/reading-intelligence/reading-intelligence.reader.controller';
 import { ReadingModule } from '@/modules/reading/reading.module';
+import { ReadingProgressPresentationModule } from '@/modules/reading/reading-progress-presentation.module';
 import { ReadingReaderController } from '@/modules/reading/reading.reader.controller';
 import { ReadingSyncReaderController } from '@/modules/reading/reading-sync.reader.controller';
 import { SearchModule } from '@/modules/search/search.module';
@@ -42,6 +43,7 @@ import { UserReaderController } from '@/modules/user/user.reader.controller';
     PlatformSettingModule,
     ReadingIntelligenceModule,
     ReadingModule,
+    ReadingProgressPresentationModule,
     SearchModule,
     SubscriptionModule,
     UserModule,

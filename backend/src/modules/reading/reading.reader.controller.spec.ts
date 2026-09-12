@@ -6,6 +6,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import { ReadingBookmarkEntity } from '@/modules/reading/entity/reading-bookmark.entity';
 import { ReadingProgressEntity } from '@/modules/reading/entity/reading-progress.entity';
+import { ReadingProgressPresentationService } from '@/modules/reading/reading-progress-presentation.service';
 import { ReadingBookmarkService } from '@/modules/reading/reading-bookmark.service';
 import { ReadingProgressService } from '@/modules/reading/reading-progress.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
@@ -62,6 +63,9 @@ describe('ReadingReaderController', () => {
     saveReadingProgress: jest.Mock;
     getReadingProgressByUserAndBook: jest.Mock;
   };
+  let mockReadingProgressPresentationService: {
+    buildReadingProgressPresentation: jest.Mock;
+  };
   let mockReadingBookmarkService: {
     createReadingBookmark: jest.Mock;
     listReadingBookmarks: jest.Mock;
@@ -72,6 +76,12 @@ describe('ReadingReaderController', () => {
     mockReadingProgressService = {
       saveReadingProgress: jest.fn(),
       getReadingProgressByUserAndBook: jest.fn(),
+    };
+    mockReadingProgressPresentationService = {
+      buildReadingProgressPresentation: jest.fn().mockResolvedValue({
+        contentProgressPercent: 42,
+        locationLabel: 'Harbor',
+      }),
     };
     mockReadingBookmarkService = {
       createReadingBookmark: jest.fn(),
@@ -84,6 +94,10 @@ describe('ReadingReaderController', () => {
       providers: [
         { provide: ReadingBookmarkService, useValue: mockReadingBookmarkService },
         { provide: ReadingProgressService, useValue: mockReadingProgressService },
+        {
+          provide: ReadingProgressPresentationService,
+          useValue: mockReadingProgressPresentationService,
+        },
         JwtAuthGuard,
         RolesGuard,
       ],
@@ -132,9 +146,14 @@ describe('ReadingReaderController', () => {
         userId: 7,
         bookId: 8,
       });
+      expect(
+        mockReadingProgressPresentationService.buildReadingProgressPresentation,
+      ).toHaveBeenCalledWith(expectedProgress);
       expect(actualResponse.id).toBe(3);
       expect(actualResponse.spineIndex).toBe(2);
       expect(actualResponse.scrollOffset).toBe(640);
+      expect(actualResponse.contentProgressPercent).toBe(42);
+      expect(actualResponse.locationLabel).toBe('Harbor');
     });
   });
 

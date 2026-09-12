@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { BaseModelResponseDto } from '@/common/base/base-model.response.dto';
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
+import { ReadingProgressPresentation } from '@/modules/reading/defs/reading-progress-presentation.defs';
 import { ReadingProgressEntity } from '@/modules/reading/entity/reading-progress.entity';
 
 export class ReadingProgressResponse extends BaseModelResponseDto {
@@ -52,7 +53,25 @@ export class ReadingProgressResponse extends BaseModelResponseDto {
   })
   lastSessionAt: Date;
 
-  constructor(entity: ReadingProgressEntity) {
+  @ApiPropertyOptional({
+    description:
+      'Content-based progress percent (0–100). Present on book-detail GET; omitted on list/sync.',
+    example: 42,
+    nullable: true,
+  })
+  contentProgressPercent: number | null;
+
+  @ApiPropertyOptional({
+    description: 'Chapter, page, or spread label for the stored position',
+    example: 'Chapter 3',
+    nullable: true,
+  })
+  locationLabel: string | null;
+
+  constructor(
+    entity: ReadingProgressEntity,
+    presentation: ReadingProgressPresentation | null = null,
+  ) {
     super(entity);
     this.userId = entity.userId;
     this.bookId = entity.bookId;
@@ -62,5 +81,7 @@ export class ReadingProgressResponse extends BaseModelResponseDto {
     this.spreadIndex = entity.spreadIndex;
     this.pageNumber = entity.pageNumber;
     this.lastSessionAt = entity.lastSessionAt;
+    this.contentProgressPercent = presentation?.contentProgressPercent ?? null;
+    this.locationLabel = presentation?.locationLabel ?? null;
   }
 }

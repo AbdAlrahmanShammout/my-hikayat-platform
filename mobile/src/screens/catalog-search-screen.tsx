@@ -447,7 +447,7 @@ function SearchBookRow(input: {
 function SearchResultSkeleton(): JSX.Element {
   return (
     <View style={styles.skeletonRow}>
-      <Skeleton width={52} height={78} radius={theme.radii.sm} />
+      <Skeleton width={44} height={66} radius={theme.radii.sm} />
       <View style={styles.skeletonText}>
         <Skeleton height={16} width="70%" />
         <Skeleton height={14} width="40%" />

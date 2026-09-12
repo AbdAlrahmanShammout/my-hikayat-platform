@@ -5,7 +5,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subscription';
 import { resolveHomeTrialDiscovery } from '@/features/billing/lib/resolve-home-trial-discovery';
 import { theme } from '@/theme/theme';
-import { Button } from '@/ui/primitives/button';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
 /**
@@ -30,29 +29,28 @@ export function HomeTrialDiscoveryCard(): JSX.Element | null {
   if (discovery.kind === 'active') {
     return (
       <View style={styles.activeCard} testID="home-trial-discovery-active">
-        <Text style={styles.activeTitle}>{discovery.title}</Text>
-        <Text style={styles.activeBody}>{discovery.body}</Text>
-        {discovery.remainingLabel !== null ? (
-          <Text style={styles.activeRemaining} testID="home-trial-discovery-remaining">
-            {discovery.remainingLabel}
-          </Text>
-        ) : null}
-        <Button
-          label={discovery.actionLabel}
-          variant="secondary"
-          onPress={() => {
-            router.push('/(app)/subscription' as Href);
-          }}
-          accessibilityLabel={discovery.actionLabel}
-          testID="home-trial-discovery-action"
-        />
+        <Text style={styles.activeMark} accessibilityElementsHidden>
+          ✓
+        </Text>
+        <View style={styles.activeCopy}>
+          <Text style={styles.activeTitle}>{discovery.title}</Text>
+          {discovery.remainingLabel !== null ? (
+            <Text style={styles.activeRemaining} testID="home-trial-discovery-remaining">
+              {discovery.remainingLabel}
+            </Text>
+          ) : (
+            <Text style={styles.activeBody}>{discovery.body}</Text>
+          )}
+        </View>
       </View>
     );
   }
   return (
     <View style={styles.offerCard} testID="home-trial-discovery-offer">
-      <Text style={styles.offerTitle}>{discovery.title}</Text>
-      <Text style={styles.offerBody}>{discovery.body}</Text>
+      <View style={styles.offerCopy}>
+        <Text style={styles.offerTitle}>{discovery.title}</Text>
+        <Text style={styles.offerBody}>{discovery.body}</Text>
+      </View>
       <Pressable
         style={styles.offerButton}
         onPress={() => {
@@ -77,18 +75,26 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.primary,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: theme.spacing.sm,
+  },
+  offerCopy: {
+    flex: 1,
+    gap: 2,
   },
   offerTitle: {
     ...theme.typography.button,
+    fontSize: theme.typography.scale.base,
     color: theme.colors.textOnBrand,
   },
   offerBody: {
-    ...theme.typography.body,
+    ...theme.typography.label,
     color: theme.colors.textOnBrand,
+    opacity: 0.82,
   },
   offerButton: {
-    minHeight: theme.controlMinHeight,
+    minHeight: 36,
     borderRadius: theme.radii.full,
     backgroundColor: theme.colors.surface,
     alignItems: 'center',
@@ -96,8 +102,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
   },
   offerButtonLabel: {
-    ...theme.typography.button,
-    fontSize: theme.typography.scale.lg,
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
     color: theme.colors.primary,
   },
   activeCard: {
@@ -107,15 +113,26 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.success,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
-    gap: theme.spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  activeMark: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.success,
+  },
+  activeCopy: {
+    flex: 1,
+    gap: 2,
   },
   activeTitle: {
-    ...theme.typography.button,
-    fontSize: theme.typography.scale.lg,
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
     color: theme.colors.success,
   },
   activeBody: {
-    ...theme.typography.body,
+    ...theme.typography.label,
     color: theme.colors.textSecondary,
   },
   activeRemaining: {

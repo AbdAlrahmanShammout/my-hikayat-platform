@@ -88,9 +88,19 @@ export function decreaseMargin(settings: ReflowableReaderSettings): ReflowableRe
  * Toggles reflowable light/dark theme.
  */
 export function toggleReaderTheme(settings: ReflowableReaderSettings): ReflowableReaderSettings {
+  return applyReaderTheme(settings, settings.theme === 'light' ? 'dark' : 'light');
+}
+
+/**
+ * Sets the reflowable reading theme.
+ */
+export function applyReaderTheme(
+  settings: ReflowableReaderSettings,
+  nextTheme: ReflowableReaderTheme,
+): ReflowableReaderSettings {
   return {
     ...settings,
-    theme: settings.theme === 'light' ? 'dark' : 'light',
+    theme: nextTheme,
   };
 }
 

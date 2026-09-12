@@ -25,6 +25,7 @@ import { LoggedInUser } from '@/common/decorators/requests/logged-in-user.decora
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { ReadingBookmarkPage } from '@/modules/reading/defs/reading-bookmark-repository.defs';
+import { ReadingProgressPresentation } from '@/modules/reading/defs/reading-progress-presentation.defs';
 import { CreateReadingBookmarkRequestDto } from '@/modules/reading/dto/request/create-reading-bookmark-request.dto';
 import { ListReadingBookmarksRequestDto } from '@/modules/reading/dto/request/list-reading-bookmarks-request.dto';
 import { SaveReadingProgressRequestDto } from '@/modules/reading/dto/request/save-reading-progress-request.dto';
@@ -34,6 +35,7 @@ import { ReadingProgressResponse } from '@/modules/reading/dto/response/model/re
 import { ReadingBookmarkEntity } from '@/modules/reading/entity/reading-bookmark.entity';
 import { ReadingProgressEntity } from '@/modules/reading/entity/reading-progress.entity';
 import { ReadingBookmarkService } from '@/modules/reading/reading-bookmark.service';
+import { ReadingProgressPresentationService } from '@/modules/reading/reading-progress-presentation.service';
 import { ReadingProgressService } from '@/modules/reading/reading-progress.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 
@@ -45,6 +47,7 @@ export class ReadingReaderController {
   constructor(
     private readonly readingBookmarkService: ReadingBookmarkService,
     private readonly readingProgressService: ReadingProgressService,
+    private readonly readingProgressPresentationService: ReadingProgressPresentationService,
   ) {}
 
   @Put(':id/progress')
@@ -82,7 +85,9 @@ export class ReadingReaderController {
         userId: currentUser.id,
         bookId: id,
       });
-    return new ReadingProgressResponse(entity);
+    const presentation: ReadingProgressPresentation =
+      await this.readingProgressPresentationService.buildReadingProgressPresentation(entity);
+    return new ReadingProgressResponse(entity, presentation);
   }
 
   @Post(':id/bookmarks')

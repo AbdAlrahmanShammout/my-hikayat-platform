@@ -54,7 +54,7 @@ function AdminSidebar({ onNavigate }: { readonly onNavigate: () => void }): JSX.
   return (
     <div className="flex h-full flex-col">
       <div className="px-6 py-6">
-        <p className="text-lg font-semibold tracking-tight">Noory</p>
+        <p className="font-display text-lg italic tracking-tight">Noory</p>
         <p className="text-xs text-sidebar-muted">Admin dashboard</p>
       </div>
       <Separator className="bg-sidebar-border" />

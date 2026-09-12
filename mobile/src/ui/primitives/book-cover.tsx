@@ -12,7 +12,7 @@ import {
 import { theme } from '@/theme/theme';
 import { toViewShadow } from '@/ui/lib/to-view-shadow';
 
-export type BookCoverSize = 'sm' | 'md' | 'compact' | 'lg' | 'detail' | 'grid';
+export type BookCoverSize = 'sm' | 'row' | 'md' | 'compact' | 'lg' | 'detail' | 'grid';
 
 type BookCoverProps = {
   readonly title: string;
@@ -29,6 +29,7 @@ type BookCoverProps = {
 
 const COVER_SIZE = {
   sm: { width: 52, height: 78 },
+  row: { width: 44, height: 66 },
   md: { width: 80, height: 120 },
   compact: { width: 100, height: 150 },
   lg: { width: 120, height: 180 },

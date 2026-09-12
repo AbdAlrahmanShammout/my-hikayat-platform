@@ -17,8 +17,8 @@ import { OfflineLeaseExpiryLabel } from '@/features/offline/components/offline-l
 import { RemoveOfflineDownloadSheet } from '@/features/offline/components/remove-offline-download-sheet';
 import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book-actions';
 import { useOfflinePackage } from '@/features/offline/hooks/use-offline-packages';
-import { formatContinueReadingLabel } from '@/features/reader/lib/continue-reading';
 import { findReadingProgress } from '@/features/reader/lib/find-reading-progress';
+import { resolveBookDetailProgressPresentation } from '@/features/reader/lib/resolve-book-detail-progress-presentation';
 import { useConnectivity } from '@/native/connectivity/use-connectivity';
 import { theme } from '@/theme/theme';
 import { ErrorState } from '@/ui/feedback/error-state';
@@ -81,6 +81,10 @@ export function BookDetailScreen(): JSX.Element {
   const layoutLabel: string = resolveLayoutLabel(book.layoutType);
   const coverPresentation = resolveCatalogCoverPresentation(book.cover);
   const hasProgress: boolean = progressQuery.data !== null && progressQuery.data !== undefined;
+  const progressPresentation =
+    progressQuery.data !== undefined && progressQuery.data !== null
+      ? resolveBookDetailProgressPresentation(progressQuery.data)
+      : null;
   const entryCta = resolveReaderEntryCta({
     readingAccessState: billing.subscription?.readingAccessState,
     trialEligible: billing.subscription?.trialEligible,
@@ -220,11 +224,22 @@ export function BookDetailScreen(): JSX.Element {
             ? 'You will pick up where you left off.'
             : 'Reading opens in the layout-correct engine for this book.'}
         </Text>
-        {hasProgress && progressQuery.data !== undefined && progressQuery.data !== null ? (
+        {progressPresentation !== null ? (
           <View style={styles.progressBlock} testID="book-detail-progress">
-            <Text style={styles.progressLabel}>{formatContinueReadingLabel(progressQuery.data)}</Text>
-            <View style={styles.progressTrack} accessibilityLabel={formatContinueReadingLabel(progressQuery.data)}>
-              <View style={styles.progressFill} />
+            <View style={styles.progressMeta}>
+              <Text style={styles.progressLabel}>{progressPresentation.label}</Text>
+              <Text style={styles.progressPercent} testID="book-detail-progress-percent">
+                {`${progressPresentation.percent}%`}
+              </Text>
+            </View>
+            <View
+              style={styles.progressTrack}
+              accessibilityLabel={`${progressPresentation.label} ${progressPresentation.percent} percent`}
+            >
+              <View
+                style={[styles.progressFill, { width: `${progressPresentation.percent}%` }]}
+                testID="book-detail-progress-fill"
+              />
             </View>
           </View>
         ) : null}
@@ -439,24 +454,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   progressBlock: {
+    marginTop: theme.spacing.md,
     gap: theme.spacing.xs,
+  },
+  progressMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
   progressLabel: {
     ...theme.typography.label,
-    fontWeight: theme.typography.weights.semibold,
-    color: theme.colors.textSecondary,
-    textAlign: 'center',
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textMuted,
+    flex: 1,
+  },
+  progressPercent: {
+    ...theme.typography.label,
+    color: theme.colors.textMuted,
   },
   progressTrack: {
-    height: 8,
-    borderRadius: theme.radii.full,
-    backgroundColor: theme.colors.canvasWarm,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.colors.borderSubtle,
     overflow: 'hidden',
   },
   progressFill: {
-    width: 28,
     height: '100%',
-    borderRadius: theme.radii.full,
+    borderRadius: 2,
     backgroundColor: theme.colors.primary,
   },
   divider: {

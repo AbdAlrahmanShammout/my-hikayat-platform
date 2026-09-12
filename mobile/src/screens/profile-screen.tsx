@@ -20,6 +20,7 @@ import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
 import { ErrorState } from '@/ui/feedback/error-state';
 import { BottomSheet } from '@/ui/layout/bottom-sheet';
+import { SheetHeader } from '@/ui/layout/sheet-header';
 import { Button } from '@/ui/primitives/button';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
@@ -208,10 +209,11 @@ export function ProfileScreen(): JSX.Element {
       >
         {purgeCopy !== null ? (
           <View style={styles.sheetBody}>
-            <View style={styles.sheetIcon} accessibilityElementsHidden>
-              <Text style={styles.sheetIconMark}>!</Text>
-            </View>
-            <Text style={styles.sheetTitle}>{purgeCopy.title}</Text>
+            <SheetHeader
+              title={purgeCopy.title}
+              tone="danger"
+              icon={<Text style={styles.sheetIconMark}>!</Text>}
+            />
             <Text style={styles.sheetMessage}>{purgeCopy.message}</Text>
             <Button
               label={purgeCopy.confirmLabel}
@@ -369,24 +371,9 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     paddingTop: theme.spacing.xs,
   },
-  sheetIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: theme.radii.full,
-    backgroundColor: theme.colors.errorBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   sheetIconMark: {
     ...theme.typography.title,
     color: theme.colors.error,
-  },
-  sheetTitle: {
-    ...theme.typography.title,
-    fontSize: theme.typography.scale.xl,
-    fontStyle: 'italic',
-    fontWeight: theme.typography.weights.regular,
-    color: theme.colors.textPrimary,
   },
   sheetMessage: {
     ...theme.typography.body,

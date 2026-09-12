@@ -41,7 +41,7 @@ export function CollectionsScreen(): JSX.Element {
         <Text style={styles.title} accessibilityRole="header" testID="collections-title">
           Collections
         </Text>
-        <Text style={styles.body}>Editorial shelves picked for readers.</Text>
+        <Text style={styles.body}>Curated sets of stories to explore</Text>
       </View>
       <View style={styles.results} testID="collections-list">
         {collectionsQuery.isLoading ? (
@@ -91,7 +91,7 @@ export function CollectionsScreen(): JSX.Element {
             ListEmptyComponent={
               <EmptyState
                 title="No collections yet. Check back after editors add shelves."
-                description="Editorial shelves will appear here when they are published."
+                description="Curated sets of stories will appear here when they are published."
                 testID="collections-empty"
               />
             }
@@ -129,8 +129,8 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
   },
   body: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
+    ...theme.typography.label,
+    color: theme.colors.textMuted,
   },
   results: {
     flex: 1,

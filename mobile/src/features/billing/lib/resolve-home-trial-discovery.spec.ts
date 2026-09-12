@@ -48,7 +48,7 @@ describe('resolveHomeTrialDiscovery', () => {
     );
     expect(actual.kind).toBe('offer');
     if (actual.kind === 'offer') {
-      expect(actual.actionLabel).toBe('Start Free Trial');
+      expect(actual.actionLabel).toBe('Try free');
     }
   });
 
@@ -65,10 +65,10 @@ describe('resolveHomeTrialDiscovery', () => {
     );
     expect(actual).toEqual({
       kind: 'active',
-      title: 'You’re on a free trial',
-      body: 'Full books are open while the trial lasts. Ask a grown-up to manage billing on Me.',
+      title: 'Free trial active',
+      body: 'Full books are open while the trial lasts.',
       remainingLabel: '7 days remaining',
-      actionLabel: 'View on Me',
+      actionLabel: 'Subscribe',
     });
   });
 

@@ -11,6 +11,7 @@ import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subsc
 import { theme } from '@/theme/theme';
 import { FormError } from '@/ui/forms/form-error';
 import { BottomSheet } from '@/ui/layout/bottom-sheet';
+import { SheetHeader } from '@/ui/layout/sheet-header';
 import { toViewShadow } from '@/ui/lib/to-view-shadow';
 import { Button } from '@/ui/primitives/button';
 import { Pill, type PillVariant } from '@/ui/primitives/pill';
@@ -209,7 +210,7 @@ export function SubscriptionStatusCard(): JSX.Element {
         accessibilityLabel="Cancel subscription"
       >
         <View style={styles.sheetBody}>
-          <Text style={styles.sheetTitle}>Cancel subscription?</Text>
+          <SheetHeader title="Cancel subscription?" />
           <Text style={styles.sheetMessage} testID="billing-cancel-sheet-copy">
             {display.periodLabel === null
               ? 'Cancel your subscription? You can keep reading until the paid period ends. This is not a refund.'
@@ -255,7 +256,7 @@ export function SubscriptionStatusCard(): JSX.Element {
         accessibilityLabel="Request refund"
       >
         <View style={styles.sheetBody}>
-          <Text style={styles.sheetTitle}>Request a refund?</Text>
+          <SheetHeader title="Request a refund?" />
           <Text style={styles.sheetMessage}>
             Request a refund? The server checks the 7-day window.
           </Text>
@@ -479,13 +480,6 @@ const styles = StyleSheet.create({
   sheetBody: {
     gap: theme.spacing.sm,
     paddingTop: theme.spacing.xs,
-  },
-  sheetTitle: {
-    ...theme.typography.title,
-    fontSize: theme.typography.scale.xl,
-    fontStyle: 'italic',
-    fontWeight: theme.typography.weights.regular,
-    color: theme.colors.textPrimary,
   },
   sheetMessage: {
     ...theme.typography.body,

@@ -41,6 +41,7 @@ describe('BookCard', () => {
       <BookCard
         title="Sang Kancil"
         authorName="Zaleha Ahmad"
+        publisherName="Kota Press"
         variant="row"
         onPress={() => undefined}
         testID="search-row"
@@ -48,6 +49,7 @@ describe('BookCard', () => {
     );
     expect(findHostByTestId(tree, 'search-row')).toBeTruthy();
     expect(tree.root.findByProps({ children: 'Zaleha Ahmad' })).toBeTruthy();
+    expect(tree.root.findByProps({ children: 'Kota Press' })).toBeTruthy();
     expect(() => tree.root.findByProps({ children: '▶' })).toThrow();
   });
 });

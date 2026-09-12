@@ -74,16 +74,16 @@ export function BookCard({
         progressFraction={progressFraction}
       />
       <View style={isContinue || isRow ? styles.continueText : styles.stackText}>
-        <Text style={styles.title} numberOfLines={2}>
+        <Text style={isRow ? styles.rowTitle : styles.title} numberOfLines={2}>
           {title}
         </Text>
         {authorName !== null && authorName !== undefined && authorName !== '' ? (
-          <Text style={styles.author} numberOfLines={1}>
+          <Text style={isRow ? styles.rowAuthor : styles.author} numberOfLines={1}>
             {authorName}
           </Text>
         ) : null}
         {isRow && publisherName !== null && publisherName !== undefined && publisherName !== '' ? (
-          <Text style={styles.author} numberOfLines={1}>
+          <Text style={styles.rowPublisher} numberOfLines={1}>
             {publisherName}
           </Text>
         ) : null}
@@ -108,7 +108,10 @@ export function BookCard({
 }
 
 function resolveCoverSize(variant: BookCardVariant): BookCoverSize {
-  if (variant === 'continue' || variant === 'row') {
+  if (variant === 'row') {
+    return 'row';
+  }
+  if (variant === 'continue') {
     return 'sm';
   }
   if (variant === 'compact') {
@@ -130,9 +133,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.sm,
-    paddingVertical: theme.spacing.sm,
+    paddingVertical: 12,
+    paddingHorizontal: theme.spacing.lg,
     alignSelf: 'stretch',
     minHeight: 44,
+    marginHorizontal: -theme.spacing.lg,
   },
   continue: {
     flexDirection: 'row',
@@ -159,9 +164,26 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.textPrimary,
   },
+  rowTitle: {
+    fontFamily: theme.typography.families.display,
+    fontSize: theme.typography.scale.base,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+    lineHeight: 18,
+  },
   author: {
     ...theme.typography.label,
     color: theme.colors.textMuted,
+  },
+  rowAuthor: {
+    ...theme.typography.label,
+    fontSize: theme.typography.scale.sm,
+    color: theme.colors.textMuted,
+  },
+  rowPublisher: {
+    ...theme.typography.label,
+    fontSize: theme.typography.scale.xs,
+    color: theme.colors.textFaint,
   },
   progressLabel: {
     ...theme.typography.label,
