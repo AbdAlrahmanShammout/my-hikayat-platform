@@ -17,6 +17,7 @@ describe('UserResponse', () => {
     const actualResponse = new UserResponse(inputEntity);
     expect(actualResponse.id).toBe(1);
     expect(actualResponse.email).toBe('reader@example.com');
+    expect(actualResponse.displayName).toBeNull();
     expect(actualResponse.role).toBe(UserRole.READER);
     expect(actualResponse.isPublisher).toBe(false);
     expect(actualResponse).not.toHaveProperty('passwordHash');

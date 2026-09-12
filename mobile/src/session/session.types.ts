@@ -8,6 +8,7 @@ export type User = {
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly email: string;
+  readonly displayName: string | null;
   readonly role: UserRole;
   readonly isPublisher: boolean;
 };
@@ -19,7 +20,11 @@ export type SessionValue = {
   readonly user: User | null;
   readonly errorMessage: string | null;
   readonly signIn: (input: { readonly email: string; readonly password: string }) => Promise<void>;
-  readonly signUp: (input: { readonly email: string; readonly password: string }) => Promise<void>;
+  readonly signUp: (input: {
+    readonly email: string;
+    readonly password: string;
+    readonly displayName: string;
+  }) => Promise<void>;
   readonly signOut: () => Promise<void>;
   readonly retryRestore: () => Promise<void>;
   readonly abandonRestore: () => Promise<void>;

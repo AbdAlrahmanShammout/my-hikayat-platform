@@ -17,6 +17,7 @@ model User {
   id                       Int                       @id @default(autoincrement())
   email                    String                    @unique
   passwordHash             String
+  displayName              String?
   role                     UserRole                  @default(reader)
   isPublisher              Boolean                   @default(false)
   createdAt                DateTime                  @default(now())
@@ -33,6 +34,7 @@ model User {
   auditLogs                AuditLog[]
   adminInvitationsSent     AdminInvitation[]         @relation("AdminInvitationsSent")
   authRefreshTokens        AuthRefreshToken[]
+  offlineDownloads         OfflineDownload[]
 }
 
 model AuthRefreshToken {
@@ -137,6 +139,7 @@ model Book {
   collectionBooks            CollectionBook[]
   bookEngagements          BookEngagement[]
   bookRevenues             BookRevenue[]
+  offlineDownloads           OfflineDownload[]
 
   @@index([publishingStatus])
   @@index([processingStatus])
@@ -402,14 +405,42 @@ model ReadingChapterEngagement {
 }
 
 model Collection {
-  id        Int              @id @default(autoincrement())
-  title     String
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  deletedAt DateTime?
-  items     CollectionBook[]
+  id          Int              @id @default(autoincrement())
+  title       String
+  description String?          @db.Text
+  accentColor String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  deletedAt   DateTime?
+  items       CollectionBook[]
 
   @@index([deletedAt])
+}
+
+model PlatformSetting {
+  id        Int       @id @default(autoincrement())
+  key       String    @unique
+  value     String?   @db.Text
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([deletedAt])
+}
+
+model OfflineDownload {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  bookId    Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book      Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([userId, deletedAt])
+  @@index([bookId])
 }
 
 model CollectionBook {

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState, type JSX } from 'react';
+import { useEffect, useState, type JSX } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/api-error';
 import type { CatalogBook } from '@/features/catalog/api/get-catalog-book';
+import { useCatalogBooks } from '@/features/catalog/hooks/use-catalog-books';
+import { useReaderCategories } from '@/features/catalog/hooks/use-reader-categories';
 import {
   flattenCatalogBookPages,
   formatCatalogResultCountLabel,
@@ -22,6 +24,11 @@ import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-
 import type { SearchCatalogField } from '@/features/search/api/search-catalog-books';
 import { useSearchCatalogBooks } from '@/features/search/hooks/use-search-catalog-books';
 import { buildSearchCatalogQuery } from '@/features/search/lib/build-search-catalog-query';
+import {
+  readSearchRecents,
+  rememberSearchRecent,
+  type SearchRecent,
+} from '@/features/search/lib/search-recents-storage';
 import { theme } from '@/theme/theme';
 import { EmptyState } from '@/ui/feedback/empty-state';
 import { ErrorState } from '@/ui/feedback/error-state';
@@ -45,6 +52,10 @@ export function CatalogSearchScreen(): JSX.Element {
   const [draftField, setDraftField] = useState<SearchCatalogField>('title');
   const [submittedQuery, setSubmittedQuery] = useState<string>('');
   const [submittedField, setSubmittedField] = useState<SearchCatalogField>('title');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [recents, setRecents] = useState<SearchRecent[]>([]);
+  const hasSubmitted: boolean = submittedQuery.trim().length > 0;
+  const categoriesQuery = useReaderCategories();
   const searchInput = buildSearchCatalogQuery({
     field: submittedField,
     query: submittedQuery,
@@ -53,11 +64,23 @@ export function CatalogSearchScreen(): JSX.Element {
     ...(searchInput ?? {}),
     enabled: searchInput !== null,
   });
+  const categoryBrowseQuery = useCatalogBooks({
+    categoryId: selectedCategoryId ?? undefined,
+    enabled: selectedCategoryId !== null && !hasSubmitted,
+  });
+
+  useEffect(() => {
+    void readSearchRecents().then(setRecents);
+  }, []);
 
   function executeSearch(): void {
     const nextQuery: string = draftQuery.trim().replace(/\s+/g, ' ');
     setSubmittedQuery(nextQuery);
     setSubmittedField(draftField);
+    setSelectedCategoryId(null);
+    if (nextQuery.length > 0) {
+      void rememberSearchRecent({ query: nextQuery, field: draftField }).then(setRecents);
+    }
   }
 
   function clearSearch(): void {
@@ -65,9 +88,9 @@ export function CatalogSearchScreen(): JSX.Element {
     setSubmittedQuery('');
     setDraftField('title');
     setSubmittedField('title');
+    setSelectedCategoryId(null);
   }
 
-  const hasSubmitted: boolean = submittedQuery.trim().length > 0;
   const books = flattenCatalogBookPages(searchQuery.data?.pages ?? []);
   const total: number = searchQuery.data?.pages[0]?.total ?? 0;
   const hasNextPage: boolean = searchQuery.hasNextPage === true;
@@ -76,6 +99,10 @@ export function CatalogSearchScreen(): JSX.Element {
     total,
     hasNextPage,
   });
+  const categoryBooks = flattenCatalogBookPages(categoryBrowseQuery.data?.pages ?? []);
+  const categoryTotal: number = categoryBrowseQuery.data?.pages[0]?.total ?? 0;
+  const categoryHasNextPage: boolean = categoryBrowseQuery.hasNextPage === true;
+  const isBrowsingCategory: boolean = !hasSubmitted && selectedCategoryId !== null;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']} testID="search-screen">
@@ -153,10 +180,100 @@ export function CatalogSearchScreen(): JSX.Element {
           </View>
         </View>
         <View style={styles.results} testID="search-results">
-          {!hasSubmitted ? (
-            <Text style={styles.hint} testID="search-idle-hint">
-              Type something, then tap Search.
-            </Text>
+          {!hasSubmitted && selectedCategoryId === null ? (
+            <SearchIdleCategories
+              categories={categoriesQuery.data?.categories ?? []}
+              recents={recents}
+              isLoading={categoriesQuery.isLoading}
+              isError={categoriesQuery.isError}
+              onRetry={() => {
+                void categoriesQuery.refetch();
+              }}
+              onSelect={(categoryId) => {
+                setSubmittedQuery('');
+                setSelectedCategoryId(categoryId);
+              }}
+              onSelectRecent={(recent) => {
+                setDraftQuery(recent.query);
+                setDraftField(recent.field);
+                setSubmittedQuery(recent.query);
+                setSubmittedField(recent.field);
+                setSelectedCategoryId(null);
+              }}
+            />
+          ) : null}
+          {isBrowsingCategory && categoryBrowseQuery.isLoading ? (
+            <View style={styles.loadingBlock} accessibilityLabel="Loading category books">
+              <SearchResultSkeleton />
+              <SearchResultSkeleton />
+            </View>
+          ) : null}
+          {isBrowsingCategory && categoryBrowseQuery.isError && categoryBrowseQuery.data === undefined ? (
+            <ErrorState
+              description={toUserFacingMessage(categoryBrowseQuery.error)}
+              onRetry={() => {
+                void categoryBrowseQuery.refetch();
+              }}
+              retryLabel="Try again"
+              retryTestID="search-category-retry-button"
+              testID="search-category-error"
+            />
+          ) : null}
+          {isBrowsingCategory && (categoryBrowseQuery.isSuccess || categoryBrowseQuery.data !== undefined) ? (
+            <FlatList
+              data={categoryBooks}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={({ item }) => (
+                <SearchBookRow
+                  book={item}
+                  onPress={() => {
+                    router.push(`/(app)/books/${item.id}`);
+                  }}
+                />
+              )}
+              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              contentContainerStyle={
+                categoryBooks.length === 0 ? styles.emptyContent : styles.listContent
+              }
+              onEndReachedThreshold={0.4}
+              onEndReached={() => {
+                if (
+                  !categoryHasNextPage ||
+                  categoryBrowseQuery.isFetchingNextPage ||
+                  categoryBrowseQuery.isFetchNextPageError
+                ) {
+                  return;
+                }
+                void categoryBrowseQuery.fetchNextPage();
+              }}
+              ListHeaderComponent={
+                <Text style={styles.count} testID="search-category-result-count">
+                  {formatCatalogResultCountLabel({
+                    loadedCount: categoryBooks.length,
+                    total: categoryTotal,
+                    hasNextPage: categoryHasNextPage,
+                  })}
+                </Text>
+              }
+              ListEmptyComponent={
+                <EmptyState
+                  title="No books in this category yet."
+                  description="Try another category or search by title."
+                  testID="search-category-empty"
+                />
+              }
+              ListFooterComponent={
+                <SearchListFooter
+                  isFetchingNextPage={categoryBrowseQuery.isFetchingNextPage}
+                  isFetchNextPageError={categoryBrowseQuery.isFetchNextPageError}
+                  hasNextPage={categoryHasNextPage}
+                  loadedCount={categoryBooks.length}
+                  onRetry={() => {
+                    void categoryBrowseQuery.fetchNextPage();
+                  }}
+                />
+              }
+            />
           ) : null}
           {hasSubmitted && searchQuery.isLoading ? (
             <View style={styles.loadingBlock} accessibilityLabel="Loading search results">
@@ -237,6 +354,76 @@ export function CatalogSearchScreen(): JSX.Element {
   );
 }
 
+function SearchIdleCategories(input: {
+  readonly categories: ReadonlyArray<{ readonly id: number; readonly name: string }>;
+  readonly recents: readonly SearchRecent[];
+  readonly isLoading: boolean;
+  readonly isError: boolean;
+  readonly onRetry: () => void;
+  readonly onSelect: (categoryId: number) => void;
+  readonly onSelectRecent: (recent: SearchRecent) => void;
+}): JSX.Element {
+  return (
+    <View testID="search-idle-hint">
+      <Text style={styles.hint}>Type something, then tap Search. Or browse by category.</Text>
+      {input.recents.length > 0 ? (
+        <View testID="search-recents">
+          <Text style={styles.label}>Recent searches</Text>
+          <View style={styles.row}>
+            {input.recents.map((recent) => (
+              <Pressable
+                key={`${recent.field}-${recent.query}`}
+                style={styles.chip}
+                onPress={() => {
+                  input.onSelectRecent(recent);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Search ${recent.field} ${recent.query}`}
+                testID={`search-recent-${recent.field}-${recent.query}`}
+              >
+                <Text style={styles.chipLabel}>{recent.query}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      ) : null}
+      <Text style={styles.label}>Browse by category</Text>
+      {input.isLoading ? (
+        <View style={styles.row}>
+          <Skeleton height={44} width={88} radius={theme.radii.full} />
+          <Skeleton height={44} width={110} radius={theme.radii.full} />
+        </View>
+      ) : null}
+      {input.isError ? (
+        <ErrorState
+          description="Could not load categories."
+          onRetry={input.onRetry}
+          retryLabel="Try again"
+          retryTestID="search-categories-retry"
+        />
+      ) : null}
+      {!input.isLoading && !input.isError ? (
+        <View style={styles.row} testID="search-idle-categories">
+          {input.categories.map((category) => (
+            <Pressable
+              key={category.id}
+              style={styles.chip}
+              onPress={() => {
+                input.onSelect(category.id);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Browse ${category.name}`}
+              testID={`search-category-${category.id}`}
+            >
+              <Text style={styles.chipLabel}>{category.name}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 function SearchBookRow(input: {
   readonly book: CatalogBook;
   readonly onPress: () => void;
@@ -247,6 +434,8 @@ function SearchBookRow(input: {
     <BookCard
       title={input.book.title}
       authorName={attribution.authorLine}
+      publisherName={attribution.publisherLine}
+      showChevron
       coverUri={cover.kind === 'image' ? cover.url : null}
       variant="row"
       onPress={input.onPress}

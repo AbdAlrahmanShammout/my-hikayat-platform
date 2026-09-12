@@ -41,7 +41,7 @@ export function HomeTrialDiscoveryCard(): JSX.Element | null {
           label={discovery.actionLabel}
           variant="secondary"
           onPress={() => {
-            router.push('/(app)/(tabs)/profile' as Href);
+            router.push('/(app)/subscription' as Href);
           }}
           accessibilityLabel={discovery.actionLabel}
           testID="home-trial-discovery-action"
@@ -56,7 +56,7 @@ export function HomeTrialDiscoveryCard(): JSX.Element | null {
       <Pressable
         style={styles.offerButton}
         onPress={() => {
-          router.push('/(app)/(tabs)/profile' as Href);
+          router.push('/(app)/subscription' as Href);
         }}
         accessibilityRole="button"
         accessibilityLabel={discovery.actionLabel}

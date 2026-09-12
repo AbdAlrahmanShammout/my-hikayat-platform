@@ -34,7 +34,7 @@ export function RegisterAuthorForm(): JSX.Element {
   const registerMutation = useRegisterAsAuthor();
   const form = useForm<RegisterAuthorFormValues>({
     resolver: zodResolver(registerAuthorFormSchema),
-    defaultValues: { email: '', password: '', confirmPassword: '' },
+    defaultValues: { displayName: '', email: '', password: '', confirmPassword: '' },
   });
   const rootMessage: string | undefined = form.formState.errors.root?.message;
   return (
@@ -56,6 +56,19 @@ export function RegisterAuthorForm(): JSX.Element {
             <AlertDescription>{rootMessage}</AlertDescription>
           </Alert>
         ) : null}
+        <FormField
+          control={form.control}
+          name="displayName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Display name</FormLabel>
+              <FormControl>
+                <Input autoComplete="name" disabled={registerMutation.isPending} {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="email"
@@ -132,6 +145,7 @@ async function submitRegister(
 ): Promise<void> {
   try {
     const session: AuthSession = await mutateAsync({
+      displayName: values.displayName,
       email: values.email,
       password: values.password,
     });
@@ -157,7 +171,7 @@ function applyValidationFieldErrors(
     return;
   }
   for (const item of error.validationErrorObjects) {
-    if (item.property !== 'email' && item.property !== 'password') {
+    if (item.property !== 'email' && item.property !== 'password' && item.property !== 'displayName') {
       continue;
     }
     const firstConstraint: string | undefined = Object.values(item.constraints)[0];

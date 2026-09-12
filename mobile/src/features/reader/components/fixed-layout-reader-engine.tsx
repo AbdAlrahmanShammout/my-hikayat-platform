@@ -28,6 +28,7 @@ import type {
 } from '@/features/reader/lib/parse-fixed-layout-epub';
 import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-reading-progress-best-effort';
 import type { ReadingPositionSnapshot } from '@/features/reader/lib/reading-position';
+import { ReaderBookmarkToggle } from '@/features/reader/components/reader-bookmark-toggle';
 import { ReaderBookmarksPanel } from '@/features/reader/components/reader-bookmarks-panel';
 import { ReaderChromeButton } from '@/features/reader/components/reader-chrome-button';
 import type { ReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
@@ -321,7 +322,18 @@ export function FixedLayoutReaderEngine({
               {spreadTitle}
             </Text>
           </View>
-          <ReaderBookmarksPanel
+          <View style={styles.topActions}>
+            <ReaderBookmarkToggle
+              bookId={book.id}
+              layoutType="fixed_layout"
+              tone="dark"
+              currentPosition={{
+                kind: 'fixed_layout',
+                spreadIndex,
+                pageNumber,
+              }}
+            />
+            <ReaderBookmarksPanel
             bookId={book.id}
             layoutType="fixed_layout"
             tone="dark"
@@ -347,6 +359,7 @@ export function FixedLayoutReaderEngine({
               activeStartedAtRef.current = Date.now();
             }}
           />
+          </View>
         </View>
       ) : (
         <Pressable
@@ -657,6 +670,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.06)',
     gap: theme.spacing.xs,
+  },
+  topActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.scale.xs,
+    zIndex: 1,
   },
   closeHit: {
     minHeight: theme.controlMinHeight,

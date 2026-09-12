@@ -14,6 +14,7 @@ export type UseCatalogBooksInput = {
   readonly categoryId?: number;
   readonly sort?: CatalogSort;
   readonly pageSize?: number;
+  readonly enabled?: boolean;
 };
 
 /**
@@ -25,6 +26,7 @@ export function useCatalogBooks(input: UseCatalogBooksInput = {}) {
     queryKey: queryKeys.catalog.books({
       categoryId: input.categoryId,
       sort: input.sort,
+      pageSize,
     }),
     initialPageParam: 0,
     queryFn: ({ pageParam }) =>
@@ -34,6 +36,7 @@ export function useCatalogBooks(input: UseCatalogBooksInput = {}) {
         categoryId: input.categoryId,
         sort: input.sort,
       }),
+    enabled: input.enabled !== false,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       resolveNextCatalogPageOffset({
         lastPageOffset: lastPageParam,

@@ -106,6 +106,8 @@ describe('CollectionService', () => {
       expect(mockCollectionRepository.create).toHaveBeenCalledWith(
         {
           title: 'Harbor Picks',
+          description: null,
+          accentColor: null,
           books: [{ bookId: 8, displayOrder: 0 }],
         },
         undefined,
@@ -116,7 +118,7 @@ describe('CollectionService', () => {
           action: AuditAction.COLLECTION_CREATED,
           subjectType: AuditSubjectType.COLLECTION,
           subjectId: 3,
-          metadata: { title: 'Harbor Picks', bookIds: [8] },
+          metadata: { title: 'Harbor Picks', description: null, accentColor: null, bookIds: [8] },
         },
         undefined,
       );
@@ -133,7 +135,7 @@ describe('CollectionService', () => {
   });
 
   describe('updateCollection', () => {
-    it('returns the current collection without writing when the title is omitted', async () => {
+    it('returns the current collection without writing when no editorial fields are sent', async () => {
       const expectedCollection = createSampleCollection();
       mockCollectionRepository.findById.mockResolvedValue(expectedCollection);
       const actualCollection = await collectionService.updateCollection({
@@ -156,7 +158,12 @@ describe('CollectionService', () => {
         actorUserId,
       });
       expect(mockCollectionRepository.update).toHaveBeenCalledWith(
-        { id: 3, title: 'Harbor Classics' },
+        {
+          id: 3,
+          title: 'Harbor Classics',
+          description: null,
+          accentColor: null,
+        },
         undefined,
       );
       expect(mockAuditLogService.append).toHaveBeenCalledWith(
@@ -165,7 +172,14 @@ describe('CollectionService', () => {
           action: AuditAction.COLLECTION_UPDATED,
           subjectType: AuditSubjectType.COLLECTION,
           subjectId: 3,
-          metadata: { fromTitle: 'Harbor Picks', toTitle: 'Harbor Classics' },
+          metadata: {
+            fromTitle: 'Harbor Picks',
+            toTitle: 'Harbor Classics',
+            fromDescription: null,
+            toDescription: null,
+            fromAccentColor: null,
+            toAccentColor: null,
+          },
         },
         undefined,
       );

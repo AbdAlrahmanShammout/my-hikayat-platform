@@ -49,6 +49,8 @@ function createManifest(overrides: Partial<OfflineReadingLease> = {}): OfflineBo
     contentType: 'application/epub+zip',
     byteSize: 1024,
     ciphertextFileName: '8-9.enc',
+    coverFileName: null,
+    authorName: null,
     downloadedAt: '2026-08-29T12:00:00.000Z',
     offlineLease: lease,
   };

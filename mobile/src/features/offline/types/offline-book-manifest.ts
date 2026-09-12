@@ -24,6 +24,8 @@ export type OfflineBookManifest = {
   readonly contentType: string | null;
   readonly byteSize: number | null;
   readonly ciphertextFileName: string;
+  readonly coverFileName: string | null;
+  readonly authorName: string | null;
   readonly downloadedAt: string;
   readonly offlineLease: OfflineReadingLease | null;
 };

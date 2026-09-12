@@ -10,6 +10,8 @@ describe('CollectionMapper', () => {
       updatedAt,
       deletedAt: null,
       title: 'Harbor Picks',
+      description: null,
+      accentColor: null,
       items: [
         {
           id: 9,

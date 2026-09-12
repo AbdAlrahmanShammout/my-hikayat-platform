@@ -14,6 +14,7 @@ describe('UserPrismaRepository', () => {
     deletedAt: null,
     email: 'reader@example.com',
     passwordHash: 'hashed-password',
+    displayName: null,
     role: 'reader',
     isPublisher: false,
   };
@@ -50,6 +51,7 @@ describe('UserPrismaRepository', () => {
     const actualEntity = await userPrismaRepository.create({
       email: 'reader@example.com',
       passwordHash: 'hashed-password',
+      displayName: null,
       role: UserRole.READER,
       isPublisher: false,
     });

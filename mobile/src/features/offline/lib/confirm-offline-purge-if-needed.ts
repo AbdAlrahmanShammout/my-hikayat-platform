@@ -9,6 +9,7 @@ export type OfflinePurgeConfirmCopy = {
   readonly message: string;
   readonly confirmLabel: string;
   readonly cancelLabel: string;
+  readonly confirmVariant: 'destructive' | 'primary';
 };
 
 export type OfflinePurgeConfirmResult = 'confirmed' | 'cancelled' | 'skipped';
@@ -33,12 +34,31 @@ export function buildOfflinePurgeConfirmCopy(input: {
 }): OfflinePurgeConfirmCopy {
   const bookWord: string = input.packageCount === 1 ? 'book' : 'books';
   const countLabel: string = String(input.packageCount);
+  if (input.packageCount === 0) {
+    if (input.kind === 'abandon_restore') {
+      return {
+        title: 'Sign in again?',
+        message: 'You can try restoring this session later, or sign in with your email.',
+        confirmLabel: 'Sign in',
+        cancelLabel: 'Cancel',
+        confirmVariant: 'primary',
+      };
+    }
+    return {
+      title: 'Sign out?',
+      message: 'You can sign back in anytime with the same email.',
+      confirmLabel: 'Sign out',
+      cancelLabel: 'Cancel',
+      confirmVariant: 'primary',
+    };
+  }
   if (input.kind === 'abandon_restore') {
     return {
       title: 'Remove downloaded books?',
       message: `Starting over removes ${countLabel} downloaded ${bookWord} from this device. You can download ${input.packageCount === 1 ? 'it' : 'them'} again after you sign in.`,
       confirmLabel: 'Remove and sign in',
       cancelLabel: 'Cancel',
+      confirmVariant: 'destructive',
     };
   }
   return {
@@ -46,6 +66,7 @@ export function buildOfflinePurgeConfirmCopy(input: {
     message: `Signing out removes ${countLabel} downloaded ${bookWord} from this device. You can download ${input.packageCount === 1 ? 'it' : 'them'} again after you sign in.`,
     confirmLabel: 'Sign out and remove',
     cancelLabel: 'Cancel',
+    confirmVariant: 'destructive',
   };
 }
 
@@ -53,12 +74,11 @@ export function buildOfflinePurgeConfirmCopy(input: {
  * Returns true when offline packages exist and a destructive confirmation is required.
  */
 export function shouldRequireOfflinePurgeConfirmation(packageCount: number): boolean {
-  return packageCount > 0;
+  return true;
 }
 
 /**
- * Runs the destructive action immediately when there are no downloads; otherwise asks first.
- * Choice documented for MG-9: no downloads → no confirm dialog.
+ * Always asks first (Q-022). Copy is non-destructive when there are no downloads.
  */
 export async function confirmOfflinePurgeIfNeeded(input: {
   readonly kind: OfflinePurgeConfirmKind;
@@ -90,7 +110,7 @@ export async function confirmOfflinePurgeIfNeeded(input: {
       },
       {
         text: copy.confirmLabel,
-        style: 'destructive',
+        style: copy.confirmVariant === 'destructive' ? 'destructive' : 'default',
         onPress: () => {
           void Promise.resolve(input.onConfirm()).then(() => {
             resolve('confirmed');

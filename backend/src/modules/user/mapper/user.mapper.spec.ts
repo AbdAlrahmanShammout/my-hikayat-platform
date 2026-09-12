@@ -14,12 +14,14 @@ describe('UserMapper', () => {
       deletedAt: null,
       email: 'author@example.com',
       passwordHash: 'hashed-password',
+      displayName: 'Aisha Rahimah',
       role: 'author',
       isPublisher: true,
     };
     const actualEntity = UserMapper.toEntity(inputSchema);
     expect(actualEntity.id).toBe(9);
     expect(actualEntity.email).toBe('author@example.com');
+    expect(actualEntity.displayName).toBe('Aisha Rahimah');
     expect(actualEntity.role).toBe(UserRole.AUTHOR);
     expect(actualEntity.isPublisher).toBe(true);
     expect(actualEntity.passwordHash).toBe('hashed-password');

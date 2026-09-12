@@ -4,11 +4,12 @@ import { Controller, useForm } from 'react-hook-form';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AuthScreenChrome } from '@/features/auth/components/auth-screen-chrome';
+import { RegisterLegalNotice } from '@/features/auth/components/register-legal-notice';
 import { applyAuthFormApiError } from '@/features/auth/lib/apply-auth-form-api-error';
 import {
-  authCredentialsSchema,
-  type AuthCredentials,
-} from '@/features/auth/schemas/auth-credentials-schema';
+  registerCredentialsSchema,
+  type RegisterCredentials,
+} from '@/features/auth/schemas/register-credentials-schema';
 import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
 import { FormError } from '@/ui/forms/form-error';
@@ -30,12 +31,12 @@ export function RegisterForm({ onOpenLogin }: RegisterFormProps): JSX.Element {
     handleSubmit,
     setError,
     formState: { errors },
-  } = useForm<AuthCredentials>({
-    resolver: zodResolver(authCredentialsSchema),
-    defaultValues: { email: '', password: '' },
+  } = useForm<RegisterCredentials>({
+    resolver: zodResolver(registerCredentialsSchema),
+    defaultValues: { displayName: '', email: '', password: '' },
   });
 
-  async function executeSignUp(values: AuthCredentials): Promise<void> {
+  async function executeSignUp(values: RegisterCredentials): Promise<void> {
     clearError();
     setIsSubmitting(true);
     try {
@@ -50,8 +51,28 @@ export function RegisterForm({ onOpenLogin }: RegisterFormProps): JSX.Element {
   return (
     <AuthScreenChrome tagline="Start reading in minutes">
       <Text style={styles.heading}>Create your account</Text>
-      <Text style={styles.body}>Use an email and a password with at least 8 characters.</Text>
+      <Text style={styles.body}>Use your name, an email, and a password with at least 8 characters.</Text>
       {errors.root?.message !== undefined ? <FormError message={errors.root.message} /> : null}
+      <Controller
+        control={control}
+        name="displayName"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <TextField
+            label="Display name"
+            value={value}
+            onChangeText={onChange}
+            onBlur={onBlur}
+            placeholder="The name we should greet you with"
+            autoCapitalize="words"
+            autoCorrect={false}
+            autoComplete="name"
+            isDisabled={isSubmitting}
+            errorMessage={errors.displayName?.message}
+            accessibilityLabel="Display name"
+            testID="auth-register-display-name"
+          />
+        )}
+      />
       <Controller
         control={control}
         name="email"
@@ -99,6 +120,7 @@ export function RegisterForm({ onOpenLogin }: RegisterFormProps): JSX.Element {
         isLoading={isSubmitting}
         accessibilityLabel="Create account"
       />
+      <RegisterLegalNotice />
       <View style={styles.footer}>
         <Text style={styles.footerCopy}>Already have an account? </Text>
         <Pressable

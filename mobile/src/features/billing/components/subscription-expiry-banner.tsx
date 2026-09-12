@@ -41,7 +41,7 @@ export function SubscriptionExpiryBanner(input: {
         <Button
           label={presentation.actionLabel}
           onPress={() => {
-            router.push('/(app)/(tabs)/profile' as Href);
+            router.push('/(app)/subscription' as Href);
           }}
           accessibilityLabel={presentation.actionLabel}
           testID="subscription-expiry-action"

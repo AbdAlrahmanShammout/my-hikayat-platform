@@ -146,6 +146,8 @@ function normalizeManifestEntry(value: unknown): OfflineBookManifest | null {
     contentType: coerceNullableString(record.contentType),
     byteSize: coerceNullablePositiveInt(record.byteSize),
     ciphertextFileName,
+    coverFileName: coerceNullableString(record.coverFileName),
+    authorName: coerceNullableString(record.authorName),
     downloadedAt,
     offlineLease: normalizeOfflineReadingLease(record.offlineLease, bookId, bookAssetId),
   };

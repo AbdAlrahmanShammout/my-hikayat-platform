@@ -11,6 +11,7 @@ export class UserMapper {
       deletedAt: schema.deletedAt,
       email: schema.email,
       passwordHash: schema.passwordHash,
+      displayName: schema.displayName ?? null,
       role: schema.role as UserRole,
       isPublisher: schema.isPublisher,
     });

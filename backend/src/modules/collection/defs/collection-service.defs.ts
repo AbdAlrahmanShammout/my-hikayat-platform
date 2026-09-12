@@ -1,5 +1,7 @@
 export type CreateCollectionServiceInput = {
   readonly title: string;
+  readonly description?: string | null;
+  readonly accentColor?: string | null;
   readonly bookIds?: readonly number[];
   readonly actorUserId: number;
 };
@@ -7,6 +9,8 @@ export type CreateCollectionServiceInput = {
 export type UpdateCollectionServiceInput = {
   readonly id: number;
   readonly title?: string;
+  readonly description?: string | null;
+  readonly accentColor?: string | null;
   readonly actorUserId: number;
 };
 

@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect, type Href } from 'expo-router';
 import { useCallback, useState, type JSX } from 'react';
@@ -5,24 +6,31 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SubscriptionExpiryBanner } from '@/features/billing/components/subscription-expiry-banner';
-import { SubscriptionStatusCard } from '@/features/billing/components/subscription-status-card';
+import { SubscriptionSummaryCard } from '@/features/billing/components/subscription-summary-card';
+import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subscription';
+import { resolveHomeGreeting } from '@/features/home/lib/resolve-home-greeting';
+import { useOfflinePackages } from '@/features/offline/hooks/use-offline-packages';
 import {
   buildOfflinePurgeConfirmCopy,
-  shouldRequireOfflinePurgeConfirmation,
   type OfflinePurgeConfirmCopy,
 } from '@/features/offline/lib/confirm-offline-purge-if-needed';
 import { listOfflineManifests } from '@/features/offline/lib/offline-manifest-storage';
+import { LegalLinkRow } from '@/features/platform-settings/components/legal-link-row';
 import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
+import { ErrorState } from '@/ui/feedback/error-state';
 import { BottomSheet } from '@/ui/layout/bottom-sheet';
 import { Button } from '@/ui/primitives/button';
+import { Skeleton } from '@/ui/primitives/skeleton';
 
 /**
- * Profile tab: identity from /auth/me, expiry awareness, subscription status, settings, sign-out.
+ * Profile tab: identity from /auth/me, expiry awareness, subscription summary, settings, sign-out.
  */
 export function ProfileScreen(): JSX.Element {
   const insets = useSafeAreaInsets();
   const { user, signOut } = useSession();
+  const billing = useReaderSubscription();
+  const offline = useOfflinePackages();
   const [isSigningOut, setIsSigningOut] = useState<boolean>(false);
   const [purgeCopy, setPurgeCopy] = useState<OfflinePurgeConfirmCopy | null>(null);
   const [isScreenFocused, setIsScreenFocused] = useState<boolean>(true);
@@ -47,10 +55,6 @@ export function ProfileScreen(): JSX.Element {
 
   async function handleSignOutPress(): Promise<void> {
     const packages = await listOfflineManifests();
-    if (!shouldRequireOfflinePurgeConfirmation(packages.length)) {
-      await executeSignOut();
-      return;
-    }
     setPurgeCopy(
       buildOfflinePurgeConfirmCopy({
         kind: 'sign_out',
@@ -59,8 +63,32 @@ export function ProfileScreen(): JSX.Element {
     );
   }
 
-  const email: string = user?.email ?? '—';
-  const initial: string = resolveEmailInitial(user?.email);
+  if (user === null) {
+    return (
+      <View style={styles.root} testID="shell-profile-screen">
+        {isScreenFocused ? <StatusBar style="light" /> : null}
+        <View style={[styles.header, { paddingTop: insets.top + theme.spacing.xs }]}>
+          <Text style={styles.title} accessibilityRole="header" testID="shell-profile-title">
+            Me
+          </Text>
+        </View>
+        <View style={styles.loadingBlock} testID="shell-profile-loading">
+          <Skeleton height={56} width={56} radius={theme.radii.full} />
+          <Skeleton height={18} width="60%" />
+          <Skeleton height={120} width="100%" />
+        </View>
+      </View>
+    );
+  }
+
+  const greeting = resolveHomeGreeting({
+    displayName: user.displayName,
+    email: user.email,
+  });
+  const initial: string = resolveIdentityInitial(greeting.name, user.email);
+  const downloadCount: number = offline.packages.length;
+  const appVersion: string =
+    Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '0.0.1';
 
   return (
     <View style={styles.root} testID="shell-profile-screen">
@@ -78,18 +106,31 @@ export function ProfileScreen(): JSX.Element {
             </View>
             <View style={styles.identityText}>
               <Text style={styles.email} testID="shell-profile-email">
-                {email}
+                {greeting.name}
               </Text>
               <Text style={styles.role} testID="shell-profile-role">
-                {user?.role ?? '—'}
+                {user.email}
               </Text>
             </View>
           </View>
-          <View style={styles.paddedSection}>
-            <SubscriptionExpiryBanner placement="me" />
-            <SubscriptionStatusCard />
-          </View>
-          <Text style={styles.sectionLabel}>Account</Text>
+          {billing.isError ? (
+            <View style={styles.paddedSection} testID="shell-profile-billing-error">
+              <ErrorState
+                description={billing.errorMessage ?? 'Could not load subscription.'}
+                onRetry={() => {
+                  void billing.refetch();
+                }}
+                retryLabel="Try again"
+                retryTestID="shell-profile-billing-retry"
+              />
+            </View>
+          ) : (
+            <View style={styles.paddedSection}>
+              <SubscriptionExpiryBanner placement="me" />
+              <SubscriptionSummaryCard />
+            </View>
+          )}
+          <Text style={styles.sectionLabel}>App</Text>
           <View style={styles.group}>
             <Pressable
               style={styles.row}
@@ -104,6 +145,37 @@ export function ProfileScreen(): JSX.Element {
               <Text style={styles.chevron}>›</Text>
             </Pressable>
             <View style={styles.divider} />
+            <Pressable
+              style={styles.row}
+              onPress={() => {
+                router.push('/(app)/(tabs)/library' as Href);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Open My Books"
+              testID="shell-my-books-button"
+            >
+              <Text style={styles.rowLabel}>My Books</Text>
+              <Text style={styles.rowMeta} testID="shell-my-books-count">
+                {offline.isLoading ? '…' : String(downloadCount)}
+              </Text>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+            <Pressable
+              style={styles.row}
+              onPress={() => {
+                router.push('/(app)/about' as Href);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="About My Hikayat"
+              testID="shell-about-button"
+            >
+              <Text style={styles.rowLabel}>About My Hikayat</Text>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+            <LegalLinkRow kind="privacy" testID="shell-privacy-policy-row" />
+          </View>
+          <Text style={styles.sectionLabel}>Account</Text>
+          <View style={styles.group}>
             <Pressable
               style={styles.row}
               onPress={() => {
@@ -122,6 +194,9 @@ export function ProfileScreen(): JSX.Element {
               )}
             </Pressable>
           </View>
+          <Text style={styles.versionFooter} testID="shell-profile-version">
+            {`My Hikayat · version ${appVersion}`}
+          </Text>
         </ScrollView>
       </SafeAreaView>
       <BottomSheet
@@ -143,7 +218,7 @@ export function ProfileScreen(): JSX.Element {
               onPress={() => {
                 void executeSignOut();
               }}
-              variant="destructive"
+              variant={purgeCopy.confirmVariant}
               isLoading={isSigningOut}
             />
             <Button
@@ -161,12 +236,12 @@ export function ProfileScreen(): JSX.Element {
   );
 }
 
-function resolveEmailInitial(email: string | undefined): string {
-  const trimmed: string = email?.trim() ?? '';
-  if (trimmed.length === 0) {
+function resolveIdentityInitial(name: string, email: string): string {
+  const source: string = name.trim().length > 0 ? name : email;
+  if (source.length === 0) {
     return '?';
   }
-  return trimmed.charAt(0).toUpperCase();
+  return source.charAt(0).toUpperCase();
 }
 
 const styles = StyleSheet.create({
@@ -190,6 +265,10 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: theme.spacing.xxxl,
+  },
+  loadingBlock: {
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
   },
   paddedSection: {
     paddingHorizontal: theme.spacing.lg,
@@ -261,6 +340,11 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     flex: 1,
   },
+  rowMeta: {
+    ...theme.typography.label,
+    color: theme.colors.textMuted,
+    marginRight: theme.spacing.xs,
+  },
   chevron: {
     ...theme.typography.title,
     fontSize: theme.typography.scale.xl,
@@ -274,6 +358,12 @@ const styles = StyleSheet.create({
   signOutLabel: {
     ...theme.typography.body,
     color: theme.colors.error,
+  },
+  versionFooter: {
+    ...theme.typography.label,
+    color: theme.colors.textFaint,
+    textAlign: 'center',
+    marginTop: theme.spacing.xl,
   },
   sheetBody: {
     gap: theme.spacing.sm,

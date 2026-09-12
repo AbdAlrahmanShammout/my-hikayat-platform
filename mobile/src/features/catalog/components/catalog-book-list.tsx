@@ -2,8 +2,8 @@ import { useState, type JSX, type ReactNode } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { ApiError } from '@/api/api-error';
-import type { CatalogBook } from '@/features/catalog/api/get-catalog-book';
 import { CatalogBrowseFilters } from '@/features/catalog/components/catalog-browse-filters';
+import { CatalogGridCard } from '@/features/catalog/components/catalog-grid-card';
 import type { CatalogSort } from '@/features/catalog/api/list-catalog-books';
 import { useCatalogBooks } from '@/features/catalog/hooks/use-catalog-books';
 import { useReaderCategories } from '@/features/catalog/hooks/use-reader-categories';
@@ -11,32 +11,34 @@ import {
   flattenCatalogBookPages,
   formatCatalogResultCountLabel,
 } from '@/features/catalog/lib/catalog-pagination';
-import { resolveCatalogBookAttribution } from '@/features/catalog/lib/resolve-catalog-book-attribution';
-import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-catalog-cover-presentation';
 import { theme } from '@/theme/theme';
 import { EmptyState } from '@/ui/feedback/empty-state';
 import { ErrorState } from '@/ui/feedback/error-state';
-import { BookCard } from '@/ui/primitives/book-card';
 import { Button } from '@/ui/primitives/button';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
 type CatalogBookListProps = {
   readonly onOpenBook: (bookId: number) => void;
   readonly header?: ReactNode;
+  readonly variant?: 'browse' | 'newest';
 };
 
 /**
- * Home catalog browse: filters + virtualized book list with infinite paging.
+ * Catalog browse or newest list with virtualized paging.
  */
-export function CatalogBookList({ onOpenBook, header }: CatalogBookListProps): JSX.Element {
+export function CatalogBookList({
+  onOpenBook,
+  header,
+  variant = 'browse',
+}: CatalogBookListProps): JSX.Element {
   const [sort, setSort] = useState<CatalogSort>('newest');
   const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
   const categoriesQuery = useReaderCategories();
   const booksQuery = useCatalogBooks({
-    sort,
-    categoryId,
+    sort: variant === 'newest' ? 'newest' : sort,
+    categoryId: variant === 'newest' ? undefined : categoryId,
   });
-  const catalogHeading: string = sort === 'newest' ? 'New in My Hikayat' : 'Browse Stories';
+  const catalogHeading: string = variant === 'newest' ? 'Newest stories' : 'Browse Stories';
 
   if (booksQuery.isLoading) {
     return (
@@ -88,7 +90,7 @@ export function CatalogBookList({ onOpenBook, header }: CatalogBookListProps): J
       columnWrapperStyle={styles.column}
       renderItem={({ item }) => (
         <View style={styles.gridItem}>
-          <CatalogGridCard book={item} onPress={onOpenBook} />
+      <CatalogGridCard book={item} onPress={onOpenBook} />
         </View>
       )}
       contentContainerStyle={books.length === 0 ? styles.emptyContent : styles.listContent}
@@ -118,14 +120,18 @@ export function CatalogBookList({ onOpenBook, header }: CatalogBookListProps): J
         <View>
           {header}
           <View style={styles.catalogPad}>
-            <Text style={styles.sectionLabel}>{catalogHeading}</Text>
-            <CatalogBrowseFilters
-              sort={sort}
-              categoryId={categoryId}
-              categories={categoriesQuery.data?.categories ?? []}
-              onChangeSort={setSort}
-              onChangeCategoryId={setCategoryId}
-            />
+            {variant === 'browse' ? (
+              <>
+                <Text style={styles.sectionLabel}>{catalogHeading}</Text>
+                <CatalogBrowseFilters
+                  sort={sort}
+                  categoryId={categoryId}
+                  categories={categoriesQuery.data?.categories ?? []}
+                  onChangeSort={setSort}
+                  onChangeCategoryId={setCategoryId}
+                />
+              </>
+            ) : null}
             {countLabel !== '' ? (
               <Text style={styles.count} testID="catalog-result-count">
                 {countLabel}
@@ -145,26 +151,6 @@ export function CatalogBookList({ onOpenBook, header }: CatalogBookListProps): J
           }}
         />
       }
-    />
-  );
-}
-
-function CatalogGridCard(input: {
-  readonly book: CatalogBook;
-  readonly onPress: (bookId: number) => void;
-}): JSX.Element {
-  const attribution = resolveCatalogBookAttribution(input.book);
-  const cover = resolveCatalogCoverPresentation(input.book.cover);
-  return (
-    <BookCard
-      title={input.book.title}
-      authorName={attribution.authorLine}
-      coverUri={cover.kind === 'image' ? cover.url : null}
-      variant="grid"
-      onPress={() => {
-        input.onPress(input.book.id);
-      }}
-      accessibilityLabel={`Open ${input.book.title}`}
     />
   );
 }

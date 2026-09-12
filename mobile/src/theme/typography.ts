@@ -1,17 +1,15 @@
 /**
  * Typography scale for readable kids-friendly UI.
- * Direction B families (Fraunces / Nunito) are recorded but not loaded or
- * applied in this slice. Existing variant sizes stay unchanged.
+ * Direction B: Fraunces (titles) + Nunito (UI). System fonts if load fails.
  */
 export const typography = {
   families: {
-    display: 'System',
-    ui: 'System',
-    reading: 'Georgia',
-  },
-  plannedFamilies: {
-    display: 'Fraunces',
-    ui: 'Nunito',
+    display: 'Fraunces_700Bold_Italic',
+    displayRegular: 'Fraunces_400Regular_Italic',
+    ui: 'Nunito_400Regular',
+    uiSemibold: 'Nunito_600SemiBold',
+    uiBold: 'Nunito_700Bold',
+    uiExtraBold: 'Nunito_800ExtraBold',
     reading: 'Georgia',
   },
   scale: {
@@ -43,28 +41,35 @@ export const typography = {
   titleLg: {
     fontSize: 36,
     fontWeight: '700' as const,
+    fontFamily: 'Fraunces_700Bold_Italic',
   },
   title: {
     fontSize: 32,
     fontWeight: '700' as const,
+    fontFamily: 'Fraunces_700Bold_Italic',
   },
   body: {
     fontSize: 18,
     lineHeight: 26,
+    fontFamily: 'Nunito_400Regular',
   },
   label: {
     fontSize: 14,
+    fontFamily: 'Nunito_600SemiBold',
   },
   button: {
     fontSize: 20,
     fontWeight: '600' as const,
+    fontFamily: 'Nunito_600SemiBold',
   },
   link: {
     fontSize: 18,
     fontWeight: '600' as const,
+    fontFamily: 'Nunito_600SemiBold',
   },
   tab: {
     fontSize: 14,
     fontWeight: '600' as const,
+    fontFamily: 'Nunito_600SemiBold',
   },
 } as const;

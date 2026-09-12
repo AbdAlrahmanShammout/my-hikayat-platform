@@ -9,6 +9,7 @@ import { resolveCatalogBookAttribution } from '@/features/catalog/lib/resolve-ca
 import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-catalog-cover-presentation';
 import { useDiscoveryCollection } from '@/features/collections/hooks/use-discovery-collection';
 import { parseCollectionIdParam } from '@/features/collections/lib/parse-collection-id-param';
+import { resolveCollectionAccentColor } from '@/features/collections/lib/resolve-collection-accent-color';
 import { theme } from '@/theme/theme';
 import { EmptyState } from '@/ui/feedback/empty-state';
 import { ErrorState } from '@/ui/feedback/error-state';
@@ -74,6 +75,8 @@ export function CollectionDetailScreen(): JSX.Element {
       />
     );
   }
+  const accentColor: string | null = resolveCollectionAccentColor(collection.accentColor);
+  const editorialDescription: string | null = coerceOptionalText(collection.description);
   return (
     <SafeAreaView
       style={styles.safe}
@@ -81,11 +84,21 @@ export function CollectionDetailScreen(): JSX.Element {
       testID="collection-detail-screen"
     >
       <BackHeader title="" onPressBack={navigateBackToCollections} backTestID="collection-detail-back-button" />
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          accentColor !== null ? { backgroundColor: accentColor } : null,
+        ]}
+      >
         <Text style={styles.kicker}>Collection</Text>
         <Text style={styles.title} accessibilityRole="header" testID="collection-detail-title">
           {collection.title}
         </Text>
+        {editorialDescription !== null ? (
+          <Text style={styles.body} testID="collection-detail-description">
+            {editorialDescription}
+          </Text>
+        ) : null}
         <Text style={styles.body} testID="collection-detail-book-count">
           {`${collection.books.length} book${collection.books.length === 1 ? '' : 's'}`}
         </Text>
@@ -120,6 +133,14 @@ export function CollectionDetailScreen(): JSX.Element {
       />
     </SafeAreaView>
   );
+}
+
+function coerceOptionalText(value: string | null | undefined): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const trimmed: string = value.trim();
+  return trimmed.length === 0 ? null : trimmed;
 }
 
 function CollectionBookCard(input: {

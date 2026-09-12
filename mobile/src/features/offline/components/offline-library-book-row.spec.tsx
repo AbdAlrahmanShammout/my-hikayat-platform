@@ -24,6 +24,8 @@ const inputManifest: OfflineBookManifest = {
   contentType: null,
   byteSize: null,
   ciphertextFileName: 'book.bin',
+  coverFileName: null,
+  authorName: null,
   downloadedAt: '2026-09-01T00:00:00.000Z',
   offlineLease: {
     version: 1,

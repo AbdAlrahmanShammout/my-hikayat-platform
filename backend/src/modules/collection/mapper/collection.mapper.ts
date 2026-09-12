@@ -10,6 +10,8 @@ export class CollectionMapper {
       updatedAt: schema.updatedAt,
       deletedAt: schema.deletedAt,
       title: schema.title,
+      description: schema.description ?? null,
+      accentColor: schema.accentColor ?? null,
       items: schema.items?.map((item) => CollectionBookMapper.toEntity(item)),
     });
   }

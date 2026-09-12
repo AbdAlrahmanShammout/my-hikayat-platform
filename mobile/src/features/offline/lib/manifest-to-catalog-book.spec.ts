@@ -13,6 +13,8 @@ describe('manifestToCatalogBook', () => {
       contentType: 'application/epub+zip',
       byteSize: 2048,
       ciphertextFileName: '2-4.enc',
+      coverFileName: null,
+      authorName: null,
       downloadedAt: '2026-08-25T12:00:00.000Z',
       offlineLease: null,
     };

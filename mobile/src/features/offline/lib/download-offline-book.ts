@@ -1,6 +1,11 @@
 import type { CatalogBook } from '@/features/catalog/api/get-catalog-book';
 import { getCatalogBook } from '@/features/catalog/api/get-catalog-book';
+import {
+  registerOfflineDownload,
+  releaseOfflineDownload,
+} from '@/features/offline/api/offline-download-slot';
 import { buildOfflineCiphertextFileName } from '@/features/offline/lib/build-offline-ciphertext-file-name';
+import { cacheOfflineBookCover } from '@/features/offline/lib/cache-offline-book-cover';
 import { upsertOfflineManifest } from '@/features/offline/lib/offline-manifest-storage';
 import type { OfflineBookManifest } from '@/features/offline/types/offline-book-manifest';
 import { createBookAssetContentKey } from '@/features/reader/api/create-content-key';
@@ -47,6 +52,28 @@ export async function downloadOfflineBook(
   if (!isBookLayoutType(book.layoutType)) {
     throw new Error('This book is not ready to download yet.');
   }
+  await registerOfflineDownload(bookId);
+  try {
+    return await downloadOfflineBookAfterSlot({
+      book,
+      bookId,
+      onProgress: input.onProgress,
+    });
+  } catch (error: unknown) {
+    await releaseOfflineDownload(bookId).catch(() => undefined);
+    throw error;
+  }
+}
+
+async function downloadOfflineBookAfterSlot(input: {
+  readonly book: CatalogBook;
+  readonly bookId: number;
+  readonly onProgress?: DownloadOfflineBookInput['onProgress'];
+}): Promise<DownloadOfflineBookResult> {
+  const { book, bookId } = input;
+  if (!isBookLayoutType(book.layoutType)) {
+    throw new Error('This book is not ready to download yet.');
+  }
   const grant = await createBookAssetDeliveryGrant(bookId);
   const ciphertextFileName: string = buildOfflineCiphertextFileName(bookId, grant.bookAssetId);
   const ciphertextPath: string = resolveOfflineCiphertextPath(ciphertextFileName);
@@ -71,6 +98,10 @@ export async function downloadOfflineBook(
       throw new Error('This content key format is not supported yet.');
     }
     await writeOfflineDek(bookId, grant.bookAssetId, contentKey.key);
+    const coverCache = await cacheOfflineBookCover({
+      bookId,
+      cover: book.cover,
+    });
     const manifest: OfflineBookManifest = {
       bookId,
       bookAssetId: grant.bookAssetId,
@@ -81,6 +112,8 @@ export async function downloadOfflineBook(
       contentType: coerceNullableString(grant.contentType),
       byteSize: coerceNullablePositiveInt(grant.byteSize),
       ciphertextFileName,
+      coverFileName: coverCache.coverFileName,
+      authorName: coerceNullableString(book.authorName),
       downloadedAt: new Date().toISOString(),
       offlineLease: contentKey.offlineLease,
     };

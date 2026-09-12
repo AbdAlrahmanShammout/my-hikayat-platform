@@ -33,6 +33,7 @@ export class AuthService {
     const user: UserEntity = await this.userService.createUser({
       email: input.email,
       passwordHash,
+      displayName: input.displayName,
     });
     return this.createSession(user);
   }

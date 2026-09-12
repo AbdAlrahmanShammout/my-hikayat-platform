@@ -3,6 +3,7 @@ import { UserRole } from '@/modules/user/enum/general.enum';
 export type CreateUserServiceInput = {
   readonly email: string;
   readonly passwordHash: string;
+  readonly displayName?: string;
 };
 
 export type EnablePublisherCapabilityServiceInput = {

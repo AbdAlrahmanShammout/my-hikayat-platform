@@ -12,6 +12,7 @@ import { createQueryClient } from '@/api/query-client';
 import { bindOfflineBookmarkSync } from '@/features/reader/lib/bind-offline-bookmark-sync';
 import { bindOfflineProgressSync } from '@/features/offline/lib/bind-offline-progress-sync';
 import { AppErrorBoundary } from '@/root/app-error-boundary';
+import { useAppFonts } from '@/theme/use-app-fonts';
 import { SessionProvider } from '@/session/session-provider';
 import { useSession } from '@/session/use-session';
 import * as WebBrowser from 'expo-web-browser';
@@ -54,12 +55,13 @@ type SplashVisibilityGateProps = {
  */
 function SplashVisibilityGate({ children }: SplashVisibilityGateProps): JSX.Element {
   const { status } = useSession();
+  const areFontsReady: boolean = useAppFonts();
   useEffect(() => {
-    if (status === 'loading') {
+    if (status === 'loading' || !areFontsReady) {
       return;
     }
     void SplashScreen.hideAsync();
-  }, [status]);
+  }, [areFontsReady, status]);
   return (
     <>
       {children}

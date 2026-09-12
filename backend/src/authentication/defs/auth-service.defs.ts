@@ -3,6 +3,7 @@ import { UserEntity } from '@/modules/user/entity/user.entity';
 export type RegisterUserServiceInput = {
   readonly email: string;
   readonly password: string;
+  readonly displayName: string;
 };
 
 export type LoginUserServiceInput = {

@@ -12,6 +12,7 @@ type BookCardProps = {
   readonly onPress: () => void;
   readonly variant?: BookCardVariant;
   readonly authorName?: string | null;
+  readonly publisherName?: string | null;
   readonly coverUri?: string | null;
   readonly progressLabel?: string;
   readonly showCoverProgress?: boolean;
@@ -19,6 +20,7 @@ type BookCardProps = {
   readonly isLocked?: boolean;
   readonly isDownloaded?: boolean;
   readonly isDownloading?: boolean;
+  readonly showChevron?: boolean;
   readonly testID?: string;
   readonly accessibilityLabel?: string;
 };
@@ -32,6 +34,7 @@ export function BookCard({
   onPress,
   variant = 'grid',
   authorName,
+  publisherName,
   coverUri,
   progressLabel,
   showCoverProgress = false,
@@ -39,6 +42,7 @@ export function BookCard({
   isLocked = false,
   isDownloaded = false,
   isDownloading = false,
+  showChevron = false,
   testID,
   accessibilityLabel,
 }: BookCardProps): JSX.Element {
@@ -78,6 +82,11 @@ export function BookCard({
             {authorName}
           </Text>
         ) : null}
+        {isRow && publisherName !== null && publisherName !== undefined && publisherName !== '' ? (
+          <Text style={styles.author} numberOfLines={1}>
+            {publisherName}
+          </Text>
+        ) : null}
         {isContinue && progressLabel !== undefined ? (
           <Text style={styles.progressLabel} numberOfLines={1}>
             {progressLabel}
@@ -88,6 +97,11 @@ export function BookCard({
         <View style={styles.play} accessibilityElementsHidden>
           <Text style={styles.playMark}>▶</Text>
         </View>
+      ) : null}
+      {isRow && showChevron ? (
+        <Text style={styles.chevron} accessibilityElementsHidden>
+          ›
+        </Text>
       ) : null}
     </Pressable>
   );
@@ -164,5 +178,10 @@ const styles = StyleSheet.create({
   playMark: {
     color: theme.colors.textOnBrand,
     fontSize: theme.typography.label.fontSize,
+  },
+  chevron: {
+    ...theme.typography.title,
+    fontSize: theme.typography.scale.xl,
+    color: theme.colors.textFaint,
   },
 });

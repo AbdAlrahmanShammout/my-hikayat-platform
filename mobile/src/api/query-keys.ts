@@ -9,6 +9,7 @@ export const queryKeys = {
     books: (input: {
       readonly categoryId?: number;
       readonly sort?: 'newest' | 'popularity';
+      readonly pageSize?: number;
     }) => ['reader', 'catalog', 'books', input] as const,
     book: (bookId: number) => ['reader', 'catalog', 'book', bookId] as const,
     categories: (input: { readonly limit?: number; readonly offset?: number }) =>
@@ -33,5 +34,8 @@ export const queryKeys = {
   offline: {
     packages: ['reader', 'offline', 'packages'] as const,
     package: (bookId: number) => ['reader', 'offline', 'package', bookId] as const,
+  },
+  platformSettings: {
+    detail: () => ['reader', 'platform-settings'] as const,
   },
 } as const;

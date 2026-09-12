@@ -3,16 +3,19 @@ import { useState, type JSX } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OfflineDownloadingBookRow } from '@/features/offline/components/offline-downloading-book-row';
 import { OfflineLibraryBookRow } from '@/features/offline/components/offline-library-book-row';
 import { RemoveOfflineDownloadSheet } from '@/features/offline/components/remove-offline-download-sheet';
 import { useIsClockRollbackDetected } from '@/features/offline/hooks/use-is-clock-rollback-detected';
 import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book-actions';
+import { useOfflineDownloadProgress } from '@/features/offline/hooks/use-offline-download-progress';
 import { useOfflinePackages } from '@/features/offline/hooks/use-offline-packages';
 import type { OfflineBookManifest } from '@/features/offline/types/offline-book-manifest';
 import { useConnectivity } from '@/native/connectivity/use-connectivity';
 import { theme } from '@/theme/theme';
 import { EmptyState } from '@/ui/feedback/empty-state';
 import { ErrorState } from '@/ui/feedback/error-state';
+import { Button } from '@/ui/primitives/button';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
 /**
@@ -23,16 +26,18 @@ export function LibraryScreen(): JSX.Element {
   const { isOnline } = useConnectivity();
   const [removeTarget, setRemoveTarget] = useState<OfflineBookManifest | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
-  const isClockRollbackDetected: boolean = useIsClockRollbackDetected();
+  const clockRollback = useIsClockRollbackDetected();
+  const downloadProgress = useOfflineDownloadProgress();
   const actions = useOfflineBookActions(removeTarget?.bookId ?? null);
   const packageCount: number = offline.packages.length;
+  const isClockRollbackDetected: boolean = clockRollback.isClockRollbackDetected;
   const showCountBanner: boolean =
     !offline.isLoading && !offline.isError && packageCount > 0 && !isClockRollbackDetected;
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']} testID="shell-library-screen">
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title} accessibilityRole="header" testID="shell-library-title">
-          My books
+          My Books
         </Text>
         <Text style={styles.lead}>
           Downloads are leased and stay encrypted on this device. Each book shows when offline
@@ -46,11 +51,21 @@ export function LibraryScreen(): JSX.Element {
           </View>
         ) : null}
         {isClockRollbackDetected && packageCount > 0 ? (
-          <View style={styles.clockBanner}>
+          <View style={styles.clockBanner} testID="library-clock-banner">
             <Text style={styles.clockTitle}>Device time changed</Text>
             <Text style={styles.clockBody}>
               Connect to the internet to verify your offline access.
             </Text>
+            <Button
+              label="Try again"
+              variant="secondary"
+              onPress={() => {
+                void clockRollback.refetch();
+                void offline.refetch();
+              }}
+              accessibilityLabel="Try again to verify offline access"
+              testID="library-clock-retry"
+            />
           </View>
         ) : null}
         {showCountBanner ? (
@@ -74,7 +89,7 @@ export function LibraryScreen(): JSX.Element {
             retryTestID="library-offline-retry"
           />
         ) : null}
-        {!offline.isLoading && !offline.isError && packageCount === 0 ? (
+        {!offline.isLoading && !offline.isError && packageCount === 0 && downloadProgress === null ? (
           <EmptyState
             title="No downloads yet"
             description="Open a book and choose Download for offline on its detail page."
@@ -84,6 +99,10 @@ export function LibraryScreen(): JSX.Element {
             }}
             testID="library-offline-empty"
           />
+        ) : null}
+        {downloadProgress !== null &&
+        !offline.packages.some((entry) => entry.bookId === downloadProgress.bookId) ? (
+          <OfflineDownloadingBookRow progress={downloadProgress} />
         ) : null}
         {offline.packages.map((entry) => (
           <OfflineLibraryBookRow

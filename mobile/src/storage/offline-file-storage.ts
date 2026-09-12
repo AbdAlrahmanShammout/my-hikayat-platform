@@ -2,6 +2,7 @@ import { offlineFileSystem as FileSystem } from '@/native/offline-file-system';
 
 export const OFFLINE_ROOT_DIRECTORY = `${FileSystem.documentDirectory ?? ''}offline/`;
 export const OFFLINE_CIPHERTEXT_DIRECTORY = `${OFFLINE_ROOT_DIRECTORY}ciphertext/`;
+export const OFFLINE_COVER_DIRECTORY = `${OFFLINE_ROOT_DIRECTORY}covers/`;
 export const OFFLINE_MANIFEST_FILE_PATH = `${OFFLINE_ROOT_DIRECTORY}manifest.json`;
 export const OFFLINE_PROGRESS_FILE_PATH = `${OFFLINE_ROOT_DIRECTORY}progress.json`;
 export const OFFLINE_BOOKMARKS_FILE_PATH = `${OFFLINE_ROOT_DIRECTORY}bookmarks.json`;
@@ -11,6 +12,7 @@ export const OFFLINE_BOOKMARKS_FILE_PATH = `${OFFLINE_ROOT_DIRECTORY}bookmarks.j
  */
 export async function ensureOfflineStorageDirectories(): Promise<void> {
   await FileSystem.makeDirectoryAsync(OFFLINE_CIPHERTEXT_DIRECTORY, { intermediates: true });
+  await FileSystem.makeDirectoryAsync(OFFLINE_COVER_DIRECTORY, { intermediates: true });
 }
 
 /**
@@ -18,6 +20,13 @@ export async function ensureOfflineStorageDirectories(): Promise<void> {
  */
 export function resolveOfflineCiphertextPath(fileName: string): string {
   return `${OFFLINE_CIPHERTEXT_DIRECTORY}${fileName}`;
+}
+
+/**
+ * Returns the absolute path for a cached offline cover file name.
+ */
+export function resolveOfflineCoverPath(fileName: string): string {
+  return `${OFFLINE_COVER_DIRECTORY}${fileName}`;
 }
 
 /**

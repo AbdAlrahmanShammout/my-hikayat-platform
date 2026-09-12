@@ -16,6 +16,8 @@ import { CollectionModule } from '@/modules/collection/collection.module';
 import { DashboardAdminController } from '@/modules/monetization/dashboard.admin.controller';
 import { MonetizationAdminController } from '@/modules/monetization/monetization.admin.controller';
 import { MonetizationModule } from '@/modules/monetization/monetization.module';
+import { PlatformSettingAdminController } from '@/modules/platform-setting/platform-setting.admin.controller';
+import { PlatformSettingModule } from '@/modules/platform-setting/platform-setting.module';
 import { PlanAdminController } from '@/modules/subscription/plan.admin.controller';
 import { SubscriptionAdminController } from '@/modules/subscription/subscription.admin.controller';
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
@@ -33,6 +35,7 @@ import { UserModule } from '@/modules/user/user.module';
     CategoryModule,
     CollectionModule,
     MonetizationModule,
+    PlatformSettingModule,
     SubscriptionModule,
     UserModule,
     UserAdminDetailModule,
@@ -44,6 +47,7 @@ import { UserModule } from '@/modules/user/user.module';
     CollectionAdminController,
     DashboardAdminController,
     MonetizationAdminController,
+    PlatformSettingAdminController,
     PlanAdminController,
     SubscriptionAdminController,
     UserAdminController,

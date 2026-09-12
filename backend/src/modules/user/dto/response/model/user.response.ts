@@ -12,6 +12,13 @@ export class UserResponse extends BaseModelResponseDto {
   })
   email: string;
 
+  @ApiProperty({
+    description: 'Display name collected at sign-up. Null for accounts created before the field existed.',
+    example: 'Aisha Rahimah',
+    nullable: true,
+  })
+  displayName: string | null;
+
   @ApiProperty({ description: 'Assigned platform role', enum: UserRole, example: UserRole.READER })
   role: UserRole;
 
@@ -21,6 +28,7 @@ export class UserResponse extends BaseModelResponseDto {
   constructor(entity: UserEntity) {
     super(entity);
     this.email = entity.email;
+    this.displayName = entity.displayName;
     this.role = entity.role;
     this.isPublisher = entity.isPublisher;
   }

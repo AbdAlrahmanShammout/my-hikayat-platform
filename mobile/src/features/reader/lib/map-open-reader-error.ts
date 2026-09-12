@@ -2,6 +2,7 @@ import { ApiError } from '@/api/api-error';
 
 export type OpenReaderErrorKind =
   | 'entitlement_denied'
+  | 'clock_rollback'
   | 'session_conflict'
   | 'layout_unavailable'
   | 'not_found'
@@ -17,6 +18,12 @@ export type MappedOpenReaderError = {
  */
 export function mapOpenReaderError(error: unknown): MappedOpenReaderError {
   if (error instanceof ApiError) {
+    if (error.code === 'OFFLINE_CLOCK_ROLLBACK') {
+      return {
+        kind: 'clock_rollback',
+        message: error.message,
+      };
+    }
     if (error.code === 'OFFLINE_LEASE_EXPIRED') {
       return {
         kind: 'entitlement_denied',
@@ -27,7 +34,7 @@ export function mapOpenReaderError(error: unknown): MappedOpenReaderError {
       return {
         kind: 'entitlement_denied',
         message:
-          'You need full-book access to read this book. Ask a grown-up to Start Free Trial or Subscribe on Profile.',
+          'You need full-book access to read this book. Ask a grown-up to Start Free Trial or Subscribe.',
       };
     }
     if (error.code === 'READING_SESSION_ALREADY_OPEN') {

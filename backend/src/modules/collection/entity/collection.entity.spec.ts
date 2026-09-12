@@ -20,6 +20,8 @@ describe('CollectionEntity', () => {
       ],
     });
     expect(actualEntity.title).toBe('Harbor Picks');
+    expect(actualEntity.description).toBeNull();
+    expect(actualEntity.accentColor).toBeNull();
     expect(actualEntity.items?.[0]?.bookId).toBe(8);
   });
 });

@@ -3,33 +3,33 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(0.985 0.004 90);
-  --foreground: oklch(0.22 0.02 260);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.02 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.02 260);
-  --primary: oklch(0.38 0.08 250);
-  --primary-foreground: oklch(0.99 0.002 90);
-  --secondary: oklch(0.955 0.01 90);
-  --secondary-foreground: oklch(0.28 0.03 260);
-  --muted: oklch(0.955 0.008 90);
-  --muted-foreground: oklch(0.5 0.02 260);
-  --accent: oklch(0.945 0.02 250);
-  --accent-foreground: oklch(0.28 0.04 250);
-  --destructive: oklch(0.55 0.18 25);
-  --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.5 0.12 155);
-  --warning: oklch(0.72 0.14 75);
-  --border: oklch(0.9 0.01 90);
-  --input: oklch(0.9 0.01 90);
-  --ring: oklch(0.38 0.08 250);
-  --sidebar: oklch(0.2 0.03 260);
-  --sidebar-foreground: oklch(0.96 0.01 90);
-  --sidebar-muted: oklch(0.72 0.02 260);
-  --sidebar-accent: oklch(0.28 0.04 260);
-  --sidebar-border: oklch(0.3 0.03 260);
-  --radius: 0.5rem;
+  --background: #fdf6ec;
+  --foreground: #1e1240;
+  --card: #ffffff;
+  --card-foreground: #1e1240;
+  --popover: #ffffff;
+  --popover-foreground: #1e1240;
+  --primary: #d94e2d;
+  --primary-foreground: #ffffff;
+  --secondary: #f7edda;
+  --secondary-foreground: #1e1240;
+  --muted: #fef9f4;
+  --muted-foreground: #8e7fa6;
+  --accent: #fce8e3;
+  --accent-foreground: #bf3e1e;
+  --destructive: #b83232;
+  --destructive-foreground: #ffffff;
+  --success: #2e7d52;
+  --warning: #c47a1e;
+  --border: #e6d4bc;
+  --input: #e6d4bc;
+  --ring: #d94e2d;
+  --sidebar: #1e1240;
+  --sidebar-foreground: #ede8f8;
+  --sidebar-muted: #8e7fa6;
+  --sidebar-accent: #3a2a5c;
+  --sidebar-border: #3a2a5c;
+  --radius: 0.85rem;
 }
 
 @theme inline {
@@ -62,7 +62,8 @@
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
 }
 
 @layer base {
@@ -76,6 +77,13 @@
 
   body {
     @apply bg-background text-foreground antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-style: italic;
   }
 
   :focus-visible {

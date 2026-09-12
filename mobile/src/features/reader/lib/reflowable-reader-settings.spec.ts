@@ -1,4 +1,5 @@
 import {
+  applyFontSizePreset,
   decreaseFontScale,
   decreaseLineHeight,
   decreaseMargin,
@@ -6,6 +7,7 @@ import {
   increaseFontScale,
   increaseLineHeight,
   increaseMargin,
+  resolveFontSizePresetId,
   toggleReaderTheme,
 } from '@/features/reader/lib/reflowable-reader-settings';
 
@@ -32,5 +34,12 @@ describe('reflowableReaderSettings', () => {
     expect(decreaseFontScale(roomier).fontScalePercent).toBeLessThan(roomier.fontScalePercent);
     expect(decreaseLineHeight(roomier).lineHeight).toBeLessThan(roomier.lineHeight);
     expect(decreaseMargin(roomier).marginPx).toBeLessThan(roomier.marginPx);
+  });
+
+  it('maps Figma font chips onto stored percents', () => {
+    const large = applyFontSizePreset(DEFAULT_REFLOWABLE_READER_SETTINGS, 'l');
+    expect(large.fontScalePercent).toBe(130);
+    expect(resolveFontSizePresetId(large.fontScalePercent)).toBe('l');
+    expect(resolveFontSizePresetId(90)).toBe('s');
   });
 });

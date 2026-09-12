@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AuthCoverMedia } from '@/features/auth/components/auth-cover-media';
+import { useReaderPlatformSettings } from '@/features/platform-settings/hooks/use-reader-platform-settings';
 import { theme } from '@/theme/theme';
 import { toViewShadow } from '@/ui/lib/to-view-shadow';
 
@@ -31,8 +33,7 @@ const COVER_COLORS = [
 const COVER_ROTATIONS = ['-2deg', '1.5deg', '0deg', '-1deg', '2deg', '0.5deg'] as const;
 
 /**
- * Direction B auth frame: brand, decorative cover strip, and a raised form sheet.
- * Covers are colored blocks only — no prototype book artwork.
+ * Direction B auth frame: brand, admin-configured cover media or decorative blocks, and a raised form sheet.
  */
 export function AuthScreenChrome({
   tagline,
@@ -62,23 +63,34 @@ export function AuthScreenChrome({
               My Hikayat
             </Text>
             <Text style={styles.tagline}>{tagline}</Text>
-            <View style={styles.strip} accessibilityElementsHidden>
-              {COVER_COLORS.map((backgroundColor, index) => (
-                <View
-                  key={backgroundColor}
-                  style={[
-                    styles.cover,
-                    toViewShadow(theme.shadows.book),
-                    { backgroundColor, transform: [{ rotate: COVER_ROTATIONS[index] ?? '0deg' }] },
-                  ]}
-                />
-              ))}
-            </View>
+            <AuthCoverStrip />
           </View>
           <View style={styles.sheet}>{children}</View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+function AuthCoverStrip(): JSX.Element {
+  const settingsQuery = useReaderPlatformSettings();
+  const mediaUrl: string | null = settingsQuery.data?.authCoverMediaUrl ?? null;
+  if (mediaUrl !== null) {
+    return <AuthCoverMedia url={mediaUrl} />;
+  }
+  return (
+    <View style={styles.strip} accessibilityElementsHidden>
+      {COVER_COLORS.map((backgroundColor, index) => (
+        <View
+          key={backgroundColor}
+          style={[
+            styles.cover,
+            toViewShadow(theme.shadows.book),
+            { backgroundColor, transform: [{ rotate: COVER_ROTATIONS[index] ?? '0deg' }] },
+          ]}
+        />
+      ))}
+    </View>
   );
 }
 

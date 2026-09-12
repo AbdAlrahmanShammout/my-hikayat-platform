@@ -88,11 +88,13 @@ describe('AuthService', () => {
       const actualSession = await authService.register({
         email: 'reader@example.com',
         password: 'correct-horse-battery',
+        displayName: 'Aisha Rahimah',
       });
       expect(mockHashString).toHaveBeenCalledWith('correct-horse-battery');
       expect(mockUserService.createUser).toHaveBeenCalledWith({
         email: 'reader@example.com',
         passwordHash: 'hashed-password',
+        displayName: 'Aisha Rahimah',
       });
       expect(mockJwtTokenService.createToken).toHaveBeenCalledWith({
         payload: { principalId: 1, role: UserRole.READER },
@@ -115,6 +117,7 @@ describe('AuthService', () => {
         authService.register({
           email: 'reader@example.com',
           password: 'correct-horse-battery',
+          displayName: 'Aisha Rahimah',
         }),
       ).rejects.toBeInstanceOf(UserEmailConflictException);
     });

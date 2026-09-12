@@ -98,6 +98,8 @@ describe('CollectionAdminController', () => {
       );
       expect(mockCollectionService.createCollection).toHaveBeenCalledWith({
         title: 'Harbor Picks',
+        description: undefined,
+        accentColor: undefined,
         bookIds: [8, 9],
         actorUserId: 9,
       });
@@ -149,6 +151,8 @@ describe('CollectionAdminController', () => {
       expect(mockCollectionService.updateCollection).toHaveBeenCalledWith({
         id: 3,
         title: 'Harbor Classics',
+        description: undefined,
+        accentColor: undefined,
         actorUserId: 9,
       });
       expect(actualResponse.title).toBe('Harbor Classics');

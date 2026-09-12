@@ -155,8 +155,8 @@ export interface paths {
 
 export interface components {
   schemas: {
-    RegisterRequestDto: { email: string; password: string };
-    UserResponse: { id: number; createdAt: string; updatedAt: string; email: string; role: "reader" | "author" | "admin"; isPublisher: boolean };
+    RegisterRequestDto: { email: string; password: string; displayName: string };
+    UserResponse: { id: number; createdAt: string; updatedAt: string; email: string; displayName: string | null; role: "reader" | "author" | "admin"; isPublisher: boolean };
     AuthSessionResponseDto: { accessToken: string; refreshToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
     AcceptAdminInvitationRequestDto: { token: string; password: string };
     LoginRequestDto: { email: string; password: string };

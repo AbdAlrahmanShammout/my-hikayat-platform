@@ -19,4 +19,5 @@ export type LoginRequest = {
 export type RegisterRequest = {
   readonly email: string;
   readonly password: string;
+  readonly displayName: string;
 };

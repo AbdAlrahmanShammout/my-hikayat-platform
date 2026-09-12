@@ -2,6 +2,8 @@ import type { JSX } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { OfflineLeaseExpiryLabel } from '@/features/offline/components/offline-lease-expiry-label';
+import { useOfflineLeaseExpiryPresentation } from '@/features/offline/hooks/use-offline-lease-expiry-presentation';
+import { resolveOfflineCoverUri } from '@/features/offline/lib/resolve-offline-cover-uri';
 import type { OfflineBookManifest } from '@/features/offline/types/offline-book-manifest';
 import { theme } from '@/theme/theme';
 import { BookCover } from '@/ui/primitives/book-cover';
@@ -16,7 +18,7 @@ type OfflineLibraryBookRowProps = {
 };
 
 /**
- * One downloaded package: title, layout, and lease only. No invented cover or author.
+ * One downloaded package: cached cover/author when present, lease chip, and fail-closed Open.
  */
 export function OfflineLibraryBookRow({
   manifest,
@@ -25,14 +27,32 @@ export function OfflineLibraryBookRow({
   onRequestRemove,
 }: OfflineLibraryBookRowProps): JSX.Element {
   const layoutLabel: string = manifest.layoutType === 'reflowable' ? 'Reflowable' : 'Fixed layout';
+  const presentation = useOfflineLeaseExpiryPresentation(manifest.offlineLease?.expiresAt);
+  const isLocked: boolean =
+    presentation?.state === 'expired' ||
+    presentation?.state === 'clock_rollback' ||
+    presentation?.state === 'unavailable';
+  const coverUri: string | null = resolveOfflineCoverUri(manifest.coverFileName);
+  const authorName: string | null = coerceAuthorName(manifest.authorName);
   return (
     <View style={styles.row} testID={`library-offline-book-${manifest.bookId}`}>
       <View style={styles.top}>
-        <BookCover title={manifest.title} coverUri={null} size="sm" isDownloaded />
+        <BookCover
+          title={manifest.title}
+          coverUri={coverUri}
+          size="sm"
+          isDownloaded
+          isLocked={isLocked}
+        />
         <View style={styles.info}>
           <Text style={styles.title} numberOfLines={2}>
             {manifest.title}
           </Text>
+          {authorName !== null ? (
+            <Text style={styles.author} numberOfLines={1} testID={`library-offline-author-${manifest.bookId}`}>
+              {authorName}
+            </Text>
+          ) : null}
           <Pill label={layoutLabel} variant="neutral" />
           <OfflineLeaseExpiryLabel
             expiresAt={manifest.offlineLease?.expiresAt}
@@ -42,14 +62,16 @@ export function OfflineLibraryBookRow({
         </View>
       </View>
       <View style={styles.actions}>
-        <View style={styles.action}>
-          <Button
-            label="Open"
-            onPress={onOpen}
-            accessibilityLabel={`Open ${manifest.title}`}
-            testID={`library-offline-open-${manifest.bookId}`}
-          />
-        </View>
+        {isLocked ? null : (
+          <View style={styles.action}>
+            <Button
+              label="Open"
+              onPress={onOpen}
+              accessibilityLabel={`Open ${manifest.title}`}
+              testID={`library-offline-open-${manifest.bookId}`}
+            />
+          </View>
+        )}
         <View style={styles.action}>
           <Button
             label="Remove"
@@ -64,6 +86,14 @@ export function OfflineLibraryBookRow({
       </View>
     </View>
   );
+}
+
+function coerceAuthorName(value: string | null | undefined): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const trimmed: string = value.trim();
+  return trimmed.length === 0 ? null : trimmed;
 }
 
 const styles = StyleSheet.create({
@@ -87,6 +117,10 @@ const styles = StyleSheet.create({
     ...theme.typography.body,
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.textPrimary,
+  },
+  author: {
+    ...theme.typography.label,
+    color: theme.colors.textMuted,
   },
   actions: {
     flexDirection: 'row',

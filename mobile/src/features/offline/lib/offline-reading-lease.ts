@@ -34,7 +34,7 @@ export async function assertOfflineReadingLeaseValid(
   }
   throw new ApiError({
     message: mapInvalidReasonToMessage(result.reason),
-    code: 'OFFLINE_LEASE_EXPIRED',
+    code: result.reason === 'clock_rollback' ? 'OFFLINE_CLOCK_ROLLBACK' : 'OFFLINE_LEASE_EXPIRED',
     statusCode: 403,
   });
 }

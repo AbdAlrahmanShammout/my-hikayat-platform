@@ -69,10 +69,12 @@ describe('AuthController', () => {
       const actualResponse = await authController.register({
         email: 'reader@example.com',
         password: 'correct-horse-battery',
+        displayName: 'Aisha Rahimah',
       });
       expect(mockAuthService.register).toHaveBeenCalledWith({
         email: 'reader@example.com',
         password: 'correct-horse-battery',
+        displayName: 'Aisha Rahimah',
       });
       expect(actualResponse.accessToken).toBe('signed.jwt');
       expect(actualResponse.user.email).toBe('reader@example.com');

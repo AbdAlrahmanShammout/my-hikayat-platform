@@ -2,7 +2,7 @@ import type { UseFormSetError, FieldValues, Path } from 'react-hook-form';
 
 import { ApiError } from '@/api/api-error';
 
-const AUTH_FIELD_PROPERTIES = ['email', 'password'] as const;
+const AUTH_FIELD_PROPERTIES = ['email', 'password', 'displayName'] as const;
 
 type AuthFieldProperty = (typeof AUTH_FIELD_PROPERTIES)[number];
 

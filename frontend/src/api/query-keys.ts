@@ -123,6 +123,10 @@ export const queryKeys = {
       all: ['admin', 'dashboard'] as const,
       summary: () => [...queryKeys.admin.dashboard.all, 'summary'] as const,
     },
+    platformSettings: {
+      all: ['admin', 'platform-settings'] as const,
+      detail: () => [...queryKeys.admin.platformSettings.all, 'detail'] as const,
+    },
   },
   author: {
     books: {

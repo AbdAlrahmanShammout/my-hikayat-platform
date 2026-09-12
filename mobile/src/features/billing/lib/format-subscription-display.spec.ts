@@ -151,6 +151,7 @@ describe('formatSubscriptionDisplay', () => {
     expect(actual.canOfferTrialAction).toBe(false);
     expect(actual.canOfferRefundAction).toBe(false);
     expect(actual.canOfferCancelAction).toBe(false);
+    expect(actual.canOfferReactivateCheckout).toBe(true);
     expect(actual.cancelAccessNote).toContain('keep reading');
   });
 });

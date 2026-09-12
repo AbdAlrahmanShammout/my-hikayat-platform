@@ -406,12 +406,25 @@ export interface paths {
       };
     };
   };
+  "/admin/platform-settings": {
+    get: {
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['PlatformSettingsResponse'] } };
+      };
+    };
+    patch: {
+      requestBody: { content: { 'application/json': components['schemas']['UpdatePlatformSettingsRequestDto'] } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['PlatformSettingsResponse'] } };
+      };
+    };
+  };
 }
 
 export interface components {
   schemas: {
-    RegisterRequestDto: { email: string; password: string };
-    UserResponse: { id: number; createdAt: string; updatedAt: string; email: string; role: "reader" | "author" | "admin"; isPublisher: boolean };
+    RegisterRequestDto: { email: string; password: string; displayName: string };
+    UserResponse: { id: number; createdAt: string; updatedAt: string; email: string; displayName: string | null; role: "reader" | "author" | "admin"; isPublisher: boolean };
     AuthSessionResponseDto: { accessToken: string; refreshToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
     AcceptAdminInvitationRequestDto: { token: string; password: string };
     LoginRequestDto: { email: string; password: string };
@@ -427,11 +440,11 @@ export interface components {
     CreateCategoryRequestDto: { name: string; slug?: string; categoryWeight?: number };
     GetCategoriesResponseDto: { categories: Array<components['schemas']['CategoryResponse']>; total: number };
     UpdateCategoryRequestDto: { name?: string; slug?: string; categoryWeight?: number };
-    CreateCollectionRequestDto: { title: string; bookIds?: Array<number> };
+    CreateCollectionRequestDto: { title: string; description?: string | null; accentColor?: string | null; bookIds?: Array<number> };
     CollectionBookResponse: { id: number; createdAt: string; updatedAt: string; collectionId: number; bookId: number; displayOrder: number };
-    CollectionResponse: { id: number; createdAt: string; updatedAt: string; title: string; items: Array<components['schemas']['CollectionBookResponse']> };
+    CollectionResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string | null; accentColor: string | null; items: Array<components['schemas']['CollectionBookResponse']> };
     GetCollectionsResponseDto: { collections: Array<components['schemas']['CollectionResponse']>; total: number };
-    UpdateCollectionRequestDto: { title?: string };
+    UpdateCollectionRequestDto: { title?: string; description?: string | null; accentColor?: string | null };
     AddCollectionBookRequestDto: { bookId: number };
     ReorderCollectionBooksRequestDto: { bookIds: Array<number> };
     GetAdminDashboardSummaryResponseDto: { totalUsers: number; totalPublishers: number; totalBooks: number; publishedBooks: number; pendingReviewBooks: number; totalReadingMinutes: number };
@@ -461,5 +474,7 @@ export interface components {
     GetAdminInvitationsResponseDto: { invitations: Array<components['schemas']['AdminInvitationResponse']>; total: number };
     CreateAdminInvitationRequestDto: { email: string };
     CreateAdminInvitationResponseDto: { invitation: components['schemas']['AdminInvitationResponse']; token: string };
+    PlatformSettingsResponse: { privacyPolicyUrl: string | null; termsOfServiceUrl: string | null; aboutMission: string | null; authCoverMediaUrl: string | null };
+    UpdatePlatformSettingsRequestDto: { privacyPolicyUrl?: string | null; termsOfServiceUrl?: string | null; aboutMission?: string | null; authCoverMediaUrl?: string | null };
   };
 }

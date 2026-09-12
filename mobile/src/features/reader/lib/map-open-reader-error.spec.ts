@@ -12,7 +12,7 @@ describe('mapOpenReaderError', () => {
       }),
     );
     expect(actual.kind).toBe('entitlement_denied');
-    expect(actual.message).toContain('Start Free Trial or Subscribe on Profile');
+    expect(actual.message).toContain('Start Free Trial or Subscribe');
   });
 
   it('maps layout unavailable', () => {
@@ -48,5 +48,17 @@ describe('mapOpenReaderError', () => {
     );
     expect(actual.kind).toBe('entitlement_denied');
     expect(actual.message).toContain('offline download is locked');
+  });
+
+  it('maps a clock rollback to reconnect instead of subscribe', () => {
+    const actual = mapOpenReaderError(
+      new ApiError({
+        message: 'Your device time changed. Connect to the internet to refresh this download.',
+        code: 'OFFLINE_CLOCK_ROLLBACK',
+        statusCode: 403,
+      }),
+    );
+    expect(actual.kind).toBe('clock_rollback');
+    expect(actual.message).toContain('device time changed');
   });
 });

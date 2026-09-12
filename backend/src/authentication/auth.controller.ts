@@ -45,6 +45,7 @@ export class AuthController {
     const session: AuthSession = await this.authService.register({
       email: input.email,
       password: input.password,
+      displayName: input.displayName,
     });
     return new AuthSessionResponseDto(session);
   }

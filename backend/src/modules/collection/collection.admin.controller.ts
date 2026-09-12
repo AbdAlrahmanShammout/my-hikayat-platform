@@ -56,6 +56,8 @@ export class CollectionAdminController {
   ): Promise<CollectionResponse> {
     const entity: CollectionEntity = await this.collectionService.createCollection({
       title: body.title,
+      description: body.description,
+      accentColor: body.accentColor,
       bookIds: body.bookIds,
       actorUserId: currentUser.id,
     });
@@ -85,7 +87,7 @@ export class CollectionAdminController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update an editorial collection title' })
+  @ApiOperation({ summary: 'Update an editorial collection title, description, or accent color' })
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: UpdateCollectionRequestDto })
   @ApiResponse({ status: 200, type: CollectionResponse })
@@ -97,6 +99,8 @@ export class CollectionAdminController {
     const entity: CollectionEntity = await this.collectionService.updateCollection({
       id,
       title: body.title,
+      description: body.description,
+      accentColor: body.accentColor,
       actorUserId: currentUser.id,
     });
     return new CollectionResponse(entity);

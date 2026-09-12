@@ -18,6 +18,7 @@ describe('UserEntity', () => {
     expect(actualEntity.id).toBe(4);
     expect(actualEntity.role).toBe(UserRole.READER);
     expect(actualEntity.email).toBe('reader@example.com');
+    expect(actualEntity.displayName).toBeNull();
     expect(actualEntity.isPublisher).toBe(false);
     expect(actualEntity).not.toHaveProperty('statusCode');
   });

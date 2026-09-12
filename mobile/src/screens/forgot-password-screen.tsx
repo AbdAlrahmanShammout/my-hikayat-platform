@@ -31,6 +31,7 @@ import { Button } from '@/ui/primitives/button';
 export function ForgotPasswordScreen(): JSX.Element {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [ackMessage, setAckMessage] = useState<string | null>(null);
+  const [sentEmail, setSentEmail] = useState<string>('');
   const {
     control,
     handleSubmit,
@@ -50,10 +51,10 @@ export function ForgotPasswordScreen(): JSX.Element {
   }
 
   async function executeRequest(values: ForgotPasswordFormValues): Promise<void> {
-    setAckMessage(null);
     setIsSubmitting(true);
     try {
       const response = await requestPasswordReset({ email: values.email.trim().toLowerCase() });
+      setSentEmail(values.email.trim().toLowerCase());
       setAckMessage(response.message);
     } catch (error: unknown) {
       applyAuthFormApiError(error, setError, 'Could not send reset instructions. Try again.');
@@ -74,6 +75,40 @@ export function ForgotPasswordScreen(): JSX.Element {
       >
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <BackHeader title="" onPressBack={navigateBackToSignIn} backTestID="auth-forgot-back" />
+          {ackMessage !== null ? (
+            <View style={styles.sentCard} testID="auth-forgot-sent-card">
+              <Text style={styles.title} accessibilityRole="header">
+                Check your email
+              </Text>
+              <Text style={styles.body} testID="auth-forgot-ack">
+                {ackMessage}
+              </Text>
+              {sentEmail.length > 0 ? (
+                <Text style={styles.meta}>{`We sent instructions to ${sentEmail}.`}</Text>
+              ) : null}
+              <Button
+                label="Resend"
+                onPress={() => {
+                  void executeRequest({ email: sentEmail });
+                }}
+                isLoading={isSubmitting}
+                testID="auth-forgot-resend"
+                accessibilityLabel="Resend reset instructions"
+              />
+              <Pressable
+                style={styles.secondaryButton}
+                onPress={() => {
+                  router.push('/(public)/reset-password' as Href);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="I already have a reset token"
+                testID="auth-forgot-have-token"
+              >
+                <Text style={styles.secondaryLabel}>I already have a reset token</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <>
           <Text style={styles.title} accessibilityRole="header">
             Forgot password?
           </Text>
@@ -82,13 +117,6 @@ export function ForgotPasswordScreen(): JSX.Element {
           </Text>
           {errors.root?.message !== undefined ? (
             <FormError message={errors.root.message} testID="auth-forgot-error" />
-          ) : null}
-          {ackMessage !== null ? (
-            <View style={styles.ackBanner}>
-              <Text style={styles.success} testID="auth-forgot-ack">
-                {ackMessage}
-              </Text>
-            </View>
           ) : null}
           <Controller
             control={control}
@@ -132,6 +160,8 @@ export function ForgotPasswordScreen(): JSX.Element {
             <Text style={styles.secondaryLabel}>I already have a reset token</Text>
           </Pressable>
           <View style={styles.spacer} />
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -163,16 +193,17 @@ const styles = StyleSheet.create({
     ...theme.typography.body,
     color: theme.colors.textMuted,
   },
-  ackBanner: {
-    backgroundColor: theme.colors.successBg,
+  sentCard: {
+    gap: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
     borderRadius: theme.radii.lg,
-    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: theme.colors.success,
+    borderColor: theme.colors.borderSubtle,
+    padding: theme.spacing.cardInner,
   },
-  success: {
-    ...theme.typography.body,
-    color: theme.colors.success,
+  meta: {
+    ...theme.typography.label,
+    color: theme.colors.textMuted,
   },
   secondaryButton: {
     minHeight: 44,

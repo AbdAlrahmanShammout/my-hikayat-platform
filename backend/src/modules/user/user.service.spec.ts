@@ -67,11 +67,13 @@ describe('UserService', () => {
       const actualUser = await userService.createUser({
         email: '  Reader@Example.com ',
         passwordHash: 'hashed-password',
+        displayName: '  Aisha   Rahimah ',
       });
       expect(mockUserRepository.findByEmail).toHaveBeenCalledWith('reader@example.com');
       expect(mockUserRepository.create).toHaveBeenCalledWith({
         email: 'reader@example.com',
         passwordHash: 'hashed-password',
+        displayName: 'Aisha Rahimah',
         role: UserRole.READER,
         isPublisher: false,
       });
@@ -343,6 +345,7 @@ describe('UserService', () => {
         {
           email: 'new-admin@example.com',
           passwordHash: 'hashed-password',
+          displayName: null,
           role: UserRole.ADMIN,
           isPublisher: false,
         },

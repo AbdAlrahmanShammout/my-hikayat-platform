@@ -21,6 +21,7 @@ const AUTH_REFRESH_SKIP_PATHS: ReadonlySet<string> = new Set([
   '/auth/forgot-password',
   '/auth/reset-password',
   '/auth/accept-admin-invitation',
+  '/reader/platform-settings',
 ]);
 
 export type RequestJsonInput = {

@@ -10,17 +10,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useUpdateAdminCollection } from '@/features/collections/hooks/use-update-admin-collection';
 import {
-  adminCollectionTitleFormSchema,
-  type AdminCollectionTitleFormValues,
-} from '@/features/collections/schemas/admin-collection-title-form.schema';
+  adminCollectionEditorialFormSchema,
+  type AdminCollectionEditorialFormValues,
+} from '@/features/collections/schemas/admin-collection-editorial-form.schema';
 import type { components } from '@/generated/admin';
 
 type AdminCollectionTitleFormProps = {
@@ -28,29 +30,35 @@ type AdminCollectionTitleFormProps = {
 };
 
 /**
- * PATCH /admin/collections/:id title form.
+ * PATCH /admin/collections/:id title, description, and accent color form.
  */
 export function AdminCollectionTitleForm({
   collection,
 }: AdminCollectionTitleFormProps): JSX.Element {
   const updateMutation = useUpdateAdminCollection();
-  const form = useForm<AdminCollectionTitleFormValues>({
-    resolver: zodResolver(adminCollectionTitleFormSchema),
-    defaultValues: { title: collection.title },
+  const form = useForm<AdminCollectionEditorialFormValues>({
+    resolver: zodResolver(adminCollectionEditorialFormSchema),
+    defaultValues: {
+      title: collection.title,
+      description: collection.description ?? '',
+      accentColor: collection.accentColor ?? '',
+    },
   });
   const rootMessage: string | undefined = form.formState.errors.root?.message;
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Title</CardTitle>
-        <CardDescription>PATCH accepts title only.</CardDescription>
+        <CardTitle>Editorial</CardTitle>
+        <CardDescription>
+          Title, description, and optional hex accent used by the reader collection hero.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form
             className="flex flex-col gap-4"
             onSubmit={form.handleSubmit((values) => {
-              void submitTitleEdit(
+              void submitEditorialEdit(
                 collection.id,
                 values,
                 updateMutation.mutateAsync,
@@ -66,7 +74,7 @@ export function AdminCollectionTitleForm({
             ) : null}
             {form.formState.isSubmitSuccessful ? (
               <Alert>
-                <AlertDescription>Title saved.</AlertDescription>
+                <AlertDescription>Collection saved.</AlertDescription>
               </Alert>
             ) : null}
             <FormField
@@ -82,8 +90,39 @@ export function AdminCollectionTitleForm({
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea disabled={updateMutation.isPending} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="accentColor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Accent color</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="#1A6B4A"
+                      disabled={updateMutation.isPending}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>Six-digit hex, or blank to clear.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <Button type="submit" disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? 'Saving…' : 'Save title'}
+              {updateMutation.isPending ? 'Saving…' : 'Save'}
             </Button>
           </form>
         </Form>
@@ -92,23 +131,34 @@ export function AdminCollectionTitleForm({
   );
 }
 
-async function submitTitleEdit(
+async function submitEditorialEdit(
   collectionId: number,
-  values: AdminCollectionTitleFormValues,
+  values: AdminCollectionEditorialFormValues,
   mutateAsync: ReturnType<typeof useUpdateAdminCollection>['mutateAsync'],
-  setError: UseFormSetError<AdminCollectionTitleFormValues>,
+  setError: UseFormSetError<AdminCollectionEditorialFormValues>,
 ): Promise<void> {
   try {
-    await mutateAsync({ collectionId, body: { title: values.title } });
+    await mutateAsync({
+      collectionId,
+      body: {
+        title: values.title,
+        description: values.description.trim().length === 0 ? null : values.description.trim(),
+        accentColor: values.accentColor.trim().length === 0 ? null : values.accentColor.trim(),
+      },
+    });
   } catch (error: unknown) {
     if (error instanceof ApiError) {
       for (const item of error.validationErrorObjects) {
-        if (item.property !== 'title') {
+        if (
+          item.property !== 'title' &&
+          item.property !== 'description' &&
+          item.property !== 'accentColor'
+        ) {
           continue;
         }
         const firstConstraint: string | undefined = Object.values(item.constraints)[0];
         if (firstConstraint !== undefined) {
-          setError('title', { message: firstConstraint });
+          setError(item.property, { message: firstConstraint });
         }
       }
     }

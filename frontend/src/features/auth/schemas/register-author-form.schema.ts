@@ -4,6 +4,11 @@ import { PASSWORD_LENGTH } from '@/config/password-length';
 
 export const registerAuthorFormSchema = z
   .object({
+    displayName: z
+      .string()
+      .trim()
+      .min(1, 'Display name is required')
+      .max(80, 'Use at most 80 characters'),
     email: z.string().trim().min(1, 'Email is required').email('Enter a valid email'),
     password: z
       .string()

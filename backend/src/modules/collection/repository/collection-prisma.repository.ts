@@ -31,6 +31,8 @@ export class CollectionPrismaRepository implements CollectionRepository {
     const result = await client.collection.create({
       data: {
         title: input.title,
+        description: input.description,
+        accentColor: input.accentColor,
         items: CollectionPrismaRepository.buildItemCreate(input.books),
       },
       include: collectionDetailsInclude,
@@ -109,6 +111,12 @@ export class CollectionPrismaRepository implements CollectionRepository {
     const data: Prisma.CollectionUpdateInput = {};
     if (input.title !== undefined) {
       data.title = input.title;
+    }
+    if (input.description !== undefined) {
+      data.description = input.description;
+    }
+    if (input.accentColor !== undefined) {
+      data.accentColor = input.accentColor;
     }
     const result = await client.collection.update({
       where: { id: input.id },

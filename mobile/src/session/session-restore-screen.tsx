@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   buildOfflinePurgeConfirmCopy,
-  shouldRequireOfflinePurgeConfirmation,
   type OfflinePurgeConfirmCopy,
 } from '@/features/offline/lib/confirm-offline-purge-if-needed';
 import { listOfflineManifests } from '@/features/offline/lib/offline-manifest-storage';
@@ -44,10 +43,6 @@ export function SessionRestoreScreen(): JSX.Element {
 
   async function handleSignInInsteadPress(): Promise<void> {
     const packages = await listOfflineManifests();
-    if (!shouldRequireOfflinePurgeConfirmation(packages.length)) {
-      await executeAbandonRestore();
-      return;
-    }
     setPurgeCopy(
       buildOfflinePurgeConfirmCopy({
         kind: 'abandon_restore',
@@ -111,7 +106,7 @@ export function SessionRestoreScreen(): JSX.Element {
               onPress={() => {
                 void executeAbandonRestore();
               }}
-              variant="destructive"
+              variant={purgeCopy.confirmVariant}
               isLoading={isAbandoning}
             />
             <Button

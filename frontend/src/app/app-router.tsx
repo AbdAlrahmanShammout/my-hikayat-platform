@@ -14,6 +14,7 @@ import { AdminCollectionsPage } from '@/pages/admin/collections-page';
 import { AdminHomePage } from '@/pages/admin/home-page';
 import { AdminInvitationsPage } from '@/pages/admin/invitations-page';
 import { AdminPlansPage } from '@/pages/admin/plans-page';
+import { AdminPlatformSettingsPage } from '@/pages/admin/platform-settings-page';
 import { AdminRevenueDetailPage } from '@/pages/admin/revenue-detail-page';
 import { AdminRevenuePeriodBookHeatmapPage } from '@/pages/admin/revenue-period-book-heatmap-page';
 import { AdminRevenuePage } from '@/pages/admin/revenue-page';
@@ -64,6 +65,7 @@ export const appRouter = createBrowserRouter([
       { path: 'collections', element: <AdminCollectionsPage /> },
       { path: 'collections/:collectionId', element: <AdminCollectionDetailPage /> },
       { path: 'categories', element: <AdminCategoriesPage /> },
+      { path: 'settings', element: <AdminPlatformSettingsPage /> },
       { path: 'revenue', element: <AdminRevenuePage /> },
       { path: 'revenue/:revenuePeriodId', element: <AdminRevenueDetailPage /> },
       {

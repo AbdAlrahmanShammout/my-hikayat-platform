@@ -11,17 +11,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useCreateAdminCollection } from '@/features/collections/hooks/use-create-admin-collection';
 import {
-  adminCollectionTitleFormSchema,
-  type AdminCollectionTitleFormValues,
-} from '@/features/collections/schemas/admin-collection-title-form.schema';
+  adminCollectionEditorialFormSchema,
+  type AdminCollectionEditorialFormValues,
+} from '@/features/collections/schemas/admin-collection-editorial-form.schema';
 
 /**
  * POST /admin/collections form. Books are added on the detail screen.
@@ -29,9 +31,9 @@ import {
 export function AdminCollectionCreateForm(): JSX.Element {
   const navigate = useNavigate();
   const createMutation = useCreateAdminCollection();
-  const form = useForm<AdminCollectionTitleFormValues>({
-    resolver: zodResolver(adminCollectionTitleFormSchema),
-    defaultValues: { title: '' },
+  const form = useForm<AdminCollectionEditorialFormValues>({
+    resolver: zodResolver(adminCollectionEditorialFormSchema),
+    defaultValues: { title: '', description: '', accentColor: '' },
   });
   const rootMessage: string | undefined = form.formState.errors.root?.message;
   return (
@@ -43,7 +45,7 @@ export function AdminCollectionCreateForm(): JSX.Element {
       <CardContent>
         <Form {...form}>
           <form
-            className="flex flex-col gap-4 sm:flex-row sm:items-end"
+            className="flex flex-col gap-4"
             onSubmit={form.handleSubmit((values) => {
               void submitCreateCollection(
                 values,
@@ -57,7 +59,7 @@ export function AdminCollectionCreateForm(): JSX.Element {
             noValidate
           >
             {rootMessage !== undefined ? (
-              <Alert variant="destructive" className="sm:min-w-full">
+              <Alert variant="destructive">
                 <AlertDescription>{rootMessage}</AlertDescription>
               </Alert>
             ) : null}
@@ -65,7 +67,7 @@ export function AdminCollectionCreateForm(): JSX.Element {
               control={form.control}
               name="title"
               render={({ field }) => (
-                <FormItem className="flex-1">
+                <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
                     <Input disabled={createMutation.isPending} {...field} />
@@ -74,7 +76,34 @@ export function AdminCollectionCreateForm(): JSX.Element {
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={createMutation.isPending}>
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea disabled={createMutation.isPending} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="accentColor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Accent color</FormLabel>
+                  <FormControl>
+                    <Input placeholder="#1A6B4A" disabled={createMutation.isPending} {...field} />
+                  </FormControl>
+                  <FormDescription>Optional six-digit hex for the reader hero.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="submit" disabled={createMutation.isPending} className="self-start">
               {createMutation.isPending ? 'Creating…' : 'Create'}
             </Button>
           </form>
@@ -85,31 +114,39 @@ export function AdminCollectionCreateForm(): JSX.Element {
 }
 
 async function submitCreateCollection(
-  values: AdminCollectionTitleFormValues,
+  values: AdminCollectionEditorialFormValues,
   mutateAsync: ReturnType<typeof useCreateAdminCollection>['mutateAsync'],
-  setError: UseFormSetError<AdminCollectionTitleFormValues>,
+  setError: UseFormSetError<AdminCollectionEditorialFormValues>,
   onCreated: (collectionId: number) => void,
 ): Promise<void> {
   try {
-    const created = await mutateAsync({ title: values.title });
+    const created = await mutateAsync({
+      title: values.title,
+      description: values.description.trim().length === 0 ? null : values.description.trim(),
+      accentColor: values.accentColor.trim().length === 0 ? null : values.accentColor.trim(),
+    });
     onCreated(created.id);
   } catch (error: unknown) {
-    applyTitleServerError(error, setError);
+    applyEditorialServerError(error, setError);
   }
 }
 
-function applyTitleServerError(
+function applyEditorialServerError(
   error: unknown,
-  setError: UseFormSetError<AdminCollectionTitleFormValues>,
+  setError: UseFormSetError<AdminCollectionEditorialFormValues>,
 ): void {
   if (error instanceof ApiError) {
     for (const item of error.validationErrorObjects) {
-      if (item.property !== 'title') {
+      if (
+        item.property !== 'title' &&
+        item.property !== 'description' &&
+        item.property !== 'accentColor'
+      ) {
         continue;
       }
       const firstConstraint: string | undefined = Object.values(item.constraints)[0];
       if (firstConstraint !== undefined) {
-        setError('title', { message: firstConstraint });
+        setError(item.property, { message: firstConstraint });
       }
     }
   }

@@ -1,0 +1,2 @@
+export const COLLECTION_DESCRIPTION_MAX_LENGTH = 500;
+export const COLLECTION_ACCENT_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;

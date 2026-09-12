@@ -72,15 +72,17 @@ export function OpenReaderScreen(): JSX.Element {
 
   if (openQuery.isError) {
     const mapped = mapOpenReaderError(openQuery.error);
-    const isClockTamper: boolean = mapped.message.toLowerCase().includes('device time changed');
+    const isClockTamper: boolean =
+      mapped.kind === 'clock_rollback' ||
+      mapped.message.toLowerCase().includes('device time changed');
     return (
       <SafeAreaView style={styles.centered} edges={['top', 'left', 'right', 'bottom']}>
-        {isClockTamper ? (
+        {isClockTamper || mapped.kind === 'clock_rollback' ? (
           <View style={styles.clockWell} accessibilityElementsHidden>
             <Text style={styles.clockMark}>!</Text>
           </View>
         ) : null}
-        {isClockTamper ? (
+        {isClockTamper || mapped.kind === 'clock_rollback' ? (
           <Text style={styles.clockTitle} accessibilityRole="header">
             Your device time changed
           </Text>
@@ -88,14 +90,24 @@ export function OpenReaderScreen(): JSX.Element {
         <Text style={isClockTamper ? styles.clockBody : styles.error} testID="reader-open-error">
           {mapped.message}
         </Text>
-        {mapped.kind === 'entitlement_denied' ? (
+        {mapped.kind === 'clock_rollback' ? (
+          <Button
+            label="Try again"
+            onPress={() => {
+              void openQuery.refetch();
+            }}
+            isFullWidth={false}
+            accessibilityLabel="Try again to reopen this book"
+            testID="reader-clock-retry-button"
+          />
+        ) : mapped.kind === 'entitlement_denied' ? (
           <Button
             label="Go to Subscribe"
             onPress={() => {
-              router.replace('/(app)/(tabs)/profile' as Href);
+              router.replace('/(app)/subscription' as Href);
             }}
             isFullWidth={false}
-            accessibilityLabel="Go to subscription on Profile"
+            accessibilityLabel="Go to subscription"
             testID="reader-subscribe-profile-button"
           />
         ) : (

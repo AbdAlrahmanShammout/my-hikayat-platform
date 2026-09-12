@@ -11,6 +11,7 @@ export type SubscriptionDisplay = {
   readonly canOfferTrialAction: boolean;
   readonly canOfferRefundAction: boolean;
   readonly canOfferCancelAction: boolean;
+  readonly canOfferReactivateCheckout: boolean;
 };
 
 /**
@@ -54,6 +55,7 @@ export function formatSubscriptionDisplay(
     canOfferTrialAction: subscription.trialEligible === true,
     canOfferRefundAction: planKind === 'monthly_paid' && !isCanceled,
     canOfferCancelAction: planKind === 'monthly_paid' && !isCanceled,
+    canOfferReactivateCheckout: isCanceled,
   };
 }
 

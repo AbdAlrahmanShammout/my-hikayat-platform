@@ -17,6 +17,7 @@ import { OfflineLeaseExpiryLabel } from '@/features/offline/components/offline-l
 import { RemoveOfflineDownloadSheet } from '@/features/offline/components/remove-offline-download-sheet';
 import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book-actions';
 import { useOfflinePackage } from '@/features/offline/hooks/use-offline-packages';
+import { formatContinueReadingLabel } from '@/features/reader/lib/continue-reading';
 import { findReadingProgress } from '@/features/reader/lib/find-reading-progress';
 import { useConnectivity } from '@/native/connectivity/use-connectivity';
 import { theme } from '@/theme/theme';
@@ -37,7 +38,7 @@ export function BookDetailScreen(): JSX.Element {
   const bookQuery = useCatalogBook(bookId);
   const billing = useReaderSubscription();
   const offlinePackage = useOfflinePackage(bookId);
-  const offlineActions = useOfflineBookActions(bookId);
+  const offlineActions = useOfflineBookActions(bookId, bookQuery.data?.title ?? 'Downloading book');
   const { isOnline } = useConnectivity();
   const [offlineMessage, setOfflineMessage] = useState<string | null>(null);
   const [isRemoveConfirmVisible, setIsRemoveConfirmVisible] = useState<boolean>(false);
@@ -83,6 +84,7 @@ export function BookDetailScreen(): JSX.Element {
   const entryCta = resolveReaderEntryCta({
     readingAccessState: billing.subscription?.readingAccessState,
     trialEligible: billing.subscription?.trialEligible,
+    subscriptionStatus: billing.subscription?.status,
     hasProgress,
     isOnline,
   });
@@ -94,6 +96,9 @@ export function BookDetailScreen(): JSX.Element {
     billing.subscription !== undefined
       ? formatSubscriptionDisplay(billing.subscription).cancelAccessNote
       : null;
+  const canShowDownload: boolean =
+    billing.subscription?.readingAccessState === 'trial' ||
+    billing.subscription?.readingAccessState === 'paid';
   const coverTestID: string =
     coverPresentation.kind === 'placeholder'
       ? 'catalog-book-cover-placeholder'
@@ -147,7 +152,7 @@ export function BookDetailScreen(): JSX.Element {
           label={entryCta.label}
           onPress={() => {
             if (entryCta.kind === 'go_to_billing') {
-              router.push('/(app)/(tabs)/profile' as Href);
+              router.push('/(app)/subscription' as Href);
               return;
             }
             router.push(`/(app)/books/read/${book.id}` as Href);
@@ -155,6 +160,18 @@ export function BookDetailScreen(): JSX.Element {
           accessibilityLabel={entryCta.label}
           testID="book-detail-read-button"
         />
+        {entryCta.secondaryCtas.map((cta) => (
+          <Button
+            key={cta.kind}
+            label={cta.label}
+            variant="secondary"
+            onPress={() => {
+              router.push('/(app)/subscription' as Href);
+            }}
+            accessibilityLabel={cta.label}
+            testID={`book-detail-secondary-${cta.kind}`}
+          />
+        ))}
         {offlinePackage.isDownloaded ? (
           <>
             <OfflineLeaseExpiryLabel
@@ -172,7 +189,7 @@ export function BookDetailScreen(): JSX.Element {
               testID="book-detail-remove-offline-button"
             />
           </>
-        ) : (
+        ) : canShowDownload ? (
           <Button
             label={isOnline ? 'Download for offline' : 'Connect to download'}
             variant="secondary"
@@ -187,7 +204,7 @@ export function BookDetailScreen(): JSX.Element {
             accessibilityLabel="Download for offline reading"
             testID="book-detail-download-offline-button"
           />
-        )}
+        ) : null}
         {offlineActions.isDownloading ? (
           <Text style={styles.note} testID="book-detail-download-progress">
             {offlineActions.downloadProgressLabel ?? 'Downloading…'}
@@ -203,6 +220,14 @@ export function BookDetailScreen(): JSX.Element {
             ? 'You will pick up where you left off.'
             : 'Reading opens in the layout-correct engine for this book.'}
         </Text>
+        {hasProgress && progressQuery.data !== undefined && progressQuery.data !== null ? (
+          <View style={styles.progressBlock} testID="book-detail-progress">
+            <Text style={styles.progressLabel}>{formatContinueReadingLabel(progressQuery.data)}</Text>
+            <View style={styles.progressTrack} accessibilityLabel={formatContinueReadingLabel(progressQuery.data)}>
+              <View style={styles.progressFill} />
+            </View>
+          </View>
+        ) : null}
         <View style={styles.divider} />
         <Text style={styles.sectionLabel}>About this book</Text>
         <Text style={styles.body}>{book.description}</Text>
@@ -412,6 +437,27 @@ const styles = StyleSheet.create({
     ...theme.typography.body,
     color: theme.colors.textMuted,
     textAlign: 'center',
+  },
+  progressBlock: {
+    gap: theme.spacing.xs,
+  },
+  progressLabel: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: theme.radii.full,
+    backgroundColor: theme.colors.canvasWarm,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    width: 28,
+    height: '100%',
+    borderRadius: theme.radii.full,
+    backgroundColor: theme.colors.primary,
   },
   divider: {
     height: 1,

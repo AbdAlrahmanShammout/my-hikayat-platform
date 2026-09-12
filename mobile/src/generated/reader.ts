@@ -37,6 +37,20 @@ export interface paths {
       };
     };
   };
+  "/reader/books/{bookId}/offline-download": {
+    post: {
+      parameters: { path: { bookId: number } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['OfflineDownloadResponse'] } };
+      };
+    };
+    delete: {
+      parameters: { path: { bookId: number } };
+      responses: {
+        "204": { content: { 'application/json': never } };
+      };
+    };
+  };
   "/reader/categories": {
     get: {
       parameters: { query?: { limit?: number; offset?: number } };
@@ -302,11 +316,18 @@ export interface paths {
       };
     };
   };
+  "/reader/platform-settings": {
+    get: {
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['PlatformSettingsResponse'] } };
+      };
+    };
+  };
 }
 
 export interface components {
   schemas: {
-    UserResponse: { id: number; createdAt: string; updatedAt: string; email: string; role: "reader" | "author" | "admin"; isPublisher: boolean };
+    UserResponse: { id: number; createdAt: string; updatedAt: string; email: string; displayName: string | null; role: "reader" | "author" | "admin"; isPublisher: boolean };
     CategoryResponse: { id: number; createdAt: string; updatedAt: string; name: string; slug: string; categoryWeight: number };
     BookResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string; layoutType?: "reflowable" | "fixed_layout" | null; bookType: "standard_chapter" | "picture_book" | "illustrated_chapter"; publishingStatus: "pending" | "in_review" | "approved" | "rejected"; processingStatus: "not_started" | "processing" | "ready" | "failed"; publishedAt?: unknown | null; ownerId: number; owner?: components['schemas']['UserResponse']; categories: Array<components['schemas']['CategoryResponse']>; authorName?: string | null; publisherName?: string | null; cover?: components['schemas']['BookCoverResponse'] | null };
     BookCoverResponse: { url: string; expiresAt: string; contentType: string };
@@ -316,7 +337,7 @@ export interface components {
     OfflineReadingLeaseResponse: { version: 1; keyId: string; userId: number; bookId: number; bookAssetId: number; accessKind: "trial" | "paid"; issuedAt: string; expiresAt: string; signature: string };
     CreateBookAssetContentKeyResponseDto: { bookId: number; bookAssetId: number; sessionId: number; keyId: string; algorithm: "aes-256-gcm"; keyDelivery: "plain"; key: string; expiresAt: string; offlineLease: components['schemas']['OfflineReadingLeaseResponse'] };
     GetCategoriesResponseDto: { categories: Array<components['schemas']['CategoryResponse']>; total: number };
-    CollectionDiscoveryResponse: { id: number; createdAt: string; updatedAt: string; title: string; books: Array<components['schemas']['BookResponse']> };
+    CollectionDiscoveryResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string | null; accentColor: string | null; books: Array<components['schemas']['BookResponse']> };
     GetDiscoveryCollectionsResponseDto: { collections: Array<components['schemas']['CollectionDiscoveryResponse']>; total: number };
     StartReadingSessionRequestDto: { spineIndex?: number; scrollOffset?: number; spreadIndex?: number; pageNumber?: number };
     ReadingSessionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; bookId: number; layoutType: "reflowable" | "fixed_layout"; startedAt: string; endedAt?: unknown | null; activeDurationMs: number; idleDurationMs: number; spineIndex?: unknown | null; scrollOffset?: unknown | null; spreadIndex?: unknown | null; pageNumber?: unknown | null };
@@ -342,7 +363,7 @@ export interface components {
     SubscriptionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; planId: number; status: "active" | "canceled"; startedAt: string; currentPeriodStart?: unknown | null; currentPeriodEnd?: unknown | null; canceledAt?: unknown | null; activatedAt?: unknown | null; trialStartedAt?: unknown | null; trialEndsAt?: unknown | null; readingAccessState: "free" | "trial" | "paid"; trialEligible: boolean; plan?: components['schemas']['PlanResponse'] };
     StripeWebhookReceivedResponseDto: { received: boolean };
     AuthSessionResponseDto: { accessToken: string; refreshToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
-    RegisterRequestDto: { email: string; password: string };
+    RegisterRequestDto: { email: string; password: string; displayName: string };
     AcceptAdminInvitationRequestDto: { token: string; password: string };
     LoginRequestDto: { email: string; password: string };
     RefreshSessionRequestDto: { refreshToken: string };
@@ -351,5 +372,7 @@ export interface components {
     ForgotPasswordResponseDto: { message: string };
     ResetPasswordRequestDto: { token: string; password: string };
     ResetPasswordResponseDto: { message: string };
+    PlatformSettingsResponse: { privacyPolicyUrl: string | null; termsOfServiceUrl: string | null; aboutMission: string | null; authCoverMediaUrl: string | null };
+    OfflineDownloadResponse: { id: number; createdAt: string; updatedAt: string; userId: number; bookId: number };
   };
 }

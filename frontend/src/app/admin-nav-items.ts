@@ -3,6 +3,7 @@ import {
   BookOpen,
   FolderKanban,
   LayoutDashboard,
+  Link2,
   Package,
   Receipt,
   Scale,
@@ -27,6 +28,7 @@ export const ADMIN_NAV_ITEMS: readonly AdminNavItem[] = [
   { to: '/admin/subscriptions', label: 'Subscriptions', icon: Receipt },
   { to: '/admin/collections', label: 'Collections', icon: FolderKanban },
   { to: '/admin/categories', label: 'Categories', icon: Tags },
+  { to: '/admin/settings', label: 'Settings', icon: Link2 },
   { to: '/admin/revenue', label: 'Revenue', icon: Scale },
   { to: '/admin/audit', label: 'Audit', icon: ScrollText },
 ];

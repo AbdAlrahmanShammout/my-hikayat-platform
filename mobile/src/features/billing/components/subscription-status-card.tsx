@@ -63,6 +63,7 @@ export function SubscriptionStatusCard(): JSX.Element {
         <SubscribeButton
           isCheckingOut={billing.isCheckingOut}
           disabled={effectivePlanId === null}
+          label="Subscribe"
           onPress={async () => {
             if (effectivePlanId === null) {
               setCheckoutMessage('Ask a grown-up to pick a plan first.');
@@ -161,6 +162,7 @@ export function SubscriptionStatusCard(): JSX.Element {
       <SubscribeButton
         isCheckingOut={billing.isCheckingOut}
         disabled={effectivePlanId === null}
+        label={display.canOfferReactivateCheckout ? 'Reactivate' : 'Subscribe'}
         onPress={async () => {
           if (effectivePlanId === null) {
             setCheckoutMessage('Ask a grown-up to pick a plan first.');
@@ -208,9 +210,10 @@ export function SubscriptionStatusCard(): JSX.Element {
       >
         <View style={styles.sheetBody}>
           <Text style={styles.sheetTitle}>Cancel subscription?</Text>
-          <Text style={styles.sheetMessage}>
-            Cancel your subscription? You can keep reading until the paid
-            period ends. This is not a refund.
+          <Text style={styles.sheetMessage} testID="billing-cancel-sheet-copy">
+            {display.periodLabel === null
+              ? 'Cancel your subscription? You can keep reading until the paid period ends. This is not a refund.'
+              : `Cancel your subscription? You can keep reading until the paid period ends (${display.periodLabel}). This is not a refund.`}
           </Text>
           {billing.cancelErrorMessage !== null ? (
             <FormError message={billing.cancelErrorMessage} testID="billing-cancel-error" />
@@ -342,7 +345,11 @@ function PlanPicker(input: {
       <Text style={styles.label}>Choose a plan</Text>
       {input.plans.map((plan) => {
         const isSelected: boolean = plan.id === input.selectedPlanId;
-        const priceLabel: string = formatPlanPriceLabel(plan.amountCents, plan.currency);
+        const priceLabel: string = formatPlanPriceLabel(
+          plan.amountCents,
+          plan.currency,
+          plan.interval,
+        );
         return (
           <Pressable
             key={plan.id}
@@ -358,11 +365,14 @@ function PlanPicker(input: {
             <Text style={styles.planName}>{plan.name}</Text>
             <Text style={styles.planDescription}>{plan.description}</Text>
             {priceLabel.length > 0 ? (
-              <Text style={styles.planPrice}>{priceLabel} / month</Text>
+              <Text style={styles.planPrice}>{priceLabel}</Text>
             ) : null}
           </Pressable>
         );
       })}
+      <Text style={styles.note} testID="billing-download-cap-note">
+        Up to 3 downloaded books at once.
+      </Text>
     </View>
   );
 }
@@ -370,17 +380,18 @@ function PlanPicker(input: {
 function SubscribeButton(input: {
   readonly isCheckingOut: boolean;
   readonly disabled: boolean;
+  readonly label: string;
   readonly onPress: () => Promise<void>;
 }): JSX.Element {
   return (
     <Button
-      label="Subscribe"
+      label={input.label}
       isLoading={input.isCheckingOut}
       isDisabled={input.disabled}
       onPress={() => {
         void input.onPress();
       }}
-      accessibilityLabel="Subscribe with Stripe Checkout"
+      accessibilityLabel={`${input.label} with Stripe Checkout`}
       testID="billing-subscribe-button"
     />
   );

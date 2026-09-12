@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { theme } from '@/theme/theme';
 
 /**
- * Kids-friendly main shell: Home, My books, Me.
+ * Kids-friendly main shell: Home, My Books, Me.
  */
 export default function TabsLayout(): JSX.Element {
   return (
@@ -34,12 +34,12 @@ export default function TabsLayout(): JSX.Element {
       <Tabs.Screen
         name="library"
         options={{
-          title: 'My books',
+          title: 'My Books',
           tabBarButtonTestID: 'tab-library',
           tabBarAccessibilityLabel: 'Library tab',
           tabBarIcon: ({ color }) => <BooksTabIcon color={color} />,
           tabBarLabel: ({ color, focused }) => (
-            <TabLabel label="My books" color={color} focused={focused} />
+            <TabLabel label="My Books" color={color} focused={focused} />
           ),
         }}
       />

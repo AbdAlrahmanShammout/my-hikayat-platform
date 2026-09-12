@@ -32,6 +32,8 @@ describe('openOfflineReadingShell', () => {
       contentType: 'application/epub+zip',
       byteSize: 100,
       ciphertextFileName: '5-9.enc',
+      coverFileName: null,
+      authorName: null,
       downloadedAt: '2026-08-25T00:00:00.000Z',
       offlineLease: null,
     });
@@ -65,6 +67,8 @@ describe('openOfflineReadingShell', () => {
       contentType: 'application/epub+zip',
       byteSize: 100,
       ciphertextFileName: '5-9.enc',
+      coverFileName: null,
+      authorName: null,
       downloadedAt: '2026-08-25T00:00:00.000Z',
       offlineLease: null,
     });

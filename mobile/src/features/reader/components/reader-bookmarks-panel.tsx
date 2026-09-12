@@ -114,7 +114,7 @@ export function ReaderBookmarksPanel({
         testID="reader-bookmarks-open"
       >
         <Text style={[styles.openLabel, tone === 'dark' ? styles.openLabelDark : null]}>
-          Bookmarks
+          List
         </Text>
       </Pressable>
       <BottomSheet

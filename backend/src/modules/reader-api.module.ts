@@ -13,6 +13,10 @@ import { CategoryReaderController } from '@/modules/category/category.reader.con
 import { CollectionModule } from '@/modules/collection/collection.module';
 import { CollectionReaderController } from '@/modules/collection/collection.reader.controller';
 import { EntitlementModule } from '@/modules/entitlement/entitlement.module';
+import { OfflineDownloadModule } from '@/modules/offline-download/offline-download.module';
+import { OfflineDownloadReaderController } from '@/modules/offline-download/offline-download.reader.controller';
+import { PlatformSettingModule } from '@/modules/platform-setting/platform-setting.module';
+import { PlatformSettingReaderController } from '@/modules/platform-setting/platform-setting.reader.controller';
 import { ReadingIntelligenceModule } from '@/modules/reading-intelligence/reading-intelligence.module';
 import { ReadingIntelligenceReaderController } from '@/modules/reading-intelligence/reading-intelligence.reader.controller';
 import { ReadingModule } from '@/modules/reading/reading.module';
@@ -34,6 +38,8 @@ import { UserReaderController } from '@/modules/user/user.reader.controller';
     CategoryModule,
     CollectionModule,
     EntitlementModule,
+    OfflineDownloadModule,
+    PlatformSettingModule,
     ReadingIntelligenceModule,
     ReadingModule,
     SearchModule,
@@ -45,6 +51,8 @@ import { UserReaderController } from '@/modules/user/user.reader.controller';
     BookAssetReaderController,
     CategoryReaderController,
     CollectionReaderController,
+    OfflineDownloadReaderController,
+    PlatformSettingReaderController,
     ReadingIntelligenceReaderController,
     ReadingSyncReaderController,
     ReadingReaderController,

@@ -7,7 +7,9 @@ describe('formatPlanPriceLabel', () => {
     expect(actual).toMatch(/9\.99|9,99/);
   });
 
-  it('returns empty when amount is missing', () => {
-    expect(formatPlanPriceLabel(null, 'usd')).toBe('');
+  it('appends an interval from the API when present', () => {
+    const actual = formatPlanPriceLabel(1200, 'usd', 'month');
+    expect(actual).toMatch(/month/);
+    expect(actual).not.toMatch(/month.*month/);
   });
 });

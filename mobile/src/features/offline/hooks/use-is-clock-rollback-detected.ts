@@ -1,22 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { resolveTrustedNow } from '@/storage/offline-trusted-time-storage';
 
 /**
  * Display-only device-clock rollback flag. Open-path lease validation stays fail-closed.
  */
-export function useIsClockRollbackDetected(): boolean {
+export function useIsClockRollbackDetected(): {
+  readonly isClockRollbackDetected: boolean;
+  readonly refetch: () => Promise<void>;
+} {
   const [isClockRollbackDetected, setIsClockRollbackDetected] = useState<boolean>(false);
-  useEffect(() => {
-    let isCancelled = false;
-    void resolveTrustedNow().then((trusted) => {
-      if (!isCancelled) {
-        setIsClockRollbackDetected(trusted.isClockRollbackDetected);
-      }
-    });
-    return () => {
-      isCancelled = true;
-    };
+  const refetch = useCallback(async (): Promise<void> => {
+    const trusted = await resolveTrustedNow();
+    setIsClockRollbackDetected(trusted.isClockRollbackDetected);
   }, []);
-  return isClockRollbackDetected;
+  useEffect(() => {
+    void refetch();
+  }, [refetch]);
+  return {
+    isClockRollbackDetected,
+    refetch,
+  };
 }

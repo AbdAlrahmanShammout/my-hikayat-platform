@@ -1,113 +1,188 @@
 import type { JSX } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { ReflowableReaderSettings } from '@/features/reader/lib/reflowable-reader-settings';
+import {
+  applyFontSizePreset,
+  applyLineSpacingPreset,
+  applyMarginPreset,
+  resolveFontSizePresetId,
+  resolveLineSpacingPresetId,
+  resolveMarginPresetId,
+  type FontSizePresetId,
+  type LineSpacingPresetId,
+  type MarginPresetId,
+  type ReflowableReaderSettings,
+} from '@/features/reader/lib/reflowable-reader-settings';
 import { theme } from '@/theme/theme';
 
 type ReflowableReaderSettingsControlsProps = {
   readonly settings: ReflowableReaderSettings;
-  readonly onIncreaseFont: () => void;
-  readonly onDecreaseFont: () => void;
-  readonly onIncreaseLine: () => void;
-  readonly onDecreaseLine: () => void;
-  readonly onIncreaseMargin: () => void;
-  readonly onDecreaseMargin: () => void;
+  readonly onApplySettings: (next: ReflowableReaderSettings) => void;
   readonly onToggleTheme: () => void;
   readonly testIDPrefix?: string;
 };
 
+const FONT_PRESETS: { readonly id: FontSizePresetId; readonly label: string }[] = [
+  { id: 's', label: 'S' },
+  { id: 'm', label: 'M' },
+  { id: 'l', label: 'L' },
+];
+
+const LINE_PRESETS: { readonly id: LineSpacingPresetId; readonly label: string }[] = [
+  { id: 'compact', label: 'Compact' },
+  { id: 'normal', label: 'Normal' },
+  { id: 'relaxed', label: 'Relaxed' },
+];
+
+const MARGIN_PRESETS: { readonly id: MarginPresetId; readonly label: string }[] = [
+  { id: 'narrow', label: 'Narrow' },
+  { id: 'normal', label: 'Normal' },
+  { id: 'wide', label: 'Wide' },
+];
+
 /**
- * Shared controls for reflowable font, spacing, margin, and theme.
+ * Shared Figma-mapped chips for reflowable font, spacing, margin, and theme.
  */
 export function ReflowableReaderSettingsControls(
   props: ReflowableReaderSettingsControlsProps,
 ): JSX.Element {
   const prefix: string = props.testIDPrefix ?? 'reader';
+  const selectedFont: FontSizePresetId = resolveFontSizePresetId(props.settings.fontScalePercent);
+  const selectedLine: LineSpacingPresetId = resolveLineSpacingPresetId(props.settings.lineHeight);
+  const selectedMargin: MarginPresetId = resolveMarginPresetId(props.settings.marginPx);
   return (
-    <View style={styles.row} testID={`${prefix}-reflowable-settings`}>
-      <SettingsButton
-        label="A−"
-        accessibilityLabel="Decrease font size"
-        testID={`${prefix}-font-decrease`}
-        onPress={props.onDecreaseFont}
+    <View style={styles.block} testID={`${prefix}-reflowable-settings`}>
+      <PresetRow
+        label="Font size"
+        testID={`${prefix}-font-presets`}
+        options={FONT_PRESETS}
+        selectedId={selectedFont}
+        onSelect={(id) => {
+          props.onApplySettings(applyFontSizePreset(props.settings, id));
+        }}
       />
-      <SettingsButton
-        label="A+"
-        accessibilityLabel="Increase font size"
-        testID={`${prefix}-font-increase`}
-        onPress={props.onIncreaseFont}
+      <PresetRow
+        label="Line spacing"
+        testID={`${prefix}-line-presets`}
+        options={LINE_PRESETS}
+        selectedId={selectedLine}
+        onSelect={(id) => {
+          props.onApplySettings(applyLineSpacingPreset(props.settings, id));
+        }}
       />
-      <SettingsButton
-        label="Line −"
-        accessibilityLabel="Decrease line spacing"
-        testID={`${prefix}-line-decrease`}
-        onPress={props.onDecreaseLine}
+      <PresetRow
+        label="Page margin"
+        testID={`${prefix}-margin-presets`}
+        options={MARGIN_PRESETS}
+        selectedId={selectedMargin}
+        onSelect={(id) => {
+          props.onApplySettings(applyMarginPreset(props.settings, id));
+        }}
       />
-      <SettingsButton
-        label="Line +"
-        accessibilityLabel="Increase line spacing"
-        testID={`${prefix}-line-increase`}
-        onPress={props.onIncreaseLine}
-      />
-      <SettingsButton
-        label="Margin −"
-        accessibilityLabel="Decrease margin"
-        testID={`${prefix}-margin-decrease`}
-        onPress={props.onDecreaseMargin}
-      />
-      <SettingsButton
-        label="Margin +"
-        accessibilityLabel="Increase margin"
-        testID={`${prefix}-margin-increase`}
-        onPress={props.onIncreaseMargin}
-      />
-      <SettingsButton
-        label={props.settings.theme === 'light' ? 'Dark' : 'Light'}
+      <Pressable
+        style={styles.themeButton}
+        onPress={props.onToggleTheme}
+        accessibilityRole="button"
         accessibilityLabel="Toggle reading theme"
         testID={`${prefix}-theme-toggle`}
-        onPress={props.onToggleTheme}
-      />
+      >
+        <Text style={styles.themeLabel}>
+          {props.settings.theme === 'light' ? 'Dark pages' : 'Light pages'}
+        </Text>
+      </Pressable>
     </View>
   );
 }
 
-function SettingsButton(input: {
+function PresetRow<TId extends string>(input: {
   readonly label: string;
-  readonly accessibilityLabel: string;
   readonly testID: string;
-  readonly onPress: () => void;
+  readonly options: ReadonlyArray<{ readonly id: TId; readonly label: string }>;
+  readonly selectedId: TId;
+  readonly onSelect: (id: TId) => void;
 }): JSX.Element {
   return (
-    <Pressable
-      style={styles.button}
-      onPress={input.onPress}
-      accessibilityRole="button"
-      accessibilityLabel={input.accessibilityLabel}
-      testID={input.testID}
-    >
-      <Text style={styles.label}>{input.label}</Text>
-    </Pressable>
+    <View style={styles.group} testID={input.testID}>
+      <Text style={styles.groupLabel}>{input.label}</Text>
+      <View style={styles.row}>
+        {input.options.map((option) => {
+          const isSelected: boolean = option.id === input.selectedId;
+          return (
+            <Pressable
+              key={option.id}
+              style={[styles.chip, isSelected ? styles.chipSelected : null]}
+              onPress={() => {
+                input.onSelect(option.id);
+              }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isSelected }}
+              accessibilityLabel={`${input.label} ${option.label}`}
+              testID={`${input.testID}-${option.id}`}
+            >
+              <Text style={[styles.chipLabel, isSelected ? styles.chipLabelSelected : null]}>
+                {option.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  block: {
+    gap: theme.spacing.sm,
+  },
+  group: {
+    gap: theme.spacing.xs,
+  },
+  groupLabel: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: theme.colors.textMuted,
+  },
   row: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: theme.spacing.xs,
   },
-  button: {
+  chip: {
     minHeight: 44,
-    minWidth: 44,
-    paddingHorizontal: theme.spacing.sm,
-    borderRadius: theme.radii.md,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radii.full,
     borderWidth: 1.5,
     borderColor: theme.colors.borderDefault,
     backgroundColor: theme.colors.canvasWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: {
+  chipSelected: {
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primary,
+  },
+  chipLabel: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textPrimary,
+  },
+  chipLabelSelected: {
+    color: theme.colors.textOnBrand,
+  },
+  themeButton: {
+    minHeight: 44,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.radii.md,
+    borderWidth: 1.5,
+    borderColor: theme.colors.borderDefault,
+    backgroundColor: theme.colors.canvasWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-start',
+  },
+  themeLabel: {
     ...theme.typography.label,
     fontWeight: theme.typography.weights.semibold,
     color: theme.colors.textPrimary,

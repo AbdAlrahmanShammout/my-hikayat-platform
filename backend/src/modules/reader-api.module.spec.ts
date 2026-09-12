@@ -97,6 +97,18 @@ describe('ReaderApiModule', () => {
           count: jest.fn(),
           update: jest.fn(),
         },
+        platformSetting: {
+          findFirst: jest.fn(),
+          findMany: jest.fn(),
+          create: jest.fn(),
+          update: jest.fn(),
+        },
+        offlineDownload: {
+          findFirst: jest.fn(),
+          count: jest.fn(),
+          create: jest.fn(),
+          update: jest.fn(),
+        },
       })
       .compile();
     const actualModule: ReaderApiModule = moduleRef.get(ReaderApiModule);

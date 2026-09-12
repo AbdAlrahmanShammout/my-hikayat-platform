@@ -17,12 +17,6 @@ import { loadReflowableEpubBook } from '@/features/reader/lib/load-reflowable-ep
 import type { ParsedEpubBook, ParsedEpubChapter } from '@/features/reader/lib/parse-epub-book';
 import {
   DEFAULT_REFLOWABLE_READER_SETTINGS,
-  decreaseFontScale,
-  decreaseLineHeight,
-  decreaseMargin,
-  increaseFontScale,
-  increaseLineHeight,
-  increaseMargin,
   toggleReaderTheme,
   type ReflowableReaderSettings,
 } from '@/features/reader/lib/reflowable-reader-settings';
@@ -33,6 +27,7 @@ import {
 import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-reading-progress-best-effort';
 import type { ReadingPositionSnapshot } from '@/features/reader/lib/reading-position';
 import { resolveReflowableContentProgress } from '@/features/reader/lib/resolve-reflowable-content-progress';
+import { ReaderBookmarkToggle } from '@/features/reader/components/reader-bookmark-toggle';
 import { ReaderBookmarksPanel } from '@/features/reader/components/reader-bookmarks-panel';
 import { ReaderChromeButton } from '@/features/reader/components/reader-chrome-button';
 import { ReflowableReaderSettingsControls } from '@/features/reader/components/reflowable-reader-settings-controls';
@@ -298,6 +293,16 @@ export function ReflowableReaderEngine({
             </Text>
           </View>
           <View style={styles.topActions}>
+            <ReaderBookmarkToggle
+              bookId={book.id}
+              layoutType="reflowable"
+              tone={chromeTone}
+              currentPosition={{
+                kind: 'reflowable',
+                spineIndex,
+                scrollOffset,
+              }}
+            />
             <ReaderBookmarksPanel
               bookId={book.id}
               layoutType="reflowable"
@@ -414,24 +419,7 @@ export function ReflowableReaderEngine({
           </Text>
           <ReflowableReaderSettingsControls
             settings={readerSettings}
-            onDecreaseFont={() => {
-              applyReaderSettings(decreaseFontScale(readerSettings));
-            }}
-            onIncreaseFont={() => {
-              applyReaderSettings(increaseFontScale(readerSettings));
-            }}
-            onDecreaseLine={() => {
-              applyReaderSettings(decreaseLineHeight(readerSettings));
-            }}
-            onIncreaseLine={() => {
-              applyReaderSettings(increaseLineHeight(readerSettings));
-            }}
-            onDecreaseMargin={() => {
-              applyReaderSettings(decreaseMargin(readerSettings));
-            }}
-            onIncreaseMargin={() => {
-              applyReaderSettings(increaseMargin(readerSettings));
-            }}
+            onApplySettings={applyReaderSettings}
             onToggleTheme={() => {
               applyReaderSettings(toggleReaderTheme(readerSettings));
             }}

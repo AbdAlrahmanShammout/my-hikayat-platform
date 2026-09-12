@@ -21,7 +21,9 @@ import { UserRole } from '@/modules/user/enum/general.enum';
 import { AdminInvitationAlreadyAdminException } from '@/modules/user/exceptions/admin-invitation-already-admin.exception';
 import { UserAdminInviteRequiredException } from '@/modules/user/exceptions/user-admin-invite-required.exception';
 import { UserEmailConflictException } from '@/modules/user/exceptions/user-email-conflict.exception';
+import { DISPLAY_NAME_MAX_LENGTH } from '@/modules/user/consts/display-name.constant';
 import { UserInvalidCapabilityException } from '@/modules/user/exceptions/user-invalid-capability.exception';
+import { UserInvalidDisplayNameException } from '@/modules/user/exceptions/user-invalid-display-name.exception';
 import { UserLastAdminException } from '@/modules/user/exceptions/user-last-admin.exception';
 import { UserSelfManagementException } from '@/modules/user/exceptions/user-self-management.exception';
 import { UserRepository } from '@/modules/user/repository/user.repository';
@@ -51,9 +53,14 @@ export class UserService {
     if (existingUser !== null) {
       throw new UserEmailConflictException(email);
     }
+    const displayName: string | null = UserService.normalizeOptionalDisplayName(input.displayName);
+    if (input.displayName !== undefined && displayName === null) {
+      throw new UserInvalidDisplayNameException();
+    }
     return this.userRepository.create({
       email,
       passwordHash: input.passwordHash,
+      displayName,
       role: UserRole.READER,
       isPublisher: false,
     });
@@ -202,6 +209,7 @@ export class UserService {
             {
               email,
               passwordHash: input.passwordHash,
+              displayName: null,
               role: UserRole.ADMIN,
               isPublisher: false,
             },
@@ -327,5 +335,16 @@ export class UserService {
 
   private static normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
+  }
+
+  private static normalizeOptionalDisplayName(value: string | undefined): string | null {
+    if (value === undefined) {
+      return null;
+    }
+    const displayName: string = value.trim().replace(/\s+/g, ' ');
+    if (displayName.length === 0 || displayName.length > DISPLAY_NAME_MAX_LENGTH) {
+      return null;
+    }
+    return displayName;
   }
 }

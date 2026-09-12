@@ -105,7 +105,7 @@ export function ResetPasswordScreen(): JSX.Element {
             <FormError message={errors.root.message} testID="auth-reset-error" />
           ) : null}
           {successMessage !== null ? (
-            <View style={styles.successBanner}>
+            <View style={styles.sentCard} testID="auth-reset-success-card">
               <Text style={styles.success} testID="auth-reset-success">
                 {successMessage}
               </Text>
@@ -203,12 +203,13 @@ const styles = StyleSheet.create({
     ...theme.typography.body,
     color: theme.colors.textMuted,
   },
-  successBanner: {
-    backgroundColor: theme.colors.successBg,
+  sentCard: {
+    backgroundColor: theme.colors.surface,
     borderRadius: theme.radii.lg,
-    padding: theme.spacing.md,
     borderWidth: 1,
-    borderColor: theme.colors.success,
+    borderColor: theme.colors.borderSubtle,
+    padding: theme.spacing.cardInner,
+    gap: theme.spacing.sm,
   },
   success: {
     ...theme.typography.body,

@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useOfflinePackages } from '@/features/offline/hooks/use-offline-packages';
+import { LegalLinkRow } from '@/features/platform-settings/components/legal-link-row';
 import { ReflowableReaderSettingsControls } from '@/features/reader/components/reflowable-reader-settings-controls';
 import { usePersistedReflowableReaderSettings } from '@/features/reader/hooks/use-persisted-reflowable-reader-settings';
 import { theme } from '@/theme/theme';
@@ -62,12 +63,7 @@ export function SettingsScreen(): JSX.Element {
               </Text>
               <ReflowableReaderSettingsControls
                 settings={readingPrefs.settings}
-                onDecreaseFont={readingPrefs.decreaseFont}
-                onIncreaseFont={readingPrefs.increaseFont}
-                onDecreaseLine={readingPrefs.decreaseLine}
-                onIncreaseLine={readingPrefs.increaseLine}
-                onDecreaseMargin={readingPrefs.decreasePageMargin}
-                onIncreaseMargin={readingPrefs.increasePageMargin}
+                onApplySettings={readingPrefs.applySettings}
                 onToggleTheme={readingPrefs.toggleTheme}
                 testIDPrefix="settings"
               />
@@ -106,10 +102,10 @@ export function SettingsScreen(): JSX.Element {
               router.push('/(app)/(tabs)/library' as Href);
             }}
             accessibilityRole="button"
-            accessibilityLabel="Open My books"
+            accessibilityLabel="Open My Books"
             testID="settings-open-my-books"
           >
-            <Text style={styles.rowLabel}>Manage downloads in My books</Text>
+            <Text style={styles.rowLabel}>Manage downloads in My Books</Text>
             <Text style={styles.chevron}>›</Text>
           </Pressable>
         </View>
@@ -119,6 +115,8 @@ export function SettingsScreen(): JSX.Element {
           <Text style={styles.cardBody} testID="settings-about-version">
             {`My Hikayat · version ${appVersion}`}
           </Text>
+          <LegalLinkRow kind="privacy" testID="settings-privacy-policy-row" withLeadingDivider={false} />
+          <LegalLinkRow kind="terms" testID="settings-terms-row" />
           <Text style={styles.meta}>
             Sign out stays on Me. Notification preferences are not available yet.
           </Text>
