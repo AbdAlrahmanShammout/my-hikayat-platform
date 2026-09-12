@@ -7,12 +7,13 @@ import { resolveTrustedNow } from '@/storage/offline-trusted-time-storage';
  */
 export function useIsClockRollbackDetected(): {
   readonly isClockRollbackDetected: boolean;
-  readonly refetch: () => Promise<void>;
+  readonly refetch: () => Promise<boolean>;
 } {
   const [isClockRollbackDetected, setIsClockRollbackDetected] = useState<boolean>(false);
-  const refetch = useCallback(async (): Promise<void> => {
+  const refetch = useCallback(async (): Promise<boolean> => {
     const trusted = await resolveTrustedNow();
     setIsClockRollbackDetected(trusted.isClockRollbackDetected);
+    return trusted.isClockRollbackDetected;
   }, []);
   useEffect(() => {
     void refetch();

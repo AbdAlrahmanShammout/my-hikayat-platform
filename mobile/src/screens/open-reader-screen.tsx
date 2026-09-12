@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState, type JSX } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
+import { DeviceClockTamperPanel } from '@/features/offline/components/device-clock-tamper-panel';
 import { saveOfflineReadingProgressBestEffort } from '@/features/offline/lib/save-offline-reading-progress-best-effort';
 import { FixedLayoutReaderEngine } from '@/features/reader/components/fixed-layout-reader-engine';
 import { ReflowableReaderEngine } from '@/features/reader/components/reflowable-reader-engine';
@@ -72,35 +73,25 @@ export function OpenReaderScreen(): JSX.Element {
 
   if (openQuery.isError) {
     const mapped = mapOpenReaderError(openQuery.error);
-    const isClockTamper: boolean =
-      mapped.kind === 'clock_rollback' ||
-      mapped.message.toLowerCase().includes('device time changed');
-    return (
-      <SafeAreaView style={styles.centered} edges={['top', 'left', 'right', 'bottom']}>
-        {isClockTamper || mapped.kind === 'clock_rollback' ? (
-          <View style={styles.clockWell} accessibilityElementsHidden>
-            <Text style={styles.clockMark}>!</Text>
-          </View>
-        ) : null}
-        {isClockTamper || mapped.kind === 'clock_rollback' ? (
-          <Text style={styles.clockTitle} accessibilityRole="header">
-            Your device time changed
-          </Text>
-        ) : null}
-        <Text style={isClockTamper ? styles.clockBody : styles.error} testID="reader-open-error">
-          {mapped.message}
-        </Text>
-        {mapped.kind === 'clock_rollback' ? (
-          <Button
-            label="Try again"
-            onPress={() => {
+    if (mapped.kind === 'clock_rollback') {
+      return (
+        <SafeAreaView style={styles.centered} edges={['top', 'left', 'right', 'bottom']}>
+          <DeviceClockTamperPanel
+            onReconnect={() => {
               void openQuery.refetch();
             }}
-            isFullWidth={false}
-            accessibilityLabel="Try again to reopen this book"
-            testID="reader-clock-retry-button"
+            reconnectTestID="reader-clock-retry-button"
           />
-        ) : mapped.kind === 'entitlement_denied' ? (
+          <CloseWithoutSession />
+        </SafeAreaView>
+      );
+    }
+    return (
+      <SafeAreaView style={styles.centered} edges={['top', 'left', 'right', 'bottom']}>
+        <Text style={styles.error} testID="reader-open-error">
+          {mapped.message}
+        </Text>
+        {mapped.kind === 'entitlement_denied' ? (
           <Button
             label="Go to Subscribe"
             onPress={() => {
@@ -268,31 +259,6 @@ const styles = StyleSheet.create({
   error: {
     ...theme.typography.body,
     color: theme.colors.danger,
-    textAlign: 'center',
-  },
-  clockWell: {
-    width: theme.spacing.xxxl + theme.spacing.lg,
-    height: theme.spacing.xxxl + theme.spacing.lg,
-    borderRadius: theme.radii.full,
-    backgroundColor: theme.colors.warningBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  clockMark: {
-    ...theme.typography.title,
-    color: theme.colors.warning,
-  },
-  clockTitle: {
-    ...theme.typography.title,
-    fontSize: theme.typography.scale['2xl'],
-    fontStyle: 'italic',
-    fontWeight: theme.typography.weights.regular,
-    color: theme.colors.textPrimary,
-    textAlign: 'center',
-  },
-  clockBody: {
-    ...theme.typography.body,
-    color: theme.colors.textMuted,
     textAlign: 'center',
   },
 });

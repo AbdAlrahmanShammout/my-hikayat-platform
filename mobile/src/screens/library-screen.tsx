@@ -57,14 +57,13 @@ export function LibraryScreen(): JSX.Element {
               Connect to the internet to verify your offline access.
             </Text>
             <Button
-              label="Try again"
+              label="Reconnect to unlock"
               variant="secondary"
               onPress={() => {
-                void clockRollback.refetch();
-                void offline.refetch();
+                router.push('/(app)/clock-tamper' as Href);
               }}
-              accessibilityLabel="Try again to verify offline access"
-              testID="library-clock-retry"
+              accessibilityLabel="Reconnect to unlock offline books"
+              testID="library-clock-reconnect"
             />
           </View>
         ) : null}
