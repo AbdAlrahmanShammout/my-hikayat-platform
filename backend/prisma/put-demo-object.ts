@@ -8,7 +8,7 @@ export type DemoPutObjectInput = {
 
 /**
  * Uploads a demo object to the same S3-compatible bucket the API uses (STORAGE_*).
- * Does not start Docker. Staging/production must already have the bucket.
+ * Staging/production must already have the bucket.
  */
 export async function putDemoObject(input: DemoPutObjectInput): Promise<void> {
   const client: S3Client = createDemoS3Client();
@@ -55,7 +55,7 @@ function createDemoS3Client(): S3Client {
 function formatDemoStorageError(key: string, bucket: string, err: unknown): string {
   const endpoint: string = process.env.STORAGE_ENDPOINT?.trim() || 'AWS S3';
   const message: string = err instanceof Error ? err.message : 'unknown storage error';
-  return `Could not upload ${key} to ${bucket} (${endpoint}): ${message}. Point STORAGE_* at the same S3-compatible bucket the API uses. Seed does not use Docker.`;
+  return `Could not upload ${key} to ${bucket} (${endpoint}): ${message}. Point STORAGE_* at the same S3 bucket the API uses.`;
 }
 
 function readRequiredEnv(name: string): string {
