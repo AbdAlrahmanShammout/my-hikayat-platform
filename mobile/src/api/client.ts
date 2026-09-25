@@ -75,12 +75,28 @@ export async function requestJson<TResponse>(input: RequestJsonInput): Promise<T
 
 async function executeFetch(input: RequestJsonInput): Promise<Response> {
   const { apiBaseUrl } = getMobilePublicConfig();
-  return fetch(`${apiBaseUrl}${input.path}`, {
-    method: input.method,
-    headers: buildRequestHeaders(input.body !== undefined, input.accessToken),
-    body: input.body === undefined ? undefined : JSON.stringify(input.body),
-    credentials: 'omit',
-  });
+  const url: string = `${apiBaseUrl}${input.path}`;
+  if (__DEV__) {
+    console.log(`[api] ${input.method} ${url}`);
+  }
+  try {
+    const response: Response = await fetch(url, {
+      method: input.method,
+      headers: buildRequestHeaders(input.body !== undefined, input.accessToken),
+      body: input.body === undefined ? undefined : JSON.stringify(input.body),
+      credentials: 'omit',
+    });
+    if (__DEV__) {
+      console.log(`[api] ${input.method} ${input.path} ${response.status}`);
+    }
+    return response;
+  } catch (error: unknown) {
+    if (__DEV__) {
+      const message: string = error instanceof Error ? error.message : 'unknown fetch error';
+      console.log(`[api] ${input.method} ${input.path} failed: ${message}`);
+    }
+    throw error;
+  }
 }
 
 function buildRequestHeaders(hasJsonBody: boolean, accessTokenOverride?: string): Headers {
