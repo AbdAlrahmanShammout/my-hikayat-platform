@@ -1,5 +1,6 @@
+import { Lock } from 'lucide-react-native';
 import type { JSX } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { OfflineLeaseExpiryLabel } from '@/features/offline/components/offline-lease-expiry-label';
 import { useOfflineLeaseExpiryPresentation } from '@/features/offline/hooks/use-offline-lease-expiry-presentation';
@@ -7,8 +8,7 @@ import { resolveOfflineCoverUri } from '@/features/offline/lib/resolve-offline-c
 import type { OfflineBookManifest } from '@/features/offline/types/offline-book-manifest';
 import { theme } from '@/theme/theme';
 import { BookCover } from '@/ui/primitives/book-cover';
-import { Button } from '@/ui/primitives/button';
-import { Pill } from '@/ui/primitives/pill';
+import { Icon } from '@/ui/primitives/icon';
 
 type OfflineLibraryBookRowProps = {
   readonly manifest: OfflineBookManifest;
@@ -17,8 +17,12 @@ type OfflineLibraryBookRowProps = {
   readonly onRequestRemove: () => void;
 };
 
+const COVER_WIDTH = 52;
+const COVER_HEIGHT = 78;
+
 /**
- * One downloaded package: cached cover/author when present, lease chip, and fail-closed Open.
+ * One downloaded package: cover, author, lease chip, and Read / Remove on the right.
+ * Read stays hidden when the lease is locked. Open-path validation remains fail-closed.
  */
 export function OfflineLibraryBookRow({
   manifest,
@@ -26,7 +30,6 @@ export function OfflineLibraryBookRow({
   onOpen,
   onRequestRemove,
 }: OfflineLibraryBookRowProps): JSX.Element {
-  const layoutLabel: string = manifest.layoutType === 'reflowable' ? 'Reflowable' : 'Fixed layout';
   const presentation = useOfflineLeaseExpiryPresentation(manifest.offlineLease?.expiresAt);
   const isLocked: boolean =
     presentation?.state === 'expired' ||
@@ -36,53 +39,57 @@ export function OfflineLibraryBookRow({
   const authorName: string | null = coerceAuthorName(manifest.authorName);
   return (
     <View style={styles.row} testID={`library-offline-book-${manifest.bookId}`}>
-      <View style={styles.top}>
+      <View style={styles.coverSlot}>
         <BookCover
           title={manifest.title}
           coverUri={coverUri}
           size="sm"
-          isDownloaded
           isLocked={isLocked}
         />
-        <View style={styles.info}>
-          <Text style={styles.title} numberOfLines={2}>
-            {manifest.title}
+        {isLocked ? (
+          <View style={styles.lockOverlay} pointerEvents="none" accessibilityElementsHidden>
+            <Icon icon={Lock} color={theme.colors.textOnDark} size="md" />
+          </View>
+        ) : null}
+      </View>
+      <View style={styles.info}>
+        <Text style={styles.title} numberOfLines={2}>
+          {manifest.title}
+        </Text>
+        {authorName !== null ? (
+          <Text style={styles.author} numberOfLines={1} testID={`library-offline-author-${manifest.bookId}`}>
+            {authorName}
           </Text>
-          {authorName !== null ? (
-            <Text style={styles.author} numberOfLines={1} testID={`library-offline-author-${manifest.bookId}`}>
-              {authorName}
-            </Text>
-          ) : null}
-          <Pill label={layoutLabel} variant="neutral" />
-          <OfflineLeaseExpiryLabel
-            expiresAt={manifest.offlineLease?.expiresAt}
-            appearance="chip"
-            testID={`library-offline-lease-${manifest.bookId}`}
-          />
-        </View>
+        ) : null}
+        <OfflineLeaseExpiryLabel
+          expiresAt={manifest.offlineLease?.expiresAt}
+          appearance="chip"
+          testID={`library-offline-lease-${manifest.bookId}`}
+        />
       </View>
       <View style={styles.actions}>
         {isLocked ? null : (
-          <View style={styles.action}>
-            <Button
-              label="Open"
-              onPress={onOpen}
-              accessibilityLabel={`Open ${manifest.title}`}
-              testID={`library-offline-open-${manifest.bookId}`}
-            />
-          </View>
+          <Pressable
+            style={styles.readButton}
+            onPress={onOpen}
+            accessibilityRole="button"
+            accessibilityLabel={`Read ${manifest.title}`}
+            testID={`library-offline-open-${manifest.bookId}`}
+          >
+            <Text style={styles.readLabel}>Read</Text>
+          </Pressable>
         )}
-        <View style={styles.action}>
-          <Button
-            label="Remove"
-            onPress={onRequestRemove}
-            variant="secondary"
-            isDisabled={isRemoving}
-            isLoading={isRemoving}
-            accessibilityLabel={`Remove download for ${manifest.title}`}
-            testID={`library-offline-remove-${manifest.bookId}`}
-          />
-        </View>
+        <Pressable
+          style={styles.removeButton}
+          onPress={onRequestRemove}
+          disabled={isRemoving}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isRemoving, busy: isRemoving }}
+          accessibilityLabel={`Remove download for ${manifest.title}`}
+          testID={`library-offline-remove-${manifest.bookId}`}
+        >
+          <Text style={styles.removeLabel}>Remove</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -98,15 +105,21 @@ function coerceAuthorName(value: string | null | undefined): string | null {
 
 const styles = StyleSheet.create({
   row: {
-    gap: theme.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.borderSubtle,
   },
-  top: {
-    flexDirection: 'row',
+  coverSlot: {
+    width: COVER_WIDTH,
+    height: COVER_HEIGHT,
+  },
+  lockOverlay: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
-    gap: theme.spacing.md,
+    justifyContent: 'center',
   },
   info: {
     flex: 1,
@@ -123,10 +136,36 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
   },
   actions: {
-    flexDirection: 'row',
     gap: theme.spacing.sm,
+    alignItems: 'stretch',
   },
-  action: {
-    flex: 1,
+  readButton: {
+    minHeight: 36,
+    minWidth: 72,
+    borderRadius: theme.radii.full,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.md,
+  },
+  readLabel: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textOnBrand,
+  },
+  removeButton: {
+    minHeight: 36,
+    minWidth: 72,
+    borderRadius: theme.radii.full,
+    borderWidth: 1,
+    borderColor: theme.colors.borderDefault,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.md,
+  },
+  removeLabel: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textSecondary,
   },
 });

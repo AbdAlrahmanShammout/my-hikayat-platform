@@ -28,6 +28,6 @@ describe('OfflineLeaseExpiryLabel', () => {
       await Promise.resolve();
     });
     expect(findHostByTestId(tree, 'library-offline-lease-7')).toBeTruthy();
-    expect(tree.root.findByProps({ children: 'Offline access until 2026-12-01' })).toBeTruthy();
+    expect(tree.root.findByProps({ children: 'Available offline' })).toBeTruthy();
   });
 });

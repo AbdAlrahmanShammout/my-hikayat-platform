@@ -2,7 +2,10 @@ import type { JSX } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { useOfflineLeaseExpiryPresentation } from '@/features/offline/hooks/use-offline-lease-expiry-presentation';
-import type { OfflineLeaseExpiryState } from '@/features/offline/lib/resolve-offline-lease-expiry-presentation';
+import {
+  resolveOfflineLeaseChipLabel,
+  type OfflineLeaseExpiryState,
+} from '@/features/offline/lib/resolve-offline-lease-expiry-presentation';
 import { theme } from '@/theme/theme';
 import { Pill, type PillVariant } from '@/ui/primitives/pill';
 
@@ -26,7 +29,7 @@ export function OfflineLeaseExpiryLabel(
   if (props.appearance === 'chip') {
     return (
       <Pill
-        label={presentation.label}
+        label={resolveOfflineLeaseChipLabel(presentation, props.expiresAt)}
         variant={resolveChipVariant(presentation.state)}
         testID={props.testID}
       />

@@ -68,10 +68,61 @@ export function resolveOfflineLeaseExpiryPresentation(
   };
 }
 
+const LEASE_MONTH_LABELS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const;
+
+/**
+ * Short My Books chip copy. Does not change lease validation or the longer text label.
+ */
+export function resolveOfflineLeaseChipLabel(
+  presentation: OfflineLeaseExpiryPresentation,
+  expiresAt: string | null | undefined,
+): string {
+  if (presentation.state === 'active') {
+    return 'Available offline';
+  }
+  if (presentation.state === 'approaching') {
+    const dateLabel: string | null = formatReadableLeaseDate(expiresAt);
+    return dateLabel === null ? presentation.label : `Expires ${dateLabel}`;
+  }
+  if (presentation.state === 'expired') {
+    return 'Lease expired';
+  }
+  return presentation.label;
+}
+
 function formatLeaseExpiryDate(expiresAtMs: number): string {
   const date: Date = new Date(expiresAtMs);
   const year: number = date.getUTCFullYear();
   const month: string = String(date.getUTCMonth() + 1).padStart(2, '0');
   const day: string = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function formatReadableLeaseDate(expiresAt: string | null | undefined): string | null {
+  if (typeof expiresAt !== 'string' || expiresAt.trim().length === 0) {
+    return null;
+  }
+  const expiresAtMs: number = Date.parse(expiresAt);
+  if (!Number.isFinite(expiresAtMs)) {
+    return null;
+  }
+  const date: Date = new Date(expiresAtMs);
+  const month: string | undefined = LEASE_MONTH_LABELS[date.getUTCMonth()];
+  if (month === undefined) {
+    return null;
+  }
+  return `${date.getUTCDate()} ${month} ${date.getUTCFullYear()}`;
 }

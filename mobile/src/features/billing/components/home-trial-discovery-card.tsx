@@ -1,11 +1,12 @@
 import { router, type Href } from 'expo-router';
+import { Check } from 'lucide-react-native';
 import type { JSX } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { TrialRemainingRing } from '@/features/billing/components/trial-remaining-ring';
 import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subscription';
 import { resolveHomeTrialDiscovery } from '@/features/billing/lib/resolve-home-trial-discovery';
 import { theme } from '@/theme/theme';
+import { Icon } from '@/ui/primitives/icon';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
 /**
@@ -28,25 +29,32 @@ export function HomeTrialDiscoveryCard(): JSX.Element | null {
     return null;
   }
   if (discovery.kind === 'active') {
+    const remainingLabel: string = discovery.remainingLabel ?? discovery.body;
     return (
-      <View style={styles.activeCard} testID="home-trial-discovery-active">
-        <Text style={styles.activeMark} accessibilityElementsHidden>
-          ✓
-        </Text>
-        <Text style={styles.activeTitle} numberOfLines={1}>
-          {discovery.title}
-        </Text>
-        {discovery.remainingDayCount !== null && discovery.remainingProgress !== null ? (
-          <TrialRemainingRing
-            dayCount={discovery.remainingDayCount}
-            progress={discovery.remainingProgress}
-            accessibilityLabel={discovery.remainingLabel ?? `${discovery.remainingDayCount} days remaining`}
-          />
-        ) : (
-          <Text style={styles.activeRemaining} testID="home-trial-discovery-remaining">
-            {discovery.remainingLabel ?? discovery.body}
-          </Text>
-        )}
+      <View style={styles.activeWrap} testID="home-trial-discovery-active">
+        <Text style={styles.sectionLabel}>Subscription</Text>
+        <View style={styles.activeCard}>
+          <View style={styles.statusRow}>
+            <View style={styles.checkBadge} accessibilityElementsHidden>
+              <Icon icon={Check} color={theme.colors.textOnBrand} size={14} strokeWidth={3} />
+            </View>
+            <View style={styles.statusCopy}>
+              <Text style={styles.activeTitle}>{discovery.title}</Text>
+              <Text style={styles.activeRemaining} testID="home-trial-discovery-remaining">
+                {remainingLabel}
+              </Text>
+            </View>
+          </View>
+          <Pressable
+            style={styles.upgradeButton}
+            onPress={openSubscriptionScreen}
+            accessibilityRole="button"
+            accessibilityLabel={discovery.actionLabel}
+            testID="home-trial-discovery-upgrade"
+          >
+            <Text style={styles.upgradeLabel}>{discovery.actionLabel}</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -58,9 +66,7 @@ export function HomeTrialDiscoveryCard(): JSX.Element | null {
       </View>
       <Pressable
         style={styles.offerButton}
-        onPress={() => {
-          router.push('/(app)/subscription' as Href);
-        }}
+        onPress={openSubscriptionScreen}
         accessibilityRole="button"
         accessibilityLabel={discovery.actionLabel}
         testID="home-trial-discovery-action"
@@ -69,6 +75,10 @@ export function HomeTrialDiscoveryCard(): JSX.Element | null {
       </Pressable>
     </View>
   );
+}
+
+function openSubscriptionScreen(): void {
+  router.push('/(app)/subscription' as Href);
 }
 
 const styles = StyleSheet.create({
@@ -111,31 +121,61 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.primary,
   },
+  activeWrap: {
+    gap: theme.spacing.sm,
+  },
+  sectionLabel: {
+    ...theme.typography.label,
+    fontSize: 11,
+    fontWeight: theme.typography.weights.bold,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: theme.colors.textMuted,
+  },
   activeCard: {
-    borderRadius: theme.radii.md,
+    borderRadius: theme.radii.lg,
     backgroundColor: theme.colors.successBg,
-    borderWidth: 1,
-    borderColor: theme.colors.success,
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.md,
+    gap: theme.spacing.md,
+  },
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: theme.spacing.sm,
   },
-  activeMark: {
-    ...theme.typography.label,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.success,
+  checkBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: theme.radii.full,
+    backgroundColor: theme.colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusCopy: {
+    flex: 1,
+    gap: 2,
   },
   activeTitle: {
-    ...theme.typography.label,
-    flex: 1,
+    ...theme.typography.body,
     fontWeight: theme.typography.weights.bold,
-    color: theme.colors.success,
+    color: theme.colors.textPrimary,
   },
   activeRemaining: {
     ...theme.typography.label,
-    fontWeight: theme.typography.weights.bold,
     color: theme.colors.success,
+  },
+  upgradeButton: {
+    minHeight: 48,
+    borderRadius: theme.radii.full,
+    backgroundColor: theme.colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.md,
+  },
+  upgradeLabel: {
+    ...theme.typography.button,
+    color: theme.colors.textOnBrand,
   },
 });

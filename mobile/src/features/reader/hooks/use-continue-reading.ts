@@ -1,13 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-
-import { getReadingSync } from '@/features/reader/api/get-reading-sync';
-import { sortProgressByLastSession } from '@/features/reader/lib/continue-reading';
 import type { ReadingProgress } from '@/features/reader/api/get-reading-progress';
+import { useReadingProgressList } from '@/features/reader/hooks/use-reading-progress-list';
 
 const CONTINUE_READING_LIMIT = 5;
 
 /**
- * Loads Continue Reading rows from the reader sync pull.
+ * Home shelf: the five most recently opened books.
  */
 export function useContinueReading(): {
   readonly items: readonly ReadingProgress[];
@@ -15,20 +12,11 @@ export function useContinueReading(): {
   readonly isError: boolean;
   readonly refetch: () => void;
 } {
-  const query = useQuery({
-    queryKey: ['reader', 'sync', 'continue-reading'],
-    queryFn: async (): Promise<readonly ReadingProgress[]> => {
-      const snapshot = await getReadingSync();
-      return sortProgressByLastSession(snapshot.progress).slice(0, CONTINUE_READING_LIMIT);
-    },
-    staleTime: 0,
-  });
+  const progress = useReadingProgressList();
   return {
-    items: query.data ?? [],
-    isLoading: query.isLoading,
-    isError: query.isError,
-    refetch: () => {
-      void query.refetch();
-    },
+    items: progress.items.slice(0, CONTINUE_READING_LIMIT),
+    isLoading: progress.isLoading,
+    isError: progress.isError,
+    refetch: progress.refetch,
   };
 }

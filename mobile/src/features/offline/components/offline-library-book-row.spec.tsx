@@ -57,7 +57,7 @@ describe('OfflineLibraryBookRow', () => {
     });
     expect(findHostByTestId(tree, 'library-offline-book-7')).toBeTruthy();
     expect(tree.root.findByProps({ children: 'Night Market' })).toBeTruthy();
-    expect(tree.root.findByProps({ children: 'Reflowable' })).toBeTruthy();
+    expect(tree.root.findByProps({ children: 'Read' })).toBeTruthy();
     expect(() => tree.root.findByProps({ children: 'Must not appear as author copy' })).toThrow();
     pressHost(findHostByTestId(tree, 'library-offline-open-7'));
     pressHost(findHostByTestId(tree, 'library-offline-remove-7'));

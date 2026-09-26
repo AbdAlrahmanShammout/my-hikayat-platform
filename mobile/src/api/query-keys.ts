@@ -30,6 +30,7 @@ export const queryKeys = {
   reader: {
     openShell: (bookId: number) => ['reader', 'reading', 'open-shell', bookId] as const,
     currentSession: (bookId: number) => ['reader', 'reading', 'session', 'current', bookId] as const,
+    progressList: ['reader', 'sync', 'progress'] as const,
   },
   offline: {
     packages: ['reader', 'offline', 'packages'] as const,

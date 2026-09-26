@@ -52,7 +52,7 @@ export function resolveHomeTrialDiscovery(
       remainingLabel: formatTrialRemainingLabel(subscription.trialEndsAt, now),
       remainingDayCount: ring?.dayCount ?? null,
       remainingProgress: ring?.progress ?? null,
-      actionLabel: 'Subscribe',
+      actionLabel: 'Upgrade to full subscription',
     };
   }
   if (subscription.trialEligible === true) {

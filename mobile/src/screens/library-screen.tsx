@@ -1,4 +1,5 @@
 import { router, type Href } from 'expo-router';
+import { CircleCheck } from 'lucide-react-native';
 import { useState, type JSX } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,19 +12,24 @@ import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book
 import { useOfflineDownloadProgress } from '@/features/offline/hooks/use-offline-download-progress';
 import { useOfflinePackages } from '@/features/offline/hooks/use-offline-packages';
 import type { OfflineBookManifest } from '@/features/offline/types/offline-book-manifest';
+import { OpenedBooksSection } from '@/features/reader/components/opened-books-section';
+import { useReadingProgressList } from '@/features/reader/hooks/use-reading-progress-list';
+import { excludeDownloadedProgress } from '@/features/reader/lib/exclude-downloaded-progress';
 import { useConnectivity } from '@/native/connectivity/use-connectivity';
 import { theme } from '@/theme/theme';
 import { EmptyState } from '@/ui/feedback/empty-state';
 import { ErrorState } from '@/ui/feedback/error-state';
 import { AppToolbar } from '@/ui/navigation/app-toolbar';
 import { Button } from '@/ui/primitives/button';
+import { Icon } from '@/ui/primitives/icon';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
 /**
- * Library tab: downloaded encrypted books available for offline reading.
+ * Library tab: offline downloads on top, then books this reader has opened.
  */
 export function LibraryScreen(): JSX.Element {
   const offline = useOfflinePackages();
+  const opened = useReadingProgressList();
   const { isOnline } = useConnectivity();
   const [removeTarget, setRemoveTarget] = useState<OfflineBookManifest | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
@@ -31,9 +37,21 @@ export function LibraryScreen(): JSX.Element {
   const downloadProgress = useOfflineDownloadProgress();
   const actions = useOfflineBookActions(removeTarget?.bookId ?? null);
   const packageCount: number = offline.packages.length;
+  const downloadedBookIds: ReadonlySet<number> = new Set(
+    offline.packages.map((entry) => entry.bookId),
+  );
+  const openedCount: number = excludeDownloadedProgress(opened.items, downloadedBookIds).length;
   const isClockRollbackDetected: boolean = clockRollback.isClockRollbackDetected;
+  const hasOfflineContent: boolean = packageCount > 0 || downloadProgress !== null;
   const showCountBanner: boolean =
     !offline.isLoading && !offline.isError && packageCount > 0 && !isClockRollbackDetected;
+  const isPageEmpty: boolean =
+    !offline.isLoading &&
+    !offline.isError &&
+    !hasOfflineContent &&
+    !opened.isLoading &&
+    !opened.isError &&
+    openedCount === 0;
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']} testID="shell-library-screen">
       <AppToolbar
@@ -43,10 +61,6 @@ export function LibraryScreen(): JSX.Element {
         testID="shell-library-toolbar"
       />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.lead}>
-          Downloads are leased and stay encrypted on this device. Each book shows when offline
-          access ends.
-        </Text>
         {!isOnline ? (
           <View style={styles.offlineBanner} testID="library-offline-banner">
             <Text style={styles.offlineBannerText}>
@@ -54,78 +68,92 @@ export function LibraryScreen(): JSX.Element {
             </Text>
           </View>
         ) : null}
-        {isClockRollbackDetected && packageCount > 0 ? (
-          <View style={styles.clockBanner} testID="library-clock-banner">
-            <Text style={styles.clockTitle}>Device time changed</Text>
-            <Text style={styles.clockBody}>
-              Connect to the internet to verify your offline access.
-            </Text>
-            <Button
-              label="Reconnect to unlock"
-              variant="secondary"
-              onPress={() => {
-                router.push('/(app)/clock-tamper' as Href);
-              }}
-              accessibilityLabel="Reconnect to unlock offline books"
-              testID="library-clock-reconnect"
-            />
+        {hasOfflineContent || offline.isLoading || offline.isError ? (
+          <View style={styles.offlineBlock} testID="library-offline-section">
+            <Text style={styles.lead}>Books downloaded to this device</Text>
+            {isClockRollbackDetected && packageCount > 0 ? (
+              <View style={styles.clockBanner} testID="library-clock-banner">
+                <Text style={styles.clockTitle}>Device time changed</Text>
+                <Text style={styles.clockBody}>
+                  Connect to the internet to verify your offline access.
+                </Text>
+                <Button
+                  label="Reconnect to unlock"
+                  variant="secondary"
+                  onPress={() => {
+                    router.push('/(app)/clock-tamper' as Href);
+                  }}
+                  accessibilityLabel="Reconnect to unlock offline books"
+                  testID="library-clock-reconnect"
+                />
+              </View>
+            ) : null}
+            {showCountBanner ? (
+              <View style={styles.countBanner} testID="library-offline-count">
+                <Icon icon={CircleCheck} color={theme.colors.success} size="sm" />
+                <Text style={styles.countBannerText}>{formatAvailableOfflineCount(packageCount)}</Text>
+              </View>
+            ) : null}
+            {offline.isLoading ? (
+              <View style={styles.loadingBlock} testID="library-offline-loading">
+                <LibraryRowSkeleton />
+                <LibraryRowSkeleton />
+              </View>
+            ) : null}
+            {offline.isError ? (
+              <ErrorState
+                description="Could not load downloaded books."
+                retryLabel="Try again"
+                onRetry={() => {
+                  void offline.refetch();
+                }}
+                retryTestID="library-offline-retry"
+              />
+            ) : null}
+            {downloadProgress !== null &&
+            !offline.packages.some((entry) => entry.bookId === downloadProgress.bookId) ? (
+              <OfflineDownloadingBookRow progress={downloadProgress} />
+            ) : null}
+            {offline.packages.map((entry) => (
+              <OfflineLibraryBookRow
+                key={entry.bookId}
+                manifest={entry}
+                isRemoving={removeTarget?.bookId === entry.bookId && actions.isRemoving}
+                onOpen={() => {
+                  router.push(`/(app)/books/read/${entry.bookId}` as Href);
+                }}
+                onRequestRemove={() => {
+                  setRemoveError(null);
+                  setRemoveTarget(entry);
+                }}
+              />
+            ))}
+            {packageCount > 0 ? (
+              <Text style={styles.footer}>
+                Downloaded books are authorized for offline reading. Authorization may expire.
+              </Text>
+            ) : null}
           </View>
         ) : null}
-        {showCountBanner ? (
-          <View style={styles.countBanner}>
-            <Text style={styles.countBannerText}>{formatAvailableOfflineCount(packageCount)}</Text>
-          </View>
-        ) : null}
-        {offline.isLoading ? (
-          <View style={styles.loadingBlock} testID="library-offline-loading">
-            <LibraryRowSkeleton />
-            <LibraryRowSkeleton />
-          </View>
-        ) : null}
-        {offline.isError ? (
-          <ErrorState
-            description="Could not load downloaded books."
-            retryLabel="Try again"
-            onRetry={() => {
-              void offline.refetch();
-            }}
-            retryTestID="library-offline-retry"
-          />
-        ) : null}
-        {!offline.isLoading && !offline.isError && packageCount === 0 && downloadProgress === null ? (
+        {isPageEmpty ? (
           <EmptyState
-            title="No downloads yet"
-            description="Open a book and choose Download for offline on its detail page."
+            title="No books yet"
+            description="Open a book and it will show up here. Downloads appear at the top."
             actionLabel="Browse library"
             onAction={() => {
               router.push('/(app)/(tabs)/home' as Href);
             }}
             testID="library-offline-empty"
           />
-        ) : null}
-        {downloadProgress !== null &&
-        !offline.packages.some((entry) => entry.bookId === downloadProgress.bookId) ? (
-          <OfflineDownloadingBookRow progress={downloadProgress} />
-        ) : null}
-        {offline.packages.map((entry) => (
-          <OfflineLibraryBookRow
-            key={entry.bookId}
-            manifest={entry}
-            isRemoving={removeTarget?.bookId === entry.bookId && actions.isRemoving}
-            onOpen={() => {
-              router.push(`/(app)/books/read/${entry.bookId}` as Href);
-            }}
-            onRequestRemove={() => {
-              setRemoveError(null);
-              setRemoveTarget(entry);
+        ) : (
+          <OpenedBooksSection
+            downloadedBookIds={downloadedBookIds}
+            showHeading={hasOfflineContent}
+            onOpen={(bookId) => {
+              router.push(`/(app)/books/read/${bookId}` as Href);
             }}
           />
-        ))}
-        {packageCount > 0 ? (
-          <Text style={styles.footer}>
-            Downloaded books are authorized for offline reading. Authorization may expire.
-          </Text>
-        ) : null}
+        )}
         {removeError !== null ? <Text style={styles.error}>{removeError}</Text> : null}
       </ScrollView>
       <RemoveOfflineDownloadSheet
@@ -184,10 +212,12 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.xl,
     gap: theme.spacing.sm,
   },
+  offlineBlock: {
+    gap: theme.spacing.sm,
+  },
   lead: {
     ...theme.typography.body,
     color: theme.colors.textMuted,
-    marginBottom: theme.spacing.xs,
   },
   offlineBanner: {
     backgroundColor: theme.colors.infoBg,
@@ -221,10 +251,11 @@ const styles = StyleSheet.create({
     color: theme.colors.warning,
   },
   countBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
     backgroundColor: theme.colors.successBg,
-    borderRadius: theme.radii.md,
-    borderWidth: 1,
-    borderColor: theme.colors.success,
+    borderRadius: theme.radii.lg,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.md,
   },

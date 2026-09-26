@@ -1,5 +1,6 @@
 import {
   OFFLINE_LEASE_APPROACHING_THRESHOLD_MS,
+  resolveOfflineLeaseChipLabel,
   resolveOfflineLeaseExpiryPresentation,
 } from './resolve-offline-lease-expiry-presentation';
 
@@ -47,6 +48,30 @@ describe('resolveOfflineLeaseExpiryPresentation', () => {
     });
     expect(actual.state).toBe('clock_rollback');
     expect(actual.label).toContain('Device time changed');
+  });
+
+  it('uses short chip labels for My Books', () => {
+    const active = resolveOfflineLeaseExpiryPresentation({
+      expiresAt: '2026-12-01T00:00:00.000Z',
+      nowMs,
+    });
+    expect(resolveOfflineLeaseChipLabel(active, '2026-12-01T00:00:00.000Z')).toBe(
+      'Available offline',
+    );
+    const approaching = resolveOfflineLeaseExpiryPresentation({
+      expiresAt: new Date(nowMs + 60_000).toISOString(),
+      nowMs,
+    });
+    expect(resolveOfflineLeaseChipLabel(approaching, '2026-09-03T12:01:00.000Z')).toBe(
+      'Expires 3 Sep 2026',
+    );
+    const expired = resolveOfflineLeaseExpiryPresentation({
+      expiresAt: '2026-09-03T11:59:59.000Z',
+      nowMs,
+    });
+    expect(resolveOfflineLeaseChipLabel(expired, '2026-09-03T11:59:59.000Z')).toBe(
+      'Lease expired',
+    );
   });
 
   it('maps missing or invalid expiry as unavailable', () => {

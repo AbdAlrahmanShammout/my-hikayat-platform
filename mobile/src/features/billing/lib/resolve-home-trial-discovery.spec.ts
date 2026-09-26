@@ -70,7 +70,7 @@ describe('resolveHomeTrialDiscovery', () => {
       remainingLabel: '7 days remaining',
       remainingDayCount: 7,
       remainingProgress: 1,
-      actionLabel: 'Subscribe',
+      actionLabel: 'Upgrade to full subscription',
     });
   });
 
