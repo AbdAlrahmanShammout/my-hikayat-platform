@@ -2,6 +2,7 @@ import { router, type Href } from 'expo-router';
 import type { JSX } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { TrialRemainingRing } from '@/features/billing/components/trial-remaining-ring';
 import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subscription';
 import { resolveHomeTrialDiscovery } from '@/features/billing/lib/resolve-home-trial-discovery';
 import { theme } from '@/theme/theme';
@@ -32,16 +33,20 @@ export function HomeTrialDiscoveryCard(): JSX.Element | null {
         <Text style={styles.activeMark} accessibilityElementsHidden>
           ✓
         </Text>
-        <View style={styles.activeCopy}>
-          <Text style={styles.activeTitle}>{discovery.title}</Text>
-          {discovery.remainingLabel !== null ? (
-            <Text style={styles.activeRemaining} testID="home-trial-discovery-remaining">
-              {discovery.remainingLabel}
-            </Text>
-          ) : (
-            <Text style={styles.activeBody}>{discovery.body}</Text>
-          )}
-        </View>
+        <Text style={styles.activeTitle} numberOfLines={1}>
+          {discovery.title}
+        </Text>
+        {discovery.remainingDayCount !== null && discovery.remainingProgress !== null ? (
+          <TrialRemainingRing
+            dayCount={discovery.remainingDayCount}
+            progress={discovery.remainingProgress}
+            accessibilityLabel={discovery.remainingLabel ?? `${discovery.remainingDayCount} days remaining`}
+          />
+        ) : (
+          <Text style={styles.activeRemaining} testID="home-trial-discovery-remaining">
+            {discovery.remainingLabel ?? discovery.body}
+          </Text>
+        )}
       </View>
     );
   }
@@ -122,18 +127,11 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.success,
   },
-  activeCopy: {
-    flex: 1,
-    gap: 2,
-  },
   activeTitle: {
     ...theme.typography.label,
+    flex: 1,
     fontWeight: theme.typography.weights.bold,
     color: theme.colors.success,
-  },
-  activeBody: {
-    ...theme.typography.label,
-    color: theme.colors.textSecondary,
   },
   activeRemaining: {
     ...theme.typography.label,

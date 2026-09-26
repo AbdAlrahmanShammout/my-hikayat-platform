@@ -93,7 +93,7 @@ async function executeFetch(input: RequestJsonInput): Promise<Response> {
   } catch (error: unknown) {
     if (__DEV__) {
       const message: string = error instanceof Error ? error.message : 'unknown fetch error';
-      console.log(`[api] ${input.method} ${input.path} failed: ${message}`);
+      console.log(`[api] ${input.method} ${url} failed: ${message}`);
     }
     throw error;
   }

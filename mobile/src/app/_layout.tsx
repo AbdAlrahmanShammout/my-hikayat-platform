@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { bindQueryFocusManager } from '@/api/bind-query-focus-manager';
 import { bindQueryOnlineManager } from '@/api/bind-query-online-manager';
 import { createQueryClient } from '@/api/query-client';
+import { readApiBaseUrlOrPlaceholder } from '@/config/env';
 import { bindOfflineBookmarkSync } from '@/features/reader/lib/bind-offline-bookmark-sync';
 import { bindOfflineProgressSync } from '@/features/offline/lib/bind-offline-progress-sync';
 import { AppErrorBoundary } from '@/root/app-error-boundary';
@@ -25,6 +26,12 @@ WebBrowser.maybeCompleteAuthSession();
  */
 export default function RootLayout(): JSX.Element {
   const [queryClient] = useState(() => createQueryClient());
+  useEffect(() => {
+    if (!__DEV__) {
+      return;
+    }
+    console.log(`[api] backend ${readApiBaseUrlOrPlaceholder()}`);
+  }, []);
   useEffect(() => bindQueryFocusManager(), []);
   useEffect(() => bindQueryOnlineManager(), []);
   useEffect(() => bindOfflineBookmarkSync(), []);

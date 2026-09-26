@@ -1,12 +1,13 @@
 import { router, type Href } from 'expo-router';
-import type { JSX } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState, type JSX } from 'react';
+import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 
 import type { CatalogBook } from '@/features/catalog/api/get-catalog-book';
 import { CatalogGridCard } from '@/features/catalog/components/catalog-grid-card';
 import { HOME_NEW_BOOK_LIMIT } from '@/features/catalog/consts/home-catalog.constant';
 import { useCatalogBooks } from '@/features/catalog/hooks/use-catalog-books';
 import { flattenCatalogBookPages } from '@/features/catalog/lib/catalog-pagination';
+import { resolveHomeNewGridLayout } from '@/features/catalog/lib/resolve-home-new-grid-layout';
 import { theme } from '@/theme/theme';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
@@ -22,6 +23,17 @@ export function HomeNewBooksSection({ onOpenBook }: HomeNewBooksSectionProps): J
     sort: 'newest',
     pageSize: HOME_NEW_BOOK_LIMIT,
   });
+  const [contentWidth, setContentWidth] = useState<number>(0);
+  const grid = resolveHomeNewGridLayout({
+    contentWidth,
+    gap: theme.spacing.sm,
+  });
+  function handleGridLayout(event: LayoutChangeEvent): void {
+    const nextWidth: number = event.nativeEvent.layout.width;
+    if (nextWidth !== contentWidth) {
+      setContentWidth(nextWidth);
+    }
+  }
   const books: CatalogBook[] = flattenCatalogBookPages(booksQuery.data?.pages ?? []).slice(
     0,
     HOME_NEW_BOOK_LIMIT,
@@ -31,9 +43,15 @@ export function HomeNewBooksSection({ onOpenBook }: HomeNewBooksSectionProps): J
     return (
       <View style={styles.section} accessibilityLabel="Loading new books">
         <HomeNewHeader showSeeAll={false} />
-        <View style={styles.grid}>
-          <Skeleton height={210} width="48%" radius={theme.radii.sm} />
-          <Skeleton height={210} width="48%" radius={theme.radii.sm} />
+        <View style={styles.grid} onLayout={handleGridLayout}>
+          {Array.from({ length: grid.columnCount }, (_, index) => (
+            <Skeleton
+              key={index}
+              height={210}
+              width={grid.itemWidth}
+              radius={theme.radii.sm}
+            />
+          ))}
         </View>
       </View>
     );
@@ -44,9 +62,9 @@ export function HomeNewBooksSection({ onOpenBook }: HomeNewBooksSectionProps): J
   return (
     <View style={styles.section} testID="home-new-section">
       <HomeNewHeader showSeeAll={total > books.length} />
-      <View style={styles.grid}>
+      <View style={styles.grid} onLayout={handleGridLayout}>
         {books.map((book) => (
-          <View key={book.id} style={styles.gridItem}>
+          <View key={book.id} style={[styles.gridItem, { width: grid.itemWidth }]}>
             <CatalogGridCard book={book} onPress={onOpenBook} />
           </View>
         ))}
@@ -77,7 +95,6 @@ function HomeNewHeader(input: { readonly showSeeAll: boolean }): JSX.Element {
 
 const styles = StyleSheet.create({
   section: {
-    paddingHorizontal: theme.spacing.lg,
     gap: theme.spacing.sm,
     paddingBottom: theme.spacing.md,
   },
@@ -101,10 +118,11 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: theme.spacing.md,
+    gap: theme.spacing.sm,
   },
   gridItem: {
-    width: '48%',
+    flexGrow: 0,
+    flexShrink: 1,
+    maxWidth: '100%',
   },
 });

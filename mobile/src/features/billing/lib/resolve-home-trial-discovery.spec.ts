@@ -68,6 +68,8 @@ describe('resolveHomeTrialDiscovery', () => {
       title: 'Free trial active',
       body: 'Full books are open while the trial lasts.',
       remainingLabel: '7 days remaining',
+      remainingDayCount: 7,
+      remainingProgress: 1,
       actionLabel: 'Subscribe',
     });
   });

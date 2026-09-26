@@ -1,17 +1,19 @@
-import type { JSX, ReactNode } from 'react';
+import { useEffect, useRef, type JSX, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AuthCoverMedia } from '@/features/auth/components/auth-cover-media';
 import { useReaderPlatformSettings } from '@/features/platform-settings/hooks/use-reader-platform-settings';
 import { theme } from '@/theme/theme';
+import { useKeyboardInset } from '@/ui/hooks/use-keyboard-inset';
 import { toViewShadow } from '@/ui/lib/to-view-shadow';
 
 type AuthScreenChromeProps = {
@@ -41,33 +43,58 @@ export function AuthScreenChrome({
   testID,
   accessibilityLabel,
 }: AuthScreenChromeProps): JSX.Element {
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const keyboardInset: number = useKeyboardInset();
+  const scrollRef = useRef<ScrollView>(null);
+  const sheetBottomPadding: number =
+    keyboardInset > 0
+      ? keyboardInset + theme.spacing.xl
+      : insets.bottom + theme.spacing.xl;
+  useEffect(() => {
+    if (keyboardInset <= 0) {
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [keyboardInset]);
+  const form = (
+    <ScrollView
+      ref={scrollRef}
+      style={styles.flex}
+      contentContainerStyle={[styles.scroll, { minHeight: windowHeight - insets.top }]}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+    >
+      <View style={styles.brand}>
+        <Text style={styles.wordmark} accessibilityRole="header">
+          My Hikayat
+        </Text>
+        <Text style={styles.tagline}>{tagline}</Text>
+        <AuthCoverStrip />
+      </View>
+      <View style={[styles.sheet, { paddingBottom: sheetBottomPadding }]}>{children}</View>
+    </ScrollView>
+  );
   return (
     <SafeAreaView
       style={styles.safe}
-      edges={['top', 'right', 'bottom', 'left']}
+      edges={['top', 'right', 'left']}
       testID={testID}
       accessibilityLabel={accessibilityLabel}
     >
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-        >
-          <View style={styles.brand}>
-            <Text style={styles.wordmark} accessibilityRole="header">
-              My Hikayat
-            </Text>
-            <Text style={styles.tagline}>{tagline}</Text>
-            <AuthCoverStrip />
-          </View>
-          <View style={styles.sheet}>{children}</View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      {Platform.OS === 'ios' ? (
+        <KeyboardAvoidingView style={styles.flex} behavior="padding" keyboardVerticalOffset={8}>
+          {form}
+        </KeyboardAvoidingView>
+      ) : (
+        form
+      )}
     </SafeAreaView>
   );
 }

@@ -149,6 +149,19 @@ export function ProfileScreen(): JSX.Element {
             <Pressable
               style={styles.row}
               onPress={() => {
+                router.push('/(app)/plans' as Href);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="See plans"
+              testID="shell-see-plans-button"
+            >
+              <Text style={styles.rowLabel}>See plans</Text>
+              <Text style={styles.chevron}>›</Text>
+            </Pressable>
+            <View style={styles.divider} />
+            <Pressable
+              style={styles.row}
+              onPress={() => {
                 router.push('/(app)/(tabs)/library' as Href);
               }}
               accessibilityRole="button"

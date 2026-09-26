@@ -18,6 +18,7 @@
       "bundleIdentifier": "com.libapp.reader"
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#F7F4EF",
         "foregroundImage": "./assets/android-icon-foreground.png",

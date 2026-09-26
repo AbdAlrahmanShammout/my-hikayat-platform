@@ -1,5 +1,6 @@
 import type { ReaderSubscription } from '@/features/billing/api/get-reader-subscription';
 import { formatTrialRemainingLabel } from '@/features/billing/lib/format-trial-remaining-label';
+import { resolveTrialRemainingRing } from '@/features/billing/lib/resolve-trial-remaining-ring';
 import {
   resolveSubscriptionExpiryPresentation,
 } from '@/features/billing/lib/resolve-subscription-expiry-presentation';
@@ -16,6 +17,8 @@ export type HomeTrialDiscovery =
       readonly title: string;
       readonly body: string;
       readonly remainingLabel: string | null;
+      readonly remainingDayCount: number | null;
+      readonly remainingProgress: number | null;
       readonly actionLabel: string;
     }
   | { readonly kind: 'hidden' };
@@ -37,11 +40,18 @@ export function resolveHomeTrialDiscovery(
     return { kind: 'hidden' };
   }
   if (subscription.readingAccessState === 'trial') {
+    const ring = resolveTrialRemainingRing({
+      trialStartedAt: subscription.trialStartedAt,
+      trialEndsAt: subscription.trialEndsAt,
+      now,
+    });
     return {
       kind: 'active',
       title: 'Free trial active',
       body: 'Full books are open while the trial lasts.',
       remainingLabel: formatTrialRemainingLabel(subscription.trialEndsAt, now),
+      remainingDayCount: ring?.dayCount ?? null,
+      remainingProgress: ring?.progress ?? null,
       actionLabel: 'Subscribe',
     };
   }

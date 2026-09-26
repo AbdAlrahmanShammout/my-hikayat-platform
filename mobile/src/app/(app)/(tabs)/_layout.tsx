@@ -1,20 +1,31 @@
 import { Tabs } from 'expo-router';
 import type { JSX } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/theme/theme';
+
+const TAB_BAR_CONTENT_HEIGHT = 80;
 
 /**
  * Kids-friendly main shell: Home, My Books, Me.
  */
 export default function TabsLayout(): JSX.Element {
+  const insets = useSafeAreaInsets();
+  const bottomInset: number = Math.max(insets.bottom, theme.spacing.sm);
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textMuted,
-        tabBarStyle: styles.bar,
+        tabBarStyle: [
+          styles.bar,
+          {
+            height: TAB_BAR_CONTENT_HEIGHT + bottomInset,
+            paddingBottom: bottomInset,
+          },
+        ],
         tabBarItemStyle: styles.item,
         tabBarLabelStyle: styles.label,
       }}
@@ -124,7 +135,6 @@ function MeTabIcon({ color }: TintProps): JSX.Element {
 
 const styles = StyleSheet.create({
   bar: {
-    minHeight: 64,
     paddingTop: theme.spacing.xs,
     backgroundColor: theme.colors.surface,
     borderTopColor: theme.colors.borderSubtle,

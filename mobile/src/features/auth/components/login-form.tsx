@@ -26,6 +26,7 @@ type LoginFormProps = {
 export function LoginForm({ onOpenRegister, onOpenForgotPassword }: LoginFormProps): JSX.Element {
   const { signIn, clearError } = useSession();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   const {
     control,
     handleSubmit,
@@ -81,7 +82,7 @@ export function LoginForm({ onOpenRegister, onOpenForgotPassword }: LoginFormPro
           />
         )}
       />
-      <View>
+      <View style={styles.passwordBlock}>
         <Controller
           control={control}
           name="password"
@@ -92,13 +93,27 @@ export function LoginForm({ onOpenRegister, onOpenForgotPassword }: LoginFormPro
               onChangeText={onChange}
               onBlur={onBlur}
               placeholder="Your password"
-              isSecure
+              isSecure={!isPasswordVisible}
               autoComplete="password"
               isDisabled={isSubmitting}
               errorMessage={errors.password?.message}
               errorTestID="auth-password-error"
               testID="auth-password-input"
               accessibilityLabel="Password"
+              trailing={
+                <Pressable
+                  onPress={() => {
+                    setIsPasswordVisible((current) => !current);
+                  }}
+                  disabled={isSubmitting}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={isPasswordVisible ? 'Hide password' : 'Show password'}
+                  testID="auth-password-visibility"
+                >
+                  <Text style={styles.visibilityLabel}>{isPasswordVisible ? 'Hide' : 'Show'}</Text>
+                </Pressable>
+              }
             />
           )}
         />
@@ -150,13 +165,20 @@ const styles = StyleSheet.create({
     ...theme.typography.body,
     color: theme.colors.textMuted,
   },
+  passwordBlock: {
+    gap: theme.spacing.scale.xs,
+  },
   forgot: {
     alignSelf: 'flex-end',
     minHeight: 44,
     justifyContent: 'center',
-    marginTop: theme.spacing.scale.xs,
   },
   forgotLabel: {
+    ...theme.typography.label,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.primary,
+  },
+  visibilityLabel: {
     ...theme.typography.label,
     fontWeight: theme.typography.weights.semibold,
     color: theme.colors.primary,
