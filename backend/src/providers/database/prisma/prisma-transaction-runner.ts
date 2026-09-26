@@ -5,6 +5,9 @@ import { TransactionContext } from '@/common/base/transaction-context';
 import { TransactionRunner } from '@/common/base/transaction-runner';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
+const INTERACTIVE_TRANSACTION_MAX_WAIT_MS = 10_000;
+const INTERACTIVE_TRANSACTION_TIMEOUT_MS = 30_000;
+
 class PrismaTransactionContext extends TransactionContext {
   constructor(readonly client: Prisma.TransactionClient) {
     super();
@@ -33,8 +36,14 @@ export class PrismaTransactionRunner extends TransactionRunner {
   }
 
   async run<T>(work: (context: TransactionContext) => Promise<T>): Promise<T> {
-    return this.prismaProviderService.$transaction(async (transactionClient) => {
-      return work(new PrismaTransactionContext(transactionClient));
-    });
+    return this.prismaProviderService.$transaction(
+      async (transactionClient) => {
+        return work(new PrismaTransactionContext(transactionClient));
+      },
+      {
+        maxWait: INTERACTIVE_TRANSACTION_MAX_WAIT_MS,
+        timeout: INTERACTIVE_TRANSACTION_TIMEOUT_MS,
+      },
+    );
   }
 }

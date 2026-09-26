@@ -43,7 +43,10 @@ describe('PrismaTransactionRunner', () => {
       return Promise.resolve('committed');
     });
     expect(actualResult).toBe('committed');
-    expect(mockPrismaProviderService.$transaction).toHaveBeenCalledTimes(1);
+    expect(mockPrismaProviderService.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+      maxWait: 10_000,
+      timeout: 30_000,
+    });
   });
 });
 
