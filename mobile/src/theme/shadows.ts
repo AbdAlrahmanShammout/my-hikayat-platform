@@ -1,9 +1,9 @@
 /**
  * Direction B elevation tokens translated from Figma CSS box-shadows.
- * Figma `shadowColor` is rgb(30, 18, 64) = `#1E1240` except `focus`.
+ * Figma `shadowColor` is rgb(28, 79, 104) = `#1C4F68` except `focus`.
  *
  * CSS `spread` is not a React Native View style. Drop shadows use spread 0.
- * `focus` is a 3px ring (`0 0 0 3px rgba(217, 78, 45, 0.25)`); apply it later
+ * `focus` is a 3px ring (`0 0 0 3px rgba(207, 97, 24, 0.25)`); apply it later
  * with `borderWidth` / `borderColor` using `spread` and `ringColor`, not as a
  * drop shadow.
  */
@@ -20,7 +20,7 @@ type ShadowToken = {
   readonly ringColor?: string;
 };
 
-const ink = '#1E1240';
+const ink = '#1C4F68';
 
 export const shadows = {
   xs: {
@@ -72,12 +72,12 @@ export const shadows = {
     spread: 0,
   },
   focus: {
-    shadowColor: '#D94E2D',
+    shadowColor: '#CF6118',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 0,
     elevation: 0,
     spread: 3,
-    ringColor: 'rgba(217, 78, 45, 0.25)',
+    ringColor: 'rgba(207, 97, 24, 0.25)',
   },
 } as const satisfies Record<string, ShadowToken>;

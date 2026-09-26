@@ -10,7 +10,7 @@ import { useReaderBillingPlans } from '@/features/billing/hooks/use-reader-billi
 import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subscription';
 import { theme } from '@/theme/theme';
 import { ErrorState } from '@/ui/feedback/error-state';
-import { BackHeader } from '@/ui/primitives/back-header';
+import { AppToolbar } from '@/ui/navigation/app-toolbar';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
 /**
@@ -29,7 +29,8 @@ export function PlansScreen(): JSX.Element {
   }
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']} testID="plans-screen">
-      <BackHeader
+      <AppToolbar
+        showLogo
         title="Plans"
         titleTestID="plans-title"
         backTestID="plans-back-button"

@@ -13,7 +13,7 @@ import { resolveCollectionAccentColor } from '@/features/collections/lib/resolve
 import { theme } from '@/theme/theme';
 import { EmptyState } from '@/ui/feedback/empty-state';
 import { ErrorState } from '@/ui/feedback/error-state';
-import { BackHeader } from '@/ui/primitives/back-header';
+import { AppToolbar } from '@/ui/navigation/app-toolbar';
 import { BookCard } from '@/ui/primitives/book-card';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
@@ -40,7 +40,11 @@ export function CollectionDetailScreen(): JSX.Element {
         edges={['top', 'left', 'right', 'bottom']}
         accessibilityLabel="Loading collection"
       >
-        <BackHeader title="" onPressBack={navigateBackToCollections} backTestID="collection-detail-back-button" />
+        <AppToolbar
+          showLogo
+          onPressBack={navigateBackToCollections}
+          backTestID="collection-detail-back-button"
+        />
         <View style={styles.header}>
           <Skeleton height={28} width="70%" />
           <Skeleton height={16} width="30%" />
@@ -83,7 +87,11 @@ export function CollectionDetailScreen(): JSX.Element {
       edges={['top', 'left', 'right', 'bottom']}
       testID="collection-detail-screen"
     >
-      <BackHeader title="" onPressBack={navigateBackToCollections} backTestID="collection-detail-back-button" />
+      <AppToolbar
+          showLogo
+          onPressBack={navigateBackToCollections}
+          backTestID="collection-detail-back-button"
+        />
       <View
         style={[
           styles.header,
@@ -169,7 +177,11 @@ function CollectionDetailStatus(input: {
 }): JSX.Element {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
-      <BackHeader title="" onPressBack={navigateBackToCollections} backTestID="collection-detail-back-button" />
+      <AppToolbar
+          showLogo
+          onPressBack={navigateBackToCollections}
+          backTestID="collection-detail-back-button"
+        />
       <ErrorState
         description={input.description}
         onRetry={input.onRetry}

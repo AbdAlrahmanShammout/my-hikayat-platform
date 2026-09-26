@@ -7,26 +7,26 @@ import { typography } from './typography';
 
 describe('Direction B theme tokens', () => {
   it('maps Figma colors to RN tokens with compatibility aliases', () => {
-    const expectedCanvas = '#FDF6EC';
+    const expectedCanvas = '#F5F2EC';
     const expectedError = '#B83232';
-    const expectedPrimaryHover = '#BF3E1E';
+    const expectedPrimaryHover = '#B5531A';
     expect(colors.canvas).toBe(expectedCanvas);
-    expect(colors.canvasWarm).toBe('#F7EDDA');
+    expect(colors.canvasWarm).toBe('#EDE6D8');
     expect(colors.surface).toBe('#FFFFFF');
-    expect(colors.surfaceAlt).toBe('#FEF9F4');
-    expect(colors.primary).toBe('#D94E2D');
+    expect(colors.surfaceAlt).toBe('#F9F6F1');
+    expect(colors.primary).toBe('#CF6118');
     expect(colors.primaryHover).toBe(expectedPrimaryHover);
-    expect(colors.primaryDim).toBe('#FCE8E3');
-    expect(colors.secondary).toBe('#7B5CC2');
-    expect(colors.amber).toBe('#E8922A');
-    expect(colors.textPrimary).toBe('#1E1240');
-    expect(colors.textSecondary).toBe('#584870');
-    expect(colors.textMuted).toBe('#8E7FA6');
-    expect(colors.textFaint).toBe('#C4B8D8');
+    expect(colors.primaryDim).toBe('#FDF1E6');
+    expect(colors.secondary).toBe('#5BA0C8');
+    expect(colors.amber).toBe('#F0B820');
+    expect(colors.textPrimary).toBe('#243018');
+    expect(colors.textSecondary).toBe('#4E6038');
+    expect(colors.textMuted).toBe('#7A8A62');
+    expect(colors.textFaint).toBe('#B0BC94');
     expect(colors.textOnBrand).toBe('#FFFFFF');
-    expect(colors.borderDefault).toBe('#E6D4BC');
-    expect(colors.borderSubtle).toBe('#F2E8DB');
-    expect(colors.borderFocus).toBe('#D94E2D');
+    expect(colors.borderDefault).toBe('#D4CBBA');
+    expect(colors.borderSubtle).toBe('#EAE6DC');
+    expect(colors.borderFocus).toBe('#CF6118');
     expect(colors.error).toBe(expectedError);
     expect(colors.errorBg).toBe('#FDEAEA');
     expect(colors.success).toBe('#2E7D52');
@@ -35,15 +35,15 @@ describe('Direction B theme tokens', () => {
     expect(colors.warningBg).toBe('#FEF3E0');
     expect(colors.info).toBe('#2B72B0');
     expect(colors.infoBg).toBe('#E8F0FD');
-    expect(colors.locked).toBe('#6B6880');
-    expect(colors.lockedBg).toBe('#EEEDF4');
-    expect(colors.navBg).toBe('#1E1240');
+    expect(colors.locked).toBe('#748A62');
+    expect(colors.lockedBg).toBe('#EEF0E8');
+    expect(colors.navBg).toBe('#1C4F68');
     expect(colors.background).toBe(expectedCanvas);
     expect(colors.border).toBe(colors.borderDefault);
     expect(colors.danger).toBe(expectedError);
     expect(colors.onPrimary).toBe(colors.textOnBrand);
     expect(colors.primaryMuted).toBe(expectedPrimaryHover);
-    expect(colors.textPlaceholder).toBe('#829AB1');
+    expect(colors.textPlaceholder).toBe('#B0BC94');
   });
 
   it('keeps existing spacing aliases unchanged and adds Direction B scale', () => {
@@ -82,7 +82,7 @@ describe('Direction B theme tokens', () => {
 
   it('translates Figma CSS shadows into RN shadow tokens', () => {
     expect(shadows.xs).toEqual({
-      shadowColor: '#1E1240',
+      shadowColor: '#1C4F68',
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.06,
       shadowRadius: 3,
@@ -90,7 +90,7 @@ describe('Direction B theme tokens', () => {
       spread: 0,
     });
     expect(shadows.focus.spread).toBe(3);
-    expect(shadows.focus.ringColor).toBe('rgba(217, 78, 45, 0.25)');
+    expect(shadows.focus.ringColor).toBe('rgba(207, 97, 24, 0.25)');
     expect(shadows.focus.shadowRadius).toBe(0);
     expect(shadows.focus.elevation).toBe(0);
   });

@@ -1,4 +1,5 @@
 import { router, type Href } from 'expo-router';
+import { Search } from 'lucide-react-native';
 import type { JSX } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,7 +14,9 @@ import { resolveHomeGreeting } from '@/features/home/lib/resolve-home-greeting';
 import { ContinueReadingList } from '@/features/reader/components/continue-reading-list';
 import { useSession } from '@/session/use-session';
 import { theme } from '@/theme/theme';
+import { AppToolbar } from '@/ui/navigation/app-toolbar';
 import { Button } from '@/ui/primitives/button';
+import { Icon } from '@/ui/primitives/icon';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
 const HOME_COLLECTION_LIMIT = 20;
@@ -29,6 +32,25 @@ export function HomeScreen(): JSX.Element {
   });
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']} testID="shell-home-screen">
+      <AppToolbar
+        showLogo
+        logoVariant="icon"
+        title="My Hikayat"
+        testID="shell-home-toolbar"
+        rightAction={
+          <Pressable
+            style={styles.searchIconButton}
+            onPress={() => {
+              router.push('/(app)/search');
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Search books"
+            testID="home-search-button"
+          >
+            <Icon icon={Search} color={theme.colors.textPrimary} size="md" />
+          </Pressable>
+        }
+      />
       <CatalogBookList
         onOpenBook={(bookId) => {
           router.push(`/(app)/books/${bookId}`);
@@ -45,26 +67,13 @@ function HomeDiscoveryHeader(input: {
 }): JSX.Element {
   return (
     <View style={styles.header}>
-      <View style={styles.greetingRow}>
-        <View style={styles.greetingText}>
-          <Text style={styles.greeting} accessibilityRole="header" testID="shell-home-title">
-            {input.phrase}
-          </Text>
-          <Text style={styles.identity} numberOfLines={1} testID="shell-home-greeting-name">
-            {input.name}
-          </Text>
-        </View>
-        <Pressable
-          style={styles.searchIconButton}
-          onPress={() => {
-            router.push('/(app)/search');
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Search books"
-          testID="home-search-button"
-        >
-          <SearchIcon />
-        </Pressable>
+      <View style={styles.greetingText}>
+        <Text style={styles.greeting} accessibilityRole="header" testID="shell-home-title">
+          {input.phrase}
+        </Text>
+        <Text style={styles.identity} numberOfLines={1} testID="shell-home-greeting-name">
+          {input.name}
+        </Text>
       </View>
       <SubscriptionExpiryBanner placement="home" />
       <HomeTrialDiscoveryCard />
@@ -128,7 +137,9 @@ function HomeCollectionsShelf(): JSX.Element {
       ) : null}
       {!collectionsQuery.isLoading && !collectionsQuery.isError && collections.length === 0 ? (
         <View style={styles.shelfState} testID="home-collections-empty">
-          <Text style={styles.shelfStateBody}>No collections yet. Check back after editors add shelves.</Text>
+          <Text style={styles.shelfStateBody}>
+            No collections yet. Check back after editors add shelves.
+          </Text>
         </View>
       ) : null}
       {!collectionsQuery.isLoading && !collectionsQuery.isError && collections.length > 0 ? (
@@ -149,15 +160,6 @@ function HomeCollectionsShelf(): JSX.Element {
   );
 }
 
-function SearchIcon(): JSX.Element {
-  return (
-    <View style={styles.searchIcon} accessibilityElementsHidden>
-      <View style={styles.searchLens} />
-      <View style={styles.searchHandle} />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
@@ -169,13 +171,7 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
     paddingBottom: theme.spacing.md,
   },
-  greetingRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: theme.spacing.sm,
-  },
   greetingText: {
-    flex: 1,
     minWidth: 0,
   },
   greeting: {
@@ -201,26 +197,6 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  searchIcon: {
-    width: 18,
-    height: 18,
-  },
-  searchLens: {
-    width: 12,
-    height: 12,
-    borderRadius: theme.radii.full,
-    borderWidth: 1.75,
-    borderColor: theme.colors.textPrimary,
-  },
-  searchHandle: {
-    position: 'absolute',
-    width: 7,
-    height: 1.75,
-    backgroundColor: theme.colors.textPrimary,
-    right: 0,
-    bottom: 3,
-    transform: [{ rotate: '45deg' }],
   },
   section: {
     gap: theme.spacing.sm,

@@ -1,9 +1,17 @@
 import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { router, useFocusEffect, type Href } from 'expo-router';
+import {
+  BookOpen,
+  ChevronRight,
+  Info,
+  LogOut,
+  Settings,
+  Sparkles,
+} from 'lucide-react-native';
 import { useCallback, useState, type JSX } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SubscriptionExpiryBanner } from '@/features/billing/components/subscription-expiry-banner';
 import { SubscriptionSummaryCard } from '@/features/billing/components/subscription-summary-card';
@@ -21,14 +29,15 @@ import { theme } from '@/theme/theme';
 import { ErrorState } from '@/ui/feedback/error-state';
 import { BottomSheet } from '@/ui/layout/bottom-sheet';
 import { SheetHeader } from '@/ui/layout/sheet-header';
+import { AppToolbar } from '@/ui/navigation/app-toolbar';
 import { Button } from '@/ui/primitives/button';
+import { Icon } from '@/ui/primitives/icon';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
 /**
  * Profile tab: identity from /auth/me, expiry awareness, subscription summary, settings, sign-out.
  */
 export function ProfileScreen(): JSX.Element {
-  const insets = useSafeAreaInsets();
   const { user, signOut } = useSession();
   const billing = useReaderSubscription();
   const offline = useOfflinePackages();
@@ -68,11 +77,14 @@ export function ProfileScreen(): JSX.Element {
     return (
       <View style={styles.root} testID="shell-profile-screen">
         {isScreenFocused ? <StatusBar style="light" /> : null}
-        <View style={[styles.header, { paddingTop: insets.top + theme.spacing.xs }]}>
-          <Text style={styles.title} accessibilityRole="header" testID="shell-profile-title">
-            Me
-          </Text>
-        </View>
+        <AppToolbar
+          showLogo
+          tone="brand"
+          title="Me"
+          titleTestID="shell-profile-title"
+          includeSafeArea
+          testID="shell-profile-toolbar"
+        />
         <View style={styles.loadingBlock} testID="shell-profile-loading">
           <Skeleton height={56} width={56} radius={theme.radii.full} />
           <Skeleton height={18} width="60%" />
@@ -94,11 +106,14 @@ export function ProfileScreen(): JSX.Element {
   return (
     <View style={styles.root} testID="shell-profile-screen">
       {isScreenFocused ? <StatusBar style="light" /> : null}
-      <View style={[styles.header, { paddingTop: insets.top + theme.spacing.xs }]}>
-        <Text style={styles.title} accessibilityRole="header" testID="shell-profile-title">
-          Me
-        </Text>
-      </View>
+      <AppToolbar
+        showLogo
+        tone="brand"
+        title="Me"
+        titleTestID="shell-profile-title"
+        includeSafeArea
+        testID="shell-profile-toolbar"
+      />
       <SafeAreaView style={styles.body} edges={['left', 'right']}>
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.identity}>
@@ -142,8 +157,9 @@ export function ProfileScreen(): JSX.Element {
               accessibilityLabel="Open settings"
               testID="shell-settings-button"
             >
+              <Icon icon={Settings} color={theme.colors.textSecondary} size="md" />
               <Text style={styles.rowLabel}>Settings</Text>
-              <Text style={styles.chevron}>›</Text>
+              <Icon icon={ChevronRight} color={theme.colors.textFaint} size="md" />
             </Pressable>
             <View style={styles.divider} />
             <Pressable
@@ -155,8 +171,9 @@ export function ProfileScreen(): JSX.Element {
               accessibilityLabel="See plans"
               testID="shell-see-plans-button"
             >
+              <Icon icon={Sparkles} color={theme.colors.textSecondary} size="md" />
               <Text style={styles.rowLabel}>See plans</Text>
-              <Text style={styles.chevron}>›</Text>
+              <Icon icon={ChevronRight} color={theme.colors.textFaint} size="md" />
             </Pressable>
             <View style={styles.divider} />
             <Pressable
@@ -168,12 +185,14 @@ export function ProfileScreen(): JSX.Element {
               accessibilityLabel="Open My Books"
               testID="shell-my-books-button"
             >
+              <Icon icon={BookOpen} color={theme.colors.textSecondary} size="md" />
               <Text style={styles.rowLabel}>My Books</Text>
               <Text style={styles.rowMeta} testID="shell-my-books-count">
                 {offline.isLoading ? '…' : String(downloadCount)}
               </Text>
-              <Text style={styles.chevron}>›</Text>
+              <Icon icon={ChevronRight} color={theme.colors.textFaint} size="md" />
             </Pressable>
+            <View style={styles.divider} />
             <Pressable
               style={styles.row}
               onPress={() => {
@@ -183,8 +202,9 @@ export function ProfileScreen(): JSX.Element {
               accessibilityLabel="About My Hikayat"
               testID="shell-about-button"
             >
+              <Icon icon={Info} color={theme.colors.textSecondary} size="md" />
               <Text style={styles.rowLabel}>About My Hikayat</Text>
-              <Text style={styles.chevron}>›</Text>
+              <Icon icon={ChevronRight} color={theme.colors.textFaint} size="md" />
             </Pressable>
             <LegalLinkRow kind="privacy" testID="shell-privacy-policy-row" />
           </View>
@@ -204,7 +224,10 @@ export function ProfileScreen(): JSX.Element {
               {isSigningOut ? (
                 <ActivityIndicator color={theme.colors.error} />
               ) : (
-                <Text style={styles.signOutLabel}>Sign out</Text>
+                <>
+                  <Icon icon={LogOut} color={theme.colors.error} size="md" />
+                  <Text style={styles.signOutLabel}>Sign out</Text>
+                </>
               )}
             </Pressable>
           </View>
@@ -264,17 +287,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.canvas,
   },
-  header: {
-    backgroundColor: theme.colors.navBg,
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.xl,
-  },
-  title: {
-    ...theme.typography.title,
-    fontStyle: 'italic',
-    fontWeight: theme.typography.weights.regular,
-    color: theme.colors.textOnBrand,
-  },
   body: {
     flex: 1,
   },
@@ -333,21 +345,20 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: theme.colors.textMuted,
     paddingHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.lg,
-    marginBottom: theme.spacing.xs,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.xs,
   },
   group: {
-    marginHorizontal: theme.spacing.lg,
     backgroundColor: theme.colors.surface,
-    borderRadius: theme.radii.lg,
-    borderWidth: 1,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: theme.colors.borderSubtle,
-    overflow: 'hidden',
   },
   row: {
     minHeight: theme.controlMinHeight,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
   },
   rowLabel: {
@@ -358,12 +369,6 @@ const styles = StyleSheet.create({
   rowMeta: {
     ...theme.typography.label,
     color: theme.colors.textMuted,
-    marginRight: theme.spacing.xs,
-  },
-  chevron: {
-    ...theme.typography.title,
-    fontSize: theme.typography.scale.xl,
-    color: theme.colors.textFaint,
   },
   divider: {
     height: 1,
@@ -373,6 +378,8 @@ const styles = StyleSheet.create({
   signOutLabel: {
     ...theme.typography.body,
     color: theme.colors.error,
+    flex: 1,
+    fontWeight: theme.typography.weights.semibold,
   },
   versionFooter: {
     ...theme.typography.label,
@@ -381,16 +388,14 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xl,
   },
   sheetBody: {
-    gap: theme.spacing.sm,
-    paddingTop: theme.spacing.xs,
-  },
-  sheetIconMark: {
-    ...theme.typography.title,
-    color: theme.colors.error,
+    gap: theme.spacing.md,
   },
   sheetMessage: {
     ...theme.typography.body,
     color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.sm,
+  },
+  sheetIconMark: {
+    ...theme.typography.title,
+    color: theme.colors.error,
   },
 });

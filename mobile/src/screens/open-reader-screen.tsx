@@ -1,12 +1,13 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useState, type JSX } from 'react';
-import { ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { parseBookIdParam } from '@/features/catalog/lib/parse-book-id-param';
 import { DeviceClockTamperPanel } from '@/features/offline/components/device-clock-tamper-panel';
 import { saveOfflineReadingProgressBestEffort } from '@/features/offline/lib/save-offline-reading-progress-best-effort';
+import { BookOpenProgressView } from '@/features/reader/components/book-open-progress-view';
 import { FixedLayoutReaderEngine } from '@/features/reader/components/fixed-layout-reader-engine';
 import { ReflowableReaderEngine } from '@/features/reader/components/reflowable-reader-engine';
 import { endReadingSession } from '@/features/reader/api/end-reading-session';
@@ -65,8 +66,7 @@ export function OpenReaderScreen(): JSX.Element {
         accessibilityLabel="Opening book"
         testID="reader-opening"
       >
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.body}>Opening book…</Text>
+        <BookOpenProgressView progress={null} pendingLabel="Getting secure download link…" />
       </SafeAreaView>
     );
   }
@@ -251,10 +251,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
-  },
-  body: {
-    ...theme.typography.body,
-    color: theme.colors.textSecondary,
   },
   error: {
     ...theme.typography.body,

@@ -8,7 +8,8 @@ import { MY_HIKAYAT_ABOUT_FALLBACK } from '@/features/platform-settings/consts/a
 import { LegalLinkRow } from '@/features/platform-settings/components/legal-link-row';
 import { useReaderPlatformSettings } from '@/features/platform-settings/hooks/use-reader-platform-settings';
 import { theme } from '@/theme/theme';
-import { BackHeader } from '@/ui/primitives/back-header';
+import { AppToolbar } from '@/ui/navigation/app-toolbar';
+import { BrandLogo } from '@/ui/primitives/brand-logo';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
 /**
@@ -22,8 +23,10 @@ export function AboutScreen(): JSX.Element {
     settingsQuery.data?.aboutMission?.trim() || MY_HIKAYAT_ABOUT_FALLBACK;
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']} testID="about-screen">
-      <BackHeader
-        title=""
+      <AppToolbar
+        showLogo
+        title="About"
+        titleTestID="about-title"
         backTestID="about-back-button"
         onPressBack={() => {
           if (router.canGoBack()) {
@@ -34,9 +37,7 @@ export function AboutScreen(): JSX.Element {
         }}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title} accessibilityRole="header" testID="about-title">
-          About My Hikayat
-        </Text>
+        <BrandLogo variant="lockup" size={120} testID="about-logo" />
         {settingsQuery.isLoading ? (
           <View testID="about-loading">
             <Skeleton height={18} width="100%" />
@@ -68,11 +69,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.xxxl,
     gap: theme.spacing.md,
-  },
-  title: {
-    ...theme.typography.title,
-    fontStyle: 'italic',
-    color: theme.colors.textPrimary,
   },
   mission: {
     ...theme.typography.body,

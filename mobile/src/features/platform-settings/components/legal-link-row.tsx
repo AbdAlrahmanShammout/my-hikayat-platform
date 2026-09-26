@@ -1,9 +1,11 @@
+import { ChevronRight, Shield } from 'lucide-react-native';
 import { useState, type JSX } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useReaderPlatformSettings } from '@/features/platform-settings/hooks/use-reader-platform-settings';
 import { openLegalUrl } from '@/features/platform-settings/lib/open-legal-url';
 import { theme } from '@/theme/theme';
+import { Icon } from '@/ui/primitives/icon';
 
 type LegalLinkRowProps = {
   readonly kind: 'privacy' | 'terms';
@@ -50,8 +52,9 @@ export function LegalLinkRow({
         accessibilityState={{ busy: isOpening, disabled: isOpening }}
         testID={resolvedTestID}
       >
+        <Icon icon={Shield} color={theme.colors.textSecondary} size="md" />
         <Text style={styles.label}>{label}</Text>
-        <Text style={styles.chevron}>›</Text>
+        <Icon icon={ChevronRight} color={theme.colors.textFaint} size="md" />
       </Pressable>
     </>
   );
@@ -62,17 +65,13 @@ const styles = StyleSheet.create({
     minHeight: theme.controlMinHeight,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: theme.spacing.sm,
     paddingHorizontal: theme.spacing.md,
   },
   label: {
     ...theme.typography.body,
     color: theme.colors.textPrimary,
     flex: 1,
-  },
-  chevron: {
-    ...theme.typography.title,
-    fontSize: theme.typography.scale.xl,
-    color: theme.colors.textFaint,
   },
   divider: {
     height: 1,

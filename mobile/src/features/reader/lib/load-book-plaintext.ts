@@ -1,13 +1,17 @@
 import type { BookAssetDeliveryGrant } from '@/features/reader/api/create-delivery-grant';
 import { tryLoadOfflinePlaintext } from '@/features/offline/lib/load-offline-plaintext';
 import { refreshOfflineBookAuthorization } from '@/features/offline/lib/refresh-offline-book-authorization';
-import { downloadAndDecryptBookSource } from '@/features/reader/lib/download-and-decrypt-book-source';
+import {
+  downloadAndDecryptBookSource,
+  type BookOpenProgress,
+} from '@/features/reader/lib/download-and-decrypt-book-source';
 import { ApiError } from '@/api/api-error';
 
 export type LoadBookPlaintextInput = {
   readonly bookId: number;
   readonly sessionId: number;
   readonly deliveryGrant: BookAssetDeliveryGrant | null;
+  readonly onProgress?: (progress: BookOpenProgress) => void;
 };
 
 /**
@@ -27,6 +31,7 @@ export async function loadBookPlaintext(input: LoadBookPlaintextInput): Promise<
     bookId: input.bookId,
     sessionId: input.sessionId,
     deliveryGrant: input.deliveryGrant,
+    onProgress: input.onProgress,
   });
 }
 

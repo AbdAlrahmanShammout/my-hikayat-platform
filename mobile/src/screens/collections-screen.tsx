@@ -9,7 +9,7 @@ import { useDiscoveryCollections } from '@/features/collections/hooks/use-discov
 import { theme } from '@/theme/theme';
 import { EmptyState } from '@/ui/feedback/empty-state';
 import { ErrorState } from '@/ui/feedback/error-state';
-import { BackHeader } from '@/ui/primitives/back-header';
+import { AppToolbar } from '@/ui/navigation/app-toolbar';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
 const PAGE_SIZE = 20;
@@ -26,8 +26,10 @@ export function CollectionsScreen(): JSX.Element {
       edges={['top', 'left', 'right', 'bottom']}
       testID="collections-screen"
     >
-      <BackHeader
-        title=""
+      <AppToolbar
+        showLogo
+        title="Collections"
+        titleTestID="collections-title"
         backTestID="collections-back-button"
         onPressBack={() => {
           if (router.canGoBack()) {
@@ -38,9 +40,6 @@ export function CollectionsScreen(): JSX.Element {
         }}
       />
       <View style={styles.header}>
-        <Text style={styles.title} accessibilityRole="header" testID="collections-title">
-          Collections
-        </Text>
         <Text style={styles.body}>Curated sets of stories to explore</Text>
       </View>
       <View style={styles.results} testID="collections-list">
@@ -121,12 +120,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     gap: theme.spacing.xs,
     paddingBottom: theme.spacing.sm,
-  },
-  title: {
-    ...theme.typography.title,
-    fontStyle: 'italic',
-    fontWeight: theme.typography.weights.regular,
-    color: theme.colors.textPrimary,
   },
   body: {
     ...theme.typography.label,

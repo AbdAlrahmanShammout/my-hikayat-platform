@@ -33,7 +33,7 @@ import { theme } from '@/theme/theme';
 import { EmptyState } from '@/ui/feedback/empty-state';
 import { ErrorState } from '@/ui/feedback/error-state';
 import { TextField } from '@/ui/forms/text-field';
-import { BackHeader } from '@/ui/primitives/back-header';
+import { AppToolbar } from '@/ui/navigation/app-toolbar';
 import { BookCard } from '@/ui/primitives/book-card';
 import { Button } from '@/ui/primitives/button';
 import { Skeleton } from '@/ui/primitives/skeleton';
@@ -110,7 +110,8 @@ export function CatalogSearchScreen(): JSX.Element {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <BackHeader
+        <AppToolbar
+          showLogo
           title="Search"
           titleTestID="search-title"
           backTestID="search-back-button"

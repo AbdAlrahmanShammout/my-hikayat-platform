@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
+import { BookOpen, Home, UserRound } from 'lucide-react-native';
 import type { JSX } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/theme/theme';
+import { Icon } from '@/ui/primitives/icon';
 
 const TAB_BAR_CONTENT_HEIGHT = 80;
 
@@ -36,7 +38,7 @@ export default function TabsLayout(): JSX.Element {
           title: 'Home',
           tabBarButtonTestID: 'tab-home',
           tabBarAccessibilityLabel: 'Home tab',
-          tabBarIcon: ({ color }) => <HomeTabIcon color={color} />,
+          tabBarIcon: ({ color }) => <Icon icon={Home} color={color} size="lg" />,
           tabBarLabel: ({ color, focused }) => (
             <TabLabel label="Home" color={color} focused={focused} />
           ),
@@ -48,7 +50,7 @@ export default function TabsLayout(): JSX.Element {
           title: 'My Books',
           tabBarButtonTestID: 'tab-library',
           tabBarAccessibilityLabel: 'Library tab',
-          tabBarIcon: ({ color }) => <BooksTabIcon color={color} />,
+          tabBarIcon: ({ color }) => <Icon icon={BookOpen} color={color} size="lg" />,
           tabBarLabel: ({ color, focused }) => (
             <TabLabel label="My Books" color={color} focused={focused} />
           ),
@@ -60,7 +62,7 @@ export default function TabsLayout(): JSX.Element {
           title: 'Me',
           tabBarButtonTestID: 'tab-profile',
           tabBarAccessibilityLabel: 'Profile tab',
-          tabBarIcon: ({ color }) => <MeTabIcon color={color} />,
+          tabBarIcon: ({ color }) => <Icon icon={UserRound} color={color} size="lg" />,
           tabBarLabel: ({ color, focused }) => (
             <TabLabel label="Me" color={color} focused={focused} />
           ),
@@ -69,10 +71,6 @@ export default function TabsLayout(): JSX.Element {
     </Tabs>
   );
 }
-
-type TintProps = {
-  readonly color: string;
-};
 
 type TabLabelProps = {
   readonly label: string;
@@ -95,40 +93,6 @@ function TabLabel({ label, color, focused }: TabLabelProps): JSX.Element {
         {label}
       </Text>
       <View style={[styles.dot, focused ? styles.dotActive : null]} />
-    </View>
-  );
-}
-
-function HomeTabIcon({ color }: TintProps): JSX.Element {
-  return (
-    <View style={styles.icon} accessibilityElementsHidden>
-      <View
-        style={[
-          styles.homeRoof,
-          {
-            borderBottomColor: color,
-          },
-        ]}
-      />
-      <View style={[styles.homeBody, { borderColor: color }]} />
-    </View>
-  );
-}
-
-function BooksTabIcon({ color }: TintProps): JSX.Element {
-  return (
-    <View style={styles.icon} accessibilityElementsHidden>
-      <View style={[styles.bookSpine, { borderColor: color }]} />
-      <View style={[styles.bookPage, { borderColor: color }]} />
-    </View>
-  );
-}
-
-function MeTabIcon({ color }: TintProps): JSX.Element {
-  return (
-    <View style={styles.icon} accessibilityElementsHidden>
-      <View style={[styles.meHead, { borderColor: color }]} />
-      <View style={[styles.meShoulders, { borderColor: color }]} />
     </View>
   );
 }
@@ -158,59 +122,5 @@ const styles = StyleSheet.create({
   },
   dotActive: {
     backgroundColor: theme.colors.primary,
-  },
-  icon: {
-    width: 22,
-    height: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  homeRoof: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 7,
-    borderRightWidth: 7,
-    borderBottomWidth: 6,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-  },
-  homeBody: {
-    width: 12,
-    height: 9,
-    borderWidth: 1.75,
-    borderTopWidth: 0,
-  },
-  bookSpine: {
-    position: 'absolute',
-    left: 3,
-    top: 2,
-    width: 10,
-    height: 16,
-    borderWidth: 1.75,
-    borderRadius: 2,
-  },
-  bookPage: {
-    position: 'absolute',
-    left: 9,
-    top: 4,
-    width: 9,
-    height: 14,
-    borderWidth: 1.75,
-    borderRadius: 2,
-  },
-  meHead: {
-    width: 8,
-    height: 8,
-    borderRadius: theme.radii.full,
-    borderWidth: 1.75,
-    marginBottom: 2,
-  },
-  meShoulders: {
-    width: 16,
-    height: 7,
-    borderWidth: 1.75,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    borderBottomWidth: 0,
   },
 });

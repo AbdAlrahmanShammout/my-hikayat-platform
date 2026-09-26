@@ -33,7 +33,7 @@ const COVER_SIZE = {
   md: { width: 80, height: 120 },
   compact: { width: 100, height: 150 },
   lg: { width: 120, height: 180 },
-  detail: { width: 160, height: 240 },
+  detail: { width: 200, height: 268 },
 } as const;
 
 /**
@@ -55,12 +55,20 @@ export function BookCover({
   const [hasError, setHasError] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(coverUri !== null && coverUri !== undefined);
   const hasImage = coverUri !== null && coverUri !== undefined && coverUri !== '' && !hasError;
+  const isDetail: boolean = size === 'detail';
   const frameStyle = size === 'grid' ? styles.gridFrame : COVER_SIZE[size];
   const clampedProgress = clampProgress(progressFraction);
   return (
-    <View style={[styles.shadowWrap, toViewShadow(theme.shadows.book), style]}>
+    <View
+      style={[
+        styles.shadowWrap,
+        toViewShadow(isDetail ? theme.shadows.xl : theme.shadows.book),
+        isDetail ? styles.detailWrap : null,
+        style,
+      ]}
+    >
       <View
-        style={[styles.frame, frameStyle]}
+        style={[styles.frame, frameStyle, isDetail ? styles.detailFrame : null]}
         testID={testID}
         accessibilityRole="image"
         accessibilityLabel={buildCoverLabel(title, hasImage, isLocked, isDownloaded)}
@@ -69,7 +77,7 @@ export function BookCover({
           <Image
             source={{ uri: coverUri }}
             style={styles.image}
-            resizeMode="cover"
+            resizeMode={isDetail ? 'contain' : 'cover'}
             accessibilityIgnoresInvertColors
             onLoad={() => {
               setIsLoading(false);
@@ -150,6 +158,17 @@ const styles = StyleSheet.create({
   gridFrame: {
     width: '100%',
     aspectRatio: 2 / 3,
+  },
+  detailWrap: {
+    borderRadius: theme.radii.md,
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.32,
+    shadowRadius: 28,
+    elevation: 18,
+  },
+  detailFrame: {
+    borderRadius: theme.radii.md,
+    backgroundColor: theme.colors.canvas,
   },
   image: {
     width: '100%',

@@ -12,6 +12,7 @@ import {
   startReadingSession,
   type ReadingSession,
 } from '@/features/reader/api/start-reading-session';
+import type { ReadingProgress } from '@/features/reader/api/get-reading-progress';
 import { buildStartSessionBody } from '@/features/reader/lib/build-start-session-body';
 import { findReadingProgress } from '@/features/reader/lib/find-reading-progress';
 import {
@@ -41,7 +42,10 @@ export async function openReadingShell(bookId: number): Promise<OpenReadingShell
 }
 
 async function openOnlineReadingShell(bookId: number): Promise<OpenReadingShellResult> {
-  const book: CatalogBook = await getCatalogBook(bookId);
+  const [book, progress]: readonly [CatalogBook, ReadingProgress | null] = await Promise.all([
+    getCatalogBook(bookId),
+    findReadingProgress(bookId),
+  ]);
   if (!isBookLayoutType(book.layoutType)) {
     throw new ApiError({
       message: 'This book is not ready to open in a reader yet.',
@@ -57,24 +61,31 @@ async function openOnlineReadingShell(bookId: number): Promise<OpenReadingShellR
       statusCode: 409,
     });
   }
-  const session: ReadingSession = await startOrResumeSession(bookId, book.layoutType);
-  const deliveryGrant: BookAssetDeliveryGrant | null = await tryCreateDeliveryGrant(bookId);
+  const [session, deliveryGrant]: readonly [ReadingSession, BookAssetDeliveryGrant | null] =
+    await Promise.all([
+      startOrResumeSession({
+        bookId,
+        layoutType: book.layoutType,
+        progress,
+      }),
+      tryCreateDeliveryGrant(bookId),
+    ]);
   return { book, session, engine, deliveryGrant, isOfflinePackage: false };
 }
 
-async function startOrResumeSession(
-  bookId: number,
-  layoutType: 'reflowable' | 'fixed_layout',
-): Promise<ReadingSession> {
-  const progress = await findReadingProgress(bookId);
+async function startOrResumeSession(input: {
+  readonly bookId: number;
+  readonly layoutType: 'reflowable' | 'fixed_layout';
+  readonly progress: ReadingProgress | null;
+}): Promise<ReadingSession> {
   try {
     return await startReadingSession({
-      bookId,
-      body: buildStartSessionBody(layoutType, progress),
+      bookId: input.bookId,
+      body: buildStartSessionBody(input.layoutType, input.progress),
     });
   } catch (error: unknown) {
     if (error instanceof ApiError && error.code === 'READING_SESSION_ALREADY_OPEN') {
-      return getCurrentReadingSession(bookId);
+      return getCurrentReadingSession(input.bookId);
     }
     throw error;
   }

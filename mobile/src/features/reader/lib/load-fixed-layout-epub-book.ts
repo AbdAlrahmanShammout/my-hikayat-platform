@@ -1,4 +1,5 @@
 import type { BookAssetDeliveryGrant } from '@/features/reader/api/create-delivery-grant';
+import type { BookOpenProgress } from '@/features/reader/lib/download-and-decrypt-book-source';
 import { loadBookPlaintext } from '@/features/reader/lib/load-book-plaintext';
 import {
   parseFixedLayoutEpub,
@@ -9,6 +10,7 @@ export type LoadFixedLayoutEpubInput = {
   readonly bookId: number;
   readonly sessionId: number;
   readonly deliveryGrant: BookAssetDeliveryGrant | null;
+  readonly onProgress?: (progress: BookOpenProgress) => void;
 };
 
 /**
@@ -22,6 +24,7 @@ export async function loadFixedLayoutEpubBook(
     throw new Error('PDF fixed-layout rendering is not available in this build.');
   }
   const plaintext: Uint8Array = await loadBookPlaintext(input);
+  input.onProgress?.({ phase: 'preparing' });
   return parseFixedLayoutEpub(plaintext);
 }
 

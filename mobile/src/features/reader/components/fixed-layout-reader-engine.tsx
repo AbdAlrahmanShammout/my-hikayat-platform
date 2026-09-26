@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type JSX } from 'react';
 import {
-  ActivityIndicator,
   LayoutChangeEvent,
   Pressable,
   ScrollView,
@@ -20,6 +19,10 @@ import {
   computeAspectFitSize,
   resolveSpreadContentSize,
 } from '@/features/reader/lib/compute-aspect-fit-size';
+import {
+  createInitialDownloadProgress,
+  type BookOpenProgress,
+} from '@/features/reader/lib/download-and-decrypt-book-source';
 import { loadFixedLayoutEpubBook } from '@/features/reader/lib/load-fixed-layout-epub-book';
 import type {
   ParsedFixedLayoutEpub,
@@ -28,7 +31,14 @@ import type {
 } from '@/features/reader/lib/parse-fixed-layout-epub';
 import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-reading-progress-best-effort';
 import type { ReadingPositionSnapshot } from '@/features/reader/lib/reading-position';
+import { BookOpenProgressView } from '@/features/reader/components/book-open-progress-view';
+import { ReaderAnimatedChrome } from '@/features/reader/components/reader-animated-chrome';
 import { ReaderBookmarkToggle } from '@/features/reader/components/reader-bookmark-toggle';
+import { ReaderPageTapLayer } from '@/features/reader/components/reader-page-tap-layer';
+import {
+  ReaderPageTurnTransition,
+  type ReaderPageTurnDirection,
+} from '@/features/reader/components/reader-page-turn-transition';
 import { ReaderBookmarksPanel } from '@/features/reader/components/reader-bookmarks-panel';
 import { ReaderChromeButton } from '@/features/reader/components/reader-chrome-button';
 import type { ReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
@@ -70,6 +80,7 @@ export function FixedLayoutReaderEngine({
   onPositionChange,
 }: FixedLayoutReaderEngineProps): JSX.Element {
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' });
+  const [openProgress, setOpenProgress] = useState<BookOpenProgress | null>(null);
   const [spreadIndex, setSpreadIndex] = useState<number>(
     coerceNonNegativeInt(session.spreadIndex, 0),
   );
@@ -83,7 +94,11 @@ export function FixedLayoutReaderEngine({
   });
   const [reloadToken, setReloadToken] = useState<number>(0);
   const [isChromeVisible, setIsChromeVisible] = useState<boolean>(true);
+  const [pageTurnDirection, setPageTurnDirection] =
+    useState<ReaderPageTurnDirection>('none');
   const epubRef = useRef<ParsedFixedLayoutEpub | null>(null);
+  const canvasScrollRef = useRef<ScrollView>(null);
+  const canvasScrollOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const spreadIndexRef = useRef<number>(spreadIndex);
   const pageNumberRef = useRef<number>(pageNumber);
   const activeStartedAtRef = useRef<number>(Date.now());
@@ -108,11 +123,17 @@ export function FixedLayoutReaderEngine({
     let isCancelled = false;
     async function executeLoad(): Promise<void> {
       setLoadState({ status: 'loading' });
+      setOpenProgress(createInitialDownloadProgress(deliveryGrant?.byteSize));
       try {
         const epub: ParsedFixedLayoutEpub = await loadFixedLayoutEpubBook({
           bookId: book.id,
           sessionId: session.id,
           deliveryGrant,
+          onProgress: (progress: BookOpenProgress): void => {
+            if (!isCancelled) {
+              setOpenProgress(progress);
+            }
+          },
         });
         if (isCancelled) {
           epubRef.current = null;
@@ -179,8 +200,7 @@ export function FixedLayoutReaderEngine({
   if (loadState.status === 'loading') {
     return (
       <View style={styles.centered} testID="reader-fixed-layout-loading">
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.body}>Loading book…</Text>
+        <BookOpenProgressView progress={openProgress} />
         <CloseButton onClose={onClose} />
       </View>
     );
@@ -244,7 +264,17 @@ export function FixedLayoutReaderEngine({
   const canZoomIn: boolean = zoom < MAX_ZOOM - 0.001;
   const spreadTitle: string =
     centerPage?.title ?? leftPage?.title ?? rightPage?.title ?? `Spread ${spreadIndex + 1}`;
-
+  const turnSpread = (delta: number): void => {
+    const nextSpread: number = clampIndex(spreadIndex + delta, loadState.epub.spreads.length);
+    if (nextSpread === spreadIndex) {
+      return;
+    }
+    setPageTurnDirection(resolvePageTurnDirection(nextSpread, spreadIndex));
+    setSpreadIndex(nextSpread);
+    setPageNumber(resolvePageNumberForSpread(loadState.epub, nextSpread, 1));
+    setZoom(MIN_ZOOM);
+    activeStartedAtRef.current = Date.now();
+  };
   return (
     <View style={styles.container} testID="reader-fixed-layout-engine">
       <View
@@ -259,13 +289,21 @@ export function FixedLayoutReaderEngine({
         }}
       >
         <ScrollView
+          ref={canvasScrollRef}
           style={styles.canvasScroll}
           contentContainerStyle={styles.canvasContent}
           maximumZoomScale={1}
           minimumZoomScale={1}
           centerContent
+          scrollEventThrottle={16}
+          onScroll={(event) => {
+            canvasScrollOffsetRef.current.x = event.nativeEvent.contentOffset.x;
+            canvasScrollOffsetRef.current.y = event.nativeEvent.contentOffset.y;
+          }}
         >
-          <View
+          <ReaderPageTurnTransition
+            pageKey={spreadIndex}
+            direction={pageTurnDirection}
             style={[
               styles.spreadFrame,
               {
@@ -273,18 +311,34 @@ export function FixedLayoutReaderEngine({
                 height: fitted.height,
               },
             ]}
-            testID="reader-fixed-layout-spread-frame"
           >
-            {centerPage !== null ? (
-              <PageWebView page={centerPage} flex={1} />
-            ) : (
-              <>
-                {leftPage !== null ? <PageWebView page={leftPage} flex={1} /> : null}
-                {rightPage !== null ? <PageWebView page={rightPage} flex={1} /> : null}
-              </>
-            )}
-          </View>
+            <View style={styles.spreadFrameContent} testID="reader-fixed-layout-spread-frame">
+              {centerPage !== null ? (
+                <PageWebView page={centerPage} flex={1} />
+              ) : (
+                <>
+                  {leftPage !== null ? <PageWebView page={leftPage} flex={1} /> : null}
+                  {rightPage !== null ? <PageWebView page={rightPage} flex={1} /> : null}
+                </>
+              )}
+            </View>
+          </ReaderPageTurnTransition>
         </ScrollView>
+        <ReaderPageTapLayer
+          accessibilityLabel={isChromeVisible ? 'Hide reader controls' : 'Show reader controls'}
+          isPanEnabled={canZoomOut}
+          onToggle={() => {
+            setIsChromeVisible((current: boolean): boolean => !current);
+          }}
+          onSwipeNext={() => {
+            turnSpread(1);
+          }}
+          onSwipePrevious={() => {
+            turnSpread(-1);
+          }}
+          scrollRef={canvasScrollRef}
+          scrollOffsetRef={canvasScrollOffsetRef}
+        />
       </View>
       {loadState.epub.spreads.length <= SPREAD_DOT_LIMIT ? (
         <Pressable
@@ -303,8 +357,7 @@ export function FixedLayoutReaderEngine({
           ))}
         </Pressable>
       ) : null}
-      {isChromeVisible ? (
-        <View style={styles.topChrome}>
+      <ReaderAnimatedChrome isVisible={isChromeVisible} edge="top" style={styles.topChrome}>
           <Pressable
             onPress={onClose}
             accessibilityRole="button"
@@ -347,6 +400,7 @@ export function FixedLayoutReaderEngine({
                 coerceNonNegativeInt(bookmark.spreadIndex, 0),
                 loadState.epub.spreads.length,
               );
+              setPageTurnDirection(resolvePageTurnDirection(nextSpread, spreadIndex));
               setSpreadIndex(nextSpread);
               setPageNumber(
                 resolvePageNumberForSpread(
@@ -360,8 +414,8 @@ export function FixedLayoutReaderEngine({
             }}
           />
           </View>
-        </View>
-      ) : (
+      </ReaderAnimatedChrome>
+      {isChromeVisible ? null : (
         <Pressable
           style={styles.revealTop}
           onPress={() => {
@@ -371,9 +425,7 @@ export function FixedLayoutReaderEngine({
           accessibilityLabel="Show reader controls"
         />
       )}
-      {isChromeVisible ? (
-        <>
-          <View style={styles.sideNavLeft} pointerEvents="box-none">
+      <ReaderAnimatedChrome isVisible={isChromeVisible} edge="fade" style={styles.sideNavLeft}>
             <ReaderChromeButton
               label="‹"
               accessibilityLabel="Previous spread"
@@ -381,15 +433,11 @@ export function FixedLayoutReaderEngine({
               tone="dark"
               isDisabled={!canGoPrevious}
               onPress={() => {
-                const nextSpread: number = Math.max(0, spreadIndex - 1);
-                setSpreadIndex(nextSpread);
-                setPageNumber(resolvePageNumberForSpread(loadState.epub, nextSpread, 1));
-                setZoom(MIN_ZOOM);
-                activeStartedAtRef.current = Date.now();
+                turnSpread(-1);
               }}
             />
-          </View>
-          <View style={styles.sideNavRight} pointerEvents="box-none">
+      </ReaderAnimatedChrome>
+          <ReaderAnimatedChrome isVisible={isChromeVisible} edge="fade" style={styles.sideNavRight}>
             <ReaderChromeButton
               label="›"
               accessibilityLabel="Next spread"
@@ -397,18 +445,15 @@ export function FixedLayoutReaderEngine({
               tone="dark"
               isDisabled={!canGoNext}
               onPress={() => {
-                const nextSpread: number = Math.min(
-                  loadState.epub.spreads.length - 1,
-                  spreadIndex + 1,
-                );
-                setSpreadIndex(nextSpread);
-                setPageNumber(resolvePageNumberForSpread(loadState.epub, nextSpread, 1));
-                setZoom(MIN_ZOOM);
-                activeStartedAtRef.current = Date.now();
+                turnSpread(1);
               }}
             />
-          </View>
-          <View style={styles.bottomChrome}>
+      </ReaderAnimatedChrome>
+          <ReaderAnimatedChrome
+            isVisible={isChromeVisible}
+            edge="bottom"
+            style={styles.bottomChrome}
+          >
             <Text style={styles.spreadIndex} testID="reader-spread-index">
               {`Spread ${spreadIndex + 1} of ${loadState.epub.spreads.length} · Page ${pageNumber}`}
             </Text>
@@ -435,9 +480,8 @@ export function FixedLayoutReaderEngine({
                 }}
               />
             </View>
-          </View>
-        </>
-      ) : (
+      </ReaderAnimatedChrome>
+      {isChromeVisible ? null : (
         <Pressable
           style={styles.revealBottom}
           onPress={() => {
@@ -592,6 +636,19 @@ function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Number(value.toFixed(2))));
 }
 
+function resolvePageTurnDirection(
+  nextIndex: number,
+  currentIndex: number,
+): ReaderPageTurnDirection {
+  if (nextIndex > currentIndex) {
+    return 'next';
+  }
+  if (nextIndex < currentIndex) {
+    return 'previous';
+  }
+  return 'none';
+}
+
 function mapLoadError(error: unknown): string {
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
@@ -635,6 +692,11 @@ const styles = StyleSheet.create({
     padding: theme.spacing.sm,
   },
   spreadFrame: {
+    backgroundColor: theme.colors.surface,
+    overflow: 'hidden',
+  },
+  spreadFrameContent: {
+    flex: 1,
     flexDirection: 'row',
     backgroundColor: theme.colors.surface,
     overflow: 'hidden',
@@ -662,6 +724,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+    zIndex: 2,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.sm,
@@ -704,18 +767,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sideNavLeft: {
+    zIndex: 2,
     position: 'absolute',
     left: theme.spacing.sm,
     top: '50%',
     marginTop: -28,
   },
   sideNavRight: {
+    zIndex: 2,
     position: 'absolute',
     right: theme.spacing.sm,
     top: '50%',
     marginTop: -28,
   },
   bottomChrome: {
+    zIndex: 2,
     position: 'absolute',
     bottom: 0,
     left: 0,

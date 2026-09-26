@@ -12,6 +12,7 @@ type ButtonProps = {
   readonly isDisabled?: boolean;
   readonly isLoading?: boolean;
   readonly icon?: ReactNode;
+  readonly leftIcon?: ReactNode;
   readonly isIconOnly?: boolean;
   readonly isFullWidth?: boolean;
   readonly testID?: string;
@@ -60,6 +61,7 @@ export function Button({
   isDisabled = false,
   isLoading = false,
   icon,
+  leftIcon,
   isIconOnly = false,
   isFullWidth = true,
   testID,
@@ -69,6 +71,7 @@ export function Button({
   const isInactive = isDisabled || isLoading;
   const backgroundColor = isDisabled ? theme.colors.textFaint : palette.background;
   const labelColor = isDisabled ? theme.colors.textOnBrand : palette.label;
+  const leadingIcon: ReactNode = leftIcon ?? icon;
   return (
     <Pressable
       onPress={onPress}
@@ -92,7 +95,7 @@ export function Button({
         <ActivityIndicator color={labelColor} />
       ) : (
         <View style={styles.content}>
-          {icon}
+          {leadingIcon}
           {isIconOnly ? null : (
             <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
           )}

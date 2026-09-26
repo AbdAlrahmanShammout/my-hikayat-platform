@@ -1,29 +1,29 @@
 /**
- * Semantic color tokens — Direction B (Warm / Playful Story World).
+ * Semantic color tokens — Direction B, derived from the official My Hikayat logo.
  * Hex values match Figma Make `src/ds/tokens.ts`. Existing names stay as aliases.
  */
-const canvas = '#FDF6EC';
-const canvasWarm = '#F7EDDA';
+const canvas = '#F5F2EC';
+const canvasWarm = '#EDE6D8';
 const surface = '#FFFFFF';
-const surfaceAlt = '#FEF9F4';
+const surfaceAlt = '#F9F6F1';
 const surfaceRaised = '#FFFFFF';
-const primary = '#D94E2D';
-const primaryHover = '#BF3E1E';
-const primaryDim = '#FCE8E3';
-const secondary = '#7B5CC2';
-const secondaryDim = '#EDE8F8';
-const amber = '#E8922A';
-const amberDim = '#FEF3E0';
-const textPrimary = '#1E1240';
-const textSecondary = '#584870';
-const textMuted = '#8E7FA6';
-const textFaint = '#C4B8D8';
+const primary = '#CF6118';
+const primaryHover = '#B5531A';
+const primaryDim = '#FDF1E6';
+const secondary = '#5BA0C8';
+const secondaryDim = '#E8F3FA';
+const amber = '#F0B820';
+const amberDim = '#FEF6DC';
+const textPrimary = '#243018';
+const textSecondary = '#4E6038';
+const textMuted = '#7A8A62';
+const textFaint = '#B0BC94';
 const textOnBrand = '#FFFFFF';
-const textOnDark = '#EDE8F8';
-const borderDefault = '#E6D4BC';
-const borderSubtle = '#F2E8DB';
-const borderStrong = '#D0B898';
-const borderFocus = '#D94E2D';
+const textOnDark = '#F5F2EC';
+const borderDefault = '#D4CBBA';
+const borderSubtle = '#EAE6DC';
+const borderStrong = '#C4B9A4';
+const borderFocus = '#CF6118';
 const success = '#2E7D52';
 const successBg = '#E8F5EE';
 const warning = '#C47A1E';
@@ -32,13 +32,13 @@ const error = '#B83232';
 const errorBg = '#FDEAEA';
 const info = '#2B72B0';
 const infoBg = '#E8F0FD';
-const locked = '#6B6880';
-const lockedBg = '#EEEDF4';
-const navBg = '#1E1240';
-const navText = '#EDE8F8';
-const navMuted = '#8E7FA6';
-const navActive = '#D94E2D';
-const navActiveBg = 'rgba(217, 78, 45, 0.12)';
+const locked = '#748A62';
+const lockedBg = '#EEF0E8';
+const navBg = '#1C4F68';
+const navText = '#F5F2EC';
+const navMuted = '#7AB0C4';
+const navActive = '#CF6118';
+const navActiveBg = 'rgba(207, 97, 24, 0.12)';
 
 export const colors = {
   canvas,
@@ -88,9 +88,6 @@ export const colors = {
   onPrimary: textOnBrand,
   /** Compatibility alias → primaryHover */
   primaryMuted: primaryHover,
-  /**
-   * Existing placeholder token. Not present in Figma `color`; keep the prior hex
-   * so current TextInput placeholders do not change in this slice.
-   */
-  textPlaceholder: '#829AB1',
+  /** Placeholder copy uses the faint sage text token. */
+  textPlaceholder: textFaint,
 } as const;

@@ -1,18 +1,17 @@
 import { useEffect, useRef, useState, type JSX } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { WebView } from 'react-native-webview';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
 import type { CatalogBook } from '@/features/catalog/api/get-catalog-book';
 import type { BookAssetDeliveryGrant } from '@/features/reader/api/create-delivery-grant';
 import { ingestReadingActivity } from '@/features/reader/api/ingest-reading-activity';
 import type { ReadingSession } from '@/features/reader/api/start-reading-session';
 import { buildReflowableChapterHtml } from '@/features/reader/lib/build-reflowable-chapter-html';
+import { createReaderChromeToggle } from '@/features/reader/lib/create-reader-chrome-toggle';
+import {
+  createInitialDownloadProgress,
+  type BookOpenProgress,
+} from '@/features/reader/lib/download-and-decrypt-book-source';
 import { loadReflowableEpubBook } from '@/features/reader/lib/load-reflowable-epub-book';
 import type { ParsedEpubBook, ParsedEpubChapter } from '@/features/reader/lib/parse-epub-book';
 import {
@@ -27,15 +26,23 @@ import {
 import { saveReadingProgressBestEffort } from '@/features/reader/lib/save-reading-progress-best-effort';
 import type { ReadingPositionSnapshot } from '@/features/reader/lib/reading-position';
 import { resolveReflowableContentProgress } from '@/features/reader/lib/resolve-reflowable-content-progress';
+import { BookOpenProgressView } from '@/features/reader/components/book-open-progress-view';
+import { ReaderAnimatedChrome } from '@/features/reader/components/reader-animated-chrome';
 import { ReaderBookmarkToggle } from '@/features/reader/components/reader-bookmark-toggle';
 import { ReaderBookmarksPanel } from '@/features/reader/components/reader-bookmarks-panel';
 import { ReaderChromeButton } from '@/features/reader/components/reader-chrome-button';
+import {
+  ReaderPageTurnTransition,
+  type ReaderPageTurnDirection,
+} from '@/features/reader/components/reader-page-turn-transition';
 import { ReflowableReaderSettingsControls } from '@/features/reader/components/reflowable-reader-settings-controls';
 import type { ReadingBookmark } from '@/features/reader/api/create-reading-bookmark';
 import { theme } from '@/theme/theme';
 import { BottomSheet } from '@/ui/layout/bottom-sheet';
 import { Button } from '@/ui/primitives/button';
 import { ErrorState } from '@/ui/feedback/error-state';
+
+const readerChromeToggle = createReaderChromeToggle();
 
 type ReflowableReaderEngineProps = {
   readonly book: CatalogBook;
@@ -56,8 +63,9 @@ const ACTIVITY_TICK_MS = 15_000;
  * Reflowable EPUB engine: decrypt in memory, parse spine, render chapter HTML in an isolated WebView.
  *
  * WebView rationale: EPUB chapters are XHTML/HTML with inline assets. A sandboxed WebView is the
- * appropriate Expo viewport for that markup. It is not used for privileged app flows, receives no
- * native bridge methods, and only loads injected HTML (`originWhitelist` limited to about:blank).
+ * appropriate Expo viewport for that markup. It is not used for privileged app flows and only loads
+ * injected HTML (`originWhitelist` limited to about:blank). The only accepted page message toggles
+ * the reader bars.
  */
 export function ReflowableReaderEngine({
   book,
@@ -67,6 +75,7 @@ export function ReflowableReaderEngine({
   onPositionChange,
 }: ReflowableReaderEngineProps): JSX.Element {
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' });
+  const [openProgress, setOpenProgress] = useState<BookOpenProgress | null>(null);
   const [spineIndex, setSpineIndex] = useState<number>(
     coerceNonNegativeInt(session.spineIndex, 0),
   );
@@ -79,6 +88,8 @@ export function ReflowableReaderEngine({
   const [reloadToken, setReloadToken] = useState<number>(0);
   const [isChromeVisible, setIsChromeVisible] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [pageTurnDirection, setPageTurnDirection] =
+    useState<ReaderPageTurnDirection>('none');
   const epubRef = useRef<ParsedEpubBook | null>(null);
   const spineIndexRef = useRef<number>(spineIndex);
   const scrollOffsetRef = useRef<number>(scrollOffset);
@@ -121,11 +132,17 @@ export function ReflowableReaderEngine({
     let isCancelled = false;
     async function executeLoad(): Promise<void> {
       setLoadState({ status: 'loading' });
+      setOpenProgress(createInitialDownloadProgress(deliveryGrant?.byteSize));
       try {
         const epub: ParsedEpubBook = await loadReflowableEpubBook({
           bookId: book.id,
           sessionId: session.id,
           deliveryGrant,
+          onProgress: (progress: BookOpenProgress): void => {
+            if (!isCancelled) {
+              setOpenProgress(progress);
+            }
+          },
         });
         if (isCancelled) {
           epubRef.current = null;
@@ -186,8 +203,7 @@ export function ReflowableReaderEngine({
   if (loadState.status === 'loading') {
     return (
       <View style={styles.centered} testID="reader-reflowable-loading">
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.body}>Loading book…</Text>
+        <BookOpenProgressView progress={openProgress} />
         <CloseButton onClose={onClose} />
       </View>
     );
@@ -229,6 +245,34 @@ export function ReflowableReaderEngine({
   });
   const canGoPrevious: boolean = spineIndex > 0;
   const canGoNext: boolean = spineIndex < loadState.epub.chapters.length - 1;
+  const turnChapter = (delta: number): void => {
+    const nextIndex: number = clampSpineIndex(spineIndex + delta, loadState.epub.chapters.length);
+    if (nextIndex === spineIndex) {
+      return;
+    }
+    setPageTurnDirection(resolvePageTurnDirection(nextIndex, spineIndex));
+    setSpineIndex(nextIndex);
+    setScrollOffset(0);
+    activeStartedAtRef.current = Date.now();
+  };
+  const handleWebViewMessage = (event: WebViewMessageEvent): void => {
+    if (isSettingsOpen) {
+      return;
+    }
+    const data: string = event.nativeEvent.data;
+    if (data === readerChromeToggle.nextMessage) {
+      turnChapter(1);
+      return;
+    }
+    if (data === readerChromeToggle.previousMessage) {
+      turnChapter(-1);
+      return;
+    }
+    if (data !== readerChromeToggle.message) {
+      return;
+    }
+    setIsChromeVisible((current: boolean): boolean => !current);
+  };
   const contentProgressPercent: number = resolveReflowableContentProgress({
     spineIndex,
     chapters: loadState.epub.chapters,
@@ -239,33 +283,41 @@ export function ReflowableReaderEngine({
 
   return (
     <View style={[styles.container, { backgroundColor: webBackground }]} testID="reader-reflowable-engine">
-      <WebView
+      <ReaderPageTurnTransition
+        pageKey={spineIndex}
+        direction={pageTurnDirection}
         style={[styles.webview, { backgroundColor: webBackground }]}
-        originWhitelist={['about:blank']}
-        source={{ html, baseUrl: 'about:blank' }}
-        javaScriptEnabled
-        domStorageEnabled={false}
-        allowFileAccess={false}
-        allowFileAccessFromFileURLs={false}
-        allowUniversalAccessFromFileURLs={false}
-        setSupportMultipleWindows={false}
-        startInLoadingState
-        injectedJavaScript={
-          scrollOffset > 0 ? `window.scrollTo(0, ${scrollOffset}); true;` : 'true;'
-        }
-        testID="reader-reflowable-webview"
-        onScroll={(event) => {
-          const nextOffset: number = Math.max(0, Math.round(event.nativeEvent.contentOffset.y));
-          setScrollOffset(nextOffset);
-        }}
-      />
-      {isChromeVisible ? (
-        <View
-          style={[
-            styles.topChrome,
-            isDarkChrome ? styles.topChromeDark : styles.topChromeLight,
-          ]}
-        >
+      >
+        <WebView
+          style={[styles.webview, { backgroundColor: webBackground }]}
+          originWhitelist={['about:blank']}
+          source={{ html, baseUrl: 'about:blank' }}
+          javaScriptEnabled
+          domStorageEnabled={false}
+          allowFileAccess={false}
+          allowFileAccessFromFileURLs={false}
+          allowUniversalAccessFromFileURLs={false}
+          setSupportMultipleWindows={false}
+          startInLoadingState
+          injectedJavaScript={`${readerChromeToggle.script}
+${scrollOffset > 0 ? `window.scrollTo(0, ${scrollOffset});` : ''}
+true;`}
+          onMessage={handleWebViewMessage}
+          testID="reader-reflowable-webview"
+          onScroll={(event) => {
+            const nextOffset: number = Math.max(0, Math.round(event.nativeEvent.contentOffset.y));
+            setScrollOffset(nextOffset);
+          }}
+        />
+      </ReaderPageTurnTransition>
+      <ReaderAnimatedChrome
+        isVisible={isChromeVisible}
+        edge="top"
+        style={[
+          styles.topChrome,
+          isDarkChrome ? styles.topChromeDark : styles.topChromeLight,
+        ]}
+      >
           <Pressable
             onPress={onClose}
             accessibilityRole="button"
@@ -317,6 +369,7 @@ export function ReflowableReaderEngine({
                   coerceNonNegativeInt(bookmark.spineIndex, 0),
                   loadState.epub.chapters.length,
                 );
+                setPageTurnDirection(resolvePageTurnDirection(nextSpine, spineIndex));
                 setSpineIndex(nextSpine);
                 setScrollOffset(coerceNonNegativeInt(bookmark.scrollOffset, 0));
                 activeStartedAtRef.current = Date.now();
@@ -331,8 +384,8 @@ export function ReflowableReaderEngine({
               }}
             />
           </View>
-        </View>
-      ) : (
+      </ReaderAnimatedChrome>
+      {isChromeVisible ? null : (
         <Pressable
           style={styles.revealTop}
           onPress={() => {
@@ -342,13 +395,14 @@ export function ReflowableReaderEngine({
           accessibilityLabel="Show reader controls"
         />
       )}
-      {isChromeVisible ? (
-        <View
-          style={[
-            styles.bottomChrome,
-            isDarkChrome ? styles.bottomChromeDark : styles.bottomChromeLight,
-          ]}
-        >
+      <ReaderAnimatedChrome
+        isVisible={isChromeVisible}
+        edge="bottom"
+        style={[
+          styles.bottomChrome,
+          isDarkChrome ? styles.bottomChromeDark : styles.bottomChromeLight,
+        ]}
+      >
           <ReaderChromeButton
             label="‹"
             accessibilityLabel="Previous chapter"
@@ -356,19 +410,10 @@ export function ReflowableReaderEngine({
             tone={chromeTone}
             isDisabled={!canGoPrevious}
             onPress={() => {
-              setSpineIndex((current) => Math.max(0, current - 1));
-              setScrollOffset(0);
-              activeStartedAtRef.current = Date.now();
+              turnChapter(-1);
             }}
           />
-          <Pressable
-            style={styles.progressHit}
-            onPress={() => {
-              setIsChromeVisible(false);
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Hide reader controls"
-          >
+          <View style={styles.progressHit} pointerEvents="none">
             <Text
               style={[styles.progressLabel, isDarkChrome ? styles.progressLabelDark : null]}
               testID="reader-chapter-title"
@@ -381,7 +426,7 @@ export function ReflowableReaderEngine({
             >
               {`Chapter ${spineIndex + 1} of ${loadState.epub.chapters.length} · ${contentProgressPercent}%`}
             </Text>
-          </Pressable>
+          </View>
           <ReaderChromeButton
             label="›"
             accessibilityLabel="Next chapter"
@@ -389,13 +434,11 @@ export function ReflowableReaderEngine({
             tone={chromeTone}
             isDisabled={!canGoNext}
             onPress={() => {
-              setSpineIndex((current) => Math.min(loadState.epub.chapters.length - 1, current + 1));
-              setScrollOffset(0);
-              activeStartedAtRef.current = Date.now();
+              turnChapter(1);
             }}
           />
-        </View>
-      ) : (
+      </ReaderAnimatedChrome>
+      {isChromeVisible ? null : (
         <Pressable
           style={styles.revealBottom}
           onPress={() => {
@@ -499,6 +542,19 @@ function clampSpineIndex(value: number, chapterCount: number): number {
   return Math.min(chapterCount - 1, Math.max(0, value));
 }
 
+function resolvePageTurnDirection(
+  nextIndex: number,
+  currentIndex: number,
+): ReaderPageTurnDirection {
+  if (nextIndex > currentIndex) {
+    return 'next';
+  }
+  if (nextIndex < currentIndex) {
+    return 'previous';
+  }
+  return 'none';
+}
+
 function mapLoadError(error: unknown): string {
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
@@ -537,6 +593,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+    zIndex: 2,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.sm,
@@ -589,6 +646,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   bottomChrome: {
+    zIndex: 2,
     position: 'absolute',
     bottom: 0,
     left: 0,

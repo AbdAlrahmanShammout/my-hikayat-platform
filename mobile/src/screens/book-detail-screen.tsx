@@ -1,3 +1,4 @@
+import { BookOpen, CreditCard, Download, Trash2 } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState, type JSX } from 'react';
@@ -22,9 +23,10 @@ import { resolveBookDetailProgressPresentation } from '@/features/reader/lib/res
 import { useConnectivity } from '@/native/connectivity/use-connectivity';
 import { theme } from '@/theme/theme';
 import { ErrorState } from '@/ui/feedback/error-state';
-import { BackHeader } from '@/ui/primitives/back-header';
+import { AppToolbar } from '@/ui/navigation/app-toolbar';
 import { BookCover } from '@/ui/primitives/book-cover';
 import { Button } from '@/ui/primitives/button';
+import { Icon } from '@/ui/primitives/icon';
 import { Pill } from '@/ui/primitives/pill';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
@@ -109,7 +111,7 @@ export function BookDetailScreen(): JSX.Element {
       : 'catalog-book-cover';
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
-      <BackHeader title="" onPressBack={navigateBack} />
+      <AppToolbar showLogo onPressBack={navigateBack} backTestID="book-detail-back-button" />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.hero}>
           <BookCover
@@ -154,6 +156,13 @@ export function BookDetailScreen(): JSX.Element {
         ) : null}
         <Button
           label={entryCta.label}
+          leftIcon={
+            <Icon
+              icon={entryCta.kind === 'go_to_billing' ? CreditCard : BookOpen}
+              color={theme.colors.textOnBrand}
+              size="md"
+            />
+          }
           onPress={() => {
             if (entryCta.kind === 'go_to_billing') {
               router.push('/(app)/subscription' as Href);
@@ -169,6 +178,9 @@ export function BookDetailScreen(): JSX.Element {
             key={cta.kind}
             label={cta.label}
             variant="secondary"
+            leftIcon={
+              <Icon icon={CreditCard} color={theme.colors.textSecondary} size="md" />
+            }
             onPress={() => {
               router.push('/(app)/subscription' as Href);
             }}
@@ -185,6 +197,7 @@ export function BookDetailScreen(): JSX.Element {
             <Button
               label="Remove offline download"
               variant="secondary"
+              leftIcon={<Icon icon={Trash2} color={theme.colors.textSecondary} size="md" />}
               isLoading={offlineActions.isRemoving}
               onPress={() => {
                 setIsRemoveConfirmVisible(true);
@@ -197,6 +210,13 @@ export function BookDetailScreen(): JSX.Element {
           <Button
             label={isOnline ? 'Download for offline' : 'Connect to download'}
             variant="secondary"
+            leftIcon={
+              <Icon
+                icon={Download}
+                color={isOnline ? theme.colors.textSecondary : theme.colors.textFaint}
+                size="md"
+              />
+            }
             isDisabled={!isOnline}
             isLoading={offlineActions.isDownloading}
             onPress={() => {
@@ -281,10 +301,10 @@ function BookDetailLoading(): JSX.Element {
       edges={['top', 'left', 'right', 'bottom']}
       accessibilityLabel="Loading book"
     >
-      <BackHeader title="" onPressBack={navigateBack} />
+      <AppToolbar showLogo onPressBack={navigateBack} backTestID="book-detail-back-button" />
       <View style={styles.content}>
         <View style={styles.hero}>
-          <Skeleton width={160} height={240} radius={theme.radii.sm} />
+          <Skeleton width={200} height={268} radius={theme.radii.md} />
         </View>
         <Skeleton height={28} width="70%" style={styles.centerSkeleton} />
         <Skeleton height={16} width="40%" style={styles.centerSkeleton} />
@@ -301,7 +321,7 @@ function BookDetailStatus(input: {
 }): JSX.Element {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']}>
-      <BackHeader title="" onPressBack={navigateBack} />
+      <AppToolbar showLogo onPressBack={navigateBack} backTestID="book-detail-back-button" />
       <ErrorState
         description={input.description}
         onRetry={input.onRetry}
@@ -397,10 +417,7 @@ const styles = StyleSheet.create({
   hero: {
     alignItems: 'center',
     paddingTop: theme.spacing.xs,
-    paddingBottom: theme.spacing.md,
-    backgroundColor: theme.colors.canvasWarm,
-    marginHorizontal: -theme.spacing.lg,
-    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.lg,
   },
   title: {
     ...theme.typography.title,

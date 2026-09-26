@@ -15,6 +15,7 @@ import { useReaderPlatformSettings } from '@/features/platform-settings/hooks/us
 import { theme } from '@/theme/theme';
 import { useKeyboardInset } from '@/ui/hooks/use-keyboard-inset';
 import { toViewShadow } from '@/ui/lib/to-view-shadow';
+import { BrandLogo } from '@/ui/primitives/brand-logo';
 
 type AuthScreenChromeProps = {
   readonly tagline: string;
@@ -72,9 +73,7 @@ export function AuthScreenChrome({
       automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
     >
       <View style={styles.brand}>
-        <Text style={styles.wordmark} accessibilityRole="header">
-          My Hikayat
-        </Text>
+        <BrandLogo variant="lockup" size={160} style={styles.wordmark} />
         <Text style={styles.tagline}>{tagline}</Text>
         <AuthCoverStrip />
       </View>
@@ -138,10 +137,9 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.md,
   },
   wordmark: {
-    ...theme.typography.title,
-    fontStyle: 'italic',
-    fontWeight: theme.typography.weights.regular,
-    color: theme.colors.primary,
+    width: 160,
+    height: 160,
+    alignSelf: 'flex-start',
   },
   tagline: {
     ...theme.typography.body,

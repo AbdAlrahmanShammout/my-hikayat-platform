@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SubscriptionStatusCard } from '@/features/billing/components/subscription-status-card';
 import { theme } from '@/theme/theme';
-import { BackHeader } from '@/ui/primitives/back-header';
+import { AppToolbar } from '@/ui/navigation/app-toolbar';
 
 /**
  * Dedicated subscription manager. Billing actions stay server-authoritative.
@@ -17,7 +17,8 @@ export function SubscriptionScreen(): JSX.Element {
       edges={['top', 'left', 'right', 'bottom']}
       testID="subscription-screen"
     >
-      <BackHeader
+      <AppToolbar
+        showLogo
         title="Subscription"
         titleTestID="subscription-title"
         backTestID="subscription-back-button"

@@ -10,8 +10,8 @@ describe('resolveHomeNewGridLayout', () => {
     expect(actual.itemWidth * 2 + GAP).toBeCloseTo(250);
   });
 
-  it('adds columns as the row gets wider', () => {
-    const phone = resolveHomeNewGridLayout({ contentWidth: 320, gap: GAP });
+  it('keeps two columns on a phone row and adds columns on a wide row', () => {
+    const phone = resolveHomeNewGridLayout({ contentWidth: 400, gap: GAP });
     const tablet = resolveHomeNewGridLayout({ contentWidth: 720, gap: GAP });
     expect(phone.columnCount).toBe(2);
     expect(tablet.columnCount).toBeGreaterThan(phone.columnCount);

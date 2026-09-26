@@ -1,8 +1,10 @@
+import { ChevronLeft } from 'lucide-react-native';
 import type { JSX, ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { theme } from '@/theme/theme';
+import { Icon } from '@/ui/primitives/icon';
 
 type BackHeaderProps = {
   readonly title: string;
@@ -47,7 +49,7 @@ export function BackHeader({
         testID={backTestID}
         style={styles.back}
       >
-        <Text style={[styles.chevron, { color: foreground }]}>‹</Text>
+        <Icon icon={ChevronLeft} color={foreground} size="lg" />
         <Text style={[styles.backLabel, { color: foreground }]}>{backLabel}</Text>
       </Pressable>
       <View style={styles.titles} pointerEvents="none">
@@ -85,11 +87,8 @@ const styles = StyleSheet.create({
     minWidth: theme.controlMinHeight,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: theme.spacing.scale.xs,
     zIndex: 1,
-  },
-  chevron: {
-    fontSize: theme.typography.scale.xl,
-    lineHeight: theme.controlMinHeight,
   },
   backLabel: {
     ...theme.typography.body,

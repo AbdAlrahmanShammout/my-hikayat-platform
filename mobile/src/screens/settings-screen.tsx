@@ -9,7 +9,7 @@ import { LegalLinkRow } from '@/features/platform-settings/components/legal-link
 import { ReflowableReaderSettingsControls } from '@/features/reader/components/reflowable-reader-settings-controls';
 import { usePersistedReflowableReaderSettings } from '@/features/reader/hooks/use-persisted-reflowable-reader-settings';
 import { theme } from '@/theme/theme';
-import { BackHeader } from '@/ui/primitives/back-header';
+import { AppToolbar } from '@/ui/navigation/app-toolbar';
 import { Button } from '@/ui/primitives/button';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
@@ -27,8 +27,10 @@ export function SettingsScreen(): JSX.Element {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']} testID="settings-screen">
-      <BackHeader
-        title=""
+      <AppToolbar
+        showLogo
+        title="Settings"
+        titleTestID="settings-title"
         backTestID="settings-back-button"
         onPressBack={() => {
           if (router.canGoBack()) {
@@ -39,9 +41,6 @@ export function SettingsScreen(): JSX.Element {
         }}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title} accessibilityRole="header" testID="settings-title">
-          Settings
-        </Text>
         <Text style={styles.lead}>
           Only preferences that affect reading and downloads on this device.
         </Text>
@@ -136,12 +135,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.xxxl,
     gap: theme.spacing.sm,
-  },
-  title: {
-    ...theme.typography.title,
-    fontStyle: 'italic',
-    fontWeight: theme.typography.weights.regular,
-    color: theme.colors.textPrimary,
   },
   lead: {
     ...theme.typography.body,

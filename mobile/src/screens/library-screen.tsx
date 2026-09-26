@@ -15,6 +15,7 @@ import { useConnectivity } from '@/native/connectivity/use-connectivity';
 import { theme } from '@/theme/theme';
 import { EmptyState } from '@/ui/feedback/empty-state';
 import { ErrorState } from '@/ui/feedback/error-state';
+import { AppToolbar } from '@/ui/navigation/app-toolbar';
 import { Button } from '@/ui/primitives/button';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
@@ -35,10 +36,13 @@ export function LibraryScreen(): JSX.Element {
     !offline.isLoading && !offline.isError && packageCount > 0 && !isClockRollbackDetected;
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']} testID="shell-library-screen">
+      <AppToolbar
+        showLogo
+        title="My Books"
+        titleTestID="shell-library-title"
+        testID="shell-library-toolbar"
+      />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title} accessibilityRole="header" testID="shell-library-title">
-          My Books
-        </Text>
         <Text style={styles.lead}>
           Downloads are leased and stay encrypted on this device. Each book shows when offline
           access ends.
@@ -179,12 +183,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.xl,
     gap: theme.spacing.sm,
-  },
-  title: {
-    ...theme.typography.title,
-    fontStyle: 'italic',
-    fontWeight: theme.typography.weights.regular,
-    color: theme.colors.textPrimary,
   },
   lead: {
     ...theme.typography.body,

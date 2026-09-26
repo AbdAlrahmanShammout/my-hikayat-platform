@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import type { JSX } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CatalogBookList } from '@/features/catalog/components/catalog-book-list';
 import { theme } from '@/theme/theme';
-import { BackHeader } from '@/ui/primitives/back-header';
+import { AppToolbar } from '@/ui/navigation/app-toolbar';
 
 /**
  * Newest catalog list opened from Home See all. Not Collections.
@@ -13,7 +13,8 @@ import { BackHeader } from '@/ui/primitives/back-header';
 export function NewestBooksScreen(): JSX.Element {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']} testID="newest-books-screen">
-      <BackHeader
+      <AppToolbar
+        showLogo
         title="New in My Hikayat"
         titleTestID="newest-books-title"
         backTestID="newest-books-back-button"

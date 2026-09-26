@@ -1,6 +1,6 @@
 const MIN_COLUMNS = 2;
 const MAX_COLUMNS = 6;
-const MIN_CARD_WIDTH = 108;
+const MIN_CARD_WIDTH = 168;
 
 export type HomeNewGridLayout = {
   readonly columnCount: number;
@@ -9,7 +9,7 @@ export type HomeNewGridLayout = {
 
 /**
  * Picks a column count from the row's real width.
- * Narrow phones stay at two columns and shrink the card; wider screens add columns.
+ * Phones stay at two columns. A third column starts only on a wider row.
  */
 export function resolveHomeNewGridLayout(input: {
   readonly contentWidth: number;
