@@ -10,13 +10,13 @@ describe('MemoryMailManagerService', () => {
   it('records sent messages for later inspection', async () => {
     await memoryMailManagerService.send({
       to: 'new-admin@example.com',
-      subject: 'You are invited to administer Noory',
+      subject: 'You are invited to administer My Hikayat',
       text: 'Open the invitation link to set your password.',
     });
     expect(memoryMailManagerService.readSentMessages()).toEqual([
       {
         to: 'new-admin@example.com',
-        subject: 'You are invited to administer Noory',
+        subject: 'You are invited to administer My Hikayat',
         text: 'Open the invitation link to set your password.',
         html: undefined,
       },

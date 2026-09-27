@@ -2,8 +2,10 @@ import { motion, useReducedMotion } from 'framer-motion';
 import type { JSX } from 'react';
 import { Link, useSearchParams } from 'react-router';
 
+import { AuthBrand } from '@/components/layout/auth-brand';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PRODUCT_NAME } from '@/config/product-name';
 import { AcceptAdminInvitationForm } from '@/features/auth/components/accept-admin-invitation-form';
 import { parseAdminInvitationToken } from '@/features/auth/lib/parse-admin-invitation-token';
 
@@ -22,6 +24,7 @@ export function AcceptAdminInvitationPage(): JSX.Element {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: shouldReduceMotion === true ? 0 : 0.2 }}
       >
+        <AuthBrand />
         {token === null ? <MissingInvitationTokenCard /> : <AcceptInvitationCard token={token} />}
       </motion.div>
     </div>
@@ -34,8 +37,8 @@ function MissingInvitationTokenCard(): JSX.Element {
       <CardHeader>
         <CardTitle>Invitation link is incomplete</CardTitle>
         <CardDescription>
-          This page needs the token from the official Noory invitation email. Open the link in that
-          email, or ask an administrator to send a new invitation.
+          This page needs the token from the official {PRODUCT_NAME} invitation email. Open the link
+          in that email, or ask an administrator to send a new invitation.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -53,8 +56,8 @@ function AcceptInvitationCard({ token }: { readonly token: string }): JSX.Elemen
       <CardHeader>
         <CardTitle>Accept admin invitation</CardTitle>
         <CardDescription>
-          Set a password for the invited Noory admin account. The invitation email is already on the
-          invite.
+          Set a password for the invited {PRODUCT_NAME} admin account. The invitation email is already
+          on the invite.
         </CardDescription>
       </CardHeader>
       <CardContent>

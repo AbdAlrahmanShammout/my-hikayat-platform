@@ -118,7 +118,7 @@ describe('AdminInvitationService', () => {
       expect(mockMailManagerService.send).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'new-admin@example.com',
-          subject: expect.stringContaining('Noory'),
+          subject: expect.stringContaining('My Hikayat'),
           text: expect.stringContaining(actualResult.token),
         }),
       );

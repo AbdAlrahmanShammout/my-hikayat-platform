@@ -23,6 +23,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { PRODUCT_NAME } from '@/config/product-name';
 import { useCreateAdminInvitation } from '@/features/invitations/hooks/use-create-admin-invitation';
 import { buildAdminInvitationAcceptUrl } from '@/features/invitations/lib/build-admin-invitation-accept-url';
 import {
@@ -59,7 +60,7 @@ export function AdminInvitationCreateDialog(): JSX.Element {
             <DialogTitle>{createdNotice === null ? 'Invite admin' : 'Invitation sent'}</DialogTitle>
             <DialogDescription>
               {createdNotice === null
-                ? 'Sends an official Noory email with a 7-day accept link. Admin cannot be granted from user edit.'
+                ? `Sends an official ${PRODUCT_NAME} email with a 7-day accept link. Admin cannot be granted from user edit.`
                 : 'This accept link is shown once. Copy it before closing.'}
             </DialogDescription>
           </DialogHeader>

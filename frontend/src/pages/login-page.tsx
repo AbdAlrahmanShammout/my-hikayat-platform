@@ -2,6 +2,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import type { JSX } from 'react';
 import { Navigate } from 'react-router';
 
+import { AuthBrand } from '@/components/layout/auth-brand';
 import { PageSkeleton } from '@/components/page-skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EnablePublisherPanel } from '@/features/auth/components/enable-publisher-panel';
@@ -45,9 +46,10 @@ export function LoginPage(): JSX.Element {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: shouldReduceMotion === true ? 0 : 0.2 }}
       >
+        <AuthBrand />
         <Card>
           <CardHeader>
-            <CardTitle>Sign in to Noory</CardTitle>
+            <CardTitle>Sign in</CardTitle>
             <CardDescription>
               Authors and administrators use the same email and password as the API.
             </CardDescription>

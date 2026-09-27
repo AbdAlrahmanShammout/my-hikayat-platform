@@ -13,13 +13,13 @@ describe('SmtpMailManagerService', () => {
     );
     await smtpMailManagerService.send({
       to: 'new-admin@example.com',
-      subject: 'You are invited to administer Noory',
+      subject: 'You are invited to administer My Hikayat',
       text: 'Open the invitation link.',
     });
     expect(mockTransporter.sendMail).toHaveBeenCalledWith({
       from: 'noreply@example.com',
       to: 'new-admin@example.com',
-      subject: 'You are invited to administer Noory',
+      subject: 'You are invited to administer My Hikayat',
       text: 'Open the invitation link.',
       html: undefined,
     });
@@ -35,7 +35,7 @@ describe('SmtpMailManagerService', () => {
     await expect(
       smtpMailManagerService.send({
         to: 'new-admin@example.com',
-        subject: 'You are invited to administer Noory',
+        subject: 'You are invited to administer My Hikayat',
         text: 'Open the invitation link.',
       }),
     ).rejects.toBeInstanceOf(MailFailureException);

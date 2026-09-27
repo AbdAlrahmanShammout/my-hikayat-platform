@@ -13,8 +13,8 @@ describe('ADMIN_INVITATION_WINDOW', () => {
 });
 
 describe('ADMIN_INVITATION_ACCEPT_PATH', () => {
-  it('identifies Noory and the public accept path', () => {
-    expect(ADMIN_INVITATION_APPLICATION_NAME).toBe('Noory');
+  it('identifies My Hikayat and the public accept path', () => {
+    expect(ADMIN_INVITATION_APPLICATION_NAME).toBe('My Hikayat');
     expect(ADMIN_INVITATION_ACCEPT_PATH).toBe('/accept-admin-invitation');
   });
 });

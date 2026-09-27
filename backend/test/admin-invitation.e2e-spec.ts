@@ -125,7 +125,7 @@ describe('Admin invitations (e2e)', () => {
     expect(sentInvitationMail).toEqual(
       expect.objectContaining({
         to: invitedEmail,
-        subject: expect.stringContaining('Noory'),
+        subject: expect.stringContaining('My Hikayat'),
         text: expect.stringContaining(
           `/accept-admin-invitation?token=${encodeURIComponent(createResponse.body.token as string)}`,
         ),

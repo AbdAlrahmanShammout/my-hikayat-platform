@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router';
 
 import { AUTHOR_NAV_ITEMS, type AuthorNavItem } from '@/app/author-nav-items';
+import { BrandLogo } from '@/components/brand-logo';
+import { DashboardBrand } from '@/components/layout/dashboard-brand';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUser } from '@/features/auth/hooks/use-current-user';
@@ -39,6 +41,7 @@ export function AuthorShell(): JSX.Element {
           >
             <Menu className="h-5 w-5" />
           </Button>
+          <BrandLogo className="h-8 w-8 rounded-lg" />
           <p className="hidden text-sm font-medium md:block">Author</p>
           <AuthorSessionActions />
         </header>
@@ -53,10 +56,7 @@ export function AuthorShell(): JSX.Element {
 function AuthorSidebar({ onNavigate }: { readonly onNavigate: () => void }): JSX.Element {
   return (
     <div className="flex h-full flex-col">
-      <div className="px-6 py-6">
-        <p className="font-display text-lg tracking-tight">Noory</p>
-        <p className="text-xs text-sidebar-muted">Author dashboard</p>
-      </div>
+      <DashboardBrand subtitle="Author dashboard" />
       <Separator className="bg-sidebar-border" />
       <nav className="flex flex-col gap-1 p-4" aria-label="Author">
         {AUTHOR_NAV_ITEMS.map((item) => (
