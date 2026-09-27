@@ -165,7 +165,7 @@ export function BookDetailScreen(): JSX.Element {
           }
           onPress={() => {
             if (entryCta.kind === 'go_to_billing') {
-              router.push('/(app)/subscription' as Href);
+              router.push('/(app)/plans' as Href);
               return;
             }
             router.push(`/(app)/books/read/${book.id}` as Href);
@@ -182,7 +182,7 @@ export function BookDetailScreen(): JSX.Element {
               <Icon icon={CreditCard} color={theme.colors.textSecondary} size="md" />
             }
             onPress={() => {
-              router.push('/(app)/subscription' as Href);
+              router.push('/(app)/plans' as Href);
             }}
             accessibilityLabel={cta.label}
             testID={`book-detail-secondary-${cta.kind}`}
@@ -422,7 +422,6 @@ const styles = StyleSheet.create({
   title: {
     ...theme.typography.title,
     fontSize: theme.typography.scale['2xl'],
-    fontStyle: 'italic',
     fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
     textAlign: 'center',

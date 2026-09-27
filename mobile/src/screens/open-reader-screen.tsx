@@ -93,12 +93,12 @@ export function OpenReaderScreen(): JSX.Element {
         </Text>
         {mapped.kind === 'entitlement_denied' ? (
           <Button
-            label="Go to Subscribe"
+            label="See plans"
             onPress={() => {
-              router.replace('/(app)/subscription' as Href);
+              router.replace('/(app)/plans' as Href);
             }}
             isFullWidth={false}
-            accessibilityLabel="Go to subscription"
+            accessibilityLabel="See plans"
             testID="reader-subscribe-profile-button"
           />
         ) : (

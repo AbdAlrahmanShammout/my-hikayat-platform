@@ -233,7 +233,6 @@ const styles = StyleSheet.create({
   },
   title: {
     ...theme.typography.title,
-    fontStyle: 'italic',
     fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
   },

@@ -183,7 +183,6 @@ const styles = StyleSheet.create({
   identity: {
     ...theme.typography.title,
     fontSize: theme.typography.scale.xl,
-    fontStyle: 'italic',
     fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
     marginBottom: theme.spacing.xs,

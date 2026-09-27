@@ -12,7 +12,7 @@ type SheetHeaderProps = {
 };
 
 /**
- * Figma sheet chrome: optional icon well plus italic display title.
+ * Sheet chrome: optional icon well plus a Roboto display title.
  */
 export function SheetHeader({ title, icon, tone = 'neutral' }: SheetHeaderProps): JSX.Element {
   return (
@@ -54,7 +54,6 @@ const styles = StyleSheet.create({
   title: {
     ...theme.typography.title,
     fontSize: theme.typography.scale.xl,
-    fontStyle: 'italic',
     fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
     lineHeight: 26,

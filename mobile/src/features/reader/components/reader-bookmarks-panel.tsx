@@ -247,7 +247,6 @@ const styles = StyleSheet.create({
   title: {
     ...theme.typography.title,
     fontSize: theme.typography.scale.xl,
-    fontStyle: 'italic',
     fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
   },

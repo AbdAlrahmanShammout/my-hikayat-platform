@@ -101,7 +101,7 @@ describe('Direction B theme tokens', () => {
     expect(typography.title.fontSize).toBe(32);
     expect(typography.titleLg.fontSize).toBe(36);
     expect(typography.button.fontSize).toBe(20);
-    expect(typography.families.display).toBe('Fraunces_700Bold_Italic');
+    expect(typography.families.display).toBe('Roboto_700Bold');
     expect(typography.families.ui).toBe('Nunito_400Regular');
     expect(typography.families.reading).toBe('Georgia');
   });

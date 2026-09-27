@@ -47,7 +47,7 @@ export function HomeTrialDiscoveryCard(): JSX.Element | null {
           </View>
           <Pressable
             style={styles.upgradeButton}
-            onPress={openSubscriptionScreen}
+            onPress={openPlansScreen}
             accessibilityRole="button"
             accessibilityLabel={discovery.actionLabel}
             testID="home-trial-discovery-upgrade"
@@ -66,7 +66,7 @@ export function HomeTrialDiscoveryCard(): JSX.Element | null {
       </View>
       <Pressable
         style={styles.offerButton}
-        onPress={openSubscriptionScreen}
+        onPress={openPlansScreen}
         accessibilityRole="button"
         accessibilityLabel={discovery.actionLabel}
         testID="home-trial-discovery-action"
@@ -77,8 +77,8 @@ export function HomeTrialDiscoveryCard(): JSX.Element | null {
   );
 }
 
-function openSubscriptionScreen(): void {
-  router.push('/(app)/subscription' as Href);
+function openPlansScreen(): void {
+  router.push('/(app)/plans' as Href);
 }
 
 const styles = StyleSheet.create({

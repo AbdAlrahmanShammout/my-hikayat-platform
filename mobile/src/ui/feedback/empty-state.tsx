@@ -66,7 +66,6 @@ const styles = StyleSheet.create({
   },
   title: {
     ...theme.typography.title,
-    fontStyle: 'italic',
     fontWeight: theme.typography.weights.regular,
     textAlign: 'center',
     color: theme.colors.textPrimary,

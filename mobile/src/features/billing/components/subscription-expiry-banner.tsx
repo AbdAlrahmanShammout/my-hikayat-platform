@@ -43,7 +43,7 @@ export function SubscriptionExpiryBanner(input: {
       {showAction ? (
         <Pressable
           onPress={() => {
-            router.push('/(app)/subscription' as Href);
+            router.push('/(app)/plans' as Href);
           }}
           accessibilityRole="button"
           accessibilityLabel={presentation.actionLabel}

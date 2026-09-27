@@ -1,21 +1,28 @@
-import type { JSX } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState, type JSX } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 
+import { SubscriptionManageSheet } from '@/features/billing/components/subscription-manage-sheet';
 import { useReaderSubscription } from '@/features/billing/hooks/use-reader-subscription';
 import { formatSubscriptionDisplay } from '@/features/billing/lib/format-subscription-display';
+import {
+  resolveMeSubscriptionSummary,
+  type MeSubscriptionSummary,
+} from '@/features/billing/lib/resolve-me-subscription-summary';
 import { theme } from '@/theme/theme';
 import { FormError } from '@/ui/forms/form-error';
 import { toViewShadow } from '@/ui/lib/to-view-shadow';
 import { Button } from '@/ui/primitives/button';
-import { Pill, type PillVariant } from '@/ui/primitives/pill';
 import { Skeleton } from '@/ui/primitives/skeleton';
 
+const PLANS_HREF = '/(app)/plans' as Href;
+
 /**
- * Compact Me billing summary. Opens the dedicated Subscription screen for management.
+ * Me subscription status. Plans live on the plans screen; paid management is a sheet.
  */
 export function SubscriptionSummaryCard(): JSX.Element {
   const billing = useReaderSubscription();
+  const [isManageOpen, setIsManageOpen] = useState<boolean>(false);
   if (billing.isLoading) {
     return (
       <View style={styles.card} testID="billing-subscription-loading">
@@ -28,7 +35,7 @@ export function SubscriptionSummaryCard(): JSX.Element {
   if (billing.isError || billing.subscription === undefined) {
     return (
       <View style={styles.card} testID="billing-subscription-error">
-        <Text style={styles.heading}>Subscription</Text>
+        <Text style={styles.kicker}>Subscription</Text>
         <FormError message={billing.errorMessage ?? 'Could not load subscription.'} />
         <Button
           label="Try again"
@@ -43,48 +50,56 @@ export function SubscriptionSummaryCard(): JSX.Element {
     );
   }
   const display = formatSubscriptionDisplay(billing.subscription);
+  const summary: MeSubscriptionSummary = resolveMeSubscriptionSummary({
+    display,
+    planName: billing.subscription.plan?.name ?? 'Subscription',
+  });
   return (
-    <Pressable
-      style={styles.card}
-      onPress={openSubscriptionScreen}
-      accessibilityRole="button"
-      accessibilityLabel="Open subscription"
-      testID="billing-subscription-summary"
-    >
-      <View style={styles.statusHeader}>
-        <Text style={styles.headline}>Subscription</Text>
-        <Pill label={display.statusLabel} variant={resolvePillVariant(display.statusLabel)} />
-      </View>
-      <Text style={styles.value} testID="billing-plan-label">
-        {display.planLabel}
+    <View style={styles.card} testID="billing-subscription-summary">
+      <Text style={styles.kicker}>Subscription</Text>
+      <Text style={styles.title} testID="billing-subscription-title">
+        {summary.title}
       </Text>
-      <Text style={styles.note} testID="billing-access-label">
-        {`Reading access: ${display.accessLabel}`}
+      <Text style={styles.detail} testID="billing-subscription-detail">
+        {summary.detail}
       </Text>
-      {display.trialRemainingLabel !== null ? (
-        <Text style={styles.note} testID="billing-trial-remaining-label">
-          {display.trialRemainingLabel}
+      {summary.note !== null ? (
+        <Text style={styles.note} testID="billing-subscription-note">
+          {summary.note}
         </Text>
       ) : null}
-      {display.cancelAccessNote !== null ? (
-        <Text style={styles.note} testID="billing-cancel-access-note">
-          {display.cancelAccessNote}
-        </Text>
+      {summary.action === 'start_trial' && billing.trialErrorMessage !== null ? (
+        <FormError message={billing.trialErrorMessage} testID="billing-trial-error" />
       ) : null}
-      <Text style={styles.action}>Manage subscription ›</Text>
-    </Pressable>
+      <Button
+        label={summary.actionLabel}
+        variant={summary.action === 'manage' ? 'secondary' : 'primary'}
+        isLoading={summary.action === 'start_trial' && billing.isStartingTrial}
+        onPress={() => {
+          if (summary.action === 'manage') {
+            setIsManageOpen(true);
+            return;
+          }
+          if (summary.action === 'start_trial') {
+            void billing.startTrial().catch(() => {
+              // Error surfaces via trialErrorMessage.
+            });
+            return;
+          }
+          router.push(PLANS_HREF);
+        }}
+        accessibilityLabel={summary.actionLabel}
+        testID="billing-subscription-action"
+      />
+      <SubscriptionManageSheet
+        isVisible={isManageOpen}
+        display={display}
+        onDismiss={() => {
+          setIsManageOpen(false);
+        }}
+      />
+    </View>
   );
-}
-
-function openSubscriptionScreen(): void {
-  router.push('/(app)/subscription' as Href);
-}
-
-function resolvePillVariant(statusLabel: string): PillVariant {
-  if (statusLabel === 'Canceled') {
-    return 'warning';
-  }
-  return 'primary';
 }
 
 const styles = StyleSheet.create({
@@ -97,38 +112,25 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.borderSubtle,
     ...toViewShadow(theme.shadows.sm),
   },
-  heading: {
+  kicker: {
     ...theme.typography.label,
     fontWeight: theme.typography.weights.bold,
     letterSpacing: 1.1,
     textTransform: 'uppercase',
     color: theme.colors.textMuted,
   },
-  statusHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: theme.spacing.sm,
-  },
-  headline: {
+  title: {
     ...theme.typography.title,
     fontSize: theme.typography.scale.xl,
-    fontStyle: 'italic',
     fontWeight: theme.typography.weights.regular,
     color: theme.colors.textPrimary,
-    flex: 1,
   },
-  value: {
+  detail: {
     ...theme.typography.body,
     color: theme.colors.textPrimary,
   },
   note: {
     ...theme.typography.body,
     color: theme.colors.textMuted,
-  },
-  action: {
-    ...theme.typography.label,
-    fontWeight: theme.typography.weights.bold,
-    color: theme.colors.primary,
   },
 });

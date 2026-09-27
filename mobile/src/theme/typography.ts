@@ -1,11 +1,11 @@
 /**
  * Typography scale for readable kids-friendly UI.
- * Direction B: Fraunces (titles) + Nunito (UI). System fonts if load fails.
+ * Titles use Roboto. Body and controls stay Nunito. System fonts if load fails.
  */
 export const typography = {
   families: {
-    display: 'Fraunces_700Bold_Italic',
-    displayRegular: 'Fraunces_400Regular_Italic',
+    display: 'Roboto_700Bold',
+    displayRegular: 'Roboto_400Regular',
     ui: 'Nunito_400Regular',
     uiSemibold: 'Nunito_600SemiBold',
     uiBold: 'Nunito_700Bold',
@@ -41,12 +41,12 @@ export const typography = {
   titleLg: {
     fontSize: 36,
     fontWeight: '700' as const,
-    fontFamily: 'Fraunces_700Bold_Italic',
+    fontFamily: 'Roboto_700Bold',
   },
   title: {
     fontSize: 32,
     fontWeight: '700' as const,
-    fontFamily: 'Fraunces_700Bold_Italic',
+    fontFamily: 'Roboto_700Bold',
   },
   body: {
     fontSize: 18,

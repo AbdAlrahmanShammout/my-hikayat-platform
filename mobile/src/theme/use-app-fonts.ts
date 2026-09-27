@@ -1,7 +1,7 @@
 import {
-  Fraunces_400Regular_Italic,
-  Fraunces_700Bold_Italic,
-} from '@expo-google-fonts/fraunces';
+  Roboto_400Regular,
+  Roboto_700Bold,
+} from '@expo-google-fonts/roboto';
 import {
   Nunito_400Regular,
   Nunito_600SemiBold,
@@ -11,12 +11,12 @@ import {
 import { useFonts } from 'expo-font';
 
 /**
- * Loads Direction B Google fonts. Returns true once load finishes (success or fallback).
+ * Loads Roboto for titles and Nunito for UI. Returns true once load finishes.
  */
 export function useAppFonts(): boolean {
   const [areFontsLoaded, fontError] = useFonts({
-    Fraunces_400Regular_Italic,
-    Fraunces_700Bold_Italic,
+    Roboto_400Regular,
+    Roboto_700Bold,
     Nunito_400Regular,
     Nunito_600SemiBold,
     Nunito_700Bold,

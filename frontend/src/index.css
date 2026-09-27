@@ -63,7 +63,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-display: "Roboto", ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -83,7 +83,6 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    font-style: italic;
   }
 
   :focus-visible {
