@@ -1,40 +1,58 @@
+import {
+  ADMIN_USER_LIST_TABS,
+  type AdminUserListTab,
+} from '@/features/users/lib/admin-user-list-tab';
 import { parseExactEmail } from '@/lib/parse-exact-email';
 import { parseNonNegativeInt } from '@/lib/parse-non-negative-int';
-import type { UserRole } from '@/types/user-role';
 import { USER_ROLES } from '@/types/user-role';
 
 export type AdminUsersListSearch = {
-  readonly role: UserRole | undefined;
-  readonly isPublisher: boolean | undefined;
+  readonly tab: AdminUserListTab;
   readonly email: string | undefined;
   readonly offset: number;
 };
 
 /**
- * Reads list filters from the URL. Invalid email or role values are ignored.
+ * Reads list filters from the URL. Invalid tab or email values are ignored.
+ * Older role and isPublisher params still select the matching tab.
  */
 export function parseAdminUsersListSearch(searchParams: URLSearchParams): AdminUsersListSearch {
   return {
-    role: parseRoleFilter(searchParams.get('role') ?? undefined),
-    isPublisher: parseOptionalBoolean(searchParams.get('isPublisher') ?? undefined),
+    tab: parseTab(searchParams),
     email: parseExactEmail(searchParams.get('email') ?? undefined),
     offset: parseNonNegativeInt(searchParams.get('offset') ?? undefined) ?? 0,
   };
 }
 
-function parseRoleFilter(value: string | undefined): UserRole | undefined {
-  if (value === USER_ROLES.READER || value === USER_ROLES.AUTHOR || value === USER_ROLES.ADMIN) {
+function parseTab(searchParams: URLSearchParams): AdminUserListTab {
+  const explicitTab: AdminUserListTab | undefined = parseTabValue(searchParams.get('tab') ?? undefined);
+  if (explicitTab !== undefined) {
+    return explicitTab;
+  }
+  return parseLegacyTab(searchParams.get('role') ?? undefined, searchParams.get('isPublisher') ?? undefined);
+}
+
+function parseTabValue(value: string | undefined): AdminUserListTab | undefined {
+  if (
+    value === ADMIN_USER_LIST_TABS.ALL ||
+    value === ADMIN_USER_LIST_TABS.ADMIN ||
+    value === ADMIN_USER_LIST_TABS.READER ||
+    value === ADMIN_USER_LIST_TABS.PUBLISHER
+  ) {
     return value;
   }
   return undefined;
 }
 
-function parseOptionalBoolean(value: string | undefined): boolean | undefined {
-  if (value === 'true') {
-    return true;
+function parseLegacyTab(role: string | undefined, isPublisher: string | undefined): AdminUserListTab {
+  if (role === USER_ROLES.ADMIN) {
+    return ADMIN_USER_LIST_TABS.ADMIN;
   }
-  if (value === 'false') {
-    return false;
+  if (role === USER_ROLES.READER) {
+    return ADMIN_USER_LIST_TABS.READER;
   }
-  return undefined;
+  if (isPublisher === 'true' || role === USER_ROLES.AUTHOR) {
+    return ADMIN_USER_LIST_TABS.PUBLISHER;
+  }
+  return ADMIN_USER_LIST_TABS.ALL;
 }

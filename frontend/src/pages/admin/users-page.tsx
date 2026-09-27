@@ -13,7 +13,7 @@ export function AdminUsersPage(): JSX.Element {
     <>
       <PageHeader
         title="Users"
-        description="Change role and publisher capability. Granting admin requires an invitation."
+        description="Browse all users, admins, readers, and publishers. Granting admin requires an invitation."
         actions={
           <Button asChild>
             <Link to="/admin/invitations">Invite admin</Link>

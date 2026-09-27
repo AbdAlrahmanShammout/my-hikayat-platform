@@ -4,12 +4,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
-import { formatUserRoleLabel } from '@/features/users/lib/format-user-role-label';
 import type { AdminUsersListSearch } from '@/features/users/lib/parse-admin-users-list-search';
 import { parseExactEmail } from '@/lib/parse-exact-email';
-import type { UserRole } from '@/types/user-role';
-import { USER_ROLES } from '@/types/user-role';
 
 type AdminUsersFiltersProps = {
   readonly value: AdminUsersListSearch;
@@ -17,14 +13,14 @@ type AdminUsersFiltersProps = {
 };
 
 /**
- * Query filters for GET /admin/users. Email is an exact match.
+ * Exact-email query for GET /admin/users. Role groups live in the tabs.
  */
 export function AdminUsersFilters({ value, onChange }: AdminUsersFiltersProps): JSX.Element {
   const [emailDraft, setEmailDraft] = useState<string>(value.email ?? '');
   const [emailError, setEmailError] = useState<string | undefined>(undefined);
   return (
     <form
-      className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      className="flex max-w-xl flex-col gap-2"
       onSubmit={(event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const nextEmail: string | undefined = parseSubmittedEmail(emailDraft);
@@ -40,85 +36,26 @@ export function AdminUsersFilters({ value, onChange }: AdminUsersFiltersProps): 
         });
       }}
     >
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="user-role-filter">Role</Label>
-        <Select
-          id="user-role-filter"
-          value={value.role ?? ''}
+      <Label htmlFor="user-email-filter">Email (exact)</Label>
+      <div className="flex gap-2">
+        <Input
+          id="user-email-filter"
+          type="email"
+          value={emailDraft}
+          placeholder="reader@example.com"
+          aria-invalid={emailError !== undefined}
           onChange={(event) => {
-            const nextRole: string = event.target.value;
-            onChange({
-              ...value,
-              role: nextRole === '' ? undefined : (nextRole as UserRole),
-              offset: 0,
-            });
+            setEmailDraft(event.target.value);
+            setEmailError(undefined);
           }}
-        >
-          <option value="">All roles</option>
-          <option value={USER_ROLES.READER}>{formatUserRoleLabel(USER_ROLES.READER)}</option>
-          <option value={USER_ROLES.AUTHOR}>{formatUserRoleLabel(USER_ROLES.AUTHOR)}</option>
-          <option value={USER_ROLES.ADMIN}>{formatUserRoleLabel(USER_ROLES.ADMIN)}</option>
-        </Select>
+        />
+        <Button type="submit" variant="outline">
+          Apply
+        </Button>
       </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="user-publisher-filter">Publisher</Label>
-        <Select
-          id="user-publisher-filter"
-          value={serializePublisherFilter(value.isPublisher)}
-          onChange={(event) => {
-            onChange({
-              ...value,
-              isPublisher: parsePublisherFilter(event.target.value),
-              offset: 0,
-            });
-          }}
-        >
-          <option value="">All</option>
-          <option value="true">Publisher</option>
-          <option value="false">Not publisher</option>
-        </Select>
-      </div>
-      <div className="flex flex-col gap-2 sm:col-span-2 xl:col-span-2">
-        <Label htmlFor="user-email-filter">Email (exact)</Label>
-        <div className="flex gap-2">
-          <Input
-            id="user-email-filter"
-            type="email"
-            value={emailDraft}
-            placeholder="reader@example.com"
-            aria-invalid={emailError !== undefined}
-            onChange={(event) => {
-              setEmailDraft(event.target.value);
-              setEmailError(undefined);
-            }}
-          />
-          <Button type="submit" variant="outline">
-            Apply
-          </Button>
-        </div>
-        {emailError !== undefined ? (
-          <p className="text-sm text-destructive">{emailError}</p>
-        ) : null}
-      </div>
+      {emailError !== undefined ? <p className="text-sm text-destructive">{emailError}</p> : null}
     </form>
   );
-}
-
-function serializePublisherFilter(value: boolean | undefined): string {
-  if (value === undefined) {
-    return '';
-  }
-  return value ? 'true' : 'false';
-}
-
-function parsePublisherFilter(value: string): boolean | undefined {
-  if (value === 'true') {
-    return true;
-  }
-  if (value === 'false') {
-    return false;
-  }
-  return undefined;
 }
 
 function parseSubmittedEmail(value: string): string | undefined {

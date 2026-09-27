@@ -53,7 +53,7 @@ export interface paths {
   };
   "/admin/books": {
     get: {
-      parameters: { query?: { limit?: number; offset?: number; publishingStatus?: "pending" | "in_review" | "approved" | "rejected" } };
+      parameters: { query?: { limit?: number; offset?: number; publishingStatus?: "pending" | "in_review" | "approved" | "rejected"; ownerId?: number } };
       responses: {
         "200": { content: { 'application/json': components['schemas']['GetBooksResponseDto'] } };
       };

@@ -114,6 +114,7 @@ describe('BookAdminController', () => {
         limit: 10,
         offset: 0,
         publishingStatus: undefined,
+        ownerId: undefined,
       });
       expect(mockBookCatalogCoverService.toBookResponses).toHaveBeenCalledWith([expectedBook]);
       expect(actualResponse.total).toBe(1);
@@ -133,8 +134,26 @@ describe('BookAdminController', () => {
         limit: 10,
         offset: 0,
         publishingStatus: BookPublishingStatus.IN_REVIEW,
+        ownerId: undefined,
       });
       expect(actualResponse.books[0].publishingStatus).toBe(BookPublishingStatus.IN_REVIEW);
+    });
+
+    it('filters by owner when a publisher profile requests their books', async () => {
+      const expectedBook = createSampleBook();
+      mockBookService.listBooks.mockResolvedValue({ entities: [expectedBook], total: 1 });
+      const actualResponse = await bookAdminController.listBooks({
+        limit: 10,
+        offset: 0,
+        ownerId: 4,
+      });
+      expect(mockBookService.listBooks).toHaveBeenCalledWith({
+        limit: 10,
+        offset: 0,
+        publishingStatus: undefined,
+        ownerId: 4,
+      });
+      expect(actualResponse.books[0].ownerId).toBe(4);
     });
   });
 

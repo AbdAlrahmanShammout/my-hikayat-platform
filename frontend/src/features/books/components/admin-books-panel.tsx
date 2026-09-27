@@ -16,29 +16,40 @@ import {
   type AdminBooksListSearch,
 } from '@/features/books/lib/parse-admin-books-list-search';
 
+type AdminBooksPanelProps = {
+  readonly ownerId?: number;
+};
+
 /**
  * Filterable GET /admin/books table with server-side paging.
+ * Pass ownerId to list one publisher's books, including work still in progress.
  */
-export function AdminBooksPanel(): JSX.Element {
+export function AdminBooksPanel({ ownerId }: AdminBooksPanelProps): JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
   const listSearch: AdminBooksListSearch = parseAdminBooksListSearch(searchParams);
   const booksQuery = useAdminBooksList({
     limit: ADMIN_LIST_PAGE_SIZE,
     offset: listSearch.offset,
     publishingStatus: listSearch.publishingStatus,
+    ...(ownerId === undefined ? {} : { ownerId }),
   });
   const replaceSearch = (nextSearch: AdminBooksListSearch): void => {
-    setSearchParams(buildListSearchParams(nextSearch), { replace: true });
+    setSearchParams(buildListSearchParams(searchParams, nextSearch), { replace: true });
   };
   return (
     <div className="space-y-6">
+      {ownerId !== undefined ? (
+        <p className="text-sm text-muted-foreground">
+          Every book this publisher owns, including published titles and books still in progress.
+        </p>
+      ) : null}
       <AdminBooksStatusFilter
         value={listSearch.publishingStatus}
         onChange={(publishingStatus: BookPublishingStatusFilter | undefined) => {
           replaceSearch({ publishingStatus, offset: 0 });
         }}
       />
-      {renderBooksPanelBody(booksQuery, listSearch, replaceSearch)}
+      {renderBooksPanelBody(booksQuery, listSearch, replaceSearch, ownerId)}
     </div>
   );
 }
@@ -47,6 +58,7 @@ function renderBooksPanelBody(
   booksQuery: ReturnType<typeof useAdminBooksList>,
   listSearch: AdminBooksListSearch,
   replaceSearch: (nextSearch: AdminBooksListSearch) => void,
+  ownerId: number | undefined,
 ): JSX.Element {
   if (booksQuery.isPending) {
     return <AdminBooksTableSkeleton />;
@@ -65,17 +77,13 @@ function renderBooksPanelBody(
     return (
       <EmptyState
         title="No books match this filter"
-        description={
-          listSearch.publishingStatus === undefined
-            ? 'GET /admin/books returned an empty list.'
-            : 'Try another publishing status, or show all statuses.'
-        }
+        description={describeEmptyBooks(listSearch, ownerId)}
       />
     );
   }
   return (
     <div className="space-y-4">
-      <AdminBooksTable books={booksQuery.data.books} />
+      <AdminBooksTable books={booksQuery.data.books} showOwner={ownerId === undefined} />
       <ListPagination
         offset={listSearch.offset}
         limit={ADMIN_LIST_PAGE_SIZE}
@@ -88,13 +96,30 @@ function renderBooksPanelBody(
   );
 }
 
-function buildListSearchParams(search: AdminBooksListSearch): URLSearchParams {
-  const params: URLSearchParams = new URLSearchParams();
+function describeEmptyBooks(search: AdminBooksListSearch, ownerId: number | undefined): string {
+  if (search.publishingStatus !== undefined) {
+    return 'Try another publishing status, or show all statuses.';
+  }
+  if (ownerId !== undefined) {
+    return 'This publisher has no books yet.';
+  }
+  return 'GET /admin/books returned an empty list.';
+}
+
+function buildListSearchParams(
+  currentParams: URLSearchParams,
+  search: AdminBooksListSearch,
+): URLSearchParams {
+  const params: URLSearchParams = new URLSearchParams(currentParams);
   if (search.publishingStatus !== undefined) {
     params.set('publishingStatus', search.publishingStatus);
+  } else {
+    params.delete('publishingStatus');
   }
   if (search.offset > 0) {
     params.set('offset', String(search.offset));
+  } else {
+    params.delete('offset');
   }
   return params;
 }

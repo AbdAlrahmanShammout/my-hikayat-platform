@@ -29,8 +29,8 @@ import { AuditLogPage } from '@/modules/audit/defs/audit-log-repository.defs';
 import { BookPublishingStatusService } from '@/modules/book/book-publishing-status.service';
 import { BookService } from '@/modules/book/book.service';
 import { BookPage } from '@/modules/book/defs/book-repository.defs';
+import { ListAdminBooksRequestDto } from '@/modules/book/dto/request/list-admin-books-request.dto';
 import { ListBookRejectionHistoryRequestDto } from '@/modules/book/dto/request/list-book-rejection-history-request.dto';
-import { ListBooksRequestDto } from '@/modules/book/dto/request/list-books-request.dto';
 import { RejectBookRequestDto } from '@/modules/book/dto/request/reject-book-request.dto';
 import { UpdateBookRequestDto } from '@/modules/book/dto/request/update-book-request.dto';
 import { GetBookRejectionHistoryResponseDto } from '@/modules/book/dto/response/get-book-rejection-history-response.dto';
@@ -54,13 +54,14 @@ export class BookAdminController {
   ) {}
 
   @Get()
-  @ApiOperation({ summary: 'List books, optionally filtered by publishing status' })
+  @ApiOperation({ summary: 'List books, optionally filtered by publishing status or owner' })
   @ApiResponse({ status: 200, type: GetBooksResponseDto })
-  async listBooks(@Query() query: ListBooksRequestDto): Promise<GetBooksResponseDto> {
+  async listBooks(@Query() query: ListAdminBooksRequestDto): Promise<GetBooksResponseDto> {
     const page: BookPage = await this.bookService.listBooks({
       limit: query.limit,
       offset: query.offset,
       publishingStatus: query.publishingStatus,
+      ownerId: query.ownerId,
     });
     const books: BookResponse[] = await this.bookCatalogCoverService.toBookResponses(page.entities);
     return new GetBooksResponseDto(books, page.total);

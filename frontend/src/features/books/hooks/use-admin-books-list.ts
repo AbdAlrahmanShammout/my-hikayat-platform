@@ -9,6 +9,7 @@ import type { components } from '@/generated/admin';
 
 /**
  * Server-state hook for GET /admin/books.
+ * ownerId is a server query. The client does not filter the catalog.
  */
 export function useAdminBooksList(
   query: ListAdminBooksQuery = {},

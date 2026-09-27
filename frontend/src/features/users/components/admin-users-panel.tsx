@@ -6,14 +6,17 @@ import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { ListPagination } from '@/components/list-pagination';
 import { ADMIN_LIST_PAGE_SIZE } from '@/config/admin-list-page-size';
+import { AdminUserListTabs } from '@/features/users/components/admin-user-list-tabs';
 import { AdminUsersFilters } from '@/features/users/components/admin-users-filters';
 import { AdminUsersTable } from '@/features/users/components/admin-users-table';
 import { AdminUsersTableSkeleton } from '@/features/users/components/admin-users-table-skeleton';
 import { useAdminUsersList } from '@/features/users/hooks/use-admin-users-list';
+import { ADMIN_USER_LIST_TABS, type AdminUserListTab } from '@/features/users/lib/admin-user-list-tab';
 import {
   parseAdminUsersListSearch,
   type AdminUsersListSearch,
 } from '@/features/users/lib/parse-admin-users-list-search';
+import { resolveAdminUsersListQuery } from '@/features/users/lib/resolve-admin-users-list-query';
 
 /**
  * Filterable GET /admin/users table with server-side paging.
@@ -21,21 +24,29 @@ import {
 export function AdminUsersPanel(): JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
   const listSearch: AdminUsersListSearch = parseAdminUsersListSearch(searchParams);
+  const listFilters = resolveAdminUsersListQuery(listSearch.tab);
   const usersQuery = useAdminUsersList({
     limit: ADMIN_LIST_PAGE_SIZE,
     offset: listSearch.offset,
-    role: listSearch.role,
-    isPublisher: listSearch.isPublisher,
+    role: listFilters.role,
+    isPublisher: listFilters.isPublisher,
     email: listSearch.email,
   });
   const replaceSearch = (nextSearch: AdminUsersListSearch): void => {
     setSearchParams(buildListSearchParams(nextSearch), { replace: true });
   };
   return (
-    <div className="space-y-6">
-      <AdminUsersFilters value={listSearch} onChange={replaceSearch} />
-      {renderUsersPanelBody(usersQuery, listSearch, replaceSearch)}
-    </div>
+    <AdminUserListTabs
+      value={listSearch.tab}
+      onChange={(tab: AdminUserListTab) => {
+        replaceSearch({ ...listSearch, tab, offset: 0 });
+      }}
+    >
+      <div className="space-y-6">
+        <AdminUsersFilters value={listSearch} onChange={replaceSearch} />
+        {renderUsersPanelBody(usersQuery, listSearch, replaceSearch)}
+      </div>
+    </AdminUserListTabs>
   );
 }
 
@@ -63,7 +74,7 @@ function renderUsersPanelBody(
         title="No users match this filter"
         description={
           hasActiveUserFilters(listSearch)
-            ? 'Try another role, publisher flag, or exact email.'
+            ? 'Try another group, or a different exact email.'
             : 'GET /admin/users returned an empty list.'
         }
       />
@@ -85,18 +96,13 @@ function renderUsersPanelBody(
 }
 
 function hasActiveUserFilters(search: AdminUsersListSearch): boolean {
-  return (
-    search.role !== undefined || search.isPublisher !== undefined || search.email !== undefined
-  );
+  return search.tab !== ADMIN_USER_LIST_TABS.ALL || search.email !== undefined;
 }
 
 function buildListSearchParams(search: AdminUsersListSearch): URLSearchParams {
   const params: URLSearchParams = new URLSearchParams();
-  if (search.role !== undefined) {
-    params.set('role', search.role);
-  }
-  if (search.isPublisher !== undefined) {
-    params.set('isPublisher', String(search.isPublisher));
+  if (search.tab !== ADMIN_USER_LIST_TABS.ALL) {
+    params.set('tab', search.tab);
   }
   if (search.email !== undefined) {
     params.set('email', search.email);

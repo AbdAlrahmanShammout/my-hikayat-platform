@@ -9,11 +9,8 @@ import { PageSkeleton } from '@/components/page-skeleton';
 import { Button } from '@/components/ui/button';
 import { ADMIN_COUNT_LIST_LIMIT } from '@/config/admin-count-list-limit';
 import { useCurrentUser } from '@/features/auth/hooks/use-current-user';
-import { AdminUserActions } from '@/features/users/components/admin-user-actions';
-import { AdminUserDetailSummary } from '@/features/users/components/admin-user-detail-summary';
-import { AdminUserEditForm } from '@/features/users/components/admin-user-edit-form';
-import { AdminUserReadingProgressCard } from '@/features/users/components/admin-user-reading-progress-card';
-import { AdminUserSubscriptionCard } from '@/features/users/components/admin-user-subscription-card';
+import { AdminBooksPanel } from '@/features/books/components/admin-books-panel';
+import { AdminUserDetailSections } from '@/features/users/components/admin-user-detail-sections';
 import { useAdminUser } from '@/features/users/hooks/use-admin-user';
 import { useAdminUsersList } from '@/features/users/hooks/use-admin-users-list';
 import { getAdminUserActionAvailability } from '@/features/users/lib/get-admin-user-action-availability';
@@ -84,23 +81,18 @@ function AdminUserDetailContent({ userId }: { readonly userId: number }): JSX.El
     <>
       <PageHeader
         title={user.email}
-        description="Profile, subscription, and reading progress."
+        description={
+          user.isPublisher
+            ? 'Profile, subscription, reading progress, and books this publisher owns.'
+            : 'Profile, subscription, and reading progress.'
+        }
         actions={backToUsersAction()}
       />
-      <div className="space-y-6">
-        <AdminUserActions user={user} availability={availability} />
-        <AdminUserDetailSummary user={user} />
-        <AdminUserSubscriptionCard
-          subscription={detail.subscription ?? null}
-          subscriptionPeriod={detail.subscriptionPeriod}
-        />
-        <AdminUserReadingProgressCard items={detail.readingProgress} />
-        <AdminUserEditForm
-          key={`${user.id}-${user.updatedAt}`}
-          user={user}
-          availability={availability}
-        />
-      </div>
+      <AdminUserDetailSections
+        detail={detail}
+        availability={availability}
+        booksPanel={<AdminBooksPanel ownerId={user.id} />}
+      />
     </>
   );
 }
