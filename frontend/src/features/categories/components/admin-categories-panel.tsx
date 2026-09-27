@@ -9,7 +9,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ADMIN_LIST_PAGE_SIZE } from '@/config/admin-list-page-size';
 import { AdminCategoriesTable } from '@/features/categories/components/admin-categories-table';
 import { AdminCategoriesTableSkeleton } from '@/features/categories/components/admin-categories-table-skeleton';
-import { AdminCategoryCreateForm } from '@/features/categories/components/admin-category-create-form';
 import { useAdminCategoriesList } from '@/features/categories/hooks/use-admin-categories-list';
 import {
   parseAdminCategoriesListSearch,
@@ -17,7 +16,7 @@ import {
 } from '@/features/categories/lib/parse-admin-categories-list-search';
 
 /**
- * Category list with create, rename, and inline categoryWeight edits.
+ * Category list with rename and inline categoryWeight edits. Create is a page-header dialog.
  */
 export function AdminCategoriesPanel(): JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -37,7 +36,6 @@ export function AdminCategoriesPanel(): JSX.Element {
           recalculated. Rename does not change weight. Delete is not available.
         </AlertDescription>
       </Alert>
-      <AdminCategoryCreateForm />
       {renderCategoriesPanelBody(categoriesQuery, listSearch, replaceSearch)}
     </div>
   );
@@ -65,7 +63,7 @@ function renderCategoriesPanelBody(
     return (
       <EmptyState
         title="No categories yet"
-        description="GET /admin/categories returned an empty list. Create a category above. Delete is not available."
+        description="GET /admin/categories returned an empty list. Use Create to add a category. Delete is not available."
       />
     );
   }

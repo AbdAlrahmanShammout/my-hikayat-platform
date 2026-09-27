@@ -129,6 +129,41 @@ describe('UserPrismaRepository', () => {
     expect(actualEntity.deletedAt).toEqual(deletedRow.deletedAt);
   });
 
+  it('lists managed users with the current plan and latest session', async () => {
+    const signedInAt = new Date('2026-09-01T08:30:00.000Z');
+    mockPrismaProviderService.$transaction.mockResolvedValue([
+      [
+        {
+          ...persistenceRow,
+          subscription: {
+            deletedAt: null,
+            plan: {
+              name: 'Monthly',
+              kind: 'monthly_paid',
+              deletedAt: null,
+            },
+          },
+          authRefreshTokens: [{ createdAt: signedInAt }],
+        },
+      ],
+      1,
+    ]);
+    const actualPage = await userPrismaRepository.listManaged({
+      limit: 20,
+      offset: 0,
+      excludeRole: UserRole.ADMIN,
+    });
+    expect(mockPrismaProviderService.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { deletedAt: null, role: { not: UserRole.ADMIN } },
+      }),
+    );
+    expect(actualPage.total).toBe(1);
+    expect(actualPage.items[0].user.email).toBe('reader@example.com');
+    expect(actualPage.items[0].currentPlan).toEqual({ name: 'Monthly', kind: 'monthly_paid' });
+    expect(actualPage.items[0].lastSessionAt).toEqual(signedInAt);
+  });
+
   it('lists users with a real total', async () => {
     mockPrismaProviderService.$transaction.mockResolvedValue([[persistenceRow], 1]);
     const actualPage = await userPrismaRepository.list({

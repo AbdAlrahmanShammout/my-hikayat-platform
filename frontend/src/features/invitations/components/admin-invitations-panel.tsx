@@ -6,7 +6,6 @@ import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { ListPagination } from '@/components/list-pagination';
 import { ADMIN_LIST_PAGE_SIZE } from '@/config/admin-list-page-size';
-import { AdminInvitationCreateForm } from '@/features/invitations/components/admin-invitation-create-form';
 import { AdminInvitationsTable } from '@/features/invitations/components/admin-invitations-table';
 import { AdminInvitationsTableSkeleton } from '@/features/invitations/components/admin-invitations-table-skeleton';
 import { useAdminInvitationsList } from '@/features/invitations/hooks/use-admin-invitations-list';
@@ -16,7 +15,7 @@ import {
 } from '@/features/invitations/lib/parse-admin-invitations-list-search';
 
 /**
- * Invitation list with create form and server-side paging.
+ * Invitation list with server-side paging. Invite is a page-header dialog.
  */
 export function AdminInvitationsPanel(): JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -30,7 +29,6 @@ export function AdminInvitationsPanel(): JSX.Element {
   };
   return (
     <div className="space-y-6">
-      <AdminInvitationCreateForm />
       {renderInvitationsPanelBody(invitationsQuery, listSearch, replaceSearch)}
     </div>
   );

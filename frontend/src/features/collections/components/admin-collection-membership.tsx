@@ -1,7 +1,5 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { useForm, type UseFormSetError } from 'react-hook-form';
 import { Link } from 'react-router';
 
 import { getUserFacingErrorMessage } from '@/api/get-user-facing-error-message';
@@ -11,15 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
   Table,
   TableBody,
   TableCell,
@@ -27,17 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useAddAdminCollectionBook } from '@/features/collections/hooks/use-add-admin-collection-book';
+import { AdminAddCollectionBookDialog } from '@/features/collections/components/admin-add-collection-book-dialog';
 import { useRemoveAdminCollectionBook } from '@/features/collections/hooks/use-remove-admin-collection-book';
 import { useReorderAdminCollectionBooks } from '@/features/collections/hooks/use-reorder-admin-collection-books';
 import { formatCollectionBookLabel } from '@/features/collections/lib/format-collection-book-label';
 import { isSameBookOrder } from '@/features/collections/lib/is-same-book-order';
 import { moveCollectionBook } from '@/features/collections/lib/move-collection-book';
 import { sortCollectionItems } from '@/features/collections/lib/sort-collection-items';
-import {
-  adminAddCollectionBookFormSchema,
-  type AdminAddCollectionBookFormValues,
-} from '@/features/collections/schemas/admin-add-collection-book-form.schema';
 import type { components } from '@/generated/admin';
 
 type AdminCollectionMembershipProps = {
@@ -53,28 +38,25 @@ export function AdminCollectionMembership({
   books,
 }: AdminCollectionMembershipProps): JSX.Element {
   const [removeBookId, setRemoveBookId] = useState<number | null>(null);
-  const addMutation = useAddAdminCollectionBook();
   const removeMutation = useRemoveAdminCollectionBook();
   const reorderMutation = useReorderAdminCollectionBooks();
   const orderedItems = sortCollectionItems(collection.items);
   const currentBookIds: number[] = orderedItems.map((item) => item.bookId);
-  const isBusy: boolean =
-    addMutation.isPending || removeMutation.isPending || reorderMutation.isPending;
-  const form = useForm<AdminAddCollectionBookFormValues>({
-    resolver: zodResolver(adminAddCollectionBookFormSchema),
-    defaultValues: { bookId: undefined as unknown as number },
-  });
-  const rootMessage: string | undefined = form.formState.errors.root?.message;
-  const membershipError: Error | null =
-    addMutation.error ?? removeMutation.error ?? reorderMutation.error;
+  const isBusy: boolean = removeMutation.isPending || reorderMutation.isPending;
+  const membershipError: Error | null = removeMutation.error ?? reorderMutation.error;
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Membership</CardTitle>
-        <CardDescription>
-          Unpublished books can stay in admin membership. Readers do not see them in collection
-          results. Reorder is skipped when the order did not change.
-        </CardDescription>
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1.5">
+          <CardTitle>Membership</CardTitle>
+          <CardDescription>
+            Unpublished books can stay in admin membership. Readers do not see them in collection
+            results. Reorder is skipped when the order did not change.
+          </CardDescription>
+        </div>
+        <div className="shrink-0 self-start">
+          <AdminAddCollectionBookDialog collection={collection} />
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {membershipError !== null ? (
@@ -166,57 +148,6 @@ export function AdminCollectionMembership({
             </TableBody>
           </Table>
         )}
-        <Form {...form}>
-          <form
-            className="flex flex-col gap-4 sm:flex-row sm:items-end"
-            onSubmit={form.handleSubmit((values) => {
-              void submitAddBook(
-                collection.id,
-                values.bookId,
-                currentBookIds,
-                addMutation.mutateAsync,
-                form.setError,
-                () => {
-                  form.reset({ bookId: undefined as unknown as number });
-                },
-              );
-            })}
-            noValidate
-          >
-            {rootMessage !== undefined ? (
-              <Alert variant="destructive" className="sm:min-w-full">
-                <AlertDescription>{rootMessage}</AlertDescription>
-              </Alert>
-            ) : null}
-            <FormField
-              control={form.control}
-              name="bookId"
-              render={({ field }) => (
-                <FormItem className="flex-1">
-                  <FormLabel>Add book id</FormLabel>
-                  <FormControl>
-                    <Input
-                      inputMode="numeric"
-                      disabled={isBusy}
-                      value={
-                        field.value === undefined || Number.isNaN(field.value)
-                          ? ''
-                          : String(field.value)
-                      }
-                      onChange={(event) => {
-                        field.onChange(event.target.value);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" disabled={isBusy}>
-              {addMutation.isPending ? 'Adding…' : 'Add book'}
-            </Button>
-          </form>
-        </Form>
         <ConfirmDialog
           open={removeBookId !== null}
           title="Remove this book?"
@@ -255,26 +186,6 @@ function findPublishingStatus(
   books: ReadonlyArray<components['schemas']['BookResponse']>,
 ): string | undefined {
   return books.find((book) => book.id === bookId)?.publishingStatus;
-}
-
-async function submitAddBook(
-  collectionId: number,
-  bookId: number,
-  currentBookIds: readonly number[],
-  mutateAsync: ReturnType<typeof useAddAdminCollectionBook>['mutateAsync'],
-  setError: UseFormSetError<AdminAddCollectionBookFormValues>,
-  onAdded: () => void,
-): Promise<void> {
-  if (currentBookIds.includes(bookId)) {
-    setError('bookId', { message: `Book ${bookId} is already in this collection.` });
-    return;
-  }
-  try {
-    await mutateAsync({ collectionId, bookId });
-    onAdded();
-  } catch (error: unknown) {
-    setError('root', { message: getUserFacingErrorMessage(error) });
-  }
 }
 
 async function submitReorder(input: {

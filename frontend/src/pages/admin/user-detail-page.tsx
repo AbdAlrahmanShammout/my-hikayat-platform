@@ -86,7 +86,7 @@ function AdminUserDetailContent({ userId }: { readonly userId: number }): JSX.El
             ? 'Profile, subscription, reading progress, and books this publisher owns.'
             : 'Profile, subscription, and reading progress.'
         }
-        actions={backToUsersAction()}
+        actions={backToUsersAction(user.role)}
       />
       <AdminUserDetailSections
         detail={detail}
@@ -97,10 +97,11 @@ function AdminUserDetailContent({ userId }: { readonly userId: number }): JSX.El
   );
 }
 
-function backToUsersAction(): JSX.Element {
+function backToUsersAction(role?: string): JSX.Element {
+  const to: string = role === 'admin' ? '/admin/users/admins' : '/admin/users/members';
   return (
     <Button asChild variant="outline">
-      <Link to="/admin/users">Back to users</Link>
+      <Link to={to}>{role === 'admin' ? 'Back to admins' : 'Back to members'}</Link>
     </Button>
   );
 }

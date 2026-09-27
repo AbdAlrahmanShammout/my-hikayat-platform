@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 
 import { PageHeader } from '@/components/layout/page-header';
+import { AdminPlanCreateDialog } from '@/features/plans/components/admin-plan-create-dialog';
 import { AdminPlansPanel } from '@/features/plans/components/admin-plans-panel';
 
 /**
@@ -12,6 +13,7 @@ export function AdminPlansPage(): JSX.Element {
       <PageHeader
         title="Plans"
         description="Register Stripe recurring prices as paid plans readers can subscribe to."
+        actions={<AdminPlanCreateDialog />}
       />
       <AdminPlansPanel />
     </>

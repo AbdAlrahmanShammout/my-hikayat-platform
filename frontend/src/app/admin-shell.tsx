@@ -1,10 +1,14 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { ChevronDown, Menu, X } from 'lucide-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router';
+import { NavLink, Outlet, useLocation } from 'react-router';
 
-import { ADMIN_NAV_ITEMS, type AdminNavItem } from '@/app/admin-nav-items';
+import {
+  ADMIN_NAV_ITEMS,
+  type AdminNavGroupItem,
+  type AdminNavLinkItem,
+} from '@/app/admin-nav-items';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUser } from '@/features/auth/hooks/use-current-user';
@@ -59,10 +63,74 @@ function AdminSidebar({ onNavigate }: { readonly onNavigate: () => void }): JSX.
       </div>
       <Separator className="bg-sidebar-border" />
       <nav className="flex flex-col gap-1 p-4" aria-label="Admin">
-        {ADMIN_NAV_ITEMS.map((item) => (
-          <AdminNavLink key={item.to} item={item} onNavigate={onNavigate} />
-        ))}
+        {ADMIN_NAV_ITEMS.map((item) =>
+          item.kind === 'group' ? (
+            <AdminNavGroup key={item.label} item={item} onNavigate={onNavigate} />
+          ) : (
+            <AdminNavLink key={item.to} item={item} onNavigate={onNavigate} />
+          ),
+        )}
       </nav>
+    </div>
+  );
+}
+
+function AdminNavGroup({
+  item,
+  onNavigate,
+}: {
+  readonly item: AdminNavGroupItem;
+  readonly onNavigate: () => void;
+}): JSX.Element {
+  const location = useLocation();
+  const isSectionActive: boolean = item.children.some((child) =>
+    location.pathname.startsWith(child.to),
+  );
+  const [isOpen, setIsOpen] = useState<boolean>(isSectionActive);
+  const Icon = item.icon;
+  return (
+    <div>
+      <button
+        type="button"
+        className={cn(
+          'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+          isSectionActive
+            ? 'text-sidebar-foreground'
+            : 'text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground',
+        )}
+        aria-expanded={isOpen}
+        onClick={() => {
+          setIsOpen((current: boolean) => !current);
+        }}
+      >
+        <Icon className="h-4 w-4" aria-hidden="true" />
+        <span className="flex-1 text-left">{item.label}</span>
+        <ChevronDown
+          className={cn('h-4 w-4 transition-transform', isOpen ? 'rotate-180' : undefined)}
+          aria-hidden="true"
+        />
+      </button>
+      {isOpen ? (
+        <div className="mt-1 flex flex-col gap-1 pl-7">
+          {item.children.map((child) => (
+            <NavLink
+              key={child.to}
+              to={child.to}
+              onClick={onNavigate}
+              className={({ isActive }) =>
+                cn(
+                  'rounded-md px-3 py-2 text-sm transition-colors',
+                  isActive
+                    ? 'bg-sidebar-accent text-sidebar-foreground'
+                    : 'text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground',
+                )
+              }
+            >
+              {child.label}
+            </NavLink>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -71,7 +139,7 @@ function AdminNavLink({
   item,
   onNavigate,
 }: {
-  readonly item: AdminNavItem;
+  readonly item: AdminNavLinkItem;
   readonly onNavigate: () => void;
 }): JSX.Element {
   const Icon = item.icon;

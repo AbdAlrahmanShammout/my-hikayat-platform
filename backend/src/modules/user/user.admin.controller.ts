@@ -24,7 +24,6 @@ import { LoggedInUser } from '@/common/decorators/requests/logged-in-user.decora
 import { Roles } from '@/common/decorators/route/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
-import { UserPage } from '@/modules/user/defs/user-repository.defs';
 import { AdminUserDetail } from '@/modules/user/defs/user-admin-detail-service.defs';
 import { ListUsersRequestDto } from '@/modules/user/dto/request/list-users-request.dto';
 import { UpdateManagedUserRequestDto } from '@/modules/user/dto/request/update-managed-user-request.dto';
@@ -51,10 +50,11 @@ export class UserAdminController {
   @ApiOperation({ summary: 'List platform users' })
   @ApiResponse({ status: 200, type: GetUsersResponseDto })
   async listUsers(@Query() query: ListUsersRequestDto): Promise<GetUsersResponseDto> {
-    const page: UserPage = await this.userService.listUsers({
+    const page = await this.userService.listManagedUsers({
       limit: query.limit,
       offset: query.offset,
       role: query.role,
+      excludeRole: query.excludeRole,
       isPublisher: query.isPublisher,
       email: query.email,
     });

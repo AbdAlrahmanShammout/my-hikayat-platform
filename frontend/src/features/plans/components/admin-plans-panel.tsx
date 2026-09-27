@@ -7,7 +7,6 @@ import { ErrorState } from '@/components/error-state';
 import { ListPagination } from '@/components/list-pagination';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ADMIN_LIST_PAGE_SIZE } from '@/config/admin-list-page-size';
-import { AdminPlanCreateForm } from '@/features/plans/components/admin-plan-create-form';
 import { AdminPlansTable } from '@/features/plans/components/admin-plans-table';
 import { AdminPlansTableSkeleton } from '@/features/plans/components/admin-plans-table-skeleton';
 import { useAdminPlansList } from '@/features/plans/hooks/use-admin-plans-list';
@@ -17,7 +16,7 @@ import {
 } from '@/features/plans/lib/parse-admin-plans-list-search';
 
 /**
- * Plan catalog list with create form and paging.
+ * Plan catalog list with paging. Create is a page-header dialog.
  */
 export function AdminPlansPanel(): JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -37,7 +36,6 @@ export function AdminPlansPanel(): JSX.Element {
           Stripe price id. Free tier remains a local plan without a card.
         </AlertDescription>
       </Alert>
-      <AdminPlanCreateForm />
       {renderPlansPanelBody(plansQuery, listSearch, replaceSearch)}
     </div>
   );
@@ -65,7 +63,7 @@ function renderPlansPanelBody(
     return (
       <EmptyState
         title="No plans yet"
-        description="GET /admin/plans returned an empty list. Create a paid plan above."
+        description="GET /admin/plans returned an empty list. Use Create to register a paid plan."
       />
     );
   }

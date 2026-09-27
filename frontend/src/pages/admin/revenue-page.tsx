@@ -1,6 +1,8 @@
 import type { JSX } from 'react';
 
 import { PageHeader } from '@/components/layout/page-header';
+import { AdminEnsureCurrentRevenuePeriod } from '@/features/revenue/components/admin-ensure-current-revenue-period';
+import { AdminRevenuePeriodCreateDialog } from '@/features/revenue/components/admin-revenue-period-create-dialog';
 import { AdminRevenuePeriodsPanel } from '@/features/revenue/components/admin-revenue-periods-panel';
 
 /**
@@ -12,6 +14,12 @@ export function AdminRevenuePage(): JSX.Element {
       <PageHeader
         title="Revenue periods"
         description="Pool amount is admin-set cents. Platform cut belongs to the period."
+        actions={
+          <>
+            <AdminEnsureCurrentRevenuePeriod />
+            <AdminRevenuePeriodCreateDialog />
+          </>
+        }
       />
       <AdminRevenuePeriodsPanel />
     </>

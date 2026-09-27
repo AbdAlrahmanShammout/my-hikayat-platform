@@ -71,6 +71,15 @@ export class ListUsersRequestDto {
   role?: UserRole;
 
   @ApiPropertyOptional({
+    description: 'Exclude this role. Ignored when role is also set. Use admin to list app members.',
+    enum: UserRole,
+    example: UserRole.ADMIN,
+  })
+  @IsOptional()
+  @IsEnum(UserRole)
+  excludeRole?: UserRole;
+
+  @ApiPropertyOptional({
     description: 'Only include publisher or non-publisher users',
     example: true,
   })

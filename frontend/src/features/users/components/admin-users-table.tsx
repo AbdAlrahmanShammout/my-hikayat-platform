@@ -15,21 +15,26 @@ import { formatUserRoleLabel } from '@/features/users/lib/format-user-role-label
 import type { components } from '@/generated/admin';
 import { formatWireInstant } from '@/lib/format-wire-instant';
 
+export type AdminUsersTableAudience = 'admins' | 'members';
+
 type AdminUsersTableProps = {
-  readonly users: ReadonlyArray<components['schemas']['UserResponse']>;
+  readonly audience: AdminUsersTableAudience;
+  readonly users: ReadonlyArray<components['schemas']['AdminUserListItemResponse']>;
 };
 
 /**
- * Admin user table. Values are displayed as returned by GET /admin/users.
+ * Admin user table. Plan and last session come from GET /admin/users.
  */
-export function AdminUsersTable({ users }: AdminUsersTableProps): JSX.Element {
+export function AdminUsersTable({ audience, users }: AdminUsersTableProps): JSX.Element {
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Email</TableHead>
-          <TableHead>Role</TableHead>
+          {audience === 'members' ? <TableHead>Role</TableHead> : null}
           <TableHead>Publisher</TableHead>
+          {audience === 'admins' ? <TableHead>Last session</TableHead> : null}
+          {audience === 'members' ? <TableHead>Plan</TableHead> : null}
           <TableHead>Created</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
@@ -38,12 +43,20 @@ export function AdminUsersTable({ users }: AdminUsersTableProps): JSX.Element {
         {users.map((user) => (
           <TableRow key={user.id}>
             <TableCell className="font-medium">{user.email}</TableCell>
-            <TableCell>
-              <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                {formatUserRoleLabel(user.role)}
-              </Badge>
-            </TableCell>
+            {audience === 'members' ? (
+              <TableCell>
+                <Badge variant="secondary">{formatUserRoleLabel(user.role)}</Badge>
+              </TableCell>
+            ) : null}
             <TableCell>{user.isPublisher ? 'Yes' : 'No'}</TableCell>
+            {audience === 'admins' ? (
+              <TableCell>{formatWireInstant(user.lastSessionAt)}</TableCell>
+            ) : null}
+            {audience === 'members' ? (
+              <TableCell>
+                <MemberPlanCell plan={user.currentPlan} />
+              </TableCell>
+            ) : null}
             <TableCell>{formatWireInstant(user.createdAt)}</TableCell>
             <TableCell className="text-right">
               <Button asChild variant="outline" size="sm">
@@ -54,5 +67,22 @@ export function AdminUsersTable({ users }: AdminUsersTableProps): JSX.Element {
         ))}
       </TableBody>
     </Table>
+  );
+}
+
+function MemberPlanCell({
+  plan,
+}: {
+  readonly plan: components['schemas']['AdminUserCurrentPlanResponse'] | null | undefined;
+}): JSX.Element {
+  if (plan == null) {
+    return <span className="text-sm text-muted-foreground">No plan</span>;
+  }
+  const isPaid: boolean = plan.kind === 'monthly_paid';
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span>{plan.name}</span>
+      <Badge variant={isPaid ? 'default' : 'secondary'}>{isPaid ? 'Paid' : 'Free'}</Badge>
+    </div>
   );
 }

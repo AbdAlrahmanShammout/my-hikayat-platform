@@ -14,6 +14,7 @@ export type ListUsersServiceInput = {
   readonly limit?: number;
   readonly offset?: number;
   readonly role?: UserRole;
+  readonly excludeRole?: UserRole;
   readonly isPublisher?: boolean;
   readonly email?: string;
 };

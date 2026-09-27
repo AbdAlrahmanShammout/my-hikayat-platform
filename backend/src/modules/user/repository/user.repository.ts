@@ -2,6 +2,7 @@ import { TransactionContext } from '@/common/base/transaction-context';
 import {
   CreateUserRepoInput,
   ListUsersRepoInput,
+  ManagedUserPage,
   UpdateUserRepoInput,
   UserPage,
 } from '@/modules/user/defs/user-repository.defs';
@@ -15,5 +16,6 @@ export abstract class UserRepository {
   abstract update(input: UpdateUserRepoInput, context?: TransactionContext): Promise<UserEntity>;
   abstract delete(id: number, context?: TransactionContext): Promise<UserEntity>;
   abstract list(input: ListUsersRepoInput): Promise<UserPage>;
+  abstract listManaged(input: ListUsersRepoInput): Promise<ManagedUserPage>;
   abstract countByRole(role: UserRole): Promise<number>;
 }

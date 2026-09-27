@@ -37,7 +37,7 @@ function createSampleAdmin(): UserEntity {
 describe('UserAdminController', () => {
   let userAdminController: UserAdminController;
   let mockUserService: {
-    listUsers: jest.Mock;
+    listManagedUsers: jest.Mock;
     getUserById: jest.Mock;
     updateManagedUser: jest.Mock;
     deleteManagedUser: jest.Mock;
@@ -48,7 +48,7 @@ describe('UserAdminController', () => {
 
   beforeEach(async () => {
     mockUserService = {
-      listUsers: jest.fn(),
+      listManagedUsers: jest.fn(),
       getUserById: jest.fn(),
       updateManagedUser: jest.fn(),
       deleteManagedUser: jest.fn(),
@@ -71,24 +71,34 @@ describe('UserAdminController', () => {
 
   describe('listUsers', () => {
     it('forwards filters into the list envelope', async () => {
-      mockUserService.listUsers.mockResolvedValue({
-        entities: [createSampleUser()],
+      mockUserService.listManagedUsers.mockResolvedValue({
+        items: [
+          {
+            user: createSampleUser(),
+            lastSessionAt: new Date('2026-09-01T08:30:00.000Z'),
+            currentPlan: { name: 'Monthly', kind: 'monthly_paid' },
+          },
+        ],
         total: 1,
       });
       const actualResponse = await userAdminController.listUsers({
         limit: 10,
         offset: 0,
         role: UserRole.READER,
+        excludeRole: UserRole.ADMIN,
       });
-      expect(mockUserService.listUsers).toHaveBeenCalledWith({
+      expect(mockUserService.listManagedUsers).toHaveBeenCalledWith({
         limit: 10,
         offset: 0,
         role: UserRole.READER,
+        excludeRole: UserRole.ADMIN,
         isPublisher: undefined,
         email: undefined,
       });
       expect(actualResponse.total).toBe(1);
       expect(actualResponse.users[0].id).toBe(1);
+      expect(actualResponse.users[0].currentPlan?.name).toBe('Monthly');
+      expect(actualResponse.users[0].lastSessionAt?.toISOString()).toBe('2026-09-01T08:30:00.000Z');
       expect(actualResponse.users[0]).not.toHaveProperty('passwordHash');
     });
   });

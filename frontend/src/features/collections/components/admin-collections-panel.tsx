@@ -6,7 +6,6 @@ import { EmptyState } from '@/components/empty-state';
 import { ErrorState } from '@/components/error-state';
 import { ListPagination } from '@/components/list-pagination';
 import { ADMIN_LIST_PAGE_SIZE } from '@/config/admin-list-page-size';
-import { AdminCollectionCreateForm } from '@/features/collections/components/admin-collection-create-form';
 import { AdminCollectionsTable } from '@/features/collections/components/admin-collections-table';
 import { AdminCollectionsTableSkeleton } from '@/features/collections/components/admin-collections-table-skeleton';
 import { useAdminCollectionsList } from '@/features/collections/hooks/use-admin-collections-list';
@@ -16,7 +15,7 @@ import {
 } from '@/features/collections/lib/parse-admin-collections-list-search';
 
 /**
- * Collection list with create form and server-side paging.
+ * Collection list with server-side paging. Create is a page-header dialog.
  */
 export function AdminCollectionsPanel(): JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -30,7 +29,6 @@ export function AdminCollectionsPanel(): JSX.Element {
   };
   return (
     <div className="space-y-6">
-      <AdminCollectionCreateForm />
       {renderCollectionsPanelBody(collectionsQuery, listSearch, replaceSearch)}
     </div>
   );

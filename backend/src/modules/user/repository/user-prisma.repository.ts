@@ -2,9 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { TransactionContext } from '@/common/base/transaction-context';
+import { PlanKind } from '@/modules/subscription/enum/general.enum';
 import {
   CreateUserRepoInput,
   ListUsersRepoInput,
+  ManagedUserListItem,
+  ManagedUserPage,
   UpdateUserRepoInput,
   UserPage,
 } from '@/modules/user/defs/user-repository.defs';
@@ -76,16 +79,7 @@ export class UserPrismaRepository implements UserRepository {
   }
 
   async list(input: ListUsersRepoInput): Promise<UserPage> {
-    const where: Prisma.UserWhereInput = { deletedAt: null };
-    if (input.role !== undefined) {
-      where.role = input.role;
-    }
-    if (input.isPublisher !== undefined) {
-      where.isPublisher = input.isPublisher;
-    }
-    if (input.email !== undefined) {
-      where.email = input.email;
-    }
+    const where: Prisma.UserWhereInput = buildOperationalUserWhere(input);
     const [rows, total] = await this.prismaProviderService.$transaction([
       this.prismaProviderService.user.findMany({
         where,
@@ -101,9 +95,74 @@ export class UserPrismaRepository implements UserRepository {
     };
   }
 
+  async listManaged(input: ListUsersRepoInput): Promise<ManagedUserPage> {
+    const where: Prisma.UserWhereInput = buildOperationalUserWhere(input);
+    const [rows, total] = await this.prismaProviderService.$transaction([
+      this.prismaProviderService.user.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: input.limit,
+        skip: input.offset,
+        include: managedUserListInclude,
+      }),
+      this.prismaProviderService.user.count({ where }),
+    ]);
+    return {
+      items: rows.map((row) => toManagedUserListItem(row)),
+      total,
+    };
+  }
+
   async countByRole(role: UserRole): Promise<number> {
     return this.prismaProviderService.user.count({
       where: { role, deletedAt: null },
     });
   }
+}
+
+const managedUserListInclude = {
+  subscription: { include: { plan: true } },
+  authRefreshTokens: {
+    where: { deletedAt: null },
+    orderBy: { createdAt: 'desc' as const },
+    take: 1,
+  },
+} satisfies Prisma.UserInclude;
+
+type ManagedUserListRow = Prisma.UserGetPayload<{ include: typeof managedUserListInclude }>;
+
+function buildOperationalUserWhere(input: ListUsersRepoInput): Prisma.UserWhereInput {
+  const where: Prisma.UserWhereInput = { deletedAt: null };
+  if (input.role !== undefined) {
+    where.role = input.role;
+  } else if (input.excludeRole !== undefined) {
+    where.role = { not: input.excludeRole };
+  }
+  if (input.isPublisher !== undefined) {
+    where.isPublisher = input.isPublisher;
+  }
+  if (input.email !== undefined) {
+    where.email = input.email;
+  }
+  return where;
+}
+
+function toManagedUserListItem(row: ManagedUserListRow): ManagedUserListItem {
+  const latestSession = row.authRefreshTokens[0];
+  const subscription = row.subscription;
+  const plan =
+    subscription !== null && subscription.deletedAt === null && subscription.plan.deletedAt === null
+      ? subscription.plan
+      : null;
+  return {
+    user: UserMapper.toEntity(row),
+    lastSessionAt: latestSession === undefined ? null : latestSession.createdAt,
+    currentPlan:
+      plan === null
+        ? null
+        : {
+            name: plan.name,
+            kind: plan.kind === PlanKind.MONTHLY_PAID ? PlanKind.MONTHLY_PAID : PlanKind.FREE,
+          },
+  };
 }

@@ -13,7 +13,7 @@ type AdminUsersFiltersProps = {
 };
 
 /**
- * Exact-email query for GET /admin/users. Role groups live in the tabs.
+ * Exact-email query for GET /admin/users. Audience is chosen in the sidebar.
  */
 export function AdminUsersFilters({ value, onChange }: AdminUsersFiltersProps): JSX.Element {
   const [emailDraft, setEmailDraft] = useState<string>(value.email ?? '');

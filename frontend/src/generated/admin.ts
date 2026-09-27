@@ -365,7 +365,7 @@ export interface paths {
   };
   "/admin/users": {
     get: {
-      parameters: { query?: { limit?: number; offset?: number; role?: "reader" | "author" | "admin"; isPublisher?: boolean; email?: string } };
+      parameters: { query?: { limit?: number; offset?: number; role?: "reader" | "author" | "admin"; excludeRole?: "reader" | "author" | "admin"; isPublisher?: boolean; email?: string } };
       responses: {
         "200": { content: { 'application/json': components['schemas']['GetUsersResponseDto'] } };
       };
@@ -465,7 +465,9 @@ export interface components {
     UpdatePlanRequestDto: { name?: string; description?: string; stripePriceId?: string };
     SubscriptionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; planId: number; status: "active" | "canceled"; startedAt: string; currentPeriodStart?: unknown | null; currentPeriodEnd?: unknown | null; canceledAt?: unknown | null; activatedAt?: unknown | null; trialStartedAt?: unknown | null; trialEndsAt?: unknown | null; readingAccessState: "free" | "trial" | "paid"; trialEligible: boolean; plan?: components['schemas']['PlanResponse']; user?: components['schemas']['UserResponse'] };
     GetSubscriptionsResponseDto: { subscriptions: Array<components['schemas']['SubscriptionResponse']>; total: number };
-    GetUsersResponseDto: { users: Array<components['schemas']['UserResponse']>; total: number };
+    AdminUserCurrentPlanResponse: { name: string; kind: "free" | "monthly_paid" };
+    AdminUserListItemResponse: components['schemas']['UserResponse'] & { lastSessionAt: string | null; currentPlan: components['schemas']['AdminUserCurrentPlanResponse'] | null };
+    GetUsersResponseDto: { users: Array<components['schemas']['AdminUserListItemResponse']>; total: number };
     AdminUserSubscriptionPeriodResponse: { periodStartedAt?: unknown | null; periodEndsAt?: unknown | null; remainingMs?: number | null; elapsedPercent?: number | null };
     AdminUserReadingProgressItemResponse: { book: components['schemas']['BookResponse']; layoutType: "reflowable" | "fixed_layout"; contentProgressPercent: number; locationLabel?: unknown | null; spineIndex?: unknown | null; scrollOffset?: unknown | null; spreadIndex?: unknown | null; pageNumber?: unknown | null; activeDurationMs: number; lastSessionAt: string };
     GetAdminUserDetailResponseDto: { user: components['schemas']['UserResponse']; subscription?: components['schemas']['SubscriptionResponse'] | null; subscriptionPeriod: components['schemas']['AdminUserSubscriptionPeriodResponse']; readingProgress: Array<components['schemas']['AdminUserReadingProgressItemResponse']> };

@@ -7,8 +7,6 @@ import { ErrorState } from '@/components/error-state';
 import { ListPagination } from '@/components/list-pagination';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ADMIN_LIST_PAGE_SIZE } from '@/config/admin-list-page-size';
-import { AdminEnsureCurrentRevenuePeriod } from '@/features/revenue/components/admin-ensure-current-revenue-period';
-import { AdminRevenuePeriodCreateForm } from '@/features/revenue/components/admin-revenue-period-create-form';
 import { AdminRevenuePeriodsTable } from '@/features/revenue/components/admin-revenue-periods-table';
 import { AdminRevenuePeriodsTableSkeleton } from '@/features/revenue/components/admin-revenue-periods-table-skeleton';
 import { useAdminRevenuePeriodsList } from '@/features/revenue/hooks/use-admin-revenue-periods-list';
@@ -18,7 +16,7 @@ import {
 } from '@/features/revenue/lib/parse-admin-revenue-periods-list-search';
 
 /**
- * Revenue-period list with create, current-month ensure, and server-side paging.
+ * Revenue-period list with server-side paging. Create is a page-header dialog.
  */
 export function AdminRevenuePeriodsPanel(): JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -37,8 +35,6 @@ export function AdminRevenuePeriodsPanel(): JSX.Element {
           Pool amount is admin-set integer cents. This screen does not derive the pool from Stripe.
         </AlertDescription>
       </Alert>
-      <AdminEnsureCurrentRevenuePeriod />
-      <AdminRevenuePeriodCreateForm />
       {renderRevenuePeriodsPanelBody(periodsQuery, listSearch, replaceSearch)}
     </div>
   );

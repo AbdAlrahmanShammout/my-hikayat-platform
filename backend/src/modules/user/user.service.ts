@@ -6,7 +6,7 @@ import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagin
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
-import { UserPage } from '@/modules/user/defs/user-repository.defs';
+import { ManagedUserPage, UserPage } from '@/modules/user/defs/user-repository.defs';
 import {
   CreateUserServiceInput,
   DeleteManagedUserServiceInput,
@@ -101,13 +101,11 @@ export class UserService {
   }
 
   async listUsers(input: ListUsersServiceInput = {}): Promise<UserPage> {
-    return this.userRepository.list({
-      limit: input.limit ?? DEFAULT_PAGE_SIZE,
-      offset: input.offset ?? DEFAULT_PAGE_OFFSET,
-      role: input.role,
-      isPublisher: input.isPublisher,
-      email: input.email === undefined ? undefined : UserService.normalizeEmail(input.email),
-    });
+    return this.userRepository.list(UserService.toListRepoInput(input));
+  }
+
+  async listManagedUsers(input: ListUsersServiceInput = {}): Promise<ManagedUserPage> {
+    return this.userRepository.listManaged(UserService.toListRepoInput(input));
   }
 
   async updateManagedUser(input: UpdateManagedUserServiceInput): Promise<UserEntity> {
@@ -330,6 +328,24 @@ export class UserService {
     return {
       role: current.role,
       isPublisher: input.isPublisher ?? current.isPublisher,
+    };
+  }
+
+  private static toListRepoInput(input: ListUsersServiceInput): {
+    readonly limit: number;
+    readonly offset: number;
+    readonly role?: UserRole;
+    readonly excludeRole?: UserRole;
+    readonly isPublisher?: boolean;
+    readonly email?: string;
+  } {
+    return {
+      limit: input.limit ?? DEFAULT_PAGE_SIZE,
+      offset: input.offset ?? DEFAULT_PAGE_OFFSET,
+      role: input.role,
+      excludeRole: input.role === undefined ? input.excludeRole : undefined,
+      isPublisher: input.isPublisher,
+      email: input.email === undefined ? undefined : UserService.normalizeEmail(input.email),
     };
   }
 

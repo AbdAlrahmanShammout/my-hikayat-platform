@@ -182,6 +182,7 @@ describe('UserService', () => {
         limit: 20,
         offset: 0,
         role: UserRole.READER,
+        excludeRole: undefined,
         isPublisher: undefined,
         email: 'reader@example.com',
       });

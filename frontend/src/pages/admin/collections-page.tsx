@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 
 import { PageHeader } from '@/components/layout/page-header';
+import { AdminCollectionCreateDialog } from '@/features/collections/components/admin-collection-create-dialog';
 import { AdminCollectionsPanel } from '@/features/collections/components/admin-collections-panel';
 
 /**
@@ -9,7 +10,11 @@ import { AdminCollectionsPanel } from '@/features/collections/components/admin-c
 export function AdminCollectionsPage(): JSX.Element {
   return (
     <>
-      <PageHeader title="Collections" description="Curate membership and order." />
+      <PageHeader
+        title="Collections"
+        description="Curate membership and order."
+        actions={<AdminCollectionCreateDialog />}
+      />
       <AdminCollectionsPanel />
     </>
   );

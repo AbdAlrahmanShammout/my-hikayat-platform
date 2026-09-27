@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { ADMIN_COLLECTION_BOOK_LOOKUP_LIMIT } from '@/config/admin-collection-book-lookup-limit';
 import { useAdminBooksList } from '@/features/books/hooks/use-admin-books-list';
 import { AdminCollectionActions } from '@/features/collections/components/admin-collection-actions';
+import { AdminCollectionEditDialog } from '@/features/collections/components/admin-collection-edit-dialog';
 import { AdminCollectionMembership } from '@/features/collections/components/admin-collection-membership';
-import { AdminCollectionTitleForm } from '@/features/collections/components/admin-collection-title-form';
 import { useAdminCollection } from '@/features/collections/hooks/use-admin-collection';
 import { parsePositiveInt } from '@/lib/parse-positive-int';
 
@@ -73,18 +73,22 @@ function AdminCollectionDetailContent({
       <PageHeader
         title={collection.title}
         description="Unpublished books remain visible in admin membership."
-        actions={backToCollectionsAction()}
+        actions={
+          <>
+            <AdminCollectionEditDialog
+              key={`${collection.id}-${collection.updatedAt}`}
+              collection={collection}
+            />
+            {backToCollectionsAction()}
+          </>
+        }
       />
       <div className="space-y-6">
-        <AdminCollectionActions collection={collection} />
-        <AdminCollectionTitleForm
-          key={`${collection.id}-${collection.updatedAt}`}
-          collection={collection}
-        />
         <AdminCollectionMembership
           collection={collection}
           books={booksQuery.data?.books ?? []}
         />
+        <AdminCollectionActions collection={collection} />
       </div>
     </>
   );
