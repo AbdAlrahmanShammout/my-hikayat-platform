@@ -1,7 +1,9 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { BaseModelResponseDto } from '@/common/base/base-model.response.dto';
+import { CollectionCover } from '@/modules/collection/defs/collection-cover.defs';
 import { CollectionBookResponse } from '@/modules/collection/dto/response/model/collection-book.response';
+import { CollectionCoverResponse } from '@/modules/collection/dto/response/model/collection-cover.response';
 import { CollectionEntity } from '@/modules/collection/entity/collection.entity';
 
 export class CollectionResponse extends BaseModelResponseDto {
@@ -15,21 +17,22 @@ export class CollectionResponse extends BaseModelResponseDto {
   })
   description: string | null;
 
-  @ApiProperty({
-    description: 'Hex accent color for collection chrome, such as #1A6B4A',
-    example: '#1A6B4A',
+  @ApiPropertyOptional({
+    description:
+      'Collection cover image. Null when no cover is uploaded. URL is signed and expires.',
+    type: () => CollectionCoverResponse,
     nullable: true,
   })
-  accentColor: string | null;
+  cover: CollectionCoverResponse | null;
 
   @ApiProperty({ type: () => [CollectionBookResponse] })
   items: CollectionBookResponse[];
 
-  constructor(entity: CollectionEntity) {
+  constructor(entity: CollectionEntity, cover: CollectionCover | null = null) {
     super(entity);
     this.title = entity.title;
     this.description = entity.description;
-    this.accentColor = entity.accentColor;
+    this.cover = cover === null ? null : new CollectionCoverResponse(cover);
     this.items = (entity.items ?? []).map((item) => new CollectionBookResponse(item));
   }
 }

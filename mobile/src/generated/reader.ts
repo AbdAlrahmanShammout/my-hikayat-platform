@@ -337,7 +337,8 @@ export interface components {
     OfflineReadingLeaseResponse: { version: 1; keyId: string; userId: number; bookId: number; bookAssetId: number; accessKind: "trial" | "paid"; issuedAt: string; expiresAt: string; signature: string };
     CreateBookAssetContentKeyResponseDto: { bookId: number; bookAssetId: number; sessionId: number; keyId: string; algorithm: "aes-256-gcm"; keyDelivery: "plain"; key: string; expiresAt: string; offlineLease: components['schemas']['OfflineReadingLeaseResponse'] };
     GetCategoriesResponseDto: { categories: Array<components['schemas']['CategoryResponse']>; total: number };
-    CollectionDiscoveryResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string | null; accentColor: string | null; books: Array<components['schemas']['BookResponse']> };
+    CollectionCoverResponse: { url: string; expiresAt: string; contentType: string };
+    CollectionDiscoveryResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string | null; cover: components['schemas']['CollectionCoverResponse'] | null; books: Array<components['schemas']['BookResponse']> };
     GetDiscoveryCollectionsResponseDto: { collections: Array<components['schemas']['CollectionDiscoveryResponse']>; total: number };
     StartReadingSessionRequestDto: { spineIndex?: number; scrollOffset?: number; spreadIndex?: number; pageNumber?: number };
     ReadingSessionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; bookId: number; layoutType: "reflowable" | "fixed_layout"; startedAt: string; endedAt?: unknown | null; activeDurationMs: number; idleDurationMs: number; spineIndex?: unknown | null; scrollOffset?: unknown | null; spreadIndex?: unknown | null; pageNumber?: unknown | null };

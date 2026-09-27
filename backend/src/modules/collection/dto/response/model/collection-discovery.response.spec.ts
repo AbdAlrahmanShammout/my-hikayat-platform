@@ -43,7 +43,7 @@ describe('CollectionDiscoveryResponse', () => {
     expect(actualResponse.id).toBe(3);
     expect(actualResponse.title).toBe('Harbor Picks');
     expect(actualResponse.description).toBeNull();
-    expect(actualResponse.accentColor).toBeNull();
+    expect(actualResponse.cover).toBeNull();
     expect(actualResponse.books).toHaveLength(1);
     expect(actualResponse.books[0].id).toBe(8);
     expect(actualResponse.books[0].title).toBe('The Last Lighthouse');

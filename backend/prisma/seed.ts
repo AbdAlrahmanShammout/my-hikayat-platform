@@ -28,6 +28,7 @@ const DEMO_IDENTIFIER_PREFIX = 'demo:';
 const PAID_PERIOD_DAYS = 20;
 
 type DemoBook = (typeof DEMO_CATALOG.books)[number];
+type DemoCollection = (typeof DEMO_CATALOG.collections)[number];
 
 async function seedAdmin(): Promise<void> {
   const email: string = SEEDED_ADMIN_EMAIL.trim().toLowerCase();
@@ -348,21 +349,38 @@ async function seedDemoBooks(ownerIds: Map<string, number>): Promise<Map<string,
   return bookIds;
 }
 
+async function seedDemoCollectionCover(collection: DemoCollection): Promise<{
+  readonly coverStorageKey: string;
+  readonly coverContentType: string;
+}> {
+  const coverStorageKey = `demo/collections/${collection.slug}.png`;
+  const coverBody: Buffer = createSolidPng(DEMO_COVER_WIDTH, DEMO_COVER_HEIGHT, collection.cover);
+  await putDemoObject({
+    key: coverStorageKey,
+    body: coverBody,
+    contentType: 'image/png',
+  });
+  return { coverStorageKey, coverContentType: 'image/png' };
+}
+
 async function seedDemoCollections(bookIds: Map<string, number>): Promise<void> {
   const leftover = await prisma.collection.findFirst({
     where: { title: 'Sport', deletedAt: null },
   });
   if (leftover !== null) {
+    const cover = await seedDemoCollectionCover(DEMO_CATALOG.collections[0]);
     await prisma.collection.update({
       where: { id: leftover.id },
       data: {
         title: DEMO_CATALOG.collections[0].title,
         description: DEMO_CATALOG.collections[0].description,
-        accentColor: DEMO_CATALOG.collections[0].accentColor,
+        coverStorageKey: cover.coverStorageKey,
+        coverContentType: cover.coverContentType,
       },
     });
   }
   for (const collection of DEMO_CATALOG.collections) {
+    const cover = await seedDemoCollectionCover(collection);
     const existing = await prisma.collection.findFirst({
       where: { title: collection.title, deletedAt: null },
     });
@@ -372,14 +390,16 @@ async function seedDemoCollections(bookIds: Map<string, number>): Promise<void> 
             data: {
               title: collection.title,
               description: collection.description,
-              accentColor: collection.accentColor,
+              coverStorageKey: cover.coverStorageKey,
+              coverContentType: cover.coverContentType,
             },
           })
         : await prisma.collection.update({
             where: { id: existing.id },
             data: {
               description: collection.description,
-              accentColor: collection.accentColor,
+              coverStorageKey: cover.coverStorageKey,
+              coverContentType: cover.coverContentType,
               deletedAt: null,
             },
           });

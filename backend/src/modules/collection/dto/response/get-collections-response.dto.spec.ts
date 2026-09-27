@@ -1,3 +1,4 @@
+import { CollectionResponse } from '@/modules/collection/dto/response/model/collection.response';
 import { CollectionEntity } from '@/modules/collection/entity/collection.entity';
 
 import { GetCollectionsResponseDto } from './get-collections-response.dto';
@@ -11,7 +12,10 @@ describe('GetCollectionsResponseDto', () => {
       title: 'Harbor Picks',
       items: [],
     });
-    const actualResponse = new GetCollectionsResponseDto({ entities: [inputEntity], total: 4 });
+    const actualResponse = new GetCollectionsResponseDto(
+      [new CollectionResponse(inputEntity, null)],
+      4,
+    );
     expect(actualResponse.total).toBe(4);
     expect(actualResponse.collections).toHaveLength(1);
     expect(actualResponse.collections[0].id).toBe(3);

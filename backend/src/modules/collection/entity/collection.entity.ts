@@ -5,13 +5,15 @@ import { CollectionZodType } from '@/modules/collection/zod/collection.zod';
 export class CollectionEntity extends BaseEntity {
   title!: string;
   description!: string | null;
-  accentColor!: string | null;
+  coverStorageKey!: string | null;
+  coverContentType!: string | null;
   items?: CollectionBookEntity[];
 
   constructor(data: CollectionZodType) {
     super();
     Object.assign(this, data);
     this.description = data.description ?? null;
-    this.accentColor = data.accentColor ?? null;
+    this.coverStorageKey = data.coverStorageKey ?? null;
+    this.coverContentType = data.coverContentType ?? null;
   }
 }

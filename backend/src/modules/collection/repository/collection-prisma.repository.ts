@@ -32,7 +32,6 @@ export class CollectionPrismaRepository implements CollectionRepository {
       data: {
         title: input.title,
         description: input.description,
-        accentColor: input.accentColor,
         items: CollectionPrismaRepository.buildItemCreate(input.books),
       },
       include: collectionDetailsInclude,
@@ -115,8 +114,11 @@ export class CollectionPrismaRepository implements CollectionRepository {
     if (input.description !== undefined) {
       data.description = input.description;
     }
-    if (input.accentColor !== undefined) {
-      data.accentColor = input.accentColor;
+    if (input.coverStorageKey !== undefined) {
+      data.coverStorageKey = input.coverStorageKey;
+    }
+    if (input.coverContentType !== undefined) {
+      data.coverContentType = input.coverContentType;
     }
     const result = await client.collection.update({
       where: { id: input.id },

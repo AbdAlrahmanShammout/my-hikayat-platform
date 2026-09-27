@@ -24,7 +24,7 @@ describe('CollectionResponse', () => {
     const actualResponse = new CollectionResponse(inputEntity);
     expect(actualResponse.title).toBe('Harbor Picks');
     expect(actualResponse.description).toBeNull();
-    expect(actualResponse.accentColor).toBeNull();
+    expect(actualResponse.cover).toBeNull();
     expect(actualResponse.items).toHaveLength(1);
     expect(actualResponse.items[0].bookId).toBe(8);
     expect(actualResponse.items[0].displayOrder).toBe(0);

@@ -6,7 +6,9 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookCatalogCoverService } from '@/modules/book-asset/book-catalog-cover.service';
+import { CollectionCoverService } from '@/modules/collection/collection-cover.service';
 import { CollectionDiscoveryService } from '@/modules/collection/collection-discovery.service';
+import { CollectionCover } from '@/modules/collection/defs/collection-cover.defs';
 import {
   CollectionDiscovery,
   CollectionDiscoveryPage,
@@ -23,6 +25,7 @@ export class CollectionReaderController {
   constructor(
     private readonly collectionDiscoveryService: CollectionDiscoveryService,
     private readonly bookCatalogCoverService: BookCatalogCoverService,
+    private readonly collectionCoverService: CollectionCoverService,
   ) {}
 
   @Get()
@@ -61,6 +64,10 @@ export class CollectionReaderController {
     const allBooks: BookEntity[] = discoveries.flatMap((discovery) => discovery.books);
     const bookResponses: BookResponse[] =
       await this.bookCatalogCoverService.toBookResponses(allBooks);
+    const coverByCollectionId: ReadonlyMap<number, CollectionCover | null> =
+      await this.collectionCoverService.resolveCovers(
+        discoveries.map((discovery) => discovery.collection),
+      );
     const responseByBookId = new Map<number, BookResponse>(
       bookResponses.map((book) => [book.id, book]),
     );
@@ -69,7 +76,9 @@ export class CollectionReaderController {
         const response: BookResponse | undefined = responseByBookId.get(book.id);
         return response ?? new BookResponse(book, null);
       });
-      return new CollectionDiscoveryResponse(discovery, books);
+      const cover: CollectionCover | null =
+        coverByCollectionId.get(discovery.collection.id) ?? null;
+      return new CollectionDiscoveryResponse(discovery, books, cover);
     });
   }
 }

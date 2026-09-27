@@ -1,11 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, Matches, MaxLength, Min, ValidateIf } from 'class-validator';
-
 import {
-  COLLECTION_ACCENT_COLOR_PATTERN,
-  COLLECTION_DESCRIPTION_MAX_LENGTH,
-} from '@/modules/collection/consts/collection-editorial.constant';
+  IsArray,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
+
+import { COLLECTION_DESCRIPTION_MAX_LENGTH } from '@/modules/collection/consts/collection-editorial.constant';
 
 function parseOptionalIdArray(value: unknown): unknown {
   if (value === undefined || value === null || value === '') {
@@ -65,18 +70,6 @@ export class CreateCollectionRequestDto {
   @MaxLength(COLLECTION_DESCRIPTION_MAX_LENGTH)
   @Transform(({ value }: { value: unknown }) => parseOptionalEditorialText(value))
   description?: string | null;
-
-  @ApiPropertyOptional({
-    description: 'Hex accent color for collection chrome',
-    example: '#1A6B4A',
-    nullable: true,
-  })
-  @IsOptional()
-  @ValidateIf((_, value: unknown) => value !== null && value !== '')
-  @IsString()
-  @Matches(COLLECTION_ACCENT_COLOR_PATTERN)
-  @Transform(({ value }: { value: unknown }) => parseOptionalEditorialText(value))
-  accentColor?: string | null;
 
   @ApiPropertyOptional({
     description: 'Book ids in editorial display order',

@@ -4,6 +4,7 @@ import { ConfigsModule } from '@/config/configs.module';
 import { CollectionRepository } from '@/modules/collection/repository/collection.repository';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
+import { CollectionCoverService } from './collection-cover.service';
 import { CollectionDiscoveryService } from './collection-discovery.service';
 import { CollectionModule } from './collection.module';
 import { CollectionService } from './collection.service';
@@ -54,6 +55,7 @@ describe('CollectionModule', () => {
       .compile();
     expect(moduleRef.get(CollectionService)).toBeDefined();
     expect(moduleRef.get(CollectionDiscoveryService)).toBeDefined();
+    expect(moduleRef.get(CollectionCoverService)).toBeDefined();
     expect(moduleRef.get(CollectionRepository)).toBeDefined();
     await moduleRef.close();
   });

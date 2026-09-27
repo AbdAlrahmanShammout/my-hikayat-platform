@@ -8,7 +8,6 @@ export type CollectionBookRepoInput = {
 export type CreateCollectionRepoInput = {
   readonly title: string;
   readonly description: string | null;
-  readonly accentColor: string | null;
   readonly books: readonly CollectionBookRepoInput[];
 };
 
@@ -16,7 +15,8 @@ export type UpdateCollectionRepoInput = {
   readonly id: number;
   readonly title?: string;
   readonly description?: string | null;
-  readonly accentColor?: string | null;
+  readonly coverStorageKey?: string | null;
+  readonly coverContentType?: string | null;
   readonly books?: readonly CollectionBookRepoInput[];
 };
 

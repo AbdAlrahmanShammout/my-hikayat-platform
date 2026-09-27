@@ -107,7 +107,6 @@ describe('CollectionService', () => {
         {
           title: 'Harbor Picks',
           description: null,
-          accentColor: null,
           books: [{ bookId: 8, displayOrder: 0 }],
         },
         undefined,
@@ -118,7 +117,7 @@ describe('CollectionService', () => {
           action: AuditAction.COLLECTION_CREATED,
           subjectType: AuditSubjectType.COLLECTION,
           subjectId: 3,
-          metadata: { title: 'Harbor Picks', description: null, accentColor: null, bookIds: [8] },
+          metadata: { title: 'Harbor Picks', description: null, bookIds: [8] },
         },
         undefined,
       );
@@ -162,7 +161,6 @@ describe('CollectionService', () => {
           id: 3,
           title: 'Harbor Classics',
           description: null,
-          accentColor: null,
         },
         undefined,
       );
@@ -177,8 +175,6 @@ describe('CollectionService', () => {
             toTitle: 'Harbor Classics',
             fromDescription: null,
             toDescription: null,
-            fromAccentColor: null,
-            toAccentColor: null,
           },
         },
         undefined,

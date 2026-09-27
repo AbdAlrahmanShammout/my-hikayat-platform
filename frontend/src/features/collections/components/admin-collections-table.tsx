@@ -24,6 +24,7 @@ export function AdminCollectionsTable({ collections }: AdminCollectionsTableProp
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>Cover</TableHead>
           <TableHead>Title</TableHead>
           <TableHead>Books</TableHead>
           <TableHead className="text-right">Actions</TableHead>
@@ -32,6 +33,9 @@ export function AdminCollectionsTable({ collections }: AdminCollectionsTableProp
       <TableBody>
         {collections.map((collection) => (
           <TableRow key={collection.id}>
+            <TableCell>
+              <CollectionCoverThumb collection={collection} />
+            </TableCell>
             <TableCell className="font-medium">{collection.title}</TableCell>
             <TableCell>{String(collection.items.length)}</TableCell>
             <TableCell className="text-right">
@@ -43,5 +47,23 @@ export function AdminCollectionsTable({ collections }: AdminCollectionsTableProp
         ))}
       </TableBody>
     </Table>
+  );
+}
+
+function CollectionCoverThumb({
+  collection,
+}: {
+  readonly collection: components['schemas']['CollectionResponse'];
+}): JSX.Element {
+  const coverUrl: string | undefined = collection.cover?.url;
+  if (coverUrl === undefined) {
+    return <span className="text-sm text-muted-foreground">None</span>;
+  }
+  return (
+    <img
+      src={coverUrl}
+      alt=""
+      className="h-12 w-8 rounded-sm object-cover"
+    />
   );
 }

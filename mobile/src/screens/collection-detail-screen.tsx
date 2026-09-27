@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import type { JSX } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/api-error';
@@ -9,7 +9,6 @@ import { resolveCatalogBookAttribution } from '@/features/catalog/lib/resolve-ca
 import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-catalog-cover-presentation';
 import { useDiscoveryCollection } from '@/features/collections/hooks/use-discovery-collection';
 import { parseCollectionIdParam } from '@/features/collections/lib/parse-collection-id-param';
-import { resolveCollectionAccentColor } from '@/features/collections/lib/resolve-collection-accent-color';
 import { theme } from '@/theme/theme';
 import { EmptyState } from '@/ui/feedback/empty-state';
 import { ErrorState } from '@/ui/feedback/error-state';
@@ -79,7 +78,7 @@ export function CollectionDetailScreen(): JSX.Element {
       />
     );
   }
-  const accentColor: string | null = resolveCollectionAccentColor(collection.accentColor);
+  const cover = resolveCatalogCoverPresentation(collection.cover);
   const editorialDescription: string | null = coerceOptionalText(collection.description);
   return (
     <SafeAreaView
@@ -92,12 +91,15 @@ export function CollectionDetailScreen(): JSX.Element {
           onPressBack={navigateBackToCollections}
           backTestID="collection-detail-back-button"
         />
-      <View
-        style={[
-          styles.header,
-          accentColor !== null ? { backgroundColor: accentColor } : null,
-        ]}
-      >
+      {cover.kind === 'image' ? (
+        <Image
+          source={{ uri: cover.url }}
+          style={styles.cover}
+          resizeMode="cover"
+          accessibilityLabel={`${collection.title} cover`}
+        />
+      ) : null}
+      <View style={styles.header}>
         <Text style={styles.kicker}>Collection</Text>
         <Text style={styles.title} accessibilityRole="header" testID="collection-detail-title">
           {collection.title}
@@ -218,6 +220,13 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: theme.colors.canvas,
+  },
+  cover: {
+    height: 180,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    borderRadius: theme.radii.lg,
+    backgroundColor: theme.colors.canvasWarm,
   },
   header: {
     paddingHorizontal: theme.spacing.lg,

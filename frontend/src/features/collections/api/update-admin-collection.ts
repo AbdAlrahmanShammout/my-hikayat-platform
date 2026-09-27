@@ -7,7 +7,7 @@ export type UpdateAdminCollectionInput = {
 };
 
 /**
- * Updates an editorial collection title, description, and accent color.
+ * Updates an editorial collection title and description.
  */
 export async function updateAdminCollection(
   input: UpdateAdminCollectionInput,

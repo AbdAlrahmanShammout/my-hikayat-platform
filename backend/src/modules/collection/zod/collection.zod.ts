@@ -8,6 +8,7 @@ export type CollectionZodType = z.infer<typeof CollectionZodSchema>;
 export const CollectionZodSchema = BaseZodSchema.extend({
   title: ZodString,
   description: ZodStringNullable.optional(),
-  accentColor: ZodStringNullable.optional(),
+  coverStorageKey: ZodStringNullable.optional(),
+  coverContentType: ZodStringNullable.optional(),
   items: (z.any().nullish() as z.ZodType<CollectionBookZodType[] | null | undefined>).optional(),
 });

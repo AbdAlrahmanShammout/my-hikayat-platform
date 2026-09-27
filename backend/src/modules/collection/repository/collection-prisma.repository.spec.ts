@@ -14,7 +14,8 @@ describe('CollectionPrismaRepository', () => {
     deletedAt: null,
     title: 'Harbor Picks',
     description: null,
-    accentColor: null,
+    coverStorageKey: null,
+    coverContentType: null,
     items: [
       {
         id: 9,
@@ -67,7 +68,6 @@ describe('CollectionPrismaRepository', () => {
     const actualEntity = await collectionPrismaRepository.create({
       title: 'Harbor Picks',
       description: null,
-      accentColor: null,
       books: [{ bookId: 8, displayOrder: 0 }],
     });
     expect(mockPrismaProviderService.collection.create).toHaveBeenCalledWith(

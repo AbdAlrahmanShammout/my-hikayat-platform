@@ -2,7 +2,6 @@ import type { JSX } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-catalog-cover-presentation';
-import { resolveCollectionAccentColor } from '@/features/collections/lib/resolve-collection-accent-color';
 import type { DiscoveryCollection } from '@/features/collections/api/get-discovery-collection';
 import { theme } from '@/theme/theme';
 import { toViewShadow } from '@/ui/lib/to-view-shadow';
@@ -27,7 +26,7 @@ export function CollectionListRow({
 }: CollectionListRowProps): JSX.Element {
   const bookCount: number = collection.books.length;
   const isShelf: boolean = variant === 'shelf';
-  const accentColor: string | null = resolveCollectionAccentColor(collection.accentColor);
+  const cover = resolveCatalogCoverPresentation(collection.cover);
   const description: string | null = coerceOptionalText(collection.description);
   return (
     <Pressable
@@ -43,23 +42,28 @@ export function CollectionListRow({
       accessibilityLabel={`Open collection ${collection.title}`}
       testID={isShelf ? undefined : `collections-item-${collection.id}`}
     >
-      <View
-        style={[
-          styles.mosaic,
-          isShelf ? styles.shelfMosaic : null,
-          accentColor !== null ? { backgroundColor: accentColor } : null,
-        ]}
-        accessibilityElementsHidden
-      >
-        {Array.from({ length: MOSAIC_SLOT_COUNT }, (_, index) => (
-          <CollectionMosaicCell
-            key={index}
-            collection={collection}
-            index={index}
-            isShelf={isShelf}
-          />
-        ))}
-      </View>
+      {cover.kind === 'image' ? (
+        <Image
+          source={{ uri: cover.url }}
+          style={[styles.cover, isShelf ? styles.shelfCover : null]}
+          resizeMode="cover"
+          accessibilityElementsHidden
+        />
+      ) : (
+        <View
+          style={[styles.mosaic, isShelf ? styles.shelfMosaic : null]}
+          accessibilityElementsHidden
+        >
+          {Array.from({ length: MOSAIC_SLOT_COUNT }, (_, index) => (
+            <CollectionMosaicCell
+              key={index}
+              collection={collection}
+              index={index}
+              isShelf={isShelf}
+            />
+          ))}
+        </View>
+      )}
       <View style={[styles.info, isShelf ? styles.shelfInfo : null]}>
         <View style={styles.textBlock}>
           <Text style={[styles.title, isShelf ? styles.shelfTitle : null]} numberOfLines={2}>
@@ -94,14 +98,9 @@ function CollectionMosaicCell(input: {
   readonly isShelf: boolean;
 }): JSX.Element {
   const cellStyle = input.isShelf ? styles.shelfMosaicCell : styles.mosaicCell;
-  const accentColor: string | null = resolveCollectionAccentColor(input.collection.accentColor);
   const book = input.collection.books[input.index];
   if (book === undefined) {
-    return (
-      <View
-        style={[cellStyle, accentColor !== null ? { backgroundColor: accentColor } : null]}
-      />
-    );
+    return <View style={cellStyle} />;
   }
   const cover = resolveCatalogCoverPresentation(book.cover);
   if (cover.kind !== 'image') {
@@ -121,6 +120,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: theme.colors.borderSubtle,
     overflow: 'hidden',
+  },
+  cover: {
+    width: '100%',
+    height: 130,
+    backgroundColor: theme.colors.canvasWarm,
   },
   mosaic: {
     flexDirection: 'row',
@@ -166,6 +170,9 @@ const styles = StyleSheet.create({
   },
   shelfCard: {
     width: 160,
+  },
+  shelfCover: {
+    height: 84,
   },
   shelfMosaic: {
     height: 84,

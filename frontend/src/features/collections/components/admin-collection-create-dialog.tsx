@@ -18,7 +18,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -66,7 +65,7 @@ function AdminCollectionCreateForm({ onCancel }: AdminCollectionCreateFormProps)
   const createMutation = useCreateAdminCollection();
   const form = useForm<AdminCollectionEditorialFormValues>({
     resolver: zodResolver(adminCollectionEditorialFormSchema),
-    defaultValues: { title: '', description: '', accentColor: '' },
+    defaultValues: { title: '', description: '' },
   });
   const rootMessage: string | undefined = form.formState.errors.root?.message;
   return (
@@ -116,20 +115,6 @@ function AdminCollectionCreateForm({ onCancel }: AdminCollectionCreateFormProps)
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="accentColor"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Accent color</FormLabel>
-              <FormControl>
-                <Input placeholder="#1A6B4A" disabled={createMutation.isPending} {...field} />
-              </FormControl>
-              <FormDescription>Optional six-digit hex for the reader hero.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <div className="flex justify-end gap-2">
           <Button
             type="button"
@@ -158,7 +143,6 @@ async function submitCreateCollection(
     const created = await mutateAsync({
       title: values.title,
       description: values.description.trim().length === 0 ? null : values.description.trim(),
-      accentColor: values.accentColor.trim().length === 0 ? null : values.accentColor.trim(),
     });
     onCreated(created.id);
   } catch (error: unknown) {
@@ -173,9 +157,7 @@ function applyEditorialServerError(
   if (error instanceof ApiError) {
     for (const item of error.validationErrorObjects) {
       if (
-        item.property !== 'title' &&
-        item.property !== 'description' &&
-        item.property !== 'accentColor'
+        item.property !== 'title' && item.property !== 'description'
       ) {
         continue;
       }

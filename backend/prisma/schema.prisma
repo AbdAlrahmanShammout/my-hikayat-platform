@@ -406,10 +406,11 @@ model ReadingChapterEngagement {
 
 model Collection {
   id          Int              @id @default(autoincrement())
-  title       String
-  description String?          @db.Text
-  accentColor String?
-  createdAt   DateTime         @default(now())
+  title             String
+  description       String?          @db.Text
+  coverStorageKey   String?          @unique
+  coverContentType  String?
+  createdAt         DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   deletedAt   DateTime?
   items       CollectionBook[]

@@ -1,11 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength, ValidateIf } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
-import {
-  COLLECTION_ACCENT_COLOR_PATTERN,
-  COLLECTION_DESCRIPTION_MAX_LENGTH,
-} from '@/modules/collection/consts/collection-editorial.constant';
+import { COLLECTION_DESCRIPTION_MAX_LENGTH } from '@/modules/collection/consts/collection-editorial.constant';
 
 function parseTitle(value: unknown): unknown {
   if (typeof value !== 'string') {
@@ -46,16 +43,4 @@ export class UpdateCollectionRequestDto {
   @MaxLength(COLLECTION_DESCRIPTION_MAX_LENGTH)
   @Transform(({ value }: { value: unknown }) => parseOptionalEditorialText(value))
   description?: string | null;
-
-  @ApiPropertyOptional({
-    description: 'Hex accent color for collection chrome. Empty string clears the field.',
-    example: '#1A6B4A',
-    nullable: true,
-  })
-  @IsOptional()
-  @ValidateIf((_, value: unknown) => value !== null && value !== '')
-  @IsString()
-  @Matches(COLLECTION_ACCENT_COLOR_PATTERN)
-  @Transform(({ value }: { value: unknown }) => parseOptionalEditorialText(value))
-  accentColor?: string | null;
 }

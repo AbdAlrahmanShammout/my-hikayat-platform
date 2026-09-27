@@ -11,7 +11,8 @@ describe('CollectionMapper', () => {
       deletedAt: null,
       title: 'Harbor Picks',
       description: null,
-      accentColor: null,
+      coverStorageKey: null,
+      coverContentType: null,
       items: [
         {
           id: 9,

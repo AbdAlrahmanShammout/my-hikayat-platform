@@ -202,6 +202,21 @@ export interface paths {
       };
     };
   };
+  "/admin/collections/{id}/cover": {
+    post: {
+      parameters: { path: { id: number } };
+      requestBody: { content: { 'multipart/form-data': { file: string } } };
+      responses: {
+        "201": { content: { 'application/json': components['schemas']['CollectionResponse'] } };
+      };
+    };
+    delete: {
+      parameters: { path: { id: number } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['CollectionResponse'] } };
+      };
+    };
+  };
   "/admin/collections/{id}/reorder": {
     post: {
       parameters: { path: { id: number } };
@@ -440,11 +455,12 @@ export interface components {
     CreateCategoryRequestDto: { name: string; slug?: string; categoryWeight?: number };
     GetCategoriesResponseDto: { categories: Array<components['schemas']['CategoryResponse']>; total: number };
     UpdateCategoryRequestDto: { name?: string; slug?: string; categoryWeight?: number };
-    CreateCollectionRequestDto: { title: string; description?: string | null; accentColor?: string | null; bookIds?: Array<number> };
+    CreateCollectionRequestDto: { title: string; description?: string | null; bookIds?: Array<number> };
+    CollectionCoverResponse: { url: string; expiresAt: string; contentType: string };
     CollectionBookResponse: { id: number; createdAt: string; updatedAt: string; collectionId: number; bookId: number; displayOrder: number };
-    CollectionResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string | null; accentColor: string | null; items: Array<components['schemas']['CollectionBookResponse']> };
+    CollectionResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string | null; cover: components['schemas']['CollectionCoverResponse'] | null; items: Array<components['schemas']['CollectionBookResponse']> };
     GetCollectionsResponseDto: { collections: Array<components['schemas']['CollectionResponse']>; total: number };
-    UpdateCollectionRequestDto: { title?: string; description?: string | null; accentColor?: string | null };
+    UpdateCollectionRequestDto: { title?: string; description?: string | null };
     AddCollectionBookRequestDto: { bookId: number };
     ReorderCollectionBooksRequestDto: { bookIds: Array<number> };
     GetAdminDashboardSummaryResponseDto: { totalUsers: number; totalPublishers: number; totalBooks: number; publishedBooks: number; pendingReviewBooks: number; totalReadingMinutes: number };

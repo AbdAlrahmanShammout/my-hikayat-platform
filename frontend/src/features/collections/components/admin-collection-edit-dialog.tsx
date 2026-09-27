@@ -17,7 +17,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -37,7 +36,7 @@ type AdminCollectionEditDialogProps = {
 };
 
 /**
- * PATCH /admin/collections/:id dialog for title, description, and accent color.
+ * PATCH /admin/collections/:id dialog for title and description.
  */
 export function AdminCollectionEditDialog({
   collection,
@@ -53,7 +52,7 @@ export function AdminCollectionEditDialog({
           <DialogHeader>
             <DialogTitle>Edit collection</DialogTitle>
             <DialogDescription>
-              Title, description, and optional hex accent used by the reader collection hero.
+              Title and description. Upload the cover on this page.
             </DialogDescription>
           </DialogHeader>
           {isOpen ? (
@@ -86,7 +85,6 @@ function AdminCollectionEditForm({
     defaultValues: {
       title: collection.title,
       description: collection.description ?? '',
-      accentColor: collection.accentColor ?? '',
     },
   });
   const rootMessage: string | undefined = form.formState.errors.root?.message;
@@ -136,20 +134,6 @@ function AdminCollectionEditForm({
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="accentColor"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Accent color</FormLabel>
-              <FormControl>
-                <Input placeholder="#1A6B4A" disabled={updateMutation.isPending} {...field} />
-              </FormControl>
-              <FormDescription>Six-digit hex, or blank to clear.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <div className="flex justify-end gap-2">
           <Button
             type="button"
@@ -181,7 +165,6 @@ async function submitEditorialEdit(
       body: {
         title: values.title,
         description: values.description.trim().length === 0 ? null : values.description.trim(),
-        accentColor: values.accentColor.trim().length === 0 ? null : values.accentColor.trim(),
       },
     });
     onSuccess();
@@ -189,9 +172,7 @@ async function submitEditorialEdit(
     if (error instanceof ApiError) {
       for (const item of error.validationErrorObjects) {
         if (
-          item.property !== 'title' &&
-          item.property !== 'description' &&
-          item.property !== 'accentColor'
+          item.property !== 'title' && item.property !== 'description'
         ) {
           continue;
         }

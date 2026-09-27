@@ -8,10 +8,7 @@ import { ResourceNotFoundException } from '@/common/exceptions/resource-not-foun
 import { AuditLogService } from '@/modules/audit/audit-log.service';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
 import { BookService } from '@/modules/book/book.service';
-import {
-  COLLECTION_ACCENT_COLOR_PATTERN,
-  COLLECTION_DESCRIPTION_MAX_LENGTH,
-} from '@/modules/collection/consts/collection-editorial.constant';
+import { COLLECTION_DESCRIPTION_MAX_LENGTH } from '@/modules/collection/consts/collection-editorial.constant';
 import { CollectionPage } from '@/modules/collection/defs/collection-repository.defs';
 import {
   AddCollectionBookServiceInput,
@@ -25,7 +22,6 @@ import {
 import { CollectionBookEntity } from '@/modules/collection/entity/collection-book.entity';
 import { CollectionEntity } from '@/modules/collection/entity/collection.entity';
 import { CollectionBookAlreadyAddedException } from '@/modules/collection/exceptions/collection-book-already-added.exception';
-import { CollectionInvalidAccentColorException } from '@/modules/collection/exceptions/collection-invalid-accent-color.exception';
 import { CollectionRepository } from '@/modules/collection/repository/collection.repository';
 
 @Injectable()
@@ -43,13 +39,11 @@ export class CollectionService {
     const bookIds: number[] = CollectionService.uniqueIds(input.bookIds ?? []);
     await this.assertBooksExist(bookIds);
     const description: string | null = CollectionService.normalizeOptionalText(input.description);
-    const accentColor: string | null = CollectionService.normalizeAccentColor(input.accentColor);
     return this.transactionRunner.run(async (context: TransactionContext) => {
       const created: CollectionEntity = await this.collectionRepository.create(
         {
           title,
           description,
-          accentColor,
           books: CollectionService.toBooks(bookIds),
         },
         context,
@@ -60,7 +54,7 @@ export class CollectionService {
           action: AuditAction.COLLECTION_CREATED,
           subjectType: AuditSubjectType.COLLECTION,
           subjectId: created.id,
-          metadata: { title, description, accentColor, bookIds },
+          metadata: { title, description, bookIds },
         },
         context,
       );
@@ -70,11 +64,7 @@ export class CollectionService {
 
   async updateCollection(input: UpdateCollectionServiceInput): Promise<CollectionEntity> {
     const current: CollectionEntity = await this.getCollectionById(input.id);
-    if (
-      input.title === undefined &&
-      input.description === undefined &&
-      input.accentColor === undefined
-    ) {
+    if (input.title === undefined && input.description === undefined) {
       return current;
     }
     const title: string =
@@ -84,13 +74,9 @@ export class CollectionService {
       input.description === undefined
         ? current.description
         : CollectionService.normalizeOptionalText(input.description);
-    const accentColor: string | null =
-      input.accentColor === undefined
-        ? current.accentColor
-        : CollectionService.normalizeAccentColor(input.accentColor);
     return this.transactionRunner.run(async (context: TransactionContext) => {
       const updated: CollectionEntity = await this.collectionRepository.update(
-        { id: current.id, title, description, accentColor },
+        { id: current.id, title, description },
         context,
       );
       await this.auditLogService.append(
@@ -104,8 +90,6 @@ export class CollectionService {
             toTitle: title,
             fromDescription: current.description,
             toDescription: description,
-            fromAccentColor: current.accentColor,
-            toAccentColor: accentColor,
           },
         },
         context,
@@ -287,20 +271,6 @@ export class CollectionService {
       });
     }
     return normalized;
-  }
-
-  private static normalizeAccentColor(value: string | null | undefined): string | null {
-    if (value === undefined || value === null) {
-      return null;
-    }
-    const normalized: string = value.trim();
-    if (normalized.length === 0) {
-      return null;
-    }
-    if (!COLLECTION_ACCENT_COLOR_PATTERN.test(normalized)) {
-      throw new CollectionInvalidAccentColorException();
-    }
-    return normalized.toUpperCase();
   }
 
   private static assertSameBookSet(

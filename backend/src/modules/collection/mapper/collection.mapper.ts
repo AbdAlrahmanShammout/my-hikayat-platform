@@ -11,7 +11,8 @@ export class CollectionMapper {
       deletedAt: schema.deletedAt,
       title: schema.title,
       description: schema.description ?? null,
-      accentColor: schema.accentColor ?? null,
+      coverStorageKey: schema.coverStorageKey ?? null,
+      coverContentType: schema.coverContentType ?? null,
       items: schema.items?.map((item) => CollectionBookMapper.toEntity(item)),
     });
   }

@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { CollectionPage } from '@/modules/collection/defs/collection-repository.defs';
 import { CollectionResponse } from '@/modules/collection/dto/response/model/collection.response';
 
 export class GetCollectionsResponseDto {
@@ -13,8 +12,8 @@ export class GetCollectionsResponseDto {
   })
   total: number;
 
-  constructor(page: CollectionPage) {
-    this.collections = page.entities.map((entity) => new CollectionResponse(entity));
-    this.total = page.total;
+  constructor(collections: readonly CollectionResponse[], total: number) {
+    this.collections = [...collections];
+    this.total = total;
   }
 }

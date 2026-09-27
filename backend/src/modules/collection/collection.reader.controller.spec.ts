@@ -12,6 +12,7 @@ import {
   BookType,
 } from '@/modules/book/enum/general.enum';
 import { BookCatalogCoverService } from '@/modules/book-asset/book-catalog-cover.service';
+import { CollectionCoverService } from '@/modules/collection/collection-cover.service';
 import { CollectionDiscoveryService } from '@/modules/collection/collection-discovery.service';
 import { CollectionEntity } from '@/modules/collection/entity/collection.entity';
 
@@ -58,8 +59,8 @@ describe('CollectionReaderController', () => {
       getDiscoveryCollectionById: jest.fn(),
     };
     mockBookCatalogCoverService = {
-      toBookResponses: jest.fn(async (books: BookEntity[]) =>
-        books.map((book) => new BookResponse(book, null)),
+      toBookResponses: jest.fn((books: BookEntity[]) =>
+        Promise.resolve(books.map((book) => new BookResponse(book, null))),
       ),
     };
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -68,6 +69,14 @@ describe('CollectionReaderController', () => {
       providers: [
         { provide: CollectionDiscoveryService, useValue: mockCollectionDiscoveryService },
         { provide: BookCatalogCoverService, useValue: mockBookCatalogCoverService },
+        {
+          provide: CollectionCoverService,
+          useValue: {
+            resolveCovers: jest.fn((collections: CollectionEntity[]) =>
+              Promise.resolve(new Map(collections.map((collection) => [collection.id, null]))),
+            ),
+          },
+        },
         JwtAuthGuard,
         RolesGuard,
       ],

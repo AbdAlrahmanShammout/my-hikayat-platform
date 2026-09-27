@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ADMIN_COLLECTION_BOOK_LOOKUP_LIMIT } from '@/config/admin-collection-book-lookup-limit';
 import { useAdminBooksList } from '@/features/books/hooks/use-admin-books-list';
 import { AdminCollectionActions } from '@/features/collections/components/admin-collection-actions';
+import { AdminCollectionCoverForm } from '@/features/collections/components/admin-collection-cover-form';
 import { AdminCollectionEditDialog } from '@/features/collections/components/admin-collection-edit-dialog';
 import { AdminCollectionMembership } from '@/features/collections/components/admin-collection-membership';
 import { useAdminCollection } from '@/features/collections/hooks/use-admin-collection';
@@ -84,6 +85,7 @@ function AdminCollectionDetailContent({
         }
       />
       <div className="space-y-6">
+        <AdminCollectionCoverForm collection={collection} />
         <AdminCollectionMembership
           collection={collection}
           books={booksQuery.data?.books ?? []}

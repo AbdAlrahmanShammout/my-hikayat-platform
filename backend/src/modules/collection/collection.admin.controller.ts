@@ -10,11 +10,15 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -25,7 +29,10 @@ import { LoggedInUser } from '@/common/decorators/requests/logged-in-user.decora
 import { Roles } from '@/common/decorators/route/roles.decorator';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { sourceFileMemoryStorage } from '@/modules/book-asset/source-file-memory-storage';
+import { CollectionCoverService } from '@/modules/collection/collection-cover.service';
 import { CollectionService } from '@/modules/collection/collection.service';
+import { COLLECTION_COVER_UPLOAD } from '@/modules/collection/consts/collection-cover-upload.constant';
 import { CollectionPage } from '@/modules/collection/defs/collection-repository.defs';
 import { AddCollectionBookRequestDto } from '@/modules/collection/dto/request/add-collection-book-request.dto';
 import { CreateCollectionRequestDto } from '@/modules/collection/dto/request/create-collection-request.dto';
@@ -38,13 +45,22 @@ import { CollectionEntity } from '@/modules/collection/entity/collection.entity'
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
 
+type UploadedCollectionCoverFile = {
+  readonly buffer: Buffer;
+  readonly mimetype: string;
+  readonly originalname: string;
+};
+
 @ApiTags('Admin - Collections')
 @Controller('admin/collections')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 @ApiBearerAuth()
 export class CollectionAdminController {
-  constructor(private readonly collectionService: CollectionService) {}
+  constructor(
+    private readonly collectionService: CollectionService,
+    private readonly collectionCoverService: CollectionCoverService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create an editorial collection with an optional ordered book list' })
@@ -57,11 +73,10 @@ export class CollectionAdminController {
     const entity: CollectionEntity = await this.collectionService.createCollection({
       title: body.title,
       description: body.description,
-      accentColor: body.accentColor,
       bookIds: body.bookIds,
       actorUserId: currentUser.id,
     });
-    return new CollectionResponse(entity);
+    return this.collectionCoverService.toCollectionResponse(entity);
   }
 
   @Get()
@@ -74,7 +89,9 @@ export class CollectionAdminController {
       limit: query.limit,
       offset: query.offset,
     });
-    return new GetCollectionsResponseDto(page);
+    const collections: CollectionResponse[] =
+      await this.collectionCoverService.toCollectionResponses(page.entities);
+    return new GetCollectionsResponseDto(collections, page.total);
   }
 
   @Get(':id')
@@ -83,11 +100,11 @@ export class CollectionAdminController {
   @ApiResponse({ status: 200, type: CollectionResponse })
   async getCollection(@Param('id', ParseIntPipe) id: number): Promise<CollectionResponse> {
     const entity: CollectionEntity = await this.collectionService.getCollectionById(id);
-    return new CollectionResponse(entity);
+    return this.collectionCoverService.toCollectionResponse(entity);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update an editorial collection title, description, or accent color' })
+  @ApiOperation({ summary: 'Update an editorial collection title or description' })
   @ApiParam({ name: 'id', type: Number })
   @ApiBody({ type: UpdateCollectionRequestDto })
   @ApiResponse({ status: 200, type: CollectionResponse })
@@ -100,10 +117,63 @@ export class CollectionAdminController {
       id,
       title: body.title,
       description: body.description,
-      accentColor: body.accentColor,
       actorUserId: currentUser.id,
     });
-    return new CollectionResponse(entity);
+    return this.collectionCoverService.toCollectionResponse(entity);
+  }
+
+  @Post(':id/cover')
+  @UseInterceptors(
+    FileInterceptor(COLLECTION_COVER_UPLOAD.fieldName, {
+      storage: sourceFileMemoryStorage,
+      limits: { fileSize: COLLECTION_COVER_UPLOAD.maxBytes },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload a JPEG, PNG, or WebP cover image for a collection' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: [COLLECTION_COVER_UPLOAD.fieldName],
+      properties: {
+        [COLLECTION_COVER_UPLOAD.fieldName]: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, type: CollectionResponse })
+  async uploadCollectionCover(
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: UploadedCollectionCoverFile | undefined,
+    @LoggedInUser() currentUser: UserEntity,
+  ): Promise<CollectionResponse> {
+    const entity: CollectionEntity = await this.collectionCoverService.uploadCover({
+      collectionId: id,
+      actorUserId: currentUser.id,
+      body: file?.buffer ?? Buffer.alloc(0),
+      contentType: file?.mimetype ?? '',
+      originalFileName: file?.originalname,
+    });
+    return this.collectionCoverService.toCollectionResponse(entity);
+  }
+
+  @Delete(':id/cover')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Remove a collection cover image' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: 200, type: CollectionResponse })
+  async clearCollectionCover(
+    @Param('id', ParseIntPipe) id: number,
+    @LoggedInUser() currentUser: UserEntity,
+  ): Promise<CollectionResponse> {
+    const entity: CollectionEntity = await this.collectionCoverService.clearCover({
+      collectionId: id,
+      actorUserId: currentUser.id,
+    });
+    return this.collectionCoverService.toCollectionResponse(entity);
   }
 
   @Delete(':id')
@@ -119,7 +189,7 @@ export class CollectionAdminController {
       id,
       actorUserId: currentUser.id,
     });
-    return new CollectionResponse(entity);
+    return this.collectionCoverService.toCollectionResponse(entity);
   }
 
   @Post(':id/books')
@@ -137,7 +207,7 @@ export class CollectionAdminController {
       bookId: body.bookId,
       actorUserId: currentUser.id,
     });
-    return new CollectionResponse(entity);
+    return this.collectionCoverService.toCollectionResponse(entity);
   }
 
   @Delete(':id/books/:bookId')
@@ -156,7 +226,7 @@ export class CollectionAdminController {
       bookId,
       actorUserId: currentUser.id,
     });
-    return new CollectionResponse(entity);
+    return this.collectionCoverService.toCollectionResponse(entity);
   }
 
   @Post(':id/reorder')
@@ -175,6 +245,6 @@ export class CollectionAdminController {
       bookIds: body.bookIds,
       actorUserId: currentUser.id,
     });
-    return new CollectionResponse(entity);
+    return this.collectionCoverService.toCollectionResponse(entity);
   }
 }

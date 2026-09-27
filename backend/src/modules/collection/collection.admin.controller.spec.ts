@@ -3,7 +3,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { CollectionCoverService } from '@/modules/collection/collection-cover.service';
 import { CollectionService } from '@/modules/collection/collection.service';
+import { CollectionResponse } from '@/modules/collection/dto/response/model/collection.response';
 import { CollectionBookEntity } from '@/modules/collection/entity/collection-book.entity';
 import { CollectionEntity } from '@/modules/collection/entity/collection.entity';
 import { UserEntity } from '@/modules/user/entity/user.entity';
@@ -62,6 +64,10 @@ describe('CollectionAdminController', () => {
     removeCollectionBook: jest.Mock;
     reorderCollectionBooks: jest.Mock;
   };
+  let mockCollectionCoverService: {
+    toCollectionResponse: jest.Mock;
+    toCollectionResponses: jest.Mock;
+  };
 
   beforeEach(async () => {
     mockCollectionService = {
@@ -74,11 +80,20 @@ describe('CollectionAdminController', () => {
       removeCollectionBook: jest.fn(),
       reorderCollectionBooks: jest.fn(),
     };
+    mockCollectionCoverService = {
+      toCollectionResponse: jest.fn((entity: CollectionEntity) =>
+        Promise.resolve(new CollectionResponse(entity)),
+      ),
+      toCollectionResponses: jest.fn((entities: CollectionEntity[]) =>
+        Promise.resolve(entities.map((entity) => new CollectionResponse(entity))),
+      ),
+    };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
       controllers: [CollectionAdminController],
       providers: [
         { provide: CollectionService, useValue: mockCollectionService },
+        { provide: CollectionCoverService, useValue: mockCollectionCoverService },
         JwtAuthGuard,
         RolesGuard,
       ],
@@ -99,7 +114,6 @@ describe('CollectionAdminController', () => {
       expect(mockCollectionService.createCollection).toHaveBeenCalledWith({
         title: 'Harbor Picks',
         description: undefined,
-        accentColor: undefined,
         bookIds: [8, 9],
         actorUserId: 9,
       });
@@ -152,7 +166,6 @@ describe('CollectionAdminController', () => {
         id: 3,
         title: 'Harbor Classics',
         description: undefined,
-        accentColor: undefined,
         actorUserId: 9,
       });
       expect(actualResponse.title).toBe('Harbor Classics');

@@ -295,7 +295,8 @@ export interface components {
     GetBooksResponseDto: { books: Array<components['schemas']['BookResponse']>; total: number };
     CreateBookAssetDeliveryGrantResponseDto: { bookId: number; bookAssetId: number; kind: "source" | "processed" | "preview_image" | "promo_video" | "audio"; url: string; expiresAt: string; contentType: string; byteSize: number; checksumSha256?: unknown | null; isEncrypted: boolean };
     GetCategoriesResponseDto: { categories: Array<components['schemas']['CategoryResponse']>; total: number };
-    CollectionDiscoveryResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string | null; accentColor: string | null; books: Array<components['schemas']['BookResponse']> };
+    CollectionCoverResponse: { url: string; expiresAt: string; contentType: string };
+    CollectionDiscoveryResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string | null; cover: components['schemas']['CollectionCoverResponse'] | null; books: Array<components['schemas']['BookResponse']> };
     GetDiscoveryCollectionsResponseDto: { collections: Array<components['schemas']['CollectionDiscoveryResponse']>; total: number };
     StartReadingSessionRequestDto: { spineIndex?: number; scrollOffset?: number; spreadIndex?: number; pageNumber?: number };
     ReadingSessionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; bookId: number; layoutType: "reflowable" | "fixed_layout"; startedAt: string; endedAt?: unknown | null; activeDurationMs: number; idleDurationMs: number; spineIndex?: unknown | null; scrollOffset?: unknown | null; spreadIndex?: unknown | null; pageNumber?: unknown | null };

@@ -339,9 +339,10 @@ export const DEMO_CATALOG = {
   ],
   collections: [
     {
+      slug: 'bedtime-hikayat',
       title: 'Bedtime Hikayat',
       description: 'Quiet lanterns, palms, and kitchen stories for the last half hour of the day.',
-      accentColor: '#C45C26',
+      cover: { r: 196, g: 92, b: 38 },
       bookSlugs: [
         'the-olive-lantern',
         'the-date-palm-that-would-not-sleep',
@@ -350,9 +351,10 @@ export const DEMO_CATALOG = {
       ],
     },
     {
+      slug: 'first-readers',
       title: 'First Readers',
       description: 'Short chapters and counting pages for children who have just started reading alone.',
-      accentColor: '#D4A458',
+      cover: { r: 212, g: 164, b: 88 },
       bookSlugs: [
         'counting-camels-to-the-sea',
         'amina-and-the-night-market',
@@ -361,9 +363,10 @@ export const DEMO_CATALOG = {
       ],
     },
     {
+      slug: 'stories-of-home',
       title: 'Stories of Home',
       description: 'Markets, groves, ports, and the people who keep the keys.',
-      accentColor: '#2E586E',
+      cover: { r: 46, g: 88, b: 110 },
       bookSlugs: [
         'letters-from-the-old-souq',
         'the-star-map-of-jaffa',
@@ -372,9 +375,10 @@ export const DEMO_CATALOG = {
       ],
     },
     {
+      slug: 'young-explorers',
       title: 'Young Explorers',
       description: 'Longer fiction for readers who want locked rooms, coral, and maps that argue back.',
-      accentColor: '#5C4060',
+      cover: { r: 92, g: 64, b: 96 },
       bookSlugs: [
         'the-secret-library-of-acre',
         'whispers-of-the-red-sea',
