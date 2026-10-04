@@ -27,6 +27,8 @@ export function AdminUserActions({ user, availability }: AdminUserActionsProps):
     <Button
       type="button"
       variant="destructive"
+      size="sm"
+      className="border border-destructive/40 bg-card text-destructive hover:bg-destructive/10"
       disabled={!availability.canDelete || deleteMutation.isPending}
       onClick={() => {
         deleteMutation.reset();
@@ -39,8 +41,11 @@ export function AdminUserActions({ user, availability }: AdminUserActionsProps):
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Danger zone</CardTitle>
-        <CardDescription>Soft-delete removes the account from admin lists.</CardDescription>
+        <CardTitle>Danger Zone</CardTitle>
+        <CardDescription>
+          Deleting this account is a soft-delete. Reading data is retained but the user cannot sign
+          in.
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-2">
         {availability.deleteDisabledReason === null || availability.canDelete ? (

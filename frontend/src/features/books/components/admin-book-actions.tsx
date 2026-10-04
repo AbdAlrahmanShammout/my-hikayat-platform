@@ -1,9 +1,11 @@
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { Check, Eye, Info, RotateCcw, Trash2, X } from 'lucide-react';
 
 import { getUserFacingErrorMessage } from '@/api/get-user-facing-error-message';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -48,28 +50,39 @@ export function AdminBookActions({ book }: AdminBookActionsProps): JSX.Element {
     republishMutation,
     deleteMutation,
   });
+  const guardMessage: string =
+    availability.approveDisabledReason ??
+    'Approve requires processing status to be ready and publishing status to be in review. The backend validates this again on submit.';
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Review actions</CardTitle>
-        <CardDescription>
-          Reject requires a non-empty reason stored on the book_rejected audit record. A 400 or 409
-          from the API is still shown if a rule changed.
-        </CardDescription>
+    <Card className="overflow-hidden rounded-[10px] border-border/70 shadow-xs">
+      <CardHeader className="p-5 pb-4">
+        <div className="flex items-start gap-2">
+          <div className="flex size-7 items-center justify-center rounded-sm bg-secondary">
+            <Check className="size-3.5 text-muted-foreground" aria-hidden="true" />
+          </div>
+          <div>
+            <CardTitle className="font-sans text-sm font-bold">Review Actions</CardTitle>
+            <CardDescription className="text-xs">Publishing status management</CardDescription>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="flex flex-wrap gap-2">
+      <CardContent className="space-y-4 px-5 pb-5 pt-0">
+        <div className="flex flex-wrap gap-2">
         <ActionTrigger
           label="Approve"
+          icon={<Check className="size-3.5" aria-hidden="true" />}
           canRun={availability.canApprove}
           disabledReason={availability.approveDisabledReason}
           isBusy={isBusy}
+          variant="default"
           onClick={() => {
             approveMutation.reset();
             setOpenAction('approve');
           }}
         />
         <ActionTrigger
-          label="Reject"
+          label="Reject..."
+          icon={<X className="size-3.5" aria-hidden="true" />}
           canRun={availability.canReject}
           disabledReason={availability.rejectDisabledReason}
           isBusy={isBusy}
@@ -80,6 +93,7 @@ export function AdminBookActions({ book }: AdminBookActionsProps): JSX.Element {
         />
         <ActionTrigger
           label="Unpublish"
+          icon={<Eye className="size-3.5" aria-hidden="true" />}
           canRun={availability.canUnpublish}
           disabledReason={availability.unpublishDisabledReason}
           isBusy={isBusy}
@@ -90,6 +104,7 @@ export function AdminBookActions({ book }: AdminBookActionsProps): JSX.Element {
         />
         <ActionTrigger
           label="Republish"
+          icon={<RotateCcw className="size-3.5" aria-hidden="true" />}
           canRun={availability.canRepublish}
           disabledReason={availability.republishDisabledReason}
           isBusy={isBusy}
@@ -100,6 +115,7 @@ export function AdminBookActions({ book }: AdminBookActionsProps): JSX.Element {
         />
         <ActionTrigger
           label="Delete"
+          icon={<Trash2 className="size-3.5" aria-hidden="true" />}
           canRun={true}
           disabledReason={null}
           isBusy={isBusy}
@@ -109,6 +125,11 @@ export function AdminBookActions({ book }: AdminBookActionsProps): JSX.Element {
             setOpenAction('delete');
           }}
         />
+        </div>
+        <Alert className="border-primary/30 bg-accent text-accent-foreground">
+          <Info className="absolute left-3 top-3 size-4" aria-hidden="true" />
+          <AlertDescription className="pl-5 text-xs leading-5">{guardMessage}</AlertDescription>
+        </Alert>
         {openAction === 'reject' ? (
           <AdminBookRejectDialog
             open={true}
@@ -162,6 +183,7 @@ export function AdminBookActions({ book }: AdminBookActionsProps): JSX.Element {
 
 function ActionTrigger({
   label,
+  icon,
   canRun,
   disabledReason,
   isBusy,
@@ -169,14 +191,27 @@ function ActionTrigger({
   onClick,
 }: {
   readonly label: string;
+  readonly icon?: JSX.Element;
   readonly canRun: boolean;
   readonly disabledReason: string | null;
   readonly isBusy: boolean;
-  readonly variant?: 'outline' | 'destructive';
+  readonly variant?: 'default' | 'outline' | 'destructive';
   readonly onClick: () => void;
 }): JSX.Element {
   const button = (
-    <Button type="button" variant={variant} disabled={!canRun || isBusy} onClick={onClick}>
+    <Button
+      type="button"
+      variant={variant}
+      size="sm"
+      className={
+        variant === 'destructive'
+          ? 'border border-destructive/40 bg-card text-destructive hover:bg-destructive/10'
+          : undefined
+      }
+      disabled={!canRun || isBusy}
+      onClick={onClick}
+    >
+      {icon}
       {label}
     </Button>
   );

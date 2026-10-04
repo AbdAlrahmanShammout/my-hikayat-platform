@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Check, Info, Pencil, X } from 'lucide-react';
 import type { JSX } from 'react';
 import { useForm, type UseFormSetError } from 'react-hook-form';
 
@@ -26,6 +27,7 @@ import {
   type AdminBookEditFormValues,
 } from '@/features/books/schemas/admin-book-edit-form.schema';
 import type { components } from '@/generated/admin';
+import { cn } from '@/lib/cn';
 
 const BOOK_TYPE_OPTIONS = ['standard_chapter', 'picture_book', 'illustrated_chapter'] as const;
 
@@ -56,14 +58,26 @@ export function AdminBookEditForm({
   });
   const rootMessage: string | undefined = form.formState.errors.root?.message;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Metadata</CardTitle>
-        <CardDescription>
-          Publishing status is not changed by this form. The backend remains authoritative.
-        </CardDescription>
+    <Card className="overflow-hidden rounded-[10px] border-border/70 shadow-xs">
+      <CardHeader className="p-5 pb-4">
+        <div className="flex items-start gap-2">
+          <div className="flex size-7 items-center justify-center rounded-sm bg-secondary">
+            <Pencil className="size-3.5 text-muted-foreground" aria-hidden="true" />
+          </div>
+          <div>
+            <CardTitle className="font-sans text-sm font-bold">Edit Metadata</CardTitle>
+            <CardDescription className="text-xs">Does not change publishing status</CardDescription>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-5 pb-5 pt-0">
+        <Alert className="mb-4 border-primary/30 bg-accent text-accent-foreground">
+          <Info className="absolute left-3 top-3 size-4" aria-hidden="true" />
+          <AlertDescription className="pl-5 text-xs leading-5">
+            Admin cannot upload source files, change layout type, or set processing status. Those
+            belong to the author book flow.
+          </AlertDescription>
+        </Alert>
         <Form {...form}>
           <form
             className="flex flex-col gap-4"
@@ -82,66 +96,75 @@ export function AdminBookEditForm({
                 <AlertDescription>Metadata saved.</AlertDescription>
               </Alert>
             ) : null}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input disabled={updateMutation.isPending} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea disabled={updateMutation.isPending} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="bookType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Book type</FormLabel>
-                  <FormControl>
-                    <Select disabled={updateMutation.isPending} {...field}>
-                      {BOOK_TYPE_OPTIONS.map((bookType) => (
-                        <option key={bookType} value={bookType}>
-                          {formatBookEnumLabel(bookType)}
-                        </option>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input disabled={updateMutation.isPending} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="bookType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Book type</FormLabel>
+                      <FormControl>
+                        <Select disabled={updateMutation.isPending} {...field}>
+                          {BOOK_TYPE_OPTIONS.map((bookType) => (
+                            <option key={bookType} value={bookType}>
+                              {formatBookEnumLabel(bookType)}
+                            </option>
+                          ))}
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        className="min-h-[112px]"
+                        placeholder="Book description..."
+                        disabled={updateMutation.isPending}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             <FormField
               control={form.control}
               name="categoryIds"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Categories</FormLabel>
-                  <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="flex min-h-10 flex-wrap gap-1.5 rounded-sm border border-input bg-background px-2.5 py-2">
                     {isCategoriesPending ? (
                       <p className="text-sm text-muted-foreground">Loading categories…</p>
                     ) : (
                       categoryOptions.map((category) => (
-                        <label key={category.id} className="flex items-center gap-2 text-sm">
+                        <label key={category.id} className="inline-flex cursor-pointer items-center">
                           <input
                             type="checkbox"
-                            className="size-4 rounded border-input"
+                            className="sr-only"
                             checked={field.value.includes(category.id)}
                             disabled={updateMutation.isPending}
                             onChange={(event) => {
@@ -150,18 +173,51 @@ export function AdminBookEditForm({
                               );
                             }}
                           />
-                          {category.name}
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs',
+                              field.value.includes(category.id)
+                                ? 'bg-accent text-primary'
+                                : 'bg-secondary text-muted-foreground',
+                            )}
+                          >
+                            {category.name}
+                            {field.value.includes(category.id) ? (
+                              <X className="size-2.5" aria-hidden="true" />
+                            ) : null}
+                          </span>
                         </label>
                       ))
                     )}
+                    {!isCategoriesPending ? (
+                      <span className="self-center text-xs text-muted-foreground">+ Add category</span>
+                    ) : null}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Select from the platform category list. Category weight affects revenue
+                    calculation.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? 'Saving…' : 'Save metadata'}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="submit" size="sm" disabled={updateMutation.isPending}>
+                <Check className="size-3.5" aria-hidden="true" />
+                {updateMutation.isPending ? 'Saving...' : 'Save metadata'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={updateMutation.isPending}
+                onClick={() => {
+                  form.reset();
+                }}
+              >
+                Discard
+              </Button>
+            </div>
           </form>
         </Form>
       </CardContent>

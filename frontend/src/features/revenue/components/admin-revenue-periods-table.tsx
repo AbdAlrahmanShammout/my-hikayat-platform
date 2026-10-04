@@ -44,7 +44,7 @@ export function AdminRevenuePeriodsTable({
             <TableCell>{formatWireInstant(period.startsAt)}</TableCell>
             <TableCell>{formatWireInstant(period.endsAt)}</TableCell>
             <TableCell>
-              <Badge variant={period.status === 'open' ? 'default' : 'outline'}>
+              <Badge variant={period.status === 'open' ? 'success' : 'secondary'}>
                 {formatRevenuePeriodStatus(period.status)}
               </Badge>
             </TableCell>

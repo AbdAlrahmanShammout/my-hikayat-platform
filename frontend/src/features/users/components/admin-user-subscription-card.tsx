@@ -54,12 +54,12 @@ export function AdminUserSubscriptionCard({
         <dl className="grid gap-4 sm:grid-cols-2">
           <SummaryItem label="Plan">{planName}</SummaryItem>
           <SummaryItem label="Access">
-            <Badge variant={subscription.readingAccessState === 'paid' ? 'default' : 'secondary'}>
+            <Badge variant={subscription.readingAccessState === 'paid' ? 'success' : 'secondary'}>
               {formatReadingAccessState(subscription.readingAccessState)}
             </Badge>
           </SummaryItem>
           <SummaryItem label="Status">
-            <Badge variant={subscription.status === 'active' ? 'default' : 'outline'}>
+            <Badge variant={subscription.status === 'active' ? 'success' : 'destructive'}>
               {formatSubscriptionStatusLabel(subscription.status)}
             </Badge>
           </SummaryItem>

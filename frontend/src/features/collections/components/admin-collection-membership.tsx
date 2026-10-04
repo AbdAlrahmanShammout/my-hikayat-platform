@@ -5,7 +5,6 @@ import { Link } from 'react-router';
 import { getUserFacingErrorMessage } from '@/api/get-user-facing-error-message';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -16,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { AdminBookStatusBadge } from '@/features/books/components/admin-book-status-badge';
 import { AdminAddCollectionBookDialog } from '@/features/collections/components/admin-add-collection-book-dialog';
 import { useRemoveAdminCollectionBook } from '@/features/collections/hooks/use-remove-admin-collection-book';
 import { useReorderAdminCollectionBooks } from '@/features/collections/hooks/use-reorder-admin-collection-books';
@@ -89,9 +89,7 @@ export function AdminCollectionMembership({
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">
-                      {findPublishingStatus(item.bookId, books) ?? 'Unknown'}
-                    </Badge>
+                    <AdminBookStatusBadge value={findPublishingStatus(item.bookId, books) ?? 'unknown'} />
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">

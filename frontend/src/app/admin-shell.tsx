@@ -1,25 +1,19 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ChevronDown, Menu, X } from 'lucide-react';
+import { LogOut, Menu, X } from 'lucide-react';
 import type { JSX } from 'react';
-import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router';
+import { useState } from 'react';
+import { NavLink, Outlet } from 'react-router';
 
-import {
-  ADMIN_NAV_ITEMS,
-  type AdminNavGroupItem,
-  type AdminNavLinkItem,
-} from '@/app/admin-nav-items';
+import { ADMIN_NAV_ITEMS, type AdminNavLinkItem } from '@/app/admin-nav-items';
 import { BrandLogo } from '@/components/brand-logo';
-import { DashboardBrand } from '@/components/layout/dashboard-brand';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { PRODUCT_NAME } from '@/config/product-name';
 import { useCurrentUser } from '@/features/auth/hooks/use-current-user';
 import { useSignOut } from '@/features/auth/hooks/use-sign-out';
-import { AdminHeaderSearch } from '@/features/search/components/admin-header-search';
 import { cn } from '@/lib/cn';
 
 /**
- * Protected admin chrome: sidebar on desktop, drawer on small screens.
+ * Protected admin chrome matching the Direction C library catalog sidebar.
  */
 export function AdminShell(): JSX.Element {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false);
@@ -28,17 +22,16 @@ export function AdminShell(): JSX.Element {
   };
   return (
     <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex md:flex-col">
+      <aside className="fixed inset-y-0 left-0 hidden w-60 border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex md:flex-col">
         <AdminSidebar onNavigate={closeMobileNav} />
       </aside>
       <MobileAdminDrawer isOpen={isMobileNavOpen} onClose={closeMobileNav} />
-      <div className="flex min-h-screen flex-col md:pl-64">
-        <header className="flex h-16 items-center justify-between gap-4 border-b border-border bg-card px-4 md:px-8">
+      <div className="admin-workspace flex min-h-screen flex-col md:pl-60">
+        <header className="flex h-14 items-center border-b border-border bg-card px-4 md:hidden">
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="md:hidden"
             aria-label="Open navigation"
             onClick={() => {
               setIsMobileNavOpen(true);
@@ -46,12 +39,8 @@ export function AdminShell(): JSX.Element {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <BrandLogo className="h-8 w-8 rounded-lg" />
-          <p className="hidden text-sm font-medium md:block">Admin</p>
-          <AdminHeaderSearch />
-          <AdminSessionActions />
         </header>
-        <main className="flex-1 p-4 md:p-8">
+        <main className="flex-1 p-4 md:p-6">
           <Outlet />
         </main>
       </div>
@@ -62,82 +51,30 @@ export function AdminShell(): JSX.Element {
 function AdminSidebar({ onNavigate }: { readonly onNavigate: () => void }): JSX.Element {
   return (
     <div className="flex h-full flex-col">
-      <DashboardBrand subtitle="Admin dashboard" />
-      <Separator className="bg-sidebar-border" />
-      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-4" aria-label="Admin">
-        {ADMIN_NAV_ITEMS.map((item) =>
-          item.kind === 'group' ? (
-            <AdminNavGroup key={item.label} item={item} onNavigate={onNavigate} />
+      <div className="flex items-center gap-2.5 border-b border-sidebar-border px-[18px] py-4">
+        <BrandLogo className="h-7 w-7 shrink-0 rounded-md" />
+        <div className="min-w-0">
+          <p className="truncate font-display text-[13px] font-semibold text-sidebar-foreground">{PRODUCT_NAME}</p>
+          <p className="text-[10px] tracking-wide text-sidebar-muted uppercase">Admin</p>
+        </div>
+      </div>
+      <nav className="flex flex-1 flex-col overflow-y-auto py-2" aria-label="Admin">
+        {ADMIN_NAV_ITEMS.map((entry) =>
+          entry.kind === 'group' ? (
+            <div key={entry.item.label} className="mt-2.5">
+              <p className="mx-[18px] mb-1 text-[9px] font-bold tracking-[0.1em] text-sidebar-group uppercase">
+                {entry.item.label}
+              </p>
+              {entry.item.children.map((item) => (
+                <AdminNavLink key={item.to} item={item} onNavigate={onNavigate} />
+              ))}
+            </div>
           ) : (
-            <AdminNavLink key={item.to} item={item} onNavigate={onNavigate} />
+            <AdminNavLink key={entry.item.to} item={entry.item} onNavigate={onNavigate} />
           ),
         )}
       </nav>
-    </div>
-  );
-}
-
-function AdminNavGroup({
-  item,
-  onNavigate,
-}: {
-  readonly item: AdminNavGroupItem;
-  readonly onNavigate: () => void;
-}): JSX.Element {
-  const location = useLocation();
-  const isSectionActive: boolean = item.activePathPrefixes.some((prefix: string) =>
-    location.pathname.startsWith(prefix),
-  );
-  const [isOpen, setIsOpen] = useState<boolean>(isSectionActive);
-  useEffect(() => {
-    if (isSectionActive) {
-      setIsOpen(true);
-    }
-  }, [isSectionActive]);
-  const Icon = item.icon;
-  return (
-    <div>
-      <button
-        type="button"
-        className={cn(
-          'flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-          isSectionActive
-            ? 'text-sidebar-foreground'
-            : 'text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground',
-        )}
-        aria-expanded={isOpen}
-        onClick={() => {
-          setIsOpen((current: boolean) => !current);
-        }}
-      >
-        <Icon className="h-4 w-4" aria-hidden="true" />
-        <span className="flex-1 text-left">{item.label}</span>
-        <ChevronDown
-          className={cn('h-4 w-4 transition-transform', isOpen ? 'rotate-180' : undefined)}
-          aria-hidden="true"
-        />
-      </button>
-      {isOpen ? (
-        <div className="mt-1 flex flex-col gap-1 pl-7">
-          {item.children.map((child) => (
-            <NavLink
-              key={child.to}
-              to={child.to}
-              onClick={onNavigate}
-              className={({ isActive }) =>
-                cn(
-                  'rounded-md px-3 py-2 text-sm transition-colors',
-                  isActive
-                    ? 'bg-sidebar-accent text-sidebar-foreground'
-                    : 'text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground',
-                )
-              }
-            >
-              {child.label}
-            </NavLink>
-          ))}
-        </div>
-      ) : null}
+      <AdminSidebarFooter />
     </div>
   );
 }
@@ -153,20 +90,43 @@ function AdminNavLink({
   return (
     <NavLink
       to={item.to}
-      end={item.to === '/admin'}
+      end={item.end === true}
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(
-          'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+          'flex items-center gap-2 border-l-[3px] px-[18px] py-[7px] text-[13px] leading-snug',
           isActive
-            ? 'bg-sidebar-accent text-sidebar-foreground'
-            : 'text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground',
+            ? 'border-sidebar-indicator bg-sidebar-accent font-semibold text-sidebar-foreground'
+            : 'border-transparent text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground',
         )
       }
     >
-      <Icon className="h-4 w-4" aria-hidden="true" />
+      <Icon className="h-[15px] w-[15px] shrink-0" aria-hidden="true" />
       {item.label}
     </NavLink>
+  );
+}
+
+function AdminSidebarFooter(): JSX.Element {
+  const currentUserQuery = useCurrentUser();
+  const signOut = useSignOut();
+  const email: string = currentUserQuery.data?.email ?? '';
+  const initial: string = email.slice(0, 1).toUpperCase() || 'A';
+  return (
+    <div className="flex items-center gap-2 border-t border-sidebar-border px-[18px] py-3">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-[11px] font-bold text-sidebar-foreground">
+        {initial}
+      </div>
+      <p className="min-w-0 flex-1 truncate text-[11px] font-semibold text-sidebar-foreground">{email}</p>
+      <button
+        type="button"
+        className="shrink-0 text-sidebar-muted hover:text-sidebar-foreground"
+        aria-label="Sign out"
+        onClick={signOut}
+      >
+        <LogOut className="h-[15px] w-[15px]" aria-hidden="true" />
+      </button>
+    </div>
   );
 }
 
@@ -194,10 +154,10 @@ function MobileAdminDrawer({
             onClick={onClose}
           />
           <motion.aside
-            className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-sidebar text-sidebar-foreground md:hidden"
-            initial={{ x: -256 }}
+            className="fixed inset-y-0 left-0 z-50 flex w-60 flex-col bg-sidebar text-sidebar-foreground md:hidden"
+            initial={{ x: -240 }}
             animate={{ x: 0 }}
-            exit={{ x: -256 }}
+            exit={{ x: -240 }}
             transition={{ duration }}
           >
             <div className="flex justify-end p-2">
@@ -216,21 +176,5 @@ function MobileAdminDrawer({
         </>
       ) : null}
     </AnimatePresence>
-  );
-}
-
-function AdminSessionActions(): JSX.Element {
-  const currentUserQuery = useCurrentUser();
-  const signOut = useSignOut();
-  const email: string = currentUserQuery.data?.email ?? '';
-  return (
-    <div className="ml-auto flex items-center gap-3">
-      {email !== '' ? (
-        <p className="hidden max-w-48 truncate text-sm text-muted-foreground sm:block">{email}</p>
-      ) : null}
-      <Button type="button" variant="outline" size="sm" onClick={signOut}>
-        Sign out
-      </Button>
-    </div>
   );
 }

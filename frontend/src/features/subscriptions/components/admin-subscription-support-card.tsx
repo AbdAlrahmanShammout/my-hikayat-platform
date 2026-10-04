@@ -71,7 +71,9 @@ export function AdminSubscriptionSupportCard({
           <Item label="Trial start">{formatOptionalInstant(support.trialStartedAt)}</Item>
           <Item label="Trial end">{formatOptionalInstant(support.trialEndsAt)}</Item>
           <Item label="Reading access">
-            <Badge variant="secondary">{formatReadingAccessState(support.readingAccessState)}</Badge>
+            <Badge variant={getReadingAccessVariant(support.readingAccessState)}>
+              {formatReadingAccessState(support.readingAccessState)}
+            </Badge>
           </Item>
           <Item label="Access explanation">
             {ACCESS_EXPLANATIONS[support.accessExplanationCode] ?? support.accessExplanationCode}
@@ -145,4 +147,16 @@ function Item({
 
 function formatOptionalInstant(value: string | null): string {
   return hasWireInstant(value) ? formatWireInstant(value) : 'Not set';
+}
+
+function getReadingAccessVariant(
+  state: string,
+): 'success' | 'warning' | 'secondary' {
+  if (state === 'paid') {
+    return 'success';
+  }
+  if (state === 'trial') {
+    return 'warning';
+  }
+  return 'secondary';
 }

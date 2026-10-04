@@ -100,7 +100,9 @@ function InvitationRow({
         {invitation.email}
       </TableCell>
       <TableCell>
-        <Badge variant="secondary">{formatInvitationStatusLabel(displayStatus(invitation))}</Badge>
+        <Badge variant={getInvitationStatusVariant(displayStatus(invitation))}>
+          {formatInvitationStatusLabel(displayStatus(invitation))}
+        </Badge>
       </TableCell>
       <TableCell>{formatWireInstant(invitation.expiresAt)}</TableCell>
       <TableCell>
@@ -145,6 +147,21 @@ function displayStatus(invitation: AdminInvitationRecord): string {
     return 'expired';
   }
   return invitation.status;
+}
+
+function getInvitationStatusVariant(
+  status: string,
+): 'success' | 'warning' | 'destructive' | 'secondary' {
+  if (status === 'accepted') {
+    return 'success';
+  }
+  if (status === 'pending') {
+    return 'warning';
+  }
+  if (status === 'revoked' || status === 'expired') {
+    return 'destructive';
+  }
+  return 'secondary';
 }
 
 function isExpired(expiresAt: string): boolean {

@@ -36,14 +36,14 @@ export function AdminBookRejectionHistoryPanel({
     setSearchParams(buildRejectionHistorySearchParams(nextSearch), { replace: true });
   };
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Rejection history</CardTitle>
-        <CardDescription>
-          book_rejected audit rows for this book. There is no separate rejection table.
+    <Card className="overflow-hidden rounded-[10px] border-border/70 shadow-xs">
+      <CardHeader className="border-b border-border/60 px-5 py-4">
+        <CardTitle className="font-sans text-sm font-bold">Rejection History</CardTitle>
+        <CardDescription className="text-xs">
+          Read-only source: audit log action book_rejected.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-5">
         {renderRejectionHistoryBody(historyQuery, listSearch, replaceSearch)}
       </CardContent>
     </Card>

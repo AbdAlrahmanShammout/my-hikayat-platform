@@ -5,7 +5,7 @@ import { cn } from '@/lib/cn';
 
 function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>): JSX.Element {
   return (
-    <div className="relative w-full overflow-x-auto">
+    <div className="data-table-scroll relative w-full overflow-x-auto">
       <table className={cn('w-full caption-bottom text-sm', className)} {...props} />
     </div>
   );

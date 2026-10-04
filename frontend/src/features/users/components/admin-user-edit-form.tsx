@@ -52,7 +52,7 @@ export function AdminUserEditForm({ user, availability }: AdminUserEditFormProps
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Role and publisher</CardTitle>
+        <CardTitle>Role and publisher settings</CardTitle>
         <CardDescription>
           Reader cannot be a publisher. Author is always a publisher. Admin is granted by
           invitation, not from this form. The backend still enforces this.
@@ -142,9 +142,22 @@ export function AdminUserEditForm({ user, availability }: AdminUserEditFormProps
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={isFormDisabled}>
-              {updateMutation.isPending ? 'Saving…' : 'Save user'}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="submit" size="sm" disabled={isFormDisabled}>
+                {updateMutation.isPending ? 'Saving...' : 'Save user'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={updateMutation.isPending}
+                onClick={() => {
+                  form.reset();
+                }}
+              >
+                Discard
+              </Button>
+            </div>
           </form>
         </Form>
       </CardContent>

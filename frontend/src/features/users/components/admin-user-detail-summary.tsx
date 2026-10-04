@@ -22,8 +22,9 @@ export function AdminUserDetailSummary({ user }: AdminUserDetailSummaryProps): J
       <CardContent>
         <dl className="grid gap-4 sm:grid-cols-2">
           <SummaryItem label="Email">{user.email}</SummaryItem>
+          <SummaryItem label="Display name">{user.displayName ?? 'Not set'}</SummaryItem>
           <SummaryItem label="Role">
-            <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+            <Badge variant={user.role === 'admin' ? 'info' : 'secondary'}>
               {formatUserRoleLabel(user.role)}
             </Badge>
           </SummaryItem>

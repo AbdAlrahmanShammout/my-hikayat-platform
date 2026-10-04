@@ -82,7 +82,7 @@ function MemberPlanCell({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span>{plan.name}</span>
-      <Badge variant={isPaid ? 'default' : 'secondary'}>{isPaid ? 'Paid' : 'Free'}</Badge>
+      <Badge variant={isPaid ? 'success' : 'secondary'}>{isPaid ? 'Paid' : 'Free'}</Badge>
     </div>
   );
 }

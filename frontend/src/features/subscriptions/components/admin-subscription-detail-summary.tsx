@@ -35,7 +35,7 @@ export function AdminSubscriptionDetailSummary({
             {formatSubscriptionEnumLabel(subscription.plan?.kind)}
           </SummaryItem>
           <SummaryItem label="Status">
-            <Badge variant={subscription.status === 'active' ? 'default' : 'outline'}>
+            <Badge variant={subscription.status === 'active' ? 'success' : 'destructive'}>
               {formatSubscriptionEnumLabel(subscription.status)}
             </Badge>
           </SummaryItem>

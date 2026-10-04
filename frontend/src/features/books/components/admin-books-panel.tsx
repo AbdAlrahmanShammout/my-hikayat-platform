@@ -48,14 +48,17 @@ export function AdminBooksPanel({ ownerId }: AdminBooksPanelProps): JSX.Element 
   const replaceSearch = (nextSearch: AdminBooksListSearch): void => {
     setSearchParams(buildAdminBooksListSearchParams(searchParams, nextSearch), { replace: true });
   };
+  const recordCount: number | undefined = booksQuery.data?.total;
   return (
-    <div className="space-y-6">
-      {ownerId !== undefined ? (
-        <p className="text-sm text-muted-foreground">
+    <div>
+      {ownerId === undefined ? (
+        <CatalogBooksHeading total={recordCount} />
+      ) : (
+        <p className="mb-4 text-sm text-muted-foreground">
           Every book this publisher account owns, including published titles and books still in
-          progress. EPUB creator and EPUB publisher below are metadata, not this account.
+          progress. EPUB creator and EPUB publisher stay on the book record.
         </p>
-      ) : null}
+      )}
       <AdminBooksFilters
         key={serializeSearch(listSearch)}
         value={listSearch}
@@ -68,6 +71,16 @@ export function AdminBooksPanel({ ownerId }: AdminBooksPanelProps): JSX.Element 
         }}
       />
       {renderBooksPanelBody(booksQuery, listSearch, replaceSearch, ownerId === undefined)}
+    </div>
+  );
+}
+
+function CatalogBooksHeading({ total }: { readonly total: number | undefined }): JSX.Element {
+  const subtitle: string = total === undefined ? 'Catalog records' : `${total} catalog records`;
+  return (
+    <div className="-mx-4 -mt-4 mb-3.5 flex h-[52px] items-center border-b border-border bg-card px-6 md:-mx-6 md:-mt-6">
+      <h1 className="font-display text-base font-semibold text-foreground">Books</h1>
+      <span className="ml-1.5 text-xs text-muted-foreground">— {subtitle}</span>
     </div>
   );
 }

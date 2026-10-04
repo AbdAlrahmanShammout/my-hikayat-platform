@@ -28,7 +28,7 @@ export function AdminRevenuePeriodDetailSummary({
       <CardContent>
         <dl className="grid gap-4 sm:grid-cols-2">
           <SummaryItem label="Status">
-            <Badge variant={period.status === 'open' ? 'default' : 'outline'}>
+            <Badge variant={period.status === 'open' ? 'success' : 'secondary'}>
               {formatRevenuePeriodStatus(period.status)}
             </Badge>
           </SummaryItem>

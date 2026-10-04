@@ -89,7 +89,7 @@ function KpiCardValue({
   const displayValue: string = formattedValue ?? displayTotal.toLocaleString();
   return (
     <div>
-      <p className="text-3xl font-semibold tracking-tight">{displayValue}</p>
+      <p className="font-display text-3xl font-semibold tracking-tight tabular-nums">{displayValue}</p>
       {displayTotal === 0 ? (
         <p className="mt-1 text-sm text-muted-foreground">{emptyLabel}</p>
       ) : null}

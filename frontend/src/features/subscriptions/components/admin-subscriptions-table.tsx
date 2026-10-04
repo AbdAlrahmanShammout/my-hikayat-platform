@@ -44,7 +44,7 @@ export function AdminSubscriptionsTable({
           <TableRow key={subscription.id}>
             <TableCell className="font-medium">{formatSubscriptionPlanLabel(subscription)}</TableCell>
             <TableCell>
-              <Badge variant={subscription.status === 'active' ? 'default' : 'outline'}>
+              <Badge variant={subscription.status === 'active' ? 'success' : 'destructive'}>
                 {formatSubscriptionEnumLabel(subscription.status)}
               </Badge>
             </TableCell>

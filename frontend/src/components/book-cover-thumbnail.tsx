@@ -4,7 +4,7 @@ import { useEffect, useState, type JSX } from 'react';
 import { cn } from '@/lib/cn';
 import { resolveBookCoverUrl } from '@/lib/resolve-book-cover-url';
 
-type BookCoverThumbnailSize = 'sm' | 'lg';
+type BookCoverThumbnailSize = 'row' | 'sm' | 'lg' | 'detail';
 
 type BookCoverThumbnailProps = {
   readonly title: string;
@@ -13,13 +13,17 @@ type BookCoverThumbnailProps = {
 };
 
 const COVER_FRAME_CLASS: Record<BookCoverThumbnailSize, string> = {
+  row: 'h-10 w-7 rounded-[3px] border-0',
   sm: 'h-14 w-10',
   lg: 'h-36 w-24',
+  detail: 'aspect-[2/3] h-auto w-full rounded-md',
 };
 
 const COVER_ICON_SIZE: Record<BookCoverThumbnailSize, number> = {
+  row: 12,
   sm: 16,
   lg: 28,
+  detail: 36,
 };
 
 /**

@@ -69,19 +69,21 @@ function AdminBookDetailContent({ bookId }: { readonly bookId: number }): JSX.El
     <>
       <PageHeader
         title={book.title}
-        description="Review publishing status, metadata, and catalog visibility."
+        breadcrumbs={[{ label: 'Books', to: '/admin/books' }]}
         actions={backToBooksAction()}
       />
-      <div className="space-y-6">
-        <AdminBookActions book={book} />
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="space-y-4">
+          <AdminBookActions book={book} />
+          <AdminBookEditForm
+            key={`${book.id}-${book.updatedAt}`}
+            book={book}
+            categories={categoriesQuery.data?.categories ?? []}
+            isCategoriesPending={categoriesQuery.isPending}
+          />
+          <AdminBookRejectionHistoryPanel bookId={book.id} />
+        </div>
         <AdminBookDetailSummary book={book} />
-        <AdminBookRejectionHistoryPanel bookId={book.id} />
-        <AdminBookEditForm
-          key={`${book.id}-${book.updatedAt}`}
-          book={book}
-          categories={categoriesQuery.data?.categories ?? []}
-          isCategoriesPending={categoriesQuery.isPending}
-        />
       </div>
     </>
   );
@@ -89,8 +91,8 @@ function AdminBookDetailContent({ bookId }: { readonly bookId: number }): JSX.El
 
 function backToBooksAction(): JSX.Element {
   return (
-    <Button asChild variant="outline">
-      <Link to="/admin/books">Back to books</Link>
+    <Button asChild variant="outline" size="sm">
+      <Link to="/admin/books">Back to Books</Link>
     </Button>
   );
 }

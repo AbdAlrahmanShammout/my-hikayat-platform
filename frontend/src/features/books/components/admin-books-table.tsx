@@ -1,3 +1,4 @@
+import { Eye } from 'lucide-react';
 import type { JSX } from 'react';
 import { Link } from 'react-router';
 
@@ -12,11 +13,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { AdminBookStatusBadge } from '@/features/books/components/admin-book-status-badge';
-import { BookCategoryChips } from '@/features/books/components/book-category-chips';
 import { formatBookEnumLabel } from '@/features/books/lib/format-book-enum-label';
-import { formatBookOwnerLabel } from '@/features/books/lib/format-book-owner-label';
 import type { components } from '@/generated/admin';
-import { formatWireInstant } from '@/lib/format-wire-instant';
 import { hasWireInstant } from '@/lib/has-wire-instant';
 
 type AdminBooksTableProps = {
@@ -32,35 +30,28 @@ export function AdminBooksTable({ books, showOwner = true }: AdminBooksTableProp
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="sticky left-0 z-10 bg-card">Title</TableHead>
-          <TableHead>EPUB creator</TableHead>
-          <TableHead>EPUB publisher</TableHead>
-          <TableHead>Publishing</TableHead>
-          <TableHead>Processing</TableHead>
-          <TableHead>Layout</TableHead>
-          <TableHead>Type</TableHead>
-          {showOwner ? <TableHead>Publisher account</TableHead> : null}
-          <TableHead>Categories</TableHead>
-          <TableHead>Published</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+          <TableHead className="w-11" />
+          <TableHead className="text-[11px] tracking-wide uppercase">Title</TableHead>
+          <TableHead className="text-[11px] tracking-wide uppercase">Status</TableHead>
+          <TableHead className="text-[11px] tracking-wide uppercase">Processing</TableHead>
+          <TableHead className="text-[11px] tracking-wide uppercase">Layout</TableHead>
+          <TableHead className="text-[11px] tracking-wide uppercase">Type</TableHead>
+          {showOwner ? <TableHead className="text-[11px] tracking-wide uppercase">Owner</TableHead> : null}
+          <TableHead className="text-[11px] tracking-wide uppercase">Categories</TableHead>
+          <TableHead className="text-[11px] tracking-wide uppercase">Published</TableHead>
+          <TableHead className="w-16" />
         </TableRow>
       </TableHeader>
       <TableBody>
         {books.map((book) => (
           <TableRow key={book.id}>
-            <TableCell className="sticky left-0 z-10 bg-card">
-              <div className="flex items-center gap-4">
-                <BookCoverThumbnail title={book.title} cover={book.cover} />
-                <span className="max-w-56 truncate font-medium" title={book.title}>
-                  {book.title}
-                </span>
-              </div>
+            <TableCell>
+              <BookCoverThumbnail title={book.title} cover={book.cover} size="row" />
             </TableCell>
             <TableCell>
-              <TruncatedText value={book.authorName} emptyLabel="No EPUB creator" />
-            </TableCell>
-            <TableCell>
-              <TruncatedText value={book.publisherName} emptyLabel="No EPUB publisher" />
+              <span className="block max-w-56 truncate text-[13px] font-medium" title={book.title}>
+                {book.title}
+              </span>
             </TableCell>
             <TableCell>
               <AdminBookStatusBadge value={book.publishingStatus} />
@@ -68,27 +59,34 @@ export function AdminBooksTable({ books, showOwner = true }: AdminBooksTableProp
             <TableCell>
               <AdminBookStatusBadge value={book.processingStatus} />
             </TableCell>
-            <TableCell>{formatBookEnumLabel(book.layoutType)}</TableCell>
-            <TableCell>{formatBookEnumLabel(book.bookType)}</TableCell>
+            <TableCell className="text-[11px] text-muted-foreground">
+              {formatBookEnumLabel(book.layoutType)}
+            </TableCell>
+            <TableCell className="text-[11px] text-muted-foreground">
+              {formatBookEnumLabel(book.bookType)}
+            </TableCell>
             {showOwner ? (
               <TableCell>
                 <Link
-                  className="underline-offset-4 hover:underline"
+                  className="block max-w-36 truncate text-[11px] text-primary underline"
                   to={`/admin/users/${book.ownerId}`}
                 >
-                  {formatBookOwnerLabel(book)}
+                  {formatOwnerHandle(book)}
                 </Link>
               </TableCell>
             ) : null}
-            <TableCell>
-              <BookCategoryChips categories={book.categories} />
+            <TableCell className="max-w-40 truncate text-[11px] text-muted-foreground">
+              {formatCategoryList(book.categories)}
+            </TableCell>
+            <TableCell className="text-[11px] text-muted-foreground">
+              {formatCatalogDate(book.publishedAt)}
             </TableCell>
             <TableCell>
-              {hasWireInstant(book.publishedAt) ? formatWireInstant(book.publishedAt) : 'Not in catalog'}
-            </TableCell>
-            <TableCell className="text-right">
-              <Button asChild variant="outline" size="sm">
-                <Link to={`/admin/books/${book.id}`}>Open</Link>
+              <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-[11px] text-primary">
+                <Link to={`/admin/books/${book.id}`}>
+                  <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                  Open
+                </Link>
               </Button>
             </TableCell>
           </TableRow>
@@ -98,19 +96,34 @@ export function AdminBooksTable({ books, showOwner = true }: AdminBooksTableProp
   );
 }
 
-function TruncatedText({
-  value,
-  emptyLabel,
-}: {
-  readonly value: string | null | undefined;
-  readonly emptyLabel: string;
-}): JSX.Element {
-  if (value === null || value === undefined || value.trim() === '') {
-    return <span className="text-muted-foreground">{emptyLabel}</span>;
+function formatOwnerHandle(book: components['schemas']['BookResponse']): string {
+  const email: string | undefined = book.owner?.email;
+  if (email !== undefined && email.includes('@')) {
+    return email.split('@')[0] ?? email;
   }
-  return (
-    <span className="block max-w-40 truncate" title={value}>
-      {value}
-    </span>
-  );
+  return email ?? String(book.ownerId);
+}
+
+function formatCategoryList(
+  categories: components['schemas']['BookResponse']['categories'],
+): string {
+  if (categories.length === 0) {
+    return '—';
+  }
+  return categories.map((category) => category.name).join(', ');
+}
+
+function formatCatalogDate(value: unknown): string {
+  if (!hasWireInstant(value) || typeof value !== 'string') {
+    return 'Not in catalog';
+  }
+  const parsed: Date = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(parsed);
 }

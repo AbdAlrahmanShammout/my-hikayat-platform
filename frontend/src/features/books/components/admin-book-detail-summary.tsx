@@ -1,11 +1,11 @@
 import type { JSX } from 'react';
+import { Link } from 'react-router';
 
-import { AdminBookStatusBadge } from '@/features/books/components/admin-book-status-badge';
 import { BookCoverThumbnail } from '@/components/book-cover-thumbnail';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AdminBookStatusBadge } from '@/features/books/components/admin-book-status-badge';
 import { formatBookEnumLabel } from '@/features/books/lib/format-book-enum-label';
 import { formatBookOwnerLabel } from '@/features/books/lib/format-book-owner-label';
-import { joinBookCategoryNames } from '@/features/books/lib/join-book-category-names';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { components } from '@/generated/admin';
 import { formatWireInstant } from '@/lib/format-wire-instant';
 import { hasWireInstant } from '@/lib/has-wire-instant';
@@ -19,46 +19,75 @@ type AdminBookDetailSummaryProps = {
  */
 export function AdminBookDetailSummary({ book }: AdminBookDetailSummaryProps): JSX.Element {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Catalog record</CardTitle>
+    <Card className="overflow-hidden rounded-[10px] border-border/70 shadow-xs">
+      <CardContent className="p-4">
+        <BookCoverThumbnail title={book.title} cover={book.cover} size="detail" />
+      </CardContent>
+      <CardHeader className="px-4 pb-2 pt-0">
+        <CardTitle className="font-sans text-sm font-bold">Catalog Record</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <BookCoverThumbnail title={book.title} cover={book.cover} size="lg" />
-        <dl className="grid gap-4 sm:grid-cols-2">
-          <SummaryItem label="Publishing status">
-            <AdminBookStatusBadge value={book.publishingStatus} />
-          </SummaryItem>
-          <SummaryItem label="Processing status">
-            <AdminBookStatusBadge value={book.processingStatus} />
-          </SummaryItem>
-          <SummaryItem label="Layout">{formatBookEnumLabel(book.layoutType)}</SummaryItem>
-          <SummaryItem label="Type">{formatBookEnumLabel(book.bookType)}</SummaryItem>
-          <SummaryItem label="Owner">{formatBookOwnerLabel(book)}</SummaryItem>
-          <SummaryItem label="Categories">{joinBookCategoryNames(book.categories)}</SummaryItem>
-          <SummaryItem label="Published at">
-            {hasWireInstant(book.publishedAt)
-              ? formatWireInstant(book.publishedAt)
-              : 'Not in catalog'}
-          </SummaryItem>
-          <SummaryItem label="Book id">{String(book.id)}</SummaryItem>
+      <CardContent className="px-4 pb-4 pt-0">
+        <dl>
+          <DefinitionRow label="Book ID" value={`#${book.id}`} isMono />
+          <DefinitionRow
+            label="Status"
+            value={<AdminBookStatusBadge value={book.publishingStatus} />}
+          />
+          <DefinitionRow
+            label="Processing"
+            value={<AdminBookStatusBadge value={book.processingStatus} />}
+          />
+          <DefinitionRow label="Layout" value={formatBookEnumLabel(book.layoutType)} />
+          <DefinitionRow label="Book type" value={formatBookEnumLabel(book.bookType)} />
+          <DefinitionRow
+            label="Owner"
+            value={
+              <Link
+                to={`/admin/users/${book.ownerId}`}
+                className="text-primary underline decoration-primary/30 underline-offset-2"
+              >
+                {formatBookOwnerLabel(book)}
+              </Link>
+            }
+          />
+          <DefinitionRow label="EPUB author" value={book.authorName ?? 'Not stored'} />
+          <DefinitionRow label="EPUB publisher" value={book.publisherName ?? 'Not stored'} />
+          <DefinitionRow
+            label="Published"
+            value={hasWireInstant(book.publishedAt) ? formatWireInstant(book.publishedAt) : 'Not in catalog'}
+          />
         </dl>
+        <div className="my-4 h-px bg-border/60" />
+        <p className="text-xs leading-5 text-muted-foreground">
+          Owner is the managed publisher account. EPUB author and publisher are source metadata
+          strings and are not editable here. Layout type is detected during processing.
+        </p>
       </CardContent>
     </Card>
   );
 }
 
-function SummaryItem({
+function DefinitionRow({
   label,
-  children,
+  value,
+  isMono = false,
 }: {
   readonly label: string;
-  readonly children: JSX.Element | string;
+  readonly value: JSX.Element | string;
+  readonly isMono?: boolean;
 }): JSX.Element {
   return (
-    <div className="space-y-1">
-      <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</dt>
-      <dd className="text-sm">{children}</dd>
+    <div className="flex items-center justify-between gap-3 border-b border-border/60 py-2">
+      <dt className="shrink-0 text-xs text-muted-foreground">{label}</dt>
+      <dd
+        className={
+          isMono
+            ? 'text-right font-mono text-xs text-foreground'
+            : 'break-words text-right text-xs font-medium text-secondary-foreground'
+        }
+      >
+        {value}
+      </dd>
     </div>
   );
 }

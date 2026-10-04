@@ -81,6 +81,12 @@ function AdminUserDetailContent({ userId }: { readonly userId: number }): JSX.El
     <>
       <PageHeader
         title={user.email}
+        breadcrumbs={[
+          {
+            label: user.role === 'admin' ? 'Admins' : 'Members',
+            to: user.role === 'admin' ? '/admin/users/admins' : '/admin/users/members',
+          },
+        ]}
         description={
           user.isPublisher
             ? 'Profile, subscription, reading progress, and books this publisher owns.'
@@ -100,7 +106,7 @@ function AdminUserDetailContent({ userId }: { readonly userId: number }): JSX.El
 function backToUsersAction(role?: string): JSX.Element {
   const to: string = role === 'admin' ? '/admin/users/admins' : '/admin/users/members';
   return (
-    <Button asChild variant="outline">
+    <Button asChild variant="outline" size="sm">
       <Link to={to}>{role === 'admin' ? 'Back to admins' : 'Back to members'}</Link>
     </Button>
   );

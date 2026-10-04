@@ -66,7 +66,10 @@ function PublisherUserSections({
         );
       }}
     >
-      <TabsList aria-label="User profile sections">
+      <TabsList
+        className="mb-5 h-auto rounded-none border-b border-border bg-transparent p-0"
+        aria-label="User profile sections"
+      >
         <TabsTrigger value={ADMIN_USER_DETAIL_SECTIONS.PROFILE}>Profile</TabsTrigger>
         <TabsTrigger value={ADMIN_USER_DETAIL_SECTIONS.BOOKS}>Books</TabsTrigger>
       </TabsList>
@@ -89,19 +92,23 @@ function AdminUserProfileSection({
 }): JSX.Element {
   const user = detail.user;
   return (
-    <div className="space-y-6">
-      <AdminUserActions user={user} availability={availability} />
-      <AdminUserDetailSummary user={user} />
-      <AdminUserSubscriptionCard
-        subscription={detail.subscription ?? null}
-        subscriptionPeriod={detail.subscriptionPeriod}
-      />
-      <AdminUserReadingProgressCard
-        userId={user.id}
-        initialItems={detail.readingProgress}
-        total={detail.readingProgressTotal}
-      />
-      <AdminUserEditForm key={`${user.id}-${user.updatedAt}`} user={user} availability={availability} />
+    <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="space-y-4">
+        <AdminUserDetailSummary user={user} />
+        <AdminUserEditForm key={`${user.id}-${user.updatedAt}`} user={user} availability={availability} />
+        <AdminUserReadingProgressCard
+          userId={user.id}
+          initialItems={detail.readingProgress}
+          total={detail.readingProgressTotal}
+        />
+      </div>
+      <div className="space-y-4">
+        <AdminUserSubscriptionCard
+          subscription={detail.subscription ?? null}
+          subscriptionPeriod={detail.subscriptionPeriod}
+        />
+        <AdminUserActions user={user} availability={availability} />
+      </div>
     </div>
   );
 }
