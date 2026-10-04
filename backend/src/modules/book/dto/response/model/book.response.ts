@@ -74,8 +74,7 @@ export class BookResponse extends BaseModelResponseDto {
   authorName: string | null;
 
   @ApiPropertyOptional({
-    description:
-      'Catalog publisher display name from EPUB source metadata. Null when missing.',
+    description: 'Catalog publisher display name from EPUB source metadata. Null when missing.',
     example: 'Hikayat Press',
     nullable: true,
   })

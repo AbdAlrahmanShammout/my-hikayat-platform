@@ -13,6 +13,11 @@ describe('AdminInvitationEntity', () => {
       expiresAt: new Date('2026-08-24T00:00:00.000Z'),
       invitedByUserId: 9,
       acceptedAt: null,
+      lastSentAt: null,
+      resendCount: 0,
+      revokedAt: null,
+      revokedByUserId: null,
+      revokeReason: null,
     });
     expect(actualEntity.email).toBe('new-admin@example.com');
     expect(actualEntity.tokenHash).toBe('hashed-token');

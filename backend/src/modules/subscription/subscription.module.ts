@@ -12,6 +12,7 @@ import { SubscriptionPrismaRepository } from './repository/subscription-prisma.r
 import { SubscriptionRepository } from './repository/subscription.repository';
 import { StripeEventHandlersImplementsService } from './stripe-event-handlers-implements.service';
 import { SubscriptionBillingService } from './subscription-billing.service';
+import { SubscriptionSupportService } from './subscription-support.service';
 import { SubscriptionService } from './subscription.service';
 
 @Module({
@@ -20,10 +21,11 @@ import { SubscriptionService } from './subscription.service';
     PlanService,
     SubscriptionService,
     SubscriptionBillingService,
+    SubscriptionSupportService,
     StripeEventHandlersImplementsService,
     { provide: PlanRepository, useClass: PlanPrismaRepository },
     { provide: SubscriptionRepository, useClass: SubscriptionPrismaRepository },
   ],
-  exports: [PlanService, SubscriptionService, SubscriptionBillingService],
+  exports: [PlanService, SubscriptionService, SubscriptionBillingService, SubscriptionSupportService],
 })
 export class SubscriptionModule {}

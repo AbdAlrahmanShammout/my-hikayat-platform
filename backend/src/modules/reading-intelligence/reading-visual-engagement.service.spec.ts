@@ -30,6 +30,7 @@ describe('ReadingVisualEngagementService', () => {
     findById: jest.Mock;
     sumDurationsByBookInRange: jest.Mock;
     sumDurationsBySpreadInRange: jest.Mock;
+    sumDurationsBySpreadForUser: jest.Mock;
   };
   let readingVisualEngagementService: ReadingVisualEngagementService;
 
@@ -40,6 +41,7 @@ describe('ReadingVisualEngagementService', () => {
       findById: jest.fn(),
       sumDurationsByBookInRange: jest.fn(),
       sumDurationsBySpreadInRange: jest.fn(),
+      sumDurationsBySpreadForUser: jest.fn(),
     };
     readingVisualEngagementService = new ReadingVisualEngagementService(
       mockReadingVisualEngagementRepository,

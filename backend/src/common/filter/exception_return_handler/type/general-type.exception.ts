@@ -7,6 +7,7 @@ export type GeneralTypeExceptionInput = {
   readonly userFriendly: boolean;
   readonly stack?: string;
   readonly validationErrorObjects?: ValidationErrorObject[];
+  readonly retryAfterSeconds?: number;
 };
 
 export class GeneralTypeException {
@@ -16,6 +17,7 @@ export class GeneralTypeException {
   readonly userFriendly: boolean;
   readonly stack?: string;
   readonly validationErrorObjects?: ValidationErrorObject[];
+  readonly retryAfterSeconds?: number;
 
   constructor(data: GeneralTypeExceptionInput) {
     this.message = data.message;
@@ -24,5 +26,6 @@ export class GeneralTypeException {
     this.userFriendly = data.userFriendly;
     this.stack = data.stack;
     this.validationErrorObjects = data.validationErrorObjects;
+    this.retryAfterSeconds = data.retryAfterSeconds;
   }
 }

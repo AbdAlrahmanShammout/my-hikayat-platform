@@ -32,6 +32,21 @@ export class AdminInvitationResponse extends BaseModelResponseDto {
   })
   acceptedAt: Date | null;
 
+  @ApiPropertyOptional({ description: 'When the invitation email was last sent', nullable: true })
+  lastSentAt: Date | null;
+
+  @ApiProperty({ description: 'Number of successful resends after the original send', example: 0 })
+  resendCount: number;
+
+  @ApiPropertyOptional({ description: 'When the invitation was revoked', nullable: true })
+  revokedAt: Date | null;
+
+  @ApiPropertyOptional({ description: 'Admin who revoked the invitation', nullable: true })
+  revokedByUserId: number | null;
+
+  @ApiPropertyOptional({ description: 'Optional revoke reason', nullable: true })
+  revokeReason: string | null;
+
   @ApiPropertyOptional({
     description: 'Inviting admin projection when loaded',
     type: () => UserResponse,
@@ -45,6 +60,11 @@ export class AdminInvitationResponse extends BaseModelResponseDto {
     this.expiresAt = entity.expiresAt;
     this.invitedByUserId = entity.invitedByUserId;
     this.acceptedAt = entity.acceptedAt;
+    this.lastSentAt = entity.lastSentAt;
+    this.resendCount = entity.resendCount;
+    this.revokedAt = entity.revokedAt;
+    this.revokedByUserId = entity.revokedByUserId;
+    this.revokeReason = entity.revokeReason;
     this.invitedBy =
       entity.invitedBy === undefined ? undefined : new UserResponse(entity.invitedBy);
   }

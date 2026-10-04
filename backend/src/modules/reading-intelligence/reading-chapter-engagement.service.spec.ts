@@ -28,6 +28,7 @@ describe('ReadingChapterEngagementService', () => {
     findById: jest.Mock;
     sumDurationsByBookInRange: jest.Mock;
     sumDurationsByChapterInRange: jest.Mock;
+    sumDurationsByChapterForUser: jest.Mock;
   };
   let readingChapterEngagementService: ReadingChapterEngagementService;
 
@@ -38,6 +39,7 @@ describe('ReadingChapterEngagementService', () => {
       findById: jest.fn(),
       sumDurationsByBookInRange: jest.fn(),
       sumDurationsByChapterInRange: jest.fn(),
+      sumDurationsByChapterForUser: jest.fn(),
     };
     readingChapterEngagementService = new ReadingChapterEngagementService(
       mockReadingChapterEngagementRepository,

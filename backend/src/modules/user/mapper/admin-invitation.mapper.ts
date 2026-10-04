@@ -16,6 +16,11 @@ export class AdminInvitationMapper {
       expiresAt: schema.expiresAt,
       invitedByUserId: schema.invitedByUserId,
       acceptedAt: schema.acceptedAt,
+      lastSentAt: schema.lastSentAt,
+      resendCount: schema.resendCount,
+      revokedAt: schema.revokedAt,
+      revokedByUserId: schema.revokedByUserId,
+      revokeReason: schema.revokeReason,
       invitedBy:
         schema.invitedBy === undefined ? undefined : UserMapper.toEntity(schema.invitedBy),
     });

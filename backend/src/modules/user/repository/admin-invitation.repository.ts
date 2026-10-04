@@ -3,7 +3,9 @@ import {
   AcceptAdminInvitationRepoInput,
   AdminInvitationPage,
   CreateAdminInvitationRepoInput,
-  ListPendingAdminInvitationsRepoInput,
+  ListAdminInvitationsRepoInput,
+  ReplaceAdminInvitationDeliveryRepoInput,
+  RevokeAdminInvitationRepoInput,
 } from '@/modules/user/defs/admin-invitation-repository.defs';
 import { AdminInvitationEntity } from '@/modules/user/entity/admin-invitation.entity';
 
@@ -13,8 +15,13 @@ export abstract class AdminInvitationRepository {
     context?: TransactionContext,
   ): Promise<AdminInvitationEntity>;
   abstract findByTokenHash(tokenHash: string): Promise<AdminInvitationEntity | null>;
+  abstract findById(id: number): Promise<AdminInvitationEntity | null>;
   abstract findPendingByEmail(email: string, now: Date): Promise<AdminInvitationEntity | null>;
-  abstract listPending(input: ListPendingAdminInvitationsRepoInput): Promise<AdminInvitationPage>;
+  abstract list(input: ListAdminInvitationsRepoInput): Promise<AdminInvitationPage>;
+  abstract replaceDelivery(
+    input: ReplaceAdminInvitationDeliveryRepoInput,
+  ): Promise<AdminInvitationEntity>;
+  abstract revoke(input: RevokeAdminInvitationRepoInput): Promise<AdminInvitationEntity>;
   abstract markAccepted(
     input: AcceptAdminInvitationRepoInput,
     context?: TransactionContext,

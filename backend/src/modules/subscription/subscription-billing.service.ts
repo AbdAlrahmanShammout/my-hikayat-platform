@@ -5,7 +5,10 @@ import { TransactionRunner } from '@/common/base/transaction-runner';
 import { AppConfigService } from '@/config/app/app-config.service';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
-import { REFUND_WINDOW } from '@/modules/subscription/consts/refund-window.constant';
+import {
+  resolveRefundEligibility,
+  REFUND_INELIGIBILITY_CODE,
+} from '@/modules/subscription/resolve-refund-eligibility.helper';
 import {
   CancelManagedSubscriptionServiceInput,
   ReceiveWebhookServiceInput,
@@ -346,27 +349,14 @@ export class SubscriptionBillingService {
   }
 
   private static resolveRefundStripeSubscriptionId(subscription: SubscriptionEntity): string {
-    if (
-      !SubscriptionBillingService.isPaidMonthly(subscription) ||
-      subscription.stripeSubscriptionId === null
-    ) {
+    const eligibility = resolveRefundEligibility(subscription);
+    if (!eligibility.refundEligible || subscription.stripeSubscriptionId === null) {
+      if (eligibility.refundIneligibilityCode === REFUND_INELIGIBILITY_CODE.WINDOW_EXPIRED) {
+        throw new RefundWindowExpiredException();
+      }
       throw new RefundNotEligibleException();
-    }
-    const activatedAt: Date | null = subscription.activatedAt ?? subscription.currentPeriodStart;
-    if (activatedAt === null) {
-      throw new RefundNotEligibleException();
-    }
-    if (SubscriptionBillingService.isRefundWindowExpired(activatedAt)) {
-      throw new RefundWindowExpiredException();
     }
     return subscription.stripeSubscriptionId;
-  }
-
-  private static isPaidMonthly(subscription: SubscriptionEntity): boolean {
-    return (
-      subscription.status === SubscriptionStatus.ACTIVE &&
-      subscription.plan?.kind === PlanKind.MONTHLY_PAID
-    );
   }
 
   private static resolveActivatedAt(
@@ -380,11 +370,6 @@ export class SubscriptionBillingService {
       return subscription.activatedAt;
     }
     return input.currentPeriodStart ?? new Date();
-  }
-
-  private static isRefundWindowExpired(activatedAt: Date, now: Date = new Date()): boolean {
-    const windowMs: number = REFUND_WINDOW.days * REFUND_WINDOW.millisecondsPerDay;
-    return now.getTime() > activatedAt.getTime() + windowMs;
   }
 
   private static parseUserId(clientReferenceId: string): number | null {

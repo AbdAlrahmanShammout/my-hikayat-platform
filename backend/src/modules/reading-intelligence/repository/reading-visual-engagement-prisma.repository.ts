@@ -141,4 +141,33 @@ export class ReadingVisualEngagementPrismaRepository implements ReadingVisualEng
         return left.pageNumber - right.pageNumber;
       });
   }
+
+  async sumDurationsBySpreadForUser(input: {
+    readonly userId: number;
+    readonly bookId: number;
+  }): Promise<SpreadVisualDurationTotal[]> {
+    const rows = await this.prismaProviderService.readingVisualEngagement.groupBy({
+      by: ['spreadIndex', 'pageNumber'],
+      where: {
+        userId: input.userId,
+        bookId: input.bookId,
+        deletedAt: null,
+        layoutType: BookLayoutType.FIXED_LAYOUT,
+      },
+      _sum: { activeDurationMs: true, visualSceneTimeMs: true },
+    });
+    return rows
+      .map((row) => ({
+        spreadIndex: row.spreadIndex,
+        pageNumber: row.pageNumber,
+        activeDurationMs: row._sum.activeDurationMs ?? 0,
+        visualSceneTimeMs: row._sum.visualSceneTimeMs ?? 0,
+      }))
+      .sort((left, right) => {
+        if (left.spreadIndex !== right.spreadIndex) {
+          return left.spreadIndex - right.spreadIndex;
+        }
+        return left.pageNumber - right.pageNumber;
+      });
+  }
 }

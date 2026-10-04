@@ -10,6 +10,11 @@ export class AdminInvitationEntity extends BaseEntity {
   expiresAt!: Date;
   invitedByUserId!: number;
   acceptedAt!: Date | null;
+  lastSentAt!: Date | null;
+  resendCount!: number;
+  revokedAt!: Date | null;
+  revokedByUserId!: number | null;
+  revokeReason!: string | null;
   invitedBy?: UserEntity;
 
   constructor(data: AdminInvitationZodType) {

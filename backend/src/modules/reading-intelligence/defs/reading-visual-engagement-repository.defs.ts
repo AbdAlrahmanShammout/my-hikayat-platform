@@ -48,3 +48,8 @@ export type SpreadVisualDurationTotal = {
   readonly activeDurationMs: number;
   readonly visualSceneTimeMs: number;
 };
+
+export type SumUserBookVisualEngagementRepoInput = {
+  readonly userId: number;
+  readonly bookId: number;
+};

@@ -5,7 +5,9 @@ import {
   ZodDate,
   ZodDateNullable,
   ZodNumber,
+  ZodNumberNullable,
   ZodString,
+  ZodStringNullable,
 } from '@/common/base/base.zod';
 import { AdminInvitationStatus } from '@/modules/user/enum/admin-invitation-status.enum';
 import { UserZodType } from '@/modules/user/zod/user.zod';
@@ -19,5 +21,10 @@ export const AdminInvitationZodSchema = BaseZodSchema.extend({
   expiresAt: ZodDate,
   invitedByUserId: ZodNumber,
   acceptedAt: ZodDateNullable,
+  lastSentAt: ZodDateNullable,
+  resendCount: ZodNumber,
+  revokedAt: ZodDateNullable,
+  revokedByUserId: ZodNumberNullable,
+  revokeReason: ZodStringNullable,
   invitedBy: (z.any().nullish() as z.ZodType<UserZodType | null | undefined>).optional(),
 });

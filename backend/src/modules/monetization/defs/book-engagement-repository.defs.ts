@@ -38,6 +38,12 @@ export type SummarizeOwnerBookEngagementsRepoInput = {
   readonly ownerId?: number;
 };
 
+export type PaidReadingByBookRow = {
+  readonly bookId: number;
+  readonly activeReadingMs: number;
+  readonly activeSpreadMs: number;
+};
+
 export type OwnerBookEngagementSummary = {
   readonly totalActiveReadingMs: number;
   readonly totalActiveSpreadMs: number;

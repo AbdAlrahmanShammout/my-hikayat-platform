@@ -7,6 +7,7 @@ import {
   ListAllBookEngagementsRepoInput,
   ListBookEngagementsRepoInput,
   OwnerBookEngagementSummary,
+  PaidReadingByBookRow,
   ReplaceBookEngagementsForPeriodRepoInput,
   SummarizeOwnerBookEngagementsRepoInput,
   UpsertBookEngagementRepoInput,
@@ -106,6 +107,30 @@ export class BookEngagementPrismaRepository implements BookEngagementRepository 
       totalVisualSceneTimeMs: result._sum.visualSceneTimeMs ?? 0,
       totalWeightedEngagement: Number(result._sum.weightedEngagement ?? 0),
     };
+  }
+
+  async listPaidReadingByBook(input: {
+    readonly ownerId?: number;
+  }): Promise<PaidReadingByBookRow[]> {
+    const rows = await this.prismaProviderService.bookEngagement.groupBy({
+      by: ['bookId'],
+      where: BookEngagementPrismaRepository.buildOwnerPeriodWhere(input),
+      _sum: { activeReadingMs: true, activeSpreadMs: true },
+    });
+    return rows
+      .map((row) => ({
+        bookId: row.bookId,
+        activeReadingMs: row._sum.activeReadingMs ?? 0,
+        activeSpreadMs: row._sum.activeSpreadMs ?? 0,
+      }))
+      .sort((left, right) => {
+        const leftPaid: number = left.activeReadingMs + left.activeSpreadMs;
+        const rightPaid: number = right.activeReadingMs + right.activeSpreadMs;
+        if (rightPaid !== leftPaid) {
+          return rightPaid - leftPaid;
+        }
+        return left.bookId - right.bookId;
+      });
   }
 
   private static buildOwnerPeriodWhere(input: {

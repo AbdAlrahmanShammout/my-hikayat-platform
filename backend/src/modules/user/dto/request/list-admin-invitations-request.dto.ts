@@ -1,6 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNumber, IsOptional, Min } from 'class-validator';
+import { IsEmail, IsEnum, IsNumber, IsOptional, Min } from 'class-validator';
+
+import { AdminInvitationListStatus } from '@/modules/user/enum/admin-invitation-status.enum';
 
 function parseOptionalIntQuery(value: unknown): number | undefined {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -35,4 +37,20 @@ export class ListAdminInvitationsRequestDto {
   @Min(0)
   @Transform(({ value }: { value: unknown }) => parseOptionalIntQuery(value))
   offset?: number;
+
+  @ApiPropertyOptional({
+    description: 'Lifecycle filter. Omit to list pending unexpired invitations.',
+    enum: AdminInvitationListStatus,
+  })
+  @IsOptional()
+  @IsEnum(AdminInvitationListStatus)
+  status?: AdminInvitationListStatus;
+
+  @ApiPropertyOptional({ description: 'Exact email match', example: 'new-admin@example.com' })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @IsEmail()
+  email?: string;
 }

@@ -1,7 +1,20 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEmail, IsEnum, IsNumber, IsOptional, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+  MinLength,
+} from 'class-validator';
 
+import {
+  AdminUserSortField,
+  AdminUserSortOrder,
+} from '@/modules/user/enum/admin-user-sort-field.enum';
 import { UserRole } from '@/modules/user/enum/general.enum';
 
 function parseOptionalIntQuery(value: unknown): number | undefined {
@@ -96,4 +109,24 @@ export class ListUsersRequestDto {
   @IsEmail()
   @Transform(({ value }: { value: unknown }) => parseOptionalEmailQuery(value))
   email?: string;
+
+  @ApiPropertyOptional({
+    description: 'Case-insensitive match on email or display name',
+    minLength: 2,
+  })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @MinLength(2)
+  q?: string;
+
+  @ApiPropertyOptional({ enum: AdminUserSortField })
+  @IsOptional()
+  @IsEnum(AdminUserSortField)
+  sortBy?: AdminUserSortField;
+
+  @ApiPropertyOptional({ enum: AdminUserSortOrder })
+  @IsOptional()
+  @IsEnum(AdminUserSortOrder)
+  sortOrder?: AdminUserSortOrder;
 }

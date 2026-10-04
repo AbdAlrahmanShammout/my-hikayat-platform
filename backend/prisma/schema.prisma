@@ -33,8 +33,13 @@ model User {
   bookRevenues             BookRevenue[]
   auditLogs                AuditLog[]
   adminInvitationsSent     AdminInvitation[]         @relation("AdminInvitationsSent")
+  adminInvitationsRevoked  AdminInvitation[]         @relation("AdminInvitationsRevoked")
+  adminExports             AdminExport[]
   authRefreshTokens        AuthRefreshToken[]
   offlineDownloads         OfflineDownload[]
+
+  @@index([email(ops: raw("gin_trgm_ops"))], type: Gin, map: "User_email_trgm_idx")
+  @@index([displayName(ops: raw("gin_trgm_ops"))], type: Gin, map: "User_displayName_trgm_idx")
 }
 
 model AuthRefreshToken {
@@ -55,6 +60,7 @@ model AuthRefreshToken {
 enum AdminInvitationStatus {
   pending
   accepted
+  revoked
 }
 
 model AdminInvitation {
@@ -65,13 +71,20 @@ model AdminInvitation {
   expiresAt       DateTime
   invitedByUserId Int
   acceptedAt      DateTime?
+  lastSentAt      DateTime?
+  resendCount     Int                   @default(0)
+  revokedAt       DateTime?
+  revokedByUserId Int?
+  revokeReason    String?               @db.Text
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
   deletedAt       DateTime?
   invitedBy       User                  @relation("AdminInvitationsSent", fields: [invitedByUserId], references: [id])
+  revokedBy       User?                 @relation("AdminInvitationsRevoked", fields: [revokedByUserId], references: [id])
 
   @@index([email, status])
   @@index([invitedByUserId])
+  @@index([revokedByUserId])
 }
 
 model Category {
@@ -83,6 +96,9 @@ model Category {
   updatedAt      DateTime @updatedAt
   deletedAt      DateTime?
   books          Book[]
+
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "Category_name_trgm_idx")
+  @@index([slug(ops: raw("gin_trgm_ops"))], type: Gin, map: "Category_slug_trgm_idx")
 }
 
 enum BookLayoutType {
@@ -145,6 +161,10 @@ model Book {
   @@index([processingStatus])
   @@index([publishedAt])
   @@index([ownerId])
+  @@index([bookType])
+  @@index([layoutType])
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "Book_title_trgm_idx")
+  @@index([description(ops: raw("gin_trgm_ops"))], type: Gin, map: "Book_description_trgm_idx")
 }
 
 enum BookAssetKind {
@@ -192,6 +212,9 @@ model BookSourceMetadata {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
   book        Book      @relation(fields: [bookId], references: [id])
+
+  @@index([creator(ops: raw("gin_trgm_ops"))], type: Gin, map: "BookSourceMetadata_creator_trgm_idx")
+  @@index([publisher(ops: raw("gin_trgm_ops"))], type: Gin, map: "BookSourceMetadata_publisher_trgm_idx")
 }
 
 model BookChapter {
@@ -607,6 +630,10 @@ enum AuditAction {
   collection_book_removed
   collection_reordered
   revenue_calculated
+  invitation_created
+  invitation_resent
+  invitation_revoked
+  export_requested
 }
 
 enum AuditSubjectType {
@@ -615,6 +642,39 @@ enum AuditSubjectType {
   subscription
   collection
   revenue_period
+  invitation
+  admin_export
+}
+
+enum AdminExportStatus {
+  pending
+  processing
+  ready
+  failed
+  expired
+}
+
+model AdminExport {
+  id          Int               @id @default(autoincrement())
+  actorUserId Int
+  resource    String
+  filters     Json
+  columns     Json
+  selectedIds Json?
+  sortBy      String?
+  sortOrder   String?
+  status      AdminExportStatus @default(pending)
+  storageKey  String?
+  rowCount    Int?
+  errorCode   String?
+  expiresAt   DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  deletedAt   DateTime?
+  actor       User              @relation(fields: [actorUserId], references: [id])
+
+  @@index([status, createdAt])
+  @@index([actorUserId, createdAt])
 }
 
 model AuditLog {

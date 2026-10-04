@@ -4,6 +4,10 @@ import { AuthModule } from '@/authentication/auth.module';
 import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { LocalAuthGuard } from '@/common/guards/local-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
+import { AdminExportAdminController } from '@/modules/admin-export/admin-export.admin.controller';
+import { AdminExportModule } from '@/modules/admin-export/admin-export.module';
+import { AdminSearchAdminController } from '@/modules/admin-search/admin-search.admin.controller';
+import { AdminSearchModule } from '@/modules/admin-search/admin-search.module';
 import { AuditAdminController } from '@/modules/audit/audit.admin.controller';
 import { AuditModule } from '@/modules/audit/audit.module';
 import { BookAdminController } from '@/modules/book/book.admin.controller';
@@ -22,6 +26,8 @@ import { PlanAdminController } from '@/modules/subscription/plan.admin.controlle
 import { SubscriptionAdminController } from '@/modules/subscription/subscription.admin.controller';
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { AdminInvitationAdminController } from '@/modules/user/admin-invitation.admin.controller';
+import { PublisherAdminController } from '@/modules/user/publisher.admin.controller';
+import { PublisherDirectoryModule } from '@/modules/user/publisher-directory.module';
 import { UserAdminController } from '@/modules/user/user.admin.controller';
 import { UserAdminDetailModule } from '@/modules/user/user-admin-detail.module';
 import { UserModule } from '@/modules/user/user.module';
@@ -39,6 +45,9 @@ import { UserModule } from '@/modules/user/user.module';
     SubscriptionModule,
     UserModule,
     UserAdminDetailModule,
+    PublisherDirectoryModule,
+    AdminExportModule,
+    AdminSearchModule,
   ],
   controllers: [
     AuditAdminController,
@@ -52,6 +61,9 @@ import { UserModule } from '@/modules/user/user.module';
     SubscriptionAdminController,
     UserAdminController,
     AdminInvitationAdminController,
+    PublisherAdminController,
+    AdminExportAdminController,
+    AdminSearchAdminController,
   ],
   providers: [JwtAuthGuard, LocalAuthGuard, RolesGuard],
 })

@@ -1,5 +1,6 @@
 import { PlanKind } from '@/modules/subscription/enum/general.enum';
 import { UserEntity } from '@/modules/user/entity/user.entity';
+import { AdminUserSortField, AdminUserSortOrder } from '@/modules/user/enum/admin-user-sort-field.enum';
 import { UserRole } from '@/modules/user/enum/general.enum';
 
 export type CreateUserRepoInput = {
@@ -24,6 +25,9 @@ export type ListUsersRepoInput = {
   readonly excludeRole?: UserRole;
   readonly isPublisher?: boolean;
   readonly email?: string;
+  readonly keyword?: string;
+  readonly sortBy?: AdminUserSortField;
+  readonly sortOrder?: AdminUserSortOrder;
 };
 
 export type UserPage = {

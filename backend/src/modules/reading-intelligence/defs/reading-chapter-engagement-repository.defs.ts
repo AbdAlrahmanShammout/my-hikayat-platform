@@ -43,3 +43,8 @@ export type ChapterDurationTotal = {
   readonly spineIndex: number;
   readonly activeDurationMs: number;
 };
+
+export type SumUserBookChapterEngagementRepoInput = {
+  readonly userId: number;
+  readonly bookId: number;
+};

@@ -114,7 +114,17 @@ describe('BookAdminController', () => {
         limit: 10,
         offset: 0,
         publishingStatus: undefined,
+        processingStatus: undefined,
         ownerId: undefined,
+        categoryIds: undefined,
+        bookTypes: undefined,
+        layoutTypes: undefined,
+        keyword: undefined,
+        authorName: undefined,
+        publisherName: undefined,
+        catalogVisible: undefined,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
       });
       expect(mockBookCatalogCoverService.toBookResponses).toHaveBeenCalledWith([expectedBook]);
       expect(actualResponse.total).toBe(1);
@@ -128,13 +138,23 @@ describe('BookAdminController', () => {
       const actualResponse = await bookAdminController.listBooks({
         limit: 10,
         offset: 0,
-        publishingStatus: BookPublishingStatus.IN_REVIEW,
+        publishingStatus: [BookPublishingStatus.IN_REVIEW],
       });
       expect(mockBookService.listBooks).toHaveBeenCalledWith({
         limit: 10,
         offset: 0,
-        publishingStatus: BookPublishingStatus.IN_REVIEW,
+        publishingStatus: [BookPublishingStatus.IN_REVIEW],
+        processingStatus: undefined,
         ownerId: undefined,
+        categoryIds: undefined,
+        bookTypes: undefined,
+        layoutTypes: undefined,
+        keyword: undefined,
+        authorName: undefined,
+        publisherName: undefined,
+        catalogVisible: undefined,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
       });
       expect(actualResponse.books[0].publishingStatus).toBe(BookPublishingStatus.IN_REVIEW);
     });
@@ -145,13 +165,23 @@ describe('BookAdminController', () => {
       const actualResponse = await bookAdminController.listBooks({
         limit: 10,
         offset: 0,
-        ownerId: 4,
+        ownerId: [4],
       });
       expect(mockBookService.listBooks).toHaveBeenCalledWith({
         limit: 10,
         offset: 0,
         publishingStatus: undefined,
-        ownerId: 4,
+        processingStatus: undefined,
+        ownerId: [4],
+        categoryIds: undefined,
+        bookTypes: undefined,
+        layoutTypes: undefined,
+        keyword: undefined,
+        authorName: undefined,
+        publisherName: undefined,
+        catalogVisible: undefined,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
       });
       expect(actualResponse.books[0].ownerId).toBe(4);
     });

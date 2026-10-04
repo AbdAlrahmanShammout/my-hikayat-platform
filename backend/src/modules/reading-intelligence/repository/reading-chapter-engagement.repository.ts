@@ -7,6 +7,7 @@ import {
   ReadingChapterEngagementPage,
   SumChapterEngagementRepoInput,
   SumReadingChapterEngagementDurationsRepoInput,
+  SumUserBookChapterEngagementRepoInput,
 } from '@/modules/reading-intelligence/defs/reading-chapter-engagement-repository.defs';
 import { ReadingChapterEngagementEntity } from '@/modules/reading-intelligence/entity/reading-chapter-engagement.entity';
 
@@ -24,5 +25,8 @@ export abstract class ReadingChapterEngagementRepository {
   ): Promise<BookChapterDurationTotal[]>;
   abstract sumDurationsByChapterInRange(
     input: SumChapterEngagementRepoInput,
+  ): Promise<ChapterDurationTotal[]>;
+  abstract sumDurationsByChapterForUser(
+    input: SumUserBookChapterEngagementRepoInput,
   ): Promise<ChapterDurationTotal[]>;
 }

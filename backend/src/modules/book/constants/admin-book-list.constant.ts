@@ -1,0 +1,1 @@
+export const ADMIN_BOOK_LIST_MAX_LIMIT = 100;

@@ -26,6 +26,7 @@ describe('GetAdminUserDetailResponseDto', () => {
       subscription: null,
       periodProgress: inputPeriod,
       readingItems: [],
+      readingProgressTotal: 0,
     });
     expect(actualResponse.user.email).toBe('reader@example.com');
     expect(actualResponse.user).not.toHaveProperty('passwordHash');

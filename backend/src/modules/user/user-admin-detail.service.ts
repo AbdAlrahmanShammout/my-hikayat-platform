@@ -19,7 +19,10 @@ import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.e
 import { resolveSubscriptionPeriodProgress } from '@/modules/subscription/resolve-subscription-period-progress.helper';
 import { SubscriptionService } from '@/modules/subscription/subscription.service';
 import { buildAdminUserReadingProgressItems } from '@/modules/user/build-admin-user-reading-progress-items.helper';
-import { ADMIN_USER_READING_PROGRESS_LIMIT } from '@/modules/user/consts/admin-user-reading-progress-limit.constant';
+import {
+  ADMIN_USER_READING_PROGRESS_MAX_LIMIT,
+  ADMIN_USER_READING_PROGRESS_PAGE_SIZE,
+} from '@/modules/user/consts/admin-user-reading-progress-limit.constant';
 import { AdminUserDetail } from '@/modules/user/defs/user-admin-detail-service.defs';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserService } from '@/modules/user/user.service';
@@ -55,7 +58,7 @@ export class UserAdminDetailService {
         this.subscriptionService.findSubscriptionByUserId(userId),
         this.readingProgressService.listReadingProgresses({
           userId,
-          limit: ADMIN_USER_READING_PROGRESS_LIMIT,
+          limit: ADMIN_USER_READING_PROGRESS_PAGE_SIZE,
           offset: 0,
         }),
       ]);
@@ -64,7 +67,13 @@ export class UserAdminDetailService {
       now,
     );
     if (progressPage.entities.length === 0) {
-      return { user, subscription, periodProgress, readingItems: [] };
+      return {
+        user,
+        subscription,
+        periodProgress,
+        readingItems: [],
+        readingProgressTotal: progressPage.total,
+      };
     }
     const support: ReadingSupportData = await this.loadReadingSupport(userId, progressPage.entities);
     return {
@@ -72,6 +81,44 @@ export class UserAdminDetailService {
       subscription,
       periodProgress,
       readingItems: buildAdminUserReadingProgressItems({
+        progressRows: progressPage.entities,
+        books: support.books,
+        coverByBookId: support.coverByBookId,
+        chapters: support.chapters,
+        pages: support.pages,
+        spreads: support.spreads,
+        durationTotals: support.durationTotals,
+      }),
+      readingProgressTotal: progressPage.total,
+    };
+  }
+
+  async listReadingProgress(input: {
+    readonly userId: number;
+    readonly limit?: number;
+    readonly offset?: number;
+  }): Promise<{ readonly items: AdminUserDetail['readingItems']; readonly total: number }> {
+    await this.userService.getUserById(input.userId);
+    const limit: number = Math.min(
+      input.limit ?? ADMIN_USER_READING_PROGRESS_PAGE_SIZE,
+      ADMIN_USER_READING_PROGRESS_MAX_LIMIT,
+    );
+    const offset: number = input.offset ?? 0;
+    const progressPage: ReadingProgressPage = await this.readingProgressService.listReadingProgresses({
+      userId: input.userId,
+      limit,
+      offset,
+    });
+    if (progressPage.entities.length === 0) {
+      return { items: [], total: progressPage.total };
+    }
+    const support: ReadingSupportData = await this.loadReadingSupport(
+      input.userId,
+      progressPage.entities,
+    );
+    return {
+      total: progressPage.total,
+      items: buildAdminUserReadingProgressItems({
         progressRows: progressPage.entities,
         books: support.books,
         coverByBookId: support.coverByBookId,

@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { Roles } from '@/common/decorators/route/roles.decorator';
@@ -6,6 +6,8 @@ import { JwtAuthGuard } from '@/common/guards/jwt-auth.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { AdminDashboardSummaryService } from '@/modules/monetization/admin-dashboard-summary.service';
 import { AdminDashboardSummary } from '@/modules/monetization/defs/admin-dashboard-summary-service.defs';
+import { ListAdminDashboardReadingRequestDto } from '@/modules/monetization/dto/request/list-admin-dashboard-reading-request.dto';
+import { GetAdminDashboardReadingResponseDto } from '@/modules/monetization/dto/response/get-admin-dashboard-reading-response.dto';
 import { GetAdminDashboardSummaryResponseDto } from '@/modules/monetization/dto/response/get-admin-dashboard-summary-response.dto';
 import { UserRole } from '@/modules/user/enum/general.enum';
 
@@ -24,5 +26,21 @@ export class DashboardAdminController {
     const summary: AdminDashboardSummary =
       await this.adminDashboardSummaryService.getAdminDashboardSummary();
     return new GetAdminDashboardSummaryResponseDto(summary);
+  }
+
+  @Get('reading')
+  @ApiOperation({
+    summary: 'Books behind the home reading-minutes KPI, from BookEngagement only',
+  })
+  @ApiResponse({ status: 200, type: GetAdminDashboardReadingResponseDto })
+  async listReading(
+    @Query() query: ListAdminDashboardReadingRequestDto,
+  ): Promise<GetAdminDashboardReadingResponseDto> {
+    const page = await this.adminDashboardSummaryService.listReadingDrilldown({
+      limit: query.limit,
+      offset: query.offset,
+      ownerId: query.ownerId,
+    });
+    return new GetAdminDashboardReadingResponseDto(page);
   }
 }

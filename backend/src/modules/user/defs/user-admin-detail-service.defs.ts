@@ -24,4 +24,5 @@ export type AdminUserDetail = {
   readonly subscription: SubscriptionEntity | null;
   readonly periodProgress: SubscriptionPeriodProgress;
   readonly readingItems: readonly AdminUserReadingProgressItem[];
+  readonly readingProgressTotal: number;
 };

@@ -18,6 +18,11 @@ describe('AdminInvitationPrismaRepository', () => {
     expiresAt,
     invitedByUserId: 9,
     acceptedAt: null,
+    lastSentAt: null,
+    resendCount: 0,
+    revokedAt: null,
+    revokedByUserId: null,
+    revokeReason: null,
   };
   let mockPrismaProviderService: {
     $transaction: jest.Mock;
@@ -54,6 +59,7 @@ describe('AdminInvitationPrismaRepository', () => {
       tokenHash: 'hashed-token',
       expiresAt,
       invitedByUserId: 9,
+      lastSentAt: createdAt,
     });
     expect(mockPrismaProviderService.adminInvitation.create).toHaveBeenCalledWith({
       data: {
@@ -62,6 +68,8 @@ describe('AdminInvitationPrismaRepository', () => {
         status: AdminInvitationStatus.PENDING,
         expiresAt,
         invitedByUserId: 9,
+        lastSentAt: createdAt,
+        resendCount: 0,
       },
     });
     expect(actualEntity).toEqual(AdminInvitationMapper.toEntity(persistenceRow));

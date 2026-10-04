@@ -34,7 +34,9 @@ import { ListBookRejectionHistoryRequestDto } from '@/modules/book/dto/request/l
 import { RejectBookRequestDto } from '@/modules/book/dto/request/reject-book-request.dto';
 import { UpdateBookRequestDto } from '@/modules/book/dto/request/update-book-request.dto';
 import { GetBookRejectionHistoryResponseDto } from '@/modules/book/dto/response/get-book-rejection-history-response.dto';
+import { AdminBookAppliedFilters } from '@/modules/book/dto/response/admin-book-applied-filters';
 import { GetBooksResponseDto } from '@/modules/book/dto/response/get-books-response.dto';
+import { AdminBookSortField, AdminSortOrder } from '@/modules/book/enum/admin-book-sort-field.enum';
 import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookCatalogCoverService } from '@/modules/book-asset/book-catalog-cover.service';
@@ -57,14 +59,43 @@ export class BookAdminController {
   @ApiOperation({ summary: 'List books, optionally filtered by publishing status or owner' })
   @ApiResponse({ status: 200, type: GetBooksResponseDto })
   async listBooks(@Query() query: ListAdminBooksRequestDto): Promise<GetBooksResponseDto> {
+    const sortBy: AdminBookSortField = query.sortBy ?? AdminBookSortField.CREATED_AT;
+    const sortOrder: AdminSortOrder = query.sortOrder ?? AdminSortOrder.DESC;
     const page: BookPage = await this.bookService.listBooks({
       limit: query.limit,
       offset: query.offset,
       publishingStatus: query.publishingStatus,
+      processingStatus: query.processingStatus,
       ownerId: query.ownerId,
+      categoryIds: query.categoryId,
+      bookTypes: query.bookType,
+      layoutTypes: query.layoutType,
+      keyword: query.q,
+      authorName: query.authorName,
+      publisherName: query.publisherName,
+      catalogVisible: query.catalogVisible,
+      sortBy,
+      sortOrder,
     });
     const books: BookResponse[] = await this.bookCatalogCoverService.toBookResponses(page.entities);
-    return new GetBooksResponseDto(books, page.total);
+    return new GetBooksResponseDto(
+      books,
+      page.total,
+      new AdminBookAppliedFilters({
+        q: query.q,
+        categoryId: query.categoryId,
+        authorName: query.authorName,
+        publisherName: query.publisherName,
+        ownerId: query.ownerId,
+        bookType: query.bookType,
+        layoutType: query.layoutType,
+        publishingStatus: query.publishingStatus,
+        processingStatus: query.processingStatus,
+        catalogVisible: query.catalogVisible,
+        sortBy,
+        sortOrder,
+      }),
+    );
   }
 
   @Get(':id/rejection-history')

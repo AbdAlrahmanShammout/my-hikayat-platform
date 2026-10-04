@@ -6,8 +6,11 @@ import {
   AcceptAdminInvitationRepoInput,
   AdminInvitationPage,
   CreateAdminInvitationRepoInput,
-  ListPendingAdminInvitationsRepoInput,
+  ListAdminInvitationsRepoInput,
+  ReplaceAdminInvitationDeliveryRepoInput,
+  RevokeAdminInvitationRepoInput,
 } from '@/modules/user/defs/admin-invitation-repository.defs';
+import { AdminInvitationListStatus } from '@/modules/user/enum/admin-invitation-status.enum';
 import { AdminInvitationEntity } from '@/modules/user/entity/admin-invitation.entity';
 import { AdminInvitationStatus } from '@/modules/user/enum/admin-invitation-status.enum';
 import { AdminInvitationMapper } from '@/modules/user/mapper/admin-invitation.mapper';
@@ -32,6 +35,8 @@ export class AdminInvitationPrismaRepository implements AdminInvitationRepositor
         status: AdminInvitationStatus.PENDING,
         expiresAt: input.expiresAt,
         invitedByUserId: input.invitedByUserId,
+        lastSentAt: input.lastSentAt,
+        resendCount: 0,
       },
     });
     return AdminInvitationMapper.toEntity(result);
@@ -40,6 +45,17 @@ export class AdminInvitationPrismaRepository implements AdminInvitationRepositor
   async findByTokenHash(tokenHash: string): Promise<AdminInvitationEntity | null> {
     const result = await this.prismaProviderService.adminInvitation.findFirst({
       where: { tokenHash, deletedAt: null },
+    });
+    if (result === null) {
+      return null;
+    }
+    return AdminInvitationMapper.toEntity(result);
+  }
+
+  async findById(id: number): Promise<AdminInvitationEntity | null> {
+    const result = await this.prismaProviderService.adminInvitation.findFirst({
+      where: { id, deletedAt: null },
+      include: adminInvitationDetailsInclude,
     });
     if (result === null) {
       return null;
@@ -62,12 +78,14 @@ export class AdminInvitationPrismaRepository implements AdminInvitationRepositor
     return AdminInvitationMapper.toEntity(result);
   }
 
-  async listPending(input: ListPendingAdminInvitationsRepoInput): Promise<AdminInvitationPage> {
+  async list(input: ListAdminInvitationsRepoInput): Promise<AdminInvitationPage> {
     const where: Prisma.AdminInvitationWhereInput = {
-      status: AdminInvitationStatus.PENDING,
-      expiresAt: { gt: input.now },
       deletedAt: null,
+      ...AdminInvitationPrismaRepository.buildStatusWhere(input.status, input.now),
     };
+    if (input.email !== undefined) {
+      where.email = input.email;
+    }
     const [rows, total] = await this.prismaProviderService.$transaction([
       this.prismaProviderService.adminInvitation.findMany({
         where,
@@ -99,11 +117,53 @@ export class AdminInvitationPrismaRepository implements AdminInvitationRepositor
     return AdminInvitationMapper.toEntity(result);
   }
 
+  async replaceDelivery(input: ReplaceAdminInvitationDeliveryRepoInput): Promise<AdminInvitationEntity> {
+    const result = await this.prismaProviderService.adminInvitation.update({
+      where: { id: input.id },
+      data: {
+        tokenHash: input.tokenHash,
+        expiresAt: input.expiresAt,
+        lastSentAt: input.lastSentAt,
+        resendCount: input.resendCount,
+      },
+    });
+    return AdminInvitationMapper.toEntity(result);
+  }
+
+  async revoke(input: RevokeAdminInvitationRepoInput): Promise<AdminInvitationEntity> {
+    const result = await this.prismaProviderService.adminInvitation.update({
+      where: { id: input.id },
+      data: {
+        status: AdminInvitationStatus.REVOKED,
+        revokedAt: input.revokedAt,
+        revokedByUserId: input.revokedByUserId,
+        revokeReason: input.revokeReason,
+      },
+    });
+    return AdminInvitationMapper.toEntity(result);
+  }
+
   async delete(id: number, context?: TransactionContext): Promise<void> {
     const client = resolvePrismaTransactionClient(this.prismaProviderService, context);
     await client.adminInvitation.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
+  }
+
+  private static buildStatusWhere(
+    status: AdminInvitationListStatus | undefined,
+    now: Date,
+  ): Prisma.AdminInvitationWhereInput {
+    if (status === undefined || status === AdminInvitationListStatus.PENDING) {
+      return { status: AdminInvitationStatus.PENDING, expiresAt: { gt: now } };
+    }
+    if (status === AdminInvitationListStatus.EXPIRED) {
+      return { status: AdminInvitationStatus.PENDING, expiresAt: { lte: now } };
+    }
+    if (status === AdminInvitationListStatus.ACCEPTED) {
+      return { status: AdminInvitationStatus.ACCEPTED };
+    }
+    return { status: AdminInvitationStatus.REVOKED };
   }
 }

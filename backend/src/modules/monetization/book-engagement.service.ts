@@ -10,6 +10,7 @@ import { CategoryEntity } from '@/modules/category/entity/category.entity';
 import {
   BookEngagementPage,
   OwnerBookEngagementSummary,
+  PaidReadingByBookRow,
   UpsertBookEngagementRepoInput,
 } from '@/modules/monetization/defs/book-engagement-repository.defs';
 import {
@@ -112,6 +113,12 @@ export class BookEngagementService {
       revenuePeriodId: input.revenuePeriodId,
       ownerId: input.ownerId,
     });
+  }
+
+  async listPaidReadingByBook(input: {
+    readonly ownerId?: number;
+  }): Promise<PaidReadingByBookRow[]> {
+    return this.bookEngagementRepository.listPaidReadingByBook(input);
   }
 
   async summarizeOwnerEngagementForPeriod(

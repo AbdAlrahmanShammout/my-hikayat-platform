@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+import { AdminBookAppliedFilters } from '@/modules/book/dto/response/admin-book-applied-filters';
 import { BookResponse } from '@/modules/book/dto/response/model/book.response';
 
 export class GetBooksResponseDto {
@@ -12,8 +13,18 @@ export class GetBooksResponseDto {
   })
   total: number;
 
-  constructor(books: readonly BookResponse[], total: number) {
+  @ApiPropertyOptional({ type: () => AdminBookAppliedFilters })
+  appliedFilters?: AdminBookAppliedFilters;
+
+  constructor(
+    books: readonly BookResponse[],
+    total: number,
+    appliedFilters?: AdminBookAppliedFilters,
+  ) {
     this.books = [...books];
     this.total = total;
+    if (appliedFilters !== undefined) {
+      this.appliedFilters = appliedFilters;
+    }
   }
 }

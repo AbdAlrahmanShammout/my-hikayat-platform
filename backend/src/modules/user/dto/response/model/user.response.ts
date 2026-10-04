@@ -13,7 +13,8 @@ export class UserResponse extends BaseModelResponseDto {
   email: string;
 
   @ApiProperty({
-    description: 'Display name collected at sign-up. Null for accounts created before the field existed.',
+    description:
+      'Display name collected at sign-up. Null for accounts created before the field existed.',
     example: 'Aisha Rahimah',
     nullable: true,
   })

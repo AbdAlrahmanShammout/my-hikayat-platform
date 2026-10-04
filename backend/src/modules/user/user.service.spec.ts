@@ -185,6 +185,9 @@ describe('UserService', () => {
         excludeRole: undefined,
         isPublisher: undefined,
         email: 'reader@example.com',
+        keyword: undefined,
+        sortBy: undefined,
+        sortOrder: undefined,
       });
       expect(actualPage).toBe(expectedPage);
     });

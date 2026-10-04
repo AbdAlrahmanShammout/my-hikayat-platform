@@ -7,6 +7,7 @@ import {
   SpreadVisualDurationTotal,
   SumReadingVisualEngagementDurationsRepoInput,
   SumSpreadVisualEngagementRepoInput,
+  SumUserBookVisualEngagementRepoInput,
 } from '@/modules/reading-intelligence/defs/reading-visual-engagement-repository.defs';
 import { ReadingVisualEngagementEntity } from '@/modules/reading-intelligence/entity/reading-visual-engagement.entity';
 
@@ -22,5 +23,8 @@ export abstract class ReadingVisualEngagementRepository {
   ): Promise<BookVisualDurationTotal[]>;
   abstract sumDurationsBySpreadInRange(
     input: SumSpreadVisualEngagementRepoInput,
+  ): Promise<SpreadVisualDurationTotal[]>;
+  abstract sumDurationsBySpreadForUser(
+    input: SumUserBookVisualEngagementRepoInput,
   ): Promise<SpreadVisualDurationTotal[]>;
 }

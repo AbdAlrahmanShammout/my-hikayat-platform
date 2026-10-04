@@ -84,6 +84,7 @@ describe('BookEngagementService', () => {
     findById: jest.Mock;
     findByPeriodAndBook: jest.Mock;
     summarizeByOwner: jest.Mock;
+    listPaidReadingByBook: jest.Mock;
   };
   let mockRevenuePeriodService: { getRevenuePeriodById: jest.Mock };
   let mockReadingIntelligenceService: { listBookEngagementSignalsInRange: jest.Mock };
@@ -98,6 +99,7 @@ describe('BookEngagementService', () => {
       findById: jest.fn(),
       findByPeriodAndBook: jest.fn(),
       summarizeByOwner: jest.fn(),
+      listPaidReadingByBook: jest.fn(),
     };
     mockRevenuePeriodService = { getRevenuePeriodById: jest.fn() };
     mockReadingIntelligenceService = { listBookEngagementSignalsInRange: jest.fn() };

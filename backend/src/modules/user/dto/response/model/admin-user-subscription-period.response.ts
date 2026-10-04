@@ -18,8 +18,7 @@ export class AdminUserSubscriptionPeriodResponse {
   periodEndsAt: Date | null;
 
   @ApiPropertyOptional({
-    description:
-      'Milliseconds remaining until periodEndsAt. Null when the plan has no expiration.',
+    description: 'Milliseconds remaining until periodEndsAt. Null when the plan has no expiration.',
     example: 1987200000,
     nullable: true,
   })

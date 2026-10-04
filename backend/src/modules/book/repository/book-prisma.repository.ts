@@ -13,6 +13,7 @@ import {
   UpdateBookRepoInput,
 } from '@/modules/book/defs/book-repository.defs';
 import { BookEntity } from '@/modules/book/entity/book.entity';
+import { AdminSortOrder } from '@/modules/book/enum/admin-book-sort-field.enum';
 import { CatalogSort } from '@/modules/book/enum/catalog-sort.enum';
 import { BookProcessingStatus, BookPublishingStatus } from '@/modules/book/enum/general.enum';
 import { BookMapper } from '@/modules/book/mapper/book.mapper';
@@ -102,21 +103,12 @@ export class BookPrismaRepository implements BookRepository {
   }
 
   async list(input: ListBooksRepoInput): Promise<BookPage> {
-    const where: Prisma.BookWhereInput = { deletedAt: null };
-    if (input.publishingStatus !== undefined) {
-      where.publishingStatus = input.publishingStatus;
-    }
-    if (input.processingStatus !== undefined) {
-      where.processingStatus = input.processingStatus;
-    }
-    if (input.ownerId !== undefined) {
-      where.ownerId = input.ownerId;
-    }
+    const where: Prisma.BookWhereInput = BookPrismaRepository.buildAdminBookWhere(input);
     const [rows, total] = await this.prismaProviderService.$transaction([
       this.prismaProviderService.book.findMany({
         where,
         include: bookDetailsInclude,
-        orderBy: { createdAt: 'desc' },
+        orderBy: BookPrismaRepository.buildAdminBookOrderBy(input),
         take: input.limit,
         skip: input.offset,
       }),
@@ -183,12 +175,105 @@ export class BookPrismaRepository implements BookRepository {
     return rows.map((row) => BookMapper.toEntity(row));
   }
 
-  private static buildCatalogVisibilityWhere(): Prisma.BookWhereInput {
+  private static buildAdminBookWhere(input: ListBooksRepoInput): Prisma.BookWhereInput {
+    const filters: Prisma.BookWhereInput[] = [{ deletedAt: null }];
+    const publishingStatuses: BookPublishingStatus[] | undefined = BookPrismaRepository.toArray(
+      input.publishingStatus,
+    );
+    const processingStatuses: BookProcessingStatus[] | undefined = BookPrismaRepository.toArray(
+      input.processingStatus,
+    );
+    const ownerIds: number[] | undefined = BookPrismaRepository.toArray(input.ownerId);
+    if (publishingStatuses !== undefined) {
+      filters.push({ publishingStatus: { in: publishingStatuses } });
+    }
+    if (processingStatuses !== undefined) {
+      filters.push({ processingStatus: { in: processingStatuses } });
+    }
+    if (ownerIds !== undefined) {
+      filters.push({ ownerId: { in: ownerIds } });
+    }
+    if (input.bookTypes !== undefined && input.bookTypes.length > 0) {
+      filters.push({ bookType: { in: [...input.bookTypes] } });
+    }
+    if (input.layoutTypes !== undefined && input.layoutTypes.length > 0) {
+      filters.push({ layoutType: { in: [...input.layoutTypes] } });
+    }
+    if (input.categoryIds !== undefined && input.categoryIds.length > 0) {
+      filters.push({
+        categories: {
+          some: { id: { in: [...input.categoryIds] }, deletedAt: null },
+        },
+      });
+    }
+    const sourceMetadata: Prisma.BookSourceMetadataWhereInput = {};
+    if (input.authorName !== undefined) {
+      sourceMetadata.creator = { contains: input.authorName, mode: 'insensitive' };
+    }
+    if (input.publisherName !== undefined) {
+      sourceMetadata.publisher = { contains: input.publisherName, mode: 'insensitive' };
+    }
+    if (input.authorName !== undefined || input.publisherName !== undefined) {
+      filters.push({ sourceMetadata: { is: sourceMetadata } });
+    }
+    if (input.keyword !== undefined) {
+      filters.push({
+        OR: [
+          { title: { contains: input.keyword, mode: 'insensitive' } },
+          { description: { contains: input.keyword, mode: 'insensitive' } },
+          { sourceMetadata: { is: { creator: { contains: input.keyword, mode: 'insensitive' } } } },
+          {
+            sourceMetadata: {
+              is: { publisher: { contains: input.keyword, mode: 'insensitive' } },
+            },
+          },
+        ],
+      });
+    }
+    if (input.catalogVisible === true) {
+      filters.push(BookPrismaRepository.buildCatalogVisiblePredicate());
+    }
+    if (input.catalogVisible === false) {
+      filters.push({ NOT: BookPrismaRepository.buildCatalogVisiblePredicate() });
+    }
+    return { AND: filters };
+  }
+
+  private static buildAdminBookOrderBy(
+    input: ListBooksRepoInput,
+  ): Prisma.BookOrderByWithRelationInput | Prisma.BookOrderByWithRelationInput[] {
+    if (input.sortBy === undefined) {
+      return { createdAt: 'desc' };
+    }
+    const direction: Prisma.SortOrder = input.sortOrder === AdminSortOrder.ASC ? 'asc' : 'desc';
+    const primary: Prisma.BookOrderByWithRelationInput = {
+      [input.sortBy]: direction,
+    };
+    return [primary, { id: 'desc' }];
+  }
+
+  private static toArray<TValue>(
+    value: TValue | readonly TValue[] | undefined,
+  ): TValue[] | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+    const values: TValue[] = Array.isArray(value) ? [...value] : [value];
+    return values.length === 0 ? undefined : values;
+  }
+
+  private static buildCatalogVisiblePredicate(): Prisma.BookWhereInput {
     return {
-      deletedAt: null,
       publishingStatus: BookPublishingStatus.APPROVED,
       processingStatus: BookProcessingStatus.READY,
       publishedAt: { not: null },
+    };
+  }
+
+  private static buildCatalogVisibilityWhere(): Prisma.BookWhereInput {
+    return {
+      deletedAt: null,
+      ...BookPrismaRepository.buildCatalogVisiblePredicate(),
     };
   }
 

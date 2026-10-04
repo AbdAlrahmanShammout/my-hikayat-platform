@@ -1,3 +1,4 @@
+import { AdminBookSortField, AdminSortOrder } from '@/modules/book/enum/admin-book-sort-field.enum';
 import { CatalogSort } from '@/modules/book/enum/catalog-sort.enum';
 import {
   BookLayoutType,
@@ -38,6 +39,7 @@ describe('BookPrismaRepository', () => {
       isPublisher: true,
     },
     categories: [],
+    sourceMetadata: null,
   };
   let mockPrismaProviderService: {
     $transaction: jest.Mock;
@@ -129,7 +131,8 @@ describe('BookPrismaRepository', () => {
     const actualPage = await bookPrismaRepository.list({ limit: 20, offset: 0, ownerId: 4 });
     expect(mockPrismaProviderService.book.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { deletedAt: null, ownerId: 4 },
+        where: { AND: [{ deletedAt: null }, { ownerId: { in: [4] } }] },
+        orderBy: { createdAt: 'desc' },
         include: bookDetailsInclude,
       }),
     );
@@ -146,10 +149,60 @@ describe('BookPrismaRepository', () => {
     });
     expect(mockPrismaProviderService.book.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { deletedAt: null, processingStatus: BookProcessingStatus.READY },
+        where: {
+          AND: [{ deletedAt: null }, { processingStatus: { in: [BookProcessingStatus.READY] } }],
+        },
         include: bookDetailsInclude,
       }),
     );
+  });
+
+  it('combines keyword, catalog visibility, and an allowlisted sort', async () => {
+    mockPrismaProviderService.$transaction.mockResolvedValue([[], 0]);
+    await bookPrismaRepository.list({
+      limit: 20,
+      offset: 40,
+      keyword: 'lighthouse',
+      categoryIds: [2, 3],
+      catalogVisible: true,
+      sortBy: AdminBookSortField.TITLE,
+      sortOrder: AdminSortOrder.ASC,
+    });
+    expect(mockPrismaProviderService.book.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          AND: [
+            { deletedAt: null },
+            { categories: { some: { id: { in: [2, 3] }, deletedAt: null } } },
+            {
+              OR: [
+                { title: { contains: 'lighthouse', mode: 'insensitive' } },
+                { description: { contains: 'lighthouse', mode: 'insensitive' } },
+                {
+                  sourceMetadata: {
+                    is: { creator: { contains: 'lighthouse', mode: 'insensitive' } },
+                  },
+                },
+                {
+                  sourceMetadata: {
+                    is: { publisher: { contains: 'lighthouse', mode: 'insensitive' } },
+                  },
+                },
+              ],
+            },
+            {
+              publishingStatus: BookPublishingStatus.APPROVED,
+              processingStatus: BookProcessingStatus.READY,
+              publishedAt: { not: null },
+            },
+          ],
+        },
+        orderBy: [{ title: 'asc' }, { id: 'desc' }],
+        take: 20,
+        skip: 40,
+      }),
+    );
+    expect(mockPrismaProviderService.book.count).toHaveBeenCalled();
   });
 
   it('lists catalog books as approved ready published rows ordered by newest', async () => {

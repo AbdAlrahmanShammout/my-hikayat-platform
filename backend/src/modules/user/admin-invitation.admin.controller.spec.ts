@@ -22,6 +22,11 @@ function createSampleInvitation(): AdminInvitationEntity {
     expiresAt: new Date('2026-08-24T00:00:00.000Z'),
     invitedByUserId: 9,
     acceptedAt: null,
+    lastSentAt: null,
+    resendCount: 0,
+    revokedAt: null,
+    revokedByUserId: null,
+    revokeReason: null,
   });
 }
 
@@ -40,14 +45,18 @@ function createSampleAdmin(): UserEntity {
 describe('AdminInvitationAdminController', () => {
   let adminInvitationAdminController: AdminInvitationAdminController;
   let mockAdminInvitationService: {
-    listPendingInvitations: jest.Mock;
+    listInvitations: jest.Mock;
     createInvitation: jest.Mock;
+    resendInvitation: jest.Mock;
+    revokeInvitation: jest.Mock;
   };
 
   beforeEach(async () => {
     mockAdminInvitationService = {
-      listPendingInvitations: jest.fn(),
+      listInvitations: jest.fn(),
       createInvitation: jest.fn(),
+      resendInvitation: jest.fn(),
+      revokeInvitation: jest.fn(),
     };
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [PassportModule.register({ defaultStrategy: 'jwt' })],
@@ -63,7 +72,7 @@ describe('AdminInvitationAdminController', () => {
 
   describe('listInvitations', () => {
     it('maps pending invitations without the token hash', async () => {
-      mockAdminInvitationService.listPendingInvitations.mockResolvedValue({
+      mockAdminInvitationService.listInvitations.mockResolvedValue({
         entities: [createSampleInvitation()],
         total: 1,
       });
@@ -71,9 +80,11 @@ describe('AdminInvitationAdminController', () => {
         limit: 10,
         offset: 0,
       });
-      expect(mockAdminInvitationService.listPendingInvitations).toHaveBeenCalledWith({
+      expect(mockAdminInvitationService.listInvitations).toHaveBeenCalledWith({
         limit: 10,
         offset: 0,
+        status: undefined,
+        email: undefined,
       });
       expect(actualResponse.total).toBe(1);
       expect(actualResponse.invitations[0].email).toBe('new-admin@example.com');

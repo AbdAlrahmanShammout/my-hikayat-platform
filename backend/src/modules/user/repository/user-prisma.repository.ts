@@ -12,6 +12,7 @@ import {
   UserPage,
 } from '@/modules/user/defs/user-repository.defs';
 import { UserEntity } from '@/modules/user/entity/user.entity';
+import { AdminUserSortOrder } from '@/modules/user/enum/admin-user-sort-field.enum';
 import { UserRole } from '@/modules/user/enum/general.enum';
 import { UserMapper } from '@/modules/user/mapper/user.mapper';
 import { UserRepository } from '@/modules/user/repository/user.repository';
@@ -83,7 +84,7 @@ export class UserPrismaRepository implements UserRepository {
     const [rows, total] = await this.prismaProviderService.$transaction([
       this.prismaProviderService.user.findMany({
         where,
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        orderBy: buildUserOrderBy(input),
         take: input.limit,
         skip: input.offset,
       }),
@@ -100,7 +101,7 @@ export class UserPrismaRepository implements UserRepository {
     const [rows, total] = await this.prismaProviderService.$transaction([
       this.prismaProviderService.user.findMany({
         where,
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        orderBy: buildUserOrderBy(input),
         take: input.limit,
         skip: input.offset,
         include: managedUserListInclude,
@@ -144,7 +145,21 @@ function buildOperationalUserWhere(input: ListUsersRepoInput): Prisma.UserWhereI
   if (input.email !== undefined) {
     where.email = input.email;
   }
+  if (input.keyword !== undefined) {
+    where.OR = [
+      { email: { contains: input.keyword, mode: 'insensitive' } },
+      { displayName: { contains: input.keyword, mode: 'insensitive' } },
+    ];
+  }
   return where;
+}
+
+function buildUserOrderBy(input: ListUsersRepoInput): Prisma.UserOrderByWithRelationInput[] {
+  if (input.sortBy === undefined) {
+    return [{ createdAt: 'desc' }, { id: 'desc' }];
+  }
+  const direction: Prisma.SortOrder = input.sortOrder === AdminUserSortOrder.ASC ? 'asc' : 'desc';
+  return [{ [input.sortBy]: direction }, { id: 'desc' }];
 }
 
 function toManagedUserListItem(row: ManagedUserListRow): ManagedUserListItem {
@@ -162,7 +177,10 @@ function toManagedUserListItem(row: ManagedUserListRow): ManagedUserListItem {
         ? null
         : {
             name: plan.name,
-            kind: plan.kind === PlanKind.MONTHLY_PAID ? PlanKind.MONTHLY_PAID : PlanKind.FREE,
+            kind:
+              String(plan.kind) === String(PlanKind.MONTHLY_PAID)
+                ? PlanKind.MONTHLY_PAID
+                : PlanKind.FREE,
           },
   };
 }

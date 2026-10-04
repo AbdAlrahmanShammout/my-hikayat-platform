@@ -6,7 +6,11 @@ import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagin
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
 import { AuditLogService } from '@/modules/audit/audit-log.service';
 import { AuditAction, AuditSubjectType } from '@/modules/audit/enum/general.enum';
-import { ManagedUserPage, UserPage } from '@/modules/user/defs/user-repository.defs';
+import {
+  ListUsersRepoInput,
+  ManagedUserPage,
+  UserPage,
+} from '@/modules/user/defs/user-repository.defs';
 import {
   CreateUserServiceInput,
   DeleteManagedUserServiceInput,
@@ -17,6 +21,10 @@ import {
   UpdatePasswordHashServiceInput,
 } from '@/modules/user/defs/user-service.defs';
 import { UserEntity } from '@/modules/user/entity/user.entity';
+import {
+  AdminUserSortField,
+  AdminUserSortOrder,
+} from '@/modules/user/enum/admin-user-sort-field.enum';
 import { UserRole } from '@/modules/user/enum/general.enum';
 import { AdminInvitationAlreadyAdminException } from '@/modules/user/exceptions/admin-invitation-already-admin.exception';
 import { UserAdminInviteRequiredException } from '@/modules/user/exceptions/user-admin-invite-required.exception';
@@ -331,14 +339,7 @@ export class UserService {
     };
   }
 
-  private static toListRepoInput(input: ListUsersServiceInput): {
-    readonly limit: number;
-    readonly offset: number;
-    readonly role?: UserRole;
-    readonly excludeRole?: UserRole;
-    readonly isPublisher?: boolean;
-    readonly email?: string;
-  } {
+  private static toListRepoInput(input: ListUsersServiceInput): ListUsersRepoInput {
     return {
       limit: input.limit ?? DEFAULT_PAGE_SIZE,
       offset: input.offset ?? DEFAULT_PAGE_OFFSET,
@@ -346,11 +347,37 @@ export class UserService {
       excludeRole: input.role === undefined ? input.excludeRole : undefined,
       isPublisher: input.isPublisher,
       email: input.email === undefined ? undefined : UserService.normalizeEmail(input.email),
+      keyword: UserService.normalizeOptionalKeyword(input.keyword),
+      sortBy: input.sortBy,
+      sortOrder: UserService.resolveUserSortOrder(input.sortBy, input.sortOrder),
     };
   }
 
   private static normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
+  }
+
+  private static normalizeOptionalKeyword(value: string | undefined): string | undefined {
+    if (value === undefined) {
+      return undefined;
+    }
+    const normalized: string = value.trim().replace(/\s+/g, ' ');
+    return normalized.length === 0 ? undefined : normalized;
+  }
+
+  private static resolveUserSortOrder(
+    sortBy: ListUsersServiceInput['sortBy'],
+    sortOrder: ListUsersServiceInput['sortOrder'],
+  ): ListUsersServiceInput['sortOrder'] {
+    if (sortBy === undefined) {
+      return undefined;
+    }
+    if (sortOrder !== undefined) {
+      return sortOrder;
+    }
+    return sortBy === AdminUserSortField.CREATED_AT
+      ? AdminUserSortOrder.DESC
+      : AdminUserSortOrder.ASC;
   }
 
   private static normalizeOptionalDisplayName(value: string | undefined): string | null {

@@ -1,3 +1,4 @@
+import { AdminBookSortField, AdminSortOrder } from '@/modules/book/enum/admin-book-sort-field.enum';
 import { CatalogSort } from '@/modules/book/enum/catalog-sort.enum';
 import {
   BookLayoutType,
@@ -44,9 +45,18 @@ export type ListBookRejectionHistoryServiceInput = {
 export type ListBooksServiceInput = {
   readonly limit?: number;
   readonly offset?: number;
-  readonly publishingStatus?: BookPublishingStatus;
-  readonly processingStatus?: BookProcessingStatus;
-  readonly ownerId?: number;
+  readonly publishingStatus?: BookPublishingStatus | readonly BookPublishingStatus[];
+  readonly processingStatus?: BookProcessingStatus | readonly BookProcessingStatus[];
+  readonly ownerId?: number | readonly number[];
+  readonly categoryIds?: readonly number[];
+  readonly bookTypes?: readonly BookType[];
+  readonly layoutTypes?: readonly BookLayoutType[];
+  readonly keyword?: string;
+  readonly authorName?: string;
+  readonly publisherName?: string;
+  readonly catalogVisible?: boolean;
+  readonly sortBy?: AdminBookSortField;
+  readonly sortOrder?: AdminSortOrder;
 };
 
 export type ListCatalogBooksServiceInput = {

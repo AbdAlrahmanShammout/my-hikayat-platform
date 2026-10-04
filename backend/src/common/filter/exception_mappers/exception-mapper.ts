@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 
 import { AppException } from '@/common/exceptions/app.exception';
+import { TooManyRequestsException } from '@/common/exceptions/too-many-requests.exception';
 import { ValidationExceptions } from '@/common/exceptions/validation.exception';
 import { mapPayloadTooLargeException } from '@/common/filter/exception_mappers/map-payload-too-large-exception';
 import { mapPrismaException } from '@/common/filter/exception_mappers/prisma-exception-handler';
@@ -20,6 +21,8 @@ function fromAppException(exception: AppException): GeneralTypeException {
     stack: exception.stack,
     validationErrorObjects:
       exception instanceof ValidationExceptions ? exception.validationErrorObjects : undefined,
+    retryAfterSeconds:
+      exception instanceof TooManyRequestsException ? exception.retryAfterSeconds : undefined,
   });
 }
 

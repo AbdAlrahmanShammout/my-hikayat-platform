@@ -71,6 +71,13 @@ export class ReadingVisualEngagementService {
     return this.readingVisualEngagementRepository.sumDurationsBySpreadInRange(input);
   }
 
+  async sumDurationsBySpreadForUser(input: {
+    readonly userId: number;
+    readonly bookId: number;
+  }): Promise<SpreadVisualDurationTotal[]> {
+    return this.readingVisualEngagementRepository.sumDurationsBySpreadForUser(input);
+  }
+
   async getReadingVisualEngagementById(id: number): Promise<ReadingVisualEngagementEntity> {
     const engagement: ReadingVisualEngagementEntity | null =
       await this.findReadingVisualEngagementById(id);

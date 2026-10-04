@@ -75,6 +75,13 @@ export class ReadingChapterEngagementService {
     return this.readingChapterEngagementRepository.sumDurationsByChapterInRange(input);
   }
 
+  async sumDurationsByChapterForUser(input: {
+    readonly userId: number;
+    readonly bookId: number;
+  }): Promise<ChapterDurationTotal[]> {
+    return this.readingChapterEngagementRepository.sumDurationsByChapterForUser(input);
+  }
+
   async getReadingChapterEngagementById(id: number): Promise<ReadingChapterEngagementEntity> {
     const engagement: ReadingChapterEngagementEntity | null =
       await this.findReadingChapterEngagementById(id);

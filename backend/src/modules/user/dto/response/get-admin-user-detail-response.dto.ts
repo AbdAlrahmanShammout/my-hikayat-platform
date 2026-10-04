@@ -30,6 +30,9 @@ export class GetAdminUserDetailResponseDto {
   })
   readingProgress: AdminUserReadingProgressItemResponse[];
 
+  @ApiProperty({ description: 'Total saved reading-progress rows for this user' })
+  readingProgressTotal: number;
+
   constructor(detail: AdminUserDetail) {
     this.user = new UserResponse(detail.user);
     this.subscription =
@@ -38,5 +41,6 @@ export class GetAdminUserDetailResponseDto {
     this.readingProgress = detail.readingItems.map(
       (item) => new AdminUserReadingProgressItemResponse(item),
     );
+    this.readingProgressTotal = detail.readingProgressTotal;
   }
 }

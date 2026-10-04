@@ -114,6 +114,15 @@ export class BookService {
       publishingStatus: input.publishingStatus,
       ownerId: input.ownerId,
       processingStatus: input.processingStatus,
+      categoryIds: input.categoryIds,
+      bookTypes: input.bookTypes,
+      layoutTypes: input.layoutTypes,
+      keyword: BookService.normalizeOptionalSearchText(input.keyword),
+      authorName: BookService.normalizeOptionalSearchText(input.authorName),
+      publisherName: BookService.normalizeOptionalSearchText(input.publisherName),
+      catalogVisible: input.catalogVisible,
+      sortBy: input.sortBy,
+      sortOrder: input.sortOrder,
     });
   }
 

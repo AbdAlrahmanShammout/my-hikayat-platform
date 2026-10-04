@@ -7,6 +7,7 @@ import { PlanEntity } from '@/modules/subscription/entity/plan.entity';
 import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.entity';
 import { PlanKind, SubscriptionStatus } from '@/modules/subscription/enum/general.enum';
 import { SubscriptionBillingService } from '@/modules/subscription/subscription-billing.service';
+import { SubscriptionSupportService } from '@/modules/subscription/subscription-support.service';
 import { SubscriptionService } from '@/modules/subscription/subscription.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
@@ -82,6 +83,7 @@ describe('SubscriptionAdminController', () => {
       providers: [
         { provide: SubscriptionService, useValue: mockSubscriptionService },
         { provide: SubscriptionBillingService, useValue: mockSubscriptionBillingService },
+        { provide: SubscriptionSupportService, useValue: { getSupportContext: jest.fn() } },
         JwtAuthGuard,
         RolesGuard,
       ],

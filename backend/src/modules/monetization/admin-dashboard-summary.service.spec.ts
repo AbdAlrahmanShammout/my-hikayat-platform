@@ -10,18 +10,26 @@ describe('AdminDashboardSummaryService', () => {
   let mockUserService: { listUsers: jest.Mock };
   let mockBookService: {
     listBooks: jest.Mock;
+    listBooksByIds: jest.Mock;
     countCatalogVisibleBooks: jest.Mock;
   };
-  let mockBookEngagementService: { summarizeOwnerEngagement: jest.Mock };
+  let mockBookEngagementService: {
+    summarizeOwnerEngagement: jest.Mock;
+    listPaidReadingByBook: jest.Mock;
+  };
   let adminDashboardSummaryService: AdminDashboardSummaryService;
 
   beforeEach(() => {
     mockUserService = { listUsers: jest.fn() };
     mockBookService = {
       listBooks: jest.fn(),
+      listBooksByIds: jest.fn(),
       countCatalogVisibleBooks: jest.fn(),
     };
-    mockBookEngagementService = { summarizeOwnerEngagement: jest.fn() };
+    mockBookEngagementService = {
+      summarizeOwnerEngagement: jest.fn(),
+      listPaidReadingByBook: jest.fn(),
+    };
     adminDashboardSummaryService = new AdminDashboardSummaryService(
       mockUserService as unknown as UserService,
       mockBookService as unknown as BookService,
@@ -91,5 +99,40 @@ describe('AdminDashboardSummaryService', () => {
       pendingReviewBooks: 2,
       totalReadingMinutes: 1.5,
     });
+  });
+
+  it('pages BookEngagement drill-down without using raw sessions', async () => {
+    mockBookEngagementService.summarizeOwnerEngagement.mockResolvedValue({
+      totalActiveReadingMs: 120_000,
+      totalActiveSpreadMs: 60_000,
+      totalVisualSceneTimeMs: 999_000,
+      totalWeightedEngagement: 1,
+    });
+    mockBookEngagementService.listPaidReadingByBook.mockResolvedValue([
+      { bookId: 8, activeReadingMs: 120_000, activeSpreadMs: 0 },
+      { bookId: 9, activeReadingMs: 0, activeSpreadMs: 60_000 },
+    ]);
+    mockBookService.listBooksByIds.mockResolvedValue([
+      { id: 8, title: 'Reflowable', ownerId: 4 },
+      { id: 9, title: 'Fixed', ownerId: 4 },
+    ]);
+    const actualPage = await adminDashboardSummaryService.listReadingDrilldown({
+      limit: 1,
+      offset: 1,
+      ownerId: 4,
+    });
+    expect(mockBookEngagementService.listPaidReadingByBook).toHaveBeenCalledWith({ ownerId: 4 });
+    expect(actualPage.totalReadingMinutes).toBe(3);
+    expect(actualPage.total).toBe(2);
+    expect(actualPage.bookEngagements).toEqual([
+      {
+        bookId: 9,
+        title: 'Fixed',
+        ownerId: 4,
+        activeReadingMs: 0,
+        activeSpreadMs: 60_000,
+        readingMinutes: 1,
+      },
+    ]);
   });
 });

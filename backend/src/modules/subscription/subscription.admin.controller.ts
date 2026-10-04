@@ -18,9 +18,14 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { SubscriptionPage } from '@/modules/subscription/defs/subscription-repository.defs';
 import { ListSubscriptionsRequestDto } from '@/modules/subscription/dto/request/list-subscriptions-request.dto';
 import { GetSubscriptionsResponseDto } from '@/modules/subscription/dto/response/get-subscriptions-response.dto';
+import { GetSubscriptionSupportContextResponseDto } from '@/modules/subscription/dto/response/get-subscription-support-context-response.dto';
 import { SubscriptionResponse } from '@/modules/subscription/dto/response/model/subscription.response';
 import { SubscriptionEntity } from '@/modules/subscription/entity/subscription.entity';
 import { SubscriptionBillingService } from '@/modules/subscription/subscription-billing.service';
+import {
+  SubscriptionSupportContext,
+  SubscriptionSupportService,
+} from '@/modules/subscription/subscription-support.service';
 import { SubscriptionService } from '@/modules/subscription/subscription.service';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
@@ -34,6 +39,7 @@ export class SubscriptionAdminController {
   constructor(
     private readonly subscriptionService: SubscriptionService,
     private readonly subscriptionBillingService: SubscriptionBillingService,
+    private readonly subscriptionSupportService: SubscriptionSupportService,
   ) {}
 
   @Get()
@@ -49,6 +55,18 @@ export class SubscriptionAdminController {
       status: query.status,
     });
     return new GetSubscriptionsResponseDto(page);
+  }
+
+  @Get(':id/support-context')
+  @ApiOperation({ summary: 'Subscription support context, including Stripe ids for admin copy' })
+  @ApiParam({ name: 'id', type: Number })
+  @ApiResponse({ status: 200, type: GetSubscriptionSupportContextResponseDto })
+  async getSupportContext(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<GetSubscriptionSupportContextResponseDto> {
+    const context: SubscriptionSupportContext =
+      await this.subscriptionSupportService.getSupportContext(id);
+    return new GetSubscriptionSupportContextResponseDto(context);
   }
 
   @Get(':id')

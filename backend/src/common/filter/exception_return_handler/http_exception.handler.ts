@@ -22,6 +22,7 @@ const ERROR_KIND_HTTP_STATUS: Record<ErrorKind, HttpStatus> = {
   [ErrorKind.UNAUTHENTICATED]: HttpStatus.UNAUTHORIZED,
   [ErrorKind.ACCESS_DENIED]: HttpStatus.FORBIDDEN,
   [ErrorKind.DEPENDENCY_FAILURE]: HttpStatus.SERVICE_UNAVAILABLE,
+  [ErrorKind.TOO_MANY_REQUESTS]: HttpStatus.TOO_MANY_REQUESTS,
   [ErrorKind.INTERNAL]: HttpStatus.INTERNAL_SERVER_ERROR,
 };
 
@@ -41,6 +42,9 @@ export function handleHttpException(normalized: GeneralTypeException, host: Argu
   }
   if (normalized.validationErrorObjects !== undefined) {
     body.validationErrorObjects = normalized.validationErrorObjects;
+  }
+  if (normalized.retryAfterSeconds !== undefined) {
+    response.setHeader('Retry-After', String(normalized.retryAfterSeconds));
   }
   response.status(normalized.statusCode).json(body);
 }

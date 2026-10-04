@@ -26,6 +26,10 @@ import { ReadingVisualEngagementRepository } from './repository/reading-visual-e
       useClass: ReadingChapterEngagementPrismaRepository,
     },
   ],
-  exports: [ReadingIntelligenceService, ReadingChapterEngagementService],
+  exports: [
+    ReadingIntelligenceService,
+    ReadingChapterEngagementService,
+    ReadingVisualEngagementService,
+  ],
 })
 export class ReadingIntelligenceModule {}

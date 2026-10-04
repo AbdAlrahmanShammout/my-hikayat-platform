@@ -131,4 +131,26 @@ export class ReadingChapterEngagementPrismaRepository implements ReadingChapterE
         return left.spineIndex - right.spineIndex;
       });
   }
+
+  async sumDurationsByChapterForUser(input: {
+    readonly userId: number;
+    readonly bookId: number;
+  }): Promise<ChapterDurationTotal[]> {
+    const rows = await this.prismaProviderService.readingChapterEngagement.groupBy({
+      by: ['spineIndex'],
+      where: {
+        userId: input.userId,
+        bookId: input.bookId,
+        deletedAt: null,
+        layoutType: BookLayoutType.REFLOWABLE,
+      },
+      _sum: { activeDurationMs: true },
+    });
+    return rows
+      .map((row) => ({
+        spineIndex: row.spineIndex,
+        activeDurationMs: row._sum.activeDurationMs ?? 0,
+      }))
+      .sort((left, right) => left.spineIndex - right.spineIndex);
+  }
 }

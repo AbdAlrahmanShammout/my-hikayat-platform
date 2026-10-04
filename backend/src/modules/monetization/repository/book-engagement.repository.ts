@@ -4,6 +4,7 @@ import {
   ListAllBookEngagementsRepoInput,
   ListBookEngagementsRepoInput,
   OwnerBookEngagementSummary,
+  PaidReadingByBookRow,
   ReplaceBookEngagementsForPeriodRepoInput,
   SummarizeOwnerBookEngagementsRepoInput,
 } from '@/modules/monetization/defs/book-engagement-repository.defs';
@@ -24,4 +25,7 @@ export abstract class BookEngagementRepository {
   abstract summarizeByOwner(
     input: SummarizeOwnerBookEngagementsRepoInput,
   ): Promise<OwnerBookEngagementSummary>;
+  abstract listPaidReadingByBook(input: {
+    readonly ownerId?: number;
+  }): Promise<PaidReadingByBookRow[]>;
 }

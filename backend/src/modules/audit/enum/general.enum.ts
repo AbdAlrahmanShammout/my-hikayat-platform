@@ -19,6 +19,10 @@ export enum AuditAction {
   COLLECTION_BOOK_REMOVED = 'collection_book_removed',
   COLLECTION_REORDERED = 'collection_reordered',
   REVENUE_CALCULATED = 'revenue_calculated',
+  INVITATION_CREATED = 'invitation_created',
+  INVITATION_RESENT = 'invitation_resent',
+  INVITATION_REVOKED = 'invitation_revoked',
+  EXPORT_REQUESTED = 'export_requested',
 }
 
 export enum AuditSubjectType {
@@ -27,4 +31,6 @@ export enum AuditSubjectType {
   SUBSCRIPTION = 'subscription',
   COLLECTION = 'collection',
   REVENUE_PERIOD = 'revenue_period',
+  INVITATION = 'invitation',
+  ADMIN_EXPORT = 'admin_export',
 }

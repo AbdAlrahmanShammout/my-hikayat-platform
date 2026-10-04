@@ -6,6 +6,7 @@ import { RolesGuard } from '@/common/guards/roles.guard';
 import { UserEntity } from '@/modules/user/entity/user.entity';
 import { UserRole } from '@/modules/user/enum/general.enum';
 import { UserAdminDetailService } from '@/modules/user/user-admin-detail.service';
+import { UserBookEngagementService } from '@/modules/user/user-book-engagement.service';
 import { UserService } from '@/modules/user/user.service';
 
 import { UserAdminController } from './user.admin.controller';
@@ -62,6 +63,7 @@ describe('UserAdminController', () => {
       providers: [
         { provide: UserService, useValue: mockUserService },
         { provide: UserAdminDetailService, useValue: mockUserAdminDetailService },
+        { provide: UserBookEngagementService, useValue: { getEngagement: jest.fn() } },
         JwtAuthGuard,
         RolesGuard,
       ],
@@ -94,6 +96,9 @@ describe('UserAdminController', () => {
         excludeRole: UserRole.ADMIN,
         isPublisher: undefined,
         email: undefined,
+        keyword: undefined,
+        sortBy: undefined,
+        sortOrder: undefined,
       });
       expect(actualResponse.total).toBe(1);
       expect(actualResponse.users[0].id).toBe(1);
@@ -115,6 +120,7 @@ describe('UserAdminController', () => {
           elapsedPercent: null,
         },
         readingItems: [],
+        readingProgressTotal: 0,
       });
       const actualResponse = await userAdminController.getUser(1);
       expect(mockUserAdminDetailService.getAdminUserDetail).toHaveBeenCalledWith(1);

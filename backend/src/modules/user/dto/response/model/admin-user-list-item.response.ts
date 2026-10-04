@@ -6,7 +6,8 @@ import { UserResponse } from '@/modules/user/dto/response/model/user.response';
 
 export class AdminUserListItemResponse extends UserResponse {
   @ApiProperty({
-    description: 'Latest session token issue. Updates on sign-in and session refresh. Null when the account has never signed in.',
+    description:
+      'Latest session token issue. Updates on sign-in and session refresh. Null when the account has never signed in.',
     type: String,
     format: 'date-time',
     nullable: true,

@@ -318,6 +318,15 @@ describe('BookService', () => {
         publishingStatus: undefined,
         ownerId: undefined,
         processingStatus: undefined,
+        categoryIds: undefined,
+        bookTypes: undefined,
+        layoutTypes: undefined,
+        keyword: undefined,
+        authorName: undefined,
+        publisherName: undefined,
+        catalogVisible: undefined,
+        sortBy: undefined,
+        sortOrder: undefined,
       });
       expect(actualPage.total).toBe(1);
     });
@@ -331,6 +340,15 @@ describe('BookService', () => {
         publishingStatus: undefined,
         ownerId: 4,
         processingStatus: undefined,
+        categoryIds: undefined,
+        bookTypes: undefined,
+        layoutTypes: undefined,
+        keyword: undefined,
+        authorName: undefined,
+        publisherName: undefined,
+        catalogVisible: undefined,
+        sortBy: undefined,
+        sortOrder: undefined,
       });
     });
 
@@ -343,6 +361,15 @@ describe('BookService', () => {
         publishingStatus: undefined,
         ownerId: undefined,
         processingStatus: BookProcessingStatus.READY,
+        categoryIds: undefined,
+        bookTypes: undefined,
+        layoutTypes: undefined,
+        keyword: undefined,
+        authorName: undefined,
+        publisherName: undefined,
+        catalogVisible: undefined,
+        sortBy: undefined,
+        sortOrder: undefined,
       });
     });
   });

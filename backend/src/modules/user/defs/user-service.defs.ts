@@ -1,3 +1,4 @@
+import { AdminUserSortField, AdminUserSortOrder } from '@/modules/user/enum/admin-user-sort-field.enum';
 import { UserRole } from '@/modules/user/enum/general.enum';
 
 export type CreateUserServiceInput = {
@@ -17,6 +18,9 @@ export type ListUsersServiceInput = {
   readonly excludeRole?: UserRole;
   readonly isPublisher?: boolean;
   readonly email?: string;
+  readonly keyword?: string;
+  readonly sortBy?: AdminUserSortField;
+  readonly sortOrder?: AdminUserSortOrder;
 };
 
 export type UpdateManagedUserServiceInput = {
