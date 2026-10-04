@@ -33,6 +33,10 @@ export function AdminUsersPanel({ audience }: AdminUsersPanelProps): JSX.Element
     limit: ADMIN_LIST_PAGE_SIZE,
     offset: listSearch.offset,
     email: listSearch.email,
+    q: listSearch.q,
+    isPublisher: audience === 'members' ? listSearch.isPublisher : undefined,
+    sortBy: listSearch.sortBy,
+    sortOrder: listSearch.sortOrder,
     ...(audience === 'admins'
       ? { role: USER_ROLES.ADMIN }
       : { excludeRole: USER_ROLES.ADMIN }),
@@ -42,7 +46,12 @@ export function AdminUsersPanel({ audience }: AdminUsersPanelProps): JSX.Element
   };
   return (
     <div className="space-y-6">
-      <AdminUsersFilters value={listSearch} onChange={replaceSearch} />
+      <AdminUsersFilters
+        key={`${audience}-${serializeUsersSearch(listSearch)}`}
+        audience={audience}
+        value={listSearch}
+        onChange={replaceSearch}
+      />
       {renderUsersPanelBody(usersQuery, listSearch, replaceSearch, audience)}
     </div>
   );
@@ -72,9 +81,7 @@ function renderUsersPanelBody(
       <EmptyState
         title="No users match this filter"
         description={
-          listSearch.email !== undefined
-            ? 'Try a different exact email.'
-            : 'GET /admin/users returned an empty list.'
+          'Try another keyword, exact email, or publisher filter.'
         }
       />
     );
@@ -99,8 +106,24 @@ function buildListSearchParams(search: AdminUsersListSearch): URLSearchParams {
   if (search.email !== undefined) {
     params.set('email', search.email);
   }
+  if (search.q !== undefined) {
+    params.set('q', search.q);
+  }
+  if (search.isPublisher !== undefined) {
+    params.set('isPublisher', String(search.isPublisher));
+  }
+  if (search.sortBy !== undefined) {
+    params.set('sortBy', search.sortBy);
+  }
+  if (search.sortOrder !== undefined) {
+    params.set('sortOrder', search.sortOrder);
+  }
   if (search.offset > 0) {
     params.set('offset', String(search.offset));
   }
   return params;
+}
+
+function serializeUsersSearch(search: AdminUsersListSearch): string {
+  return JSON.stringify(search);
 }

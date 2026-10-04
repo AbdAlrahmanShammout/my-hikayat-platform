@@ -12,4 +12,12 @@ describe('toSearchParams', () => {
     const actualResult: string = toSearchParams({ limit: 1, offset: 0 });
     expect(actualResult).toBe('?limit=1&offset=0');
   });
+
+  it('repeats array values and skips empty arrays', () => {
+    const actualResult: string = toSearchParams({
+      publishingStatus: ['approved', 'in_review'],
+      categoryId: [],
+    });
+    expect(actualResult).toBe('?publishingStatus=approved&publishingStatus=in_review');
+  });
 });

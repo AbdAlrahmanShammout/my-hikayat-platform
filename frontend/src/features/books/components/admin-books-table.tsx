@@ -32,12 +32,14 @@ export function AdminBooksTable({ books, showOwner = true }: AdminBooksTableProp
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Title</TableHead>
+          <TableHead className="sticky left-0 z-10 bg-card">Title</TableHead>
+          <TableHead>EPUB creator</TableHead>
+          <TableHead>EPUB publisher</TableHead>
           <TableHead>Publishing</TableHead>
           <TableHead>Processing</TableHead>
           <TableHead>Layout</TableHead>
           <TableHead>Type</TableHead>
-          {showOwner ? <TableHead>Owner</TableHead> : null}
+          {showOwner ? <TableHead>Publisher account</TableHead> : null}
           <TableHead>Categories</TableHead>
           <TableHead>Published</TableHead>
           <TableHead className="text-right">Actions</TableHead>
@@ -46,11 +48,19 @@ export function AdminBooksTable({ books, showOwner = true }: AdminBooksTableProp
       <TableBody>
         {books.map((book) => (
           <TableRow key={book.id}>
-            <TableCell>
+            <TableCell className="sticky left-0 z-10 bg-card">
               <div className="flex items-center gap-4">
                 <BookCoverThumbnail title={book.title} cover={book.cover} />
-                <span className="font-medium">{book.title}</span>
+                <span className="max-w-56 truncate font-medium" title={book.title}>
+                  {book.title}
+                </span>
               </div>
+            </TableCell>
+            <TableCell>
+              <TruncatedText value={book.authorName} emptyLabel="No EPUB creator" />
+            </TableCell>
+            <TableCell>
+              <TruncatedText value={book.publisherName} emptyLabel="No EPUB publisher" />
             </TableCell>
             <TableCell>
               <AdminBookStatusBadge value={book.publishingStatus} />
@@ -85,5 +95,22 @@ export function AdminBooksTable({ books, showOwner = true }: AdminBooksTableProp
         ))}
       </TableBody>
     </Table>
+  );
+}
+
+function TruncatedText({
+  value,
+  emptyLabel,
+}: {
+  readonly value: string | null | undefined;
+  readonly emptyLabel: string;
+}): JSX.Element {
+  if (value === null || value === undefined || value.trim() === '') {
+    return <span className="text-muted-foreground">{emptyLabel}</span>;
+  }
+  return (
+    <span className="block max-w-40 truncate" title={value}>
+      {value}
+    </span>
   );
 }

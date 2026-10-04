@@ -11,14 +11,19 @@ import { AdminBooksPage } from '@/pages/admin/books-page';
 import { AdminCategoriesPage } from '@/pages/admin/categories-page';
 import { AdminCollectionDetailPage } from '@/pages/admin/collection-detail-page';
 import { AdminCollectionsPage } from '@/pages/admin/collections-page';
+import { AdminExportsPage } from '@/pages/admin/exports-page';
 import { AdminHomePage } from '@/pages/admin/home-page';
 import { AdminInvitationsPage } from '@/pages/admin/invitations-page';
 import { AdminPlansPage } from '@/pages/admin/plans-page';
 import { AdminPlatformSettingsPage } from '@/pages/admin/platform-settings-page';
+import { AdminPublisherSummaryPage } from '@/pages/admin/publisher-summary-page';
+import { AdminPublishersPage } from '@/pages/admin/publishers-page';
+import { AdminReadingPage } from '@/pages/admin/reading-page';
 import { AdminRevenueDetailPage } from '@/pages/admin/revenue-detail-page';
 import { AdminRevenuePeriodBookHeatmapPage } from '@/pages/admin/revenue-period-book-heatmap-page';
 import { AdminRevenuePage } from '@/pages/admin/revenue-page';
 import { AdminSubscriptionDetailPage } from '@/pages/admin/subscription-detail-page';
+import { AdminSearchPage } from '@/pages/admin/search-page';
 import { AdminSubscriptionsPage } from '@/pages/admin/subscriptions-page';
 import { AdminUserDetailPage } from '@/pages/admin/user-detail-page';
 import { AdminUsersPage } from '@/pages/admin/users-page';
@@ -61,6 +66,11 @@ export const appRouter = createBrowserRouter([
       { path: 'users/members', element: <AdminUsersPage /> },
       { path: 'users/:userId', element: <AdminUserDetailPage /> },
       { path: 'invitations', element: <AdminInvitationsPage /> },
+      { path: 'publishers', element: <AdminPublishersPage /> },
+      { path: 'publishers/:userId', element: <AdminPublisherSummaryPage /> },
+      { path: 'reading', element: <AdminReadingPage /> },
+      { path: 'exports', element: <AdminExportsPage /> },
+      { path: 'search', element: <AdminSearchPage /> },
       { path: 'plans', element: <AdminPlansPage /> },
       { path: 'subscriptions', element: <AdminSubscriptionsPage /> },
       { path: 'subscriptions/:subscriptionId', element: <AdminSubscriptionDetailPage /> },

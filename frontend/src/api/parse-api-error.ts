@@ -9,7 +9,16 @@ const FALLBACK_CODE = 'HTTP_EXCEPTION';
  */
 export async function parseErrorResponse(response: Response): Promise<ApiError> {
   const body: unknown = await readResponseBody(response);
-  return mapUnknownToApiError(body, response.status);
+  return mapUnknownToApiError(body, response.status, readRetryAfterSeconds(response));
+}
+
+function readRetryAfterSeconds(response: Response): number | undefined {
+  const header: string | null = response.headers.get('Retry-After');
+  if (header === null || header.trim() === '') {
+    return undefined;
+  }
+  const seconds: number = Number.parseInt(header, 10);
+  return Number.isFinite(seconds) && seconds >= 0 ? seconds : undefined;
 }
 
 async function readResponseBody(response: Response): Promise<unknown> {
@@ -24,23 +33,33 @@ async function readResponseBody(response: Response): Promise<unknown> {
   }
 }
 
-function mapUnknownToApiError(body: unknown, statusCode: number): ApiError {
+function mapUnknownToApiError(
+  body: unknown,
+  statusCode: number,
+  retryAfterSeconds: number | undefined,
+): ApiError {
   if (!isRecord(body)) {
     return new ApiError({
       message: FALLBACK_MESSAGE,
       code: FALLBACK_CODE,
       statusCode,
+      retryAfterSeconds,
     });
   }
-  return new ApiError(toApiErrorBody(body, statusCode));
+  return new ApiError(toApiErrorBody(body, statusCode, retryAfterSeconds));
 }
 
-function toApiErrorBody(body: Record<string, unknown>, statusCode: number): ApiErrorBody {
+function toApiErrorBody(
+  body: Record<string, unknown>,
+  statusCode: number,
+  retryAfterSeconds: number | undefined,
+): ApiErrorBody {
   return {
     message: readString(body.message) ?? FALLBACK_MESSAGE,
     code: readString(body.code) ?? FALLBACK_CODE,
     statusCode: readNumber(body.statusCode) ?? statusCode,
     validationErrorObjects: readValidationErrorObjects(body.validationErrorObjects),
+    retryAfterSeconds,
   };
 }
 

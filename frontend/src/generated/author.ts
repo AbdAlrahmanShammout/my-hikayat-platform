@@ -28,10 +28,42 @@ export interface paths {
       };
     };
   };
+  "/auth/refresh": {
+    post: {
+      requestBody: { content: { 'application/json': components['schemas']['RefreshSessionRequestDto'] } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['AuthSessionResponseDto'] } };
+      };
+    };
+  };
+  "/auth/logout": {
+    post: {
+      requestBody: { content: { 'application/json': components['schemas']['LogoutRequestDto'] } };
+      responses: {
+        "204": { content?: never };
+      };
+    };
+  };
   "/auth/me": {
     get: {
       responses: {
         "200": { content: { 'application/json': components['schemas']['UserResponse'] } };
+      };
+    };
+  };
+  "/auth/forgot-password": {
+    post: {
+      requestBody: { content: { 'application/json': components['schemas']['ForgotPasswordRequestDto'] } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['ForgotPasswordResponseDto'] } };
+      };
+    };
+  };
+  "/auth/reset-password": {
+    post: {
+      requestBody: { content: { 'application/json': components['schemas']['ResetPasswordRequestDto'] } };
+      responses: {
+        "200": { content: { 'application/json': components['schemas']['ResetPasswordResponseDto'] } };
       };
     };
   };
@@ -155,18 +187,25 @@ export interface paths {
 
 export interface components {
   schemas: {
-    RegisterRequestDto: { email: string; password: string; displayName: string };
+    RegisterRequestDto: { email: string; displayName: string; password: string };
     UserResponse: { id: number; createdAt: string; updatedAt: string; email: string; displayName: string | null; role: "reader" | "author" | "admin"; isPublisher: boolean };
     AuthSessionResponseDto: { accessToken: string; refreshToken: string; tokenType: string; expiresIn: string; user: components['schemas']['UserResponse'] };
     AcceptAdminInvitationRequestDto: { token: string; password: string };
     LoginRequestDto: { email: string; password: string };
-    BookAssetResponse: { id: number; createdAt: string; updatedAt: string; bookId: number; kind: "source" | "processed" | "preview_image" | "promo_video" | "audio"; storageKey: string; contentType: string; byteSize: number; checksumSha256?: unknown | null; originalFileName?: unknown | null; sortOrder: number; isEncrypted: boolean };
+    RefreshSessionRequestDto: { refreshToken: string };
+    LogoutRequestDto: { refreshToken: string };
+    ForgotPasswordRequestDto: { email: string };
+    ForgotPasswordResponseDto: { message: string };
+    ResetPasswordRequestDto: { token: string; password: string };
+    ResetPasswordResponseDto: { message: string };
+    BookAssetResponse: { id: number; createdAt: string; updatedAt: string; bookId: number; kind: "source" | "processed" | "preview_image" | "promo_video" | "audio"; storageKey: string; contentType: string; byteSize: number; checksumSha256?: string | null; originalFileName?: string | null; sortOrder: number; isEncrypted: boolean };
     CreateBookRequestDto: { title: string; description: string; bookType: "standard_chapter" | "picture_book" | "illustrated_chapter"; categoryIds?: Array<number> };
     CategoryResponse: { id: number; createdAt: string; updatedAt: string; name: string; slug: string; categoryWeight: number };
-    BookResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string; layoutType?: "reflowable" | "fixed_layout" | null; bookType: "standard_chapter" | "picture_book" | "illustrated_chapter"; publishingStatus: "pending" | "in_review" | "approved" | "rejected"; processingStatus: "not_started" | "processing" | "ready" | "failed"; publishedAt?: unknown | null; ownerId: number; owner?: components['schemas']['UserResponse']; categories: Array<components['schemas']['CategoryResponse']>; authorName?: string | null; publisherName?: string | null; cover?: components['schemas']['BookCoverResponse'] | null };
     BookCoverResponse: { url: string; expiresAt: string; contentType: string };
-    GetBooksResponseDto: { books: Array<components['schemas']['BookResponse']>; total: number };
-    AuditLogResponse: { id: number; createdAt: string; updatedAt: string; actorUserId: number; action: "book_submitted_for_review" | "book_approved" | "book_rejected" | "book_unpublished" | "book_republished" | "book_deleted" | "publisher_enabled" | "publisher_disabled" | "user_role_changed" | "user_deleted" | "subscription_canceled" | "subscription_payment_failed" | "collection_created" | "collection_updated" | "collection_deleted" | "collection_book_added" | "collection_book_removed" | "collection_reordered" | "revenue_calculated"; subjectType: "book" | "user" | "subscription" | "collection" | "revenue_period"; subjectId: number; reason?: unknown | null; metadata?: unknown | null; actor?: components['schemas']['UserResponse'] };
+    BookResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string; layoutType?: "reflowable" | "fixed_layout" | null; bookType: "standard_chapter" | "picture_book" | "illustrated_chapter"; publishingStatus: "pending" | "in_review" | "approved" | "rejected"; processingStatus: "not_started" | "processing" | "ready" | "failed"; publishedAt?: string | null; ownerId: number; owner?: components['schemas']['UserResponse']; categories: Array<components['schemas']['CategoryResponse']>; authorName?: string | null; publisherName?: string | null; cover?: (components['schemas']['BookCoverResponse']) | null };
+    AdminBookAppliedFilters: { q?: string; categoryId?: Array<number>; authorName?: string; publisherName?: string; ownerId?: Array<number>; bookType?: Array<"standard_chapter" | "picture_book" | "illustrated_chapter">; layoutType?: Array<"reflowable" | "fixed_layout">; publishingStatus?: Array<"pending" | "in_review" | "approved" | "rejected">; processingStatus?: Array<"not_started" | "processing" | "ready" | "failed">; catalogVisible?: boolean; sortBy?: "createdAt" | "publishedAt" | "title" | "updatedAt"; sortOrder?: "asc" | "desc" };
+    GetBooksResponseDto: { books: Array<components['schemas']['BookResponse']>; total: number; appliedFilters?: components['schemas']['AdminBookAppliedFilters'] };
+    AuditLogResponse: { id: number; createdAt: string; updatedAt: string; actorUserId: number; action: "book_submitted_for_review" | "book_approved" | "book_rejected" | "book_unpublished" | "book_republished" | "book_deleted" | "book_content_key_issued" | "publisher_enabled" | "publisher_disabled" | "user_role_changed" | "user_deleted" | "subscription_canceled" | "subscription_payment_failed" | "collection_created" | "collection_updated" | "collection_deleted" | "collection_book_added" | "collection_book_removed" | "collection_reordered" | "revenue_calculated" | "invitation_created" | "invitation_resent" | "invitation_revoked" | "export_requested"; subjectType: "book" | "user" | "subscription" | "collection" | "revenue_period" | "invitation" | "admin_export"; subjectId: number; reason?: string | null; metadata?: unknown | null; actor?: components['schemas']['UserResponse'] };
     GetBookRejectionHistoryResponseDto: { rejections: Array<components['schemas']['AuditLogResponse']>; total: number };
     UpdateBookRequestDto: { title?: string; description?: string; bookType?: "standard_chapter" | "picture_book" | "illustrated_chapter"; categoryIds?: Array<number> };
     GetCategoriesResponseDto: { categories: Array<components['schemas']['CategoryResponse']>; total: number };
@@ -178,7 +217,7 @@ export interface components {
     BookEngagementResponse: { id: number; createdAt: string; updatedAt: string; revenuePeriodId: number; bookId: number; layoutType: "reflowable" | "fixed_layout"; activeReadingMs: number; activeSpreadMs: number; visualSceneTimeMs: number; categoryWeight: number; weightedEngagement: number; book?: components['schemas']['BookResponse'] };
     GetAuthorAnalyticsResponseDto: { bookEngagements: Array<components['schemas']['BookEngagementResponse']>; total: number; totalActiveReadingMs: number; totalActiveSpreadMs: number; totalVisualSceneTimeMs: number; totalWeightedEngagement: number; totalReadingMinutes: number };
     AuthorBookHeatmapCellResponse: { spreadIndex: number; pageNumber: number; activeDurationMs: number; visualSceneTimeMs: number };
-    AuthorBookChapterHeatmapCellResponse: { spineIndex: number; title?: unknown | null; activeDurationMs: number };
+    AuthorBookChapterHeatmapCellResponse: { spineIndex: number; title?: string | null; activeDurationMs: number };
     GetAuthorBookHeatmapResponseDto: { bookId: number; bookTitle: string; revenuePeriodId: number; layoutType: "reflowable" | "fixed_layout" | null; spreads: Array<components['schemas']['AuthorBookHeatmapCellResponse']>; chapters: Array<components['schemas']['AuthorBookChapterHeatmapCellResponse']> };
   };
 }

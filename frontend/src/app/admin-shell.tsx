@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import type { JSX } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
 
 import {
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUser } from '@/features/auth/hooks/use-current-user';
 import { useSignOut } from '@/features/auth/hooks/use-sign-out';
+import { AdminHeaderSearch } from '@/features/search/components/admin-header-search';
 import { cn } from '@/lib/cn';
 
 /**
@@ -47,6 +48,7 @@ export function AdminShell(): JSX.Element {
           </Button>
           <BrandLogo className="h-8 w-8 rounded-lg" />
           <p className="hidden text-sm font-medium md:block">Admin</p>
+          <AdminHeaderSearch />
           <AdminSessionActions />
         </header>
         <main className="flex-1 p-4 md:p-8">
@@ -62,7 +64,7 @@ function AdminSidebar({ onNavigate }: { readonly onNavigate: () => void }): JSX.
     <div className="flex h-full flex-col">
       <DashboardBrand subtitle="Admin dashboard" />
       <Separator className="bg-sidebar-border" />
-      <nav className="flex flex-col gap-1 p-4" aria-label="Admin">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-4" aria-label="Admin">
         {ADMIN_NAV_ITEMS.map((item) =>
           item.kind === 'group' ? (
             <AdminNavGroup key={item.label} item={item} onNavigate={onNavigate} />
@@ -83,10 +85,15 @@ function AdminNavGroup({
   readonly onNavigate: () => void;
 }): JSX.Element {
   const location = useLocation();
-  const isSectionActive: boolean = item.children.some((child) =>
-    location.pathname.startsWith(child.to),
+  const isSectionActive: boolean = item.activePathPrefixes.some((prefix: string) =>
+    location.pathname.startsWith(prefix),
   );
   const [isOpen, setIsOpen] = useState<boolean>(isSectionActive);
+  useEffect(() => {
+    if (isSectionActive) {
+      setIsOpen(true);
+    }
+  }, [isSectionActive]);
   const Icon = item.icon;
   return (
     <div>

@@ -41,7 +41,7 @@ export function AdminDashboardSummaryCards(): JSX.Element {
         onRetry={onRetry}
         action={
           <Button asChild variant="outline" size="sm">
-            <Link to="/admin/users">Open users</Link>
+            <Link to="/admin/publishers">Open publisher accounts</Link>
           </Button>
         }
       />
@@ -71,7 +71,7 @@ export function AdminDashboardSummaryCards(): JSX.Element {
         onRetry={onRetry}
         action={
           <Button asChild variant="outline" size="sm">
-            <Link to="/admin/books">Open books</Link>
+            <Link to="/admin/books?catalogVisible=true">Open catalog-visible books</Link>
           </Button>
         }
       />
@@ -86,7 +86,7 @@ export function AdminDashboardSummaryCards(): JSX.Element {
         onRetry={onRetry}
         action={
           <Button asChild variant="outline" size="sm">
-            <Link to="/admin/books">Open books</Link>
+            <Link to="/admin/books?publishingStatus=in_review">Open books in review</Link>
           </Button>
         }
       />
@@ -101,7 +101,7 @@ export function AdminDashboardSummaryCards(): JSX.Element {
         onRetry={onRetry}
         action={
           <Button asChild variant="outline" size="sm">
-            <Link to="/admin/revenue-periods">Open revenue periods</Link>
+            <Link to="/admin/reading">Open reading minutes</Link>
           </Button>
         }
       />

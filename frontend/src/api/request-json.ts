@@ -30,9 +30,25 @@ let refreshInFlight: Promise<boolean> | null = null;
  * Sends a JSON HTTP request to the NestJS API with optional Bearer auth and single-flight refresh.
  */
 export async function requestJson<TResponse>(input: RequestJsonInput): Promise<TResponse> {
+  const response: Response = await executeAuthorized(input);
+  return parseSuccessJson<TResponse>(response);
+}
+
+/**
+ * Downloads a binary admin response, including CSV exports.
+ */
+export async function requestBlob(path: string): Promise<{ blob: Blob; fileName: string }> {
+  const response: Response = await executeAuthorized({ path, method: 'GET' });
+  return {
+    blob: await response.blob(),
+    fileName: readContentDispositionFileName(response),
+  };
+}
+
+async function executeAuthorized(input: RequestJsonInput): Promise<Response> {
   const response: Response = await executeFetch(input);
   if (response.ok) {
-    return parseSuccessJson<TResponse>(response);
+    return response;
   }
   const error: ApiError = await parseErrorResponse(response);
   if (
@@ -58,7 +74,13 @@ export async function requestJson<TResponse>(input: RequestJsonInput): Promise<T
     }
     throw retryError;
   }
-  return parseSuccessJson<TResponse>(retryResponse);
+  return retryResponse;
+}
+
+function readContentDispositionFileName(response: Response): string {
+  const header: string = response.headers.get('Content-Disposition') ?? '';
+  const matched: RegExpExecArray | null = /filename="([^"]+)"/.exec(header);
+  return matched?.[1] ?? 'export.csv';
 }
 
 async function executeFetch(input: RequestJsonInput): Promise<Response> {

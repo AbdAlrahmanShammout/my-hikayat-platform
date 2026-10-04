@@ -1,8 +1,11 @@
 import type { paths } from '@/generated/admin';
 import type { paths as AuthorPaths } from '@/generated/author';
+import type { ListAdminBooksQuery } from '@/features/books/api/list-admin-books';
+import type { ListAdminInvitationsQuery } from '@/features/invitations/api/admin-invitation-record';
+import type { ListAdminUsersQuery } from '@/features/users/api/list-admin-users';
 
-type AdminBooksListQuery = NonNullable<paths['/admin/books']['get']['parameters']['query']>;
-type AdminUsersListQuery = NonNullable<paths['/admin/users']['get']['parameters']['query']>;
+type AdminBooksListQuery = ListAdminBooksQuery;
+type AdminUsersListQuery = ListAdminUsersQuery;
 type AdminSubscriptionsListQuery = NonNullable<
   paths['/admin/subscriptions']['get']['parameters']['query']
 >;
@@ -25,9 +28,33 @@ type AdminCollectionsListQuery = NonNullable<
 type AdminAuditLogsListQuery = NonNullable<
   paths['/admin/audit-logs']['get']['parameters']['query']
 >;
-type AdminInvitationsListQuery = NonNullable<
-  paths['/admin/invitations']['get']['parameters']['query']
->;
+type AdminInvitationsListQuery = ListAdminInvitationsQuery;
+type AdminPublishersListQuery = {
+  readonly limit?: number;
+  readonly offset?: number;
+  readonly q?: string;
+  readonly sortBy?: string;
+  readonly sortOrder?: string;
+};
+type AdminReadingListQuery = {
+  readonly limit?: number;
+  readonly offset?: number;
+  readonly ownerId?: number;
+};
+type AdminExportsListQuery = {
+  readonly limit?: number;
+  readonly offset?: number;
+};
+type AdminSearchQuery = {
+  readonly q: string;
+  readonly type?: string;
+  readonly limit?: number;
+  readonly offset?: number;
+};
+type AdminReadingProgressQuery = {
+  readonly limit?: number;
+  readonly offset?: number;
+};
 type AdminBookRejectionHistoryQuery = NonNullable<
   paths['/admin/books/{id}/rejection-history']['get']['parameters']['query']
 >;
@@ -79,6 +106,16 @@ export const queryKeys = {
       list: (filters: AdminUsersListQuery) =>
         [...queryKeys.admin.users.all, 'list', filters] as const,
       detail: (userId: number) => [...queryKeys.admin.users.all, 'detail', userId] as const,
+      readingProgress: (userId: number, filters: AdminReadingProgressQuery) =>
+        [...queryKeys.admin.users.all, 'reading-progress', userId, filters] as const,
+      engagement: (userId: number, bookId: number) =>
+        [...queryKeys.admin.users.all, 'engagement', userId, bookId] as const,
+    },
+    publishers: {
+      all: ['admin', 'publishers'] as const,
+      list: (filters: AdminPublishersListQuery) =>
+        [...queryKeys.admin.publishers.all, 'list', filters] as const,
+      summary: (userId: number) => [...queryKeys.admin.publishers.all, 'summary', userId] as const,
     },
     invitations: {
       all: ['admin', 'invitations'] as const,
@@ -91,6 +128,8 @@ export const queryKeys = {
         [...queryKeys.admin.subscriptions.all, 'list', filters] as const,
       detail: (subscriptionId: number) =>
         [...queryKeys.admin.subscriptions.all, 'detail', subscriptionId] as const,
+      supportContext: (subscriptionId: number) =>
+        [...queryKeys.admin.subscriptions.all, 'support-context', subscriptionId] as const,
     },
     collections: {
       all: ['admin', 'collections'] as const,
@@ -122,6 +161,19 @@ export const queryKeys = {
     dashboard: {
       all: ['admin', 'dashboard'] as const,
       summary: () => [...queryKeys.admin.dashboard.all, 'summary'] as const,
+      reading: (filters: AdminReadingListQuery) =>
+        [...queryKeys.admin.dashboard.all, 'reading', filters] as const,
+    },
+    exports: {
+      all: ['admin', 'exports'] as const,
+      list: (filters: AdminExportsListQuery) =>
+        [...queryKeys.admin.exports.all, 'list', filters] as const,
+      detail: (exportId: number) => [...queryKeys.admin.exports.all, 'detail', exportId] as const,
+    },
+    search: {
+      all: ['admin', 'search'] as const,
+      results: (filters: AdminSearchQuery) =>
+        [...queryKeys.admin.search.all, 'results', filters] as const,
     },
     platformSettings: {
       all: ['admin', 'platform-settings'] as const,

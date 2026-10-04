@@ -9,6 +9,7 @@ import { PageSkeleton } from '@/components/page-skeleton';
 import { Button } from '@/components/ui/button';
 import { AdminSubscriptionActions } from '@/features/subscriptions/components/admin-subscription-actions';
 import { AdminSubscriptionDetailSummary } from '@/features/subscriptions/components/admin-subscription-detail-summary';
+import { AdminSubscriptionSupportCard } from '@/features/subscriptions/components/admin-subscription-support-card';
 import { useAdminSubscription } from '@/features/subscriptions/hooks/use-admin-subscription';
 import { formatSubscriptionPlanLabel } from '@/features/subscriptions/lib/format-subscription-plan-label';
 import { parsePositiveInt } from '@/lib/parse-positive-int';
@@ -81,6 +82,7 @@ function AdminSubscriptionDetailContent({
       <div className="space-y-6">
         <AdminSubscriptionActions subscription={subscription} />
         <AdminSubscriptionDetailSummary subscription={subscription} />
+        <AdminSubscriptionSupportCard subscriptionId={subscriptionId} />
       </div>
     </>
   );

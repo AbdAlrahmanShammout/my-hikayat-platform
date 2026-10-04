@@ -11,7 +11,7 @@ export function AdminBooksPage(): JSX.Element {
     <>
       <PageHeader
         title="Books"
-        description="Review publishing status, metadata, and catalog visibility."
+        description="Search catalog metadata, then filter, sort, and page on the server. Keyword search does not read chapter or page text."
       />
       <AdminBooksPanel />
     </>

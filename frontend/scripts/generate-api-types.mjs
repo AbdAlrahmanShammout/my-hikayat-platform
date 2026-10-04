@@ -163,6 +163,10 @@ function renderSchema(schema) {
     const items = renderSchema(schema.items ?? {});
     return schema.nullable === true ? `Array<${items}> | null` : `Array<${items}>`;
   }
+  const reflectedPrimitive = renderReflectedPrimitive(schema);
+  if (reflectedPrimitive !== undefined) {
+    return schema.nullable === true ? `${reflectedPrimitive} | null` : reflectedPrimitive;
+  }
   if (schema.type === 'object' || schema.properties !== undefined) {
     const objectType = renderObjectFromSchema(schema);
     return schema.nullable === true ? `${objectType} | null` : objectType;
@@ -197,6 +201,24 @@ function renderRef(ref) {
     return 'unknown';
   }
   return `components['schemas']['${ref.slice(prefix.length)}']`;
+}
+
+function renderReflectedPrimitive(schema) {
+  const hasProperties = schema.properties !== undefined && Object.keys(schema.properties).length > 0;
+  const isEmptyObject = schema.type === 'object' && !hasProperties && schema.allOf === undefined && schema.additionalProperties === undefined;
+  if (!isEmptyObject) {
+    return undefined;
+  }
+  if (typeof schema.example === 'string') {
+    return 'string';
+  }
+  if (typeof schema.example === 'number') {
+    return 'number';
+  }
+  if (typeof schema.example === 'boolean') {
+    return 'boolean';
+  }
+  return undefined;
 }
 
 function renderPrimitive(type) {

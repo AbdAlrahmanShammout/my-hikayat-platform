@@ -5,6 +5,7 @@ export type ApiErrorBody = {
   readonly code: string;
   readonly statusCode: number;
   readonly validationErrorObjects?: ValidationErrorObject[];
+  readonly retryAfterSeconds?: number;
 };
 
 /**
@@ -14,6 +15,7 @@ export class ApiError extends Error {
   readonly code: string;
   readonly statusCode: number;
   readonly validationErrorObjects: readonly ValidationErrorObject[];
+  readonly retryAfterSeconds: number | undefined;
 
   constructor(body: ApiErrorBody) {
     super(body.message);
@@ -21,6 +23,7 @@ export class ApiError extends Error {
     this.code = body.code;
     this.statusCode = body.statusCode;
     this.validationErrorObjects = body.validationErrorObjects ?? [];
+    this.retryAfterSeconds = body.retryAfterSeconds;
   }
 
   get isUnauthenticated(): boolean {

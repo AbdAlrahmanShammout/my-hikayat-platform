@@ -7,6 +7,10 @@ describe('parseAdminUsersListSearch', () => {
     const actualSearch = parseAdminUsersListSearch(new URLSearchParams());
     expect(actualSearch).toEqual({
       email: undefined,
+      q: undefined,
+      isPublisher: undefined,
+      sortBy: undefined,
+      sortOrder: undefined,
       offset: 0,
     });
   });
@@ -16,12 +20,17 @@ describe('parseAdminUsersListSearch', () => {
     const actualSearch = parseAdminUsersListSearch(inputParams);
     expect(actualSearch).toEqual({
       email: 'reader@example.com',
+      q: undefined,
+      isPublisher: undefined,
+      sortBy: undefined,
+      sortOrder: undefined,
       offset: 20,
     });
   });
 
-  it('ignores an invalid email', () => {
-    const actualSearch = parseAdminUsersListSearch(new URLSearchParams('email=not-an-email'));
+  it('ignores an invalid email and a one-character keyword', () => {
+    const actualSearch = parseAdminUsersListSearch(new URLSearchParams('email=not-an-email&q=a'));
     expect(actualSearch.email).toBeUndefined();
+    expect(actualSearch.q).toBeUndefined();
   });
 });

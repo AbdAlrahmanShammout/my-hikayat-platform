@@ -13,10 +13,10 @@ import {
   parseAdminUserDetailSection,
   type AdminUserDetailSection,
 } from '@/features/users/lib/parse-admin-user-detail-section';
-import type { components } from '@/generated/admin';
+import type { AdminUserDetailResponse } from '@/features/users/api/get-admin-user';
 
 type AdminUserDetailSectionsProps = {
-  readonly detail: components['schemas']['GetAdminUserDetailResponseDto'];
+  readonly detail: AdminUserDetailResponse;
   readonly availability: AdminUserActionAvailability;
   readonly booksPanel: ReactNode;
 };
@@ -84,7 +84,7 @@ function AdminUserProfileSection({
   detail,
   availability,
 }: {
-  readonly detail: components['schemas']['GetAdminUserDetailResponseDto'];
+  readonly detail: AdminUserDetailResponse;
   readonly availability: AdminUserActionAvailability;
 }): JSX.Element {
   const user = detail.user;
@@ -96,7 +96,11 @@ function AdminUserProfileSection({
         subscription={detail.subscription ?? null}
         subscriptionPeriod={detail.subscriptionPeriod}
       />
-      <AdminUserReadingProgressCard items={detail.readingProgress} />
+      <AdminUserReadingProgressCard
+        userId={user.id}
+        initialItems={detail.readingProgress}
+        total={detail.readingProgressTotal}
+      />
       <AdminUserEditForm key={`${user.id}-${user.updatedAt}`} user={user} availability={availability} />
     </div>
   );
