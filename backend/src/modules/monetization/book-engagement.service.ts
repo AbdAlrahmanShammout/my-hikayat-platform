@@ -5,8 +5,6 @@ import { ResourceNotFoundException } from '@/common/exceptions/resource-not-foun
 import { BookEntity } from '@/modules/book/entity/book.entity';
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import { BookService } from '@/modules/book/book.service';
-import { DEFAULT_CATEGORY_WEIGHT } from '@/modules/category/consts';
-import { CategoryEntity } from '@/modules/category/entity/category.entity';
 import {
   BookEngagementPage,
   OwnerBookEngagementSummary,
@@ -22,7 +20,6 @@ import {
 import { BookEngagementEntity } from '@/modules/monetization/entity/book-engagement.entity';
 import { BookEngagementRepository } from '@/modules/monetization/repository/book-engagement.repository';
 import { RevenuePeriodService } from '@/modules/monetization/revenue-period.service';
-import { computeWeightedEngagementMinutes } from '@/modules/monetization/weighted-engagement.helper';
 import { BookEngagementSignal } from '@/modules/reading-intelligence/defs/reading-intelligence-service.defs';
 import { ReadingIntelligenceService } from '@/modules/reading-intelligence/reading-intelligence.service';
 
@@ -135,7 +132,6 @@ export class BookEngagementService {
     if (book.layoutType === null || book.layoutType !== signal.layoutType) {
       return null;
     }
-    const categoryWeight: number = BookEngagementService.resolveCategoryWeight(book.categories);
     const durations = BookEngagementService.resolveDurationBuckets(signal);
     return {
       revenuePeriodId,
@@ -144,11 +140,6 @@ export class BookEngagementService {
       activeReadingMs: durations.activeReadingMs,
       activeSpreadMs: durations.activeSpreadMs,
       visualSceneTimeMs: durations.visualSceneTimeMs,
-      categoryWeight,
-      weightedEngagement: computeWeightedEngagementMinutes({
-        engagementMs: durations.engagementMs,
-        categoryWeight,
-      }),
     };
   }
 
@@ -156,32 +147,18 @@ export class BookEngagementService {
     readonly activeReadingMs: number;
     readonly activeSpreadMs: number;
     readonly visualSceneTimeMs: number;
-    readonly engagementMs: number;
   } {
     if (signal.layoutType === BookLayoutType.REFLOWABLE) {
       return {
         activeReadingMs: signal.activeDurationMs,
         activeSpreadMs: 0,
         visualSceneTimeMs: 0,
-        engagementMs: signal.activeDurationMs,
       };
     }
     return {
       activeReadingMs: 0,
       activeSpreadMs: signal.activeDurationMs,
       visualSceneTimeMs: signal.visualSceneTimeMs,
-      engagementMs: signal.activeDurationMs,
     };
-  }
-
-  private static resolveCategoryWeight(categories?: CategoryEntity[]): number {
-    if (categories === undefined || categories.length === 0) {
-      return DEFAULT_CATEGORY_WEIGHT;
-    }
-    const totalWeight: number = categories.reduce(
-      (sum: number, category: CategoryEntity) => sum + category.categoryWeight,
-      0,
-    );
-    return totalWeight / categories.length;
   }
 }

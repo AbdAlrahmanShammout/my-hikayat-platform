@@ -18,20 +18,14 @@ export class RevenuePeriodResponse extends BaseModelResponseDto {
   endsAt: Date;
 
   @ApiProperty({
-    description: 'Whether the period is still open for pool updates',
+    description: 'Whether the period is still open',
     enum: RevenuePeriodStatus,
     example: RevenuePeriodStatus.OPEN,
   })
   status: RevenuePeriodStatus;
 
-  @ApiProperty({
-    description: 'Platform cut percent snapshotted for this period',
-    example: 30,
-  })
-  platformCutPercent: number;
-
   @ApiPropertyOptional({
-    description: 'Period pool amount in cents; absent until an admin sets it',
+    description: 'Net subscription pool in cents, written when the period is calculated',
     example: 10000,
     nullable: true,
   })
@@ -42,7 +36,6 @@ export class RevenuePeriodResponse extends BaseModelResponseDto {
     this.startsAt = entity.startsAt;
     this.endsAt = entity.endsAt;
     this.status = entity.status;
-    this.platformCutPercent = entity.platformCutPercent;
     this.poolAmountCents = entity.poolAmountCents;
   }
 }

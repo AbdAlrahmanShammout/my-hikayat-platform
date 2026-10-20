@@ -1,5 +1,3 @@
-import { Prisma } from '@prisma/client';
-
 import { BookLayoutType } from '@/modules/book/enum/general.enum';
 import { BookEngagementMapper } from '@/modules/monetization/mapper/book-engagement.mapper';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
@@ -19,8 +17,6 @@ describe('BookEngagementPrismaRepository', () => {
     activeReadingMs: 120000,
     activeSpreadMs: 0,
     visualSceneTimeMs: 0,
-    categoryWeight: new Prisma.Decimal('1.2500'),
-    weightedEngagement: new Prisma.Decimal('2.50000000'),
   };
   let mockPrismaProviderService: {
     $transaction: jest.Mock;
@@ -59,7 +55,7 @@ describe('BookEngagementPrismaRepository', () => {
     });
     expect(mockPrismaProviderService.bookEngagement.findMany).toHaveBeenCalledWith({
       where: { revenuePeriodId: 4, deletedAt: null },
-      orderBy: [{ weightedEngagement: 'desc' }, { bookId: 'asc' }],
+      orderBy: [{ activeReadingMs: 'desc' }, { activeSpreadMs: 'desc' }, { bookId: 'asc' }],
     });
     expect(actualEntities).toEqual([BookEngagementMapper.toEntity(persistenceRow)]);
   });
@@ -79,7 +75,7 @@ describe('BookEngagementPrismaRepository', () => {
           deletedAt: null,
           book: { ownerId: 3, deletedAt: null },
         },
-        orderBy: [{ weightedEngagement: 'desc' }, { bookId: 'asc' }],
+        orderBy: [{ activeReadingMs: 'desc' }, { activeSpreadMs: 'desc' }, { bookId: 'asc' }],
       }),
     );
   });
@@ -90,7 +86,6 @@ describe('BookEngagementPrismaRepository', () => {
         activeReadingMs: 120000,
         activeSpreadMs: 180000,
         visualSceneTimeMs: 90000,
-        weightedEngagement: 7,
       },
     });
     const actualSummary = await bookEngagementPrismaRepository.summarizeByOwner({
@@ -101,7 +96,6 @@ describe('BookEngagementPrismaRepository', () => {
       totalActiveReadingMs: 120000,
       totalActiveSpreadMs: 180000,
       totalVisualSceneTimeMs: 90000,
-      totalWeightedEngagement: 7,
     });
   });
 
@@ -111,7 +105,6 @@ describe('BookEngagementPrismaRepository', () => {
         activeReadingMs: 120000,
         activeSpreadMs: 180000,
         visualSceneTimeMs: 90000,
-        weightedEngagement: 7,
       },
     });
     const actualSummary = await bookEngagementPrismaRepository.summarizeByOwner({
@@ -123,10 +116,8 @@ describe('BookEngagementPrismaRepository', () => {
         activeReadingMs: true,
         activeSpreadMs: true,
         visualSceneTimeMs: true,
-        weightedEngagement: true,
       },
     });
-    expect(actualSummary.totalWeightedEngagement).toBe(7);
   });
 
   it('summarizes engagement totals across every period when no period is provided', async () => {
@@ -135,7 +126,6 @@ describe('BookEngagementPrismaRepository', () => {
         activeReadingMs: 90000,
         activeSpreadMs: 0,
         visualSceneTimeMs: 45000,
-        weightedEngagement: 1.5,
       },
     });
     const actualSummary = await bookEngagementPrismaRepository.summarizeByOwner({
@@ -147,13 +137,12 @@ describe('BookEngagementPrismaRepository', () => {
         activeReadingMs: true,
         activeSpreadMs: true,
         visualSceneTimeMs: true,
-        weightedEngagement: true,
       },
     });
     expect(actualSummary.totalActiveReadingMs).toBe(90000);
   });
 
-  it('lists book engagements ordered by weighted engagement descending', async () => {
+  it('lists book engagements ordered by reading time descending', async () => {
     mockPrismaProviderService.$transaction.mockResolvedValue([[persistenceRow], 1]);
     const actualPage = await bookEngagementPrismaRepository.list({
       revenuePeriodId: 4,
@@ -163,7 +152,7 @@ describe('BookEngagementPrismaRepository', () => {
     expect(mockPrismaProviderService.bookEngagement.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { revenuePeriodId: 4, deletedAt: null, book: { deletedAt: null } },
-        orderBy: [{ weightedEngagement: 'desc' }, { bookId: 'asc' }],
+        orderBy: [{ activeReadingMs: 'desc' }, { activeSpreadMs: 'desc' }, { bookId: 'asc' }],
       }),
     );
     expect(actualPage.total).toBe(1);
@@ -185,8 +174,6 @@ describe('BookEngagementPrismaRepository', () => {
           activeReadingMs: 120000,
           activeSpreadMs: 0,
           visualSceneTimeMs: 0,
-          categoryWeight: 1.25,
-          weightedEngagement: 2.5,
         },
       ],
     });

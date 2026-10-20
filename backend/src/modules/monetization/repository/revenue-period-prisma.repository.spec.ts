@@ -1,5 +1,3 @@
-import { Prisma } from '@prisma/client';
-
 import { RevenuePeriodStatus } from '@/modules/monetization/enum/general.enum';
 import { RevenuePeriodMapper } from '@/modules/monetization/mapper/revenue-period.mapper';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
@@ -16,8 +14,7 @@ describe('RevenuePeriodPrismaRepository', () => {
     deletedAt: null,
     startsAt: new Date('2026-08-01T00:00:00.000Z'),
     endsAt: new Date('2026-09-01T00:00:00.000Z'),
-    status: 'open',
-    platformCutPercent: new Prisma.Decimal('25.00'),
+    status: 'open' as const,
     poolAmountCents: null,
   };
   let mockPrismaProviderService: {
@@ -54,7 +51,6 @@ describe('RevenuePeriodPrismaRepository', () => {
       startsAt: persistenceRow.startsAt,
       endsAt: persistenceRow.endsAt,
       status: RevenuePeriodStatus.OPEN,
-      platformCutPercent: 25,
       poolAmountCents: null,
     });
     expect(mockPrismaProviderService.revenuePeriod.create).toHaveBeenCalledWith({
@@ -62,7 +58,6 @@ describe('RevenuePeriodPrismaRepository', () => {
         startsAt: persistenceRow.startsAt,
         endsAt: persistenceRow.endsAt,
         status: RevenuePeriodStatus.OPEN,
-        platformCutPercent: 25,
         poolAmountCents: null,
       },
     });

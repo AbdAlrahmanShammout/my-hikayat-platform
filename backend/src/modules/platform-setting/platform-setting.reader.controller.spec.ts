@@ -28,11 +28,13 @@ describe('PlatformSettingReaderController', () => {
         termsOfServiceUrl: null,
         aboutMission: 'Read together.',
         authCoverMediaUrl: null,
+        wordsPerPage: 150,
       });
       const actualResponse = await platformSettingReaderController.getPlatformSettings();
       expect(actualResponse.privacyPolicyUrl).toBe('https://example.com/privacy');
       expect(actualResponse.aboutMission).toBe('Read together.');
       expect(actualResponse.termsOfServiceUrl).toBeNull();
+      expect(actualResponse.wordsPerPage).toBe(150);
     });
   });
 });

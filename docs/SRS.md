@@ -4,7 +4,7 @@
 
 The system is a digital reading platform (similar to Kindle / Amazon
 Books) that allows users to read e-books via subscription, while authors
-earn revenue based on actual reading engagement.
+earn revenue from completed reads.
 
 The platform supports:
 
@@ -14,7 +14,7 @@ The platform supports:
 
 - Subscription-based access model
 
-- Author monetization based on reading time
+- Author monetization based on completed reads
 
 - Full content protection and encryption
 
@@ -171,7 +171,7 @@ Admin subscription management:
 
 - Manage books
 
-- Manage category revenue weights
+- Manage category weights (stored; not an input to author revenue, §7)
 
 - Create and manage curated collections / editorial shelves
 
@@ -215,7 +215,7 @@ Admin book management:
 - Soft-delete (`DELETE /admin/books/:id`) removes the book from the
   catalog and from author/admin lists.
 
-Admin category revenue-weight management (admin only):
+Admin category-weight management (admin only). `categoryWeight` is stored on the category and is not an input to the author-revenue formula in §7.
 
 - `GET /admin/categories`, `GET /admin/categories/:id` — list or get
   categories, including `categoryWeight`.
@@ -278,7 +278,7 @@ required, never `null`, never omitted:
 | `totalBooks` | integer ≥ 0 | count | `BookService.listBooks` `total` (no status filter, `deletedAt` null). Same as `GET /admin/books` |
 | `publishedBooks` | integer ≥ 0 | count | Catalog visibility (§3): `approved` + processing `ready` + `publishedAt` set + `deletedAt` null. Not `approved` alone |
 | `pendingReviewBooks` | integer ≥ 0 | count | `publishingStatus = in_review`, `deletedAt` null. Same as `GET /admin/books?publishingStatus=in_review` |
-| `totalReadingMinutes` | number ≥ 0 | minutes | Same formula as period analytics `totalReadingMinutes`: (`sum(activeReadingMs)` + `sum(activeSpreadMs)`) / 60000 from stored `BookEngagement` rows with `deletedAt` null whose book is not soft-deleted, across all revenue periods. Idle session time is not in those columns. `visualSceneTimeMs` and `weightedEngagement` are excluded. No extra rounding beyond that division (same as `GET /author/analytics`). Live unread-calculated sessions are not included |
+| `totalReadingMinutes` | number ≥ 0 | minutes | Same formula as period analytics `totalReadingMinutes`: (`sum(activeReadingMs)` + `sum(activeSpreadMs)`) / 60000 from stored `BookEngagement` rows with `deletedAt` null whose book is not soft-deleted, across all revenue periods. Idle session time is not in those columns. `visualSceneTimeMs` is excluded. Reading minutes are an analytics total; they do not allocate author revenue (§7). No extra rounding beyond that division (same as `GET /author/analytics`). Live sessions that have not been aggregated are not included |
 
 Counts are Prisma `Int` aggregates serialized as JSON numbers. Minutes
 are the existing JS division (so 90000 ms is `1.5`, 0 ms is `0`). Do
@@ -314,10 +314,11 @@ persisted. Adding a book that is already in the collection, removing a
 book that is not in the collection, or reordering with a different
 book set does not write an audit row.
 
-Revenue engagement aggregation, period close, and pool or platform-cut
-updates are not audited as revenue calculation. Recalculating the same
-revenue period produces another audit record on each successful
-calculation.
+Refreshing stored reading time and closing a period are not audited as
+revenue calculation. Recalculating the same revenue period produces
+another audit record on each successful calculation. The calculated
+Stripe net is stored on the period; the administrator does not enter a
+pool amount or a platform percent.
 
 ## **2.5 `role` and `isPublisher`**
 
@@ -670,8 +671,8 @@ activity:
 - Repeated activity for the same session and spine **adds** active
   time (no idempotency key in this version).
 
-Author revenue continues to use session-level active reading totals,
-not the chapter ledger.
+Author revenue uses completed reads (§7). Session totals and the
+chapter ledger remain analytics signals and do not allocate money.
 
 ### **Fixed-Layout Books**
 
@@ -806,96 +807,102 @@ access before `currentPeriodEnd`.
 
 # **7. Monetization System (Author Revenue Model)**
 
-Authors earn based on **real reading time engagement**.
+Authors earn from **completed reads**. Every completed read has the same
+weight, for every book type and every publisher. Reading minutes, visual
+scene time, and `categoryWeight` stay available for analytics and for
+category administration. They do not allocate money.
 
-## **7.1 Revenue Logic**
+Earnings are displayed. This version does not pay publishers.
 
-- Each book generates revenue proportional to:
+## **7.1 Completed read**
 
-  - Total active reading minutes
+A completed read is one reader finishing one book under the rules for
+that book’s `layoutType`. `fixed_layout` uses the picture-book rules.
+`reflowable` uses the chapter-book rules. Do not choose the rules from
+`bookType`. The backend decides. A book in more than one category still
+counts once.
 
-  - Category weight
+Unfinished reading continues from the saved position. A new cycle from
+zero starts only when the reader confirms **Start over** on a completed
+book. Start over does not change bookmarks. Opening a completed book
+without Start over keeps the completed status.
 
-The **Category Weight** logic is active and must be applied when
-calculating author revenue.
+The completed read is counted in the calendar month of completion, once
+per reader per book per month. A second completion of the same book by
+the same reader in that month does not add another count.
 
-For a book assigned to multiple categories, the effective category weight
-is the arithmetic mean of the configured category weights of all
-assigned categories.
+Picture books (`fixed_layout`):
 
-For books whose `layoutType` is `reflowable`, engagement is measured
-using active reading time and reading activity. Chapter/spine
-attribution applies where supported.
+- A page is viewed only when the reader stays at least 4 seconds. Faster
+  flips are not viewed, and their time is not added to active time.
+- Target time is `(totalWords / 40) * 60` seconds plus 6 seconds per
+  page.
+- The book is completed only when viewed pages are at least 80% of total
+  pages, the last page was reached, and active time is at least 50% of
+  the target time.
 
-For books whose `layoutType` is `fixed_layout`, the backend must
-calculate engagement primarily based on:
+Chapter books (`reflowable`):
 
-- Active Time Spent on Spread
+- Pages are virtual. Words per page is an admin setting, default 150,
+  resettable. Virtual page count is `ceil(totalWords / wordsPerPage)`.
+- A page is read only when active time on that page is at least 50% of
+  `(wordsOnPage / 70) * 60` seconds.
+- The book is completed only when valid read pages are at least 85% of
+  virtual pages, the last page was reached, and active time is at least
+  50% of the target time. Target time uses 70 words per minute and no
+  image pause.
 
-- Visual Scene Time
+The reader sees a stored status marker wherever the book appears:
+completed, or in progress. A book that was never opened has no marker.
 
-- Category Weight
+## **7.2 Formula**
 
-Fixed-layout titles (typically picture books and illustrated chapter
-books) may generate fewer words per minute than a reflowable standard
-chapter book but require significant visual engagement.
+The pool is the Stripe subscription net for the calendar month, attributed
+by receipt date:
 
-Therefore, monetization for `fixed_layout` books must not depend on
-reading speed, word count, sentence count, or scrolling activity alone.
-Do not choose the engagement model from `bookType`.
+- net = payments received in the month − collected VAT − Stripe fees −
+  refunds inside the 7-day refund window
 
-The backend must treat active visual engagement with a spread or page as
-a valid reading engagement signal.
+Publishers receive 40% of that net. The platform keeps 60%. Round to the
+nearest cent. Book shares must sum exactly to the publishers’ pool.
 
-## **7.2 Example Formula**
+```text
+publishersPool = round(netPool * 40 / 100)
+platformShare  = netPool - publishersPool
+bookShare      = (bookCompletedReads * publishersPool) / totalCompletedReads
+```
 
-For Reflowable Books:
-
-- bookRevenue =\
-  (bookReadingMinutes / totalPlatformReadingMinutes) \* revenuePool
-
-For Fixed-Layout Books, the equivalent engagement value must be
-calculated using active visual engagement:
-
-- weightedBookEngagement =\
-  activeTimeSpentOnSpread \* categoryWeight
-
-The final revenue calculation must use the weighted engagement of each
-book relative to the total weighted platform engagement.
-
-Conceptually:
-
-- bookRevenue =\
-  (weightedBookEngagement / totalWeightedPlatformEngagement) \*
-  revenuePool
-
-Where:
-
-- weightedBookEngagement represents the engagement generated by the book
-  after applying the appropriate engagement metric and category weight.
-
-- categoryWeight represents the configured weight applied to the book:
-  the weight of its category, or the arithmetic mean of the configured
-  category weights of all assigned categories when the book has more
-  than one category.
+`bookCompletedReads` is the distinct completed readers of that book in
+the month. `totalCompletedReads` is the same count across every book on
+the platform. A book with no completed reads receives nothing. Chargebacks
+are later settlements dated when they occur. The platform bears the
+disputed amount and the dispute fees. They do not change the publishers’
+calculated shares for the original month.
 
 ## **7.3 Distribution**
 
-- Platform takes % cut
-
-- Remaining distributed to authors based on reading time and weighted
-  engagement of their books
+- Publishers receive 40% of the monthly Stripe net, split by completed
+  reads.
+- The platform keeps the remaining 60%.
+- `categoryWeight` is stored and is not an input.
 
 ## **7.4 Revenue Period Calculation**
 
-Administrators calculate a revenue period’s author shares with
-`POST /admin/revenue-periods/:id/calculate`. Recalculating the same
-period is allowed and produces a new audit record each successful
-time.
+A revenue period is one UTC calendar month. `startsAt` is the first
+instant of the month. `endsAt` is the first instant of the next month.
+The administrator chooses the month. The dashboard sends those two
+instants. The administrator does not enter a pool amount or a platform
+percent.
 
-Setting the pool or platform cut, aggregating engagement only, and
-closing a period are separate operations and are not revenue-
-calculation audit events.
+Calculation is allowed only after 7 days from `endsAt`, so the refund
+window of the last subscription in the month has closed. Administrators
+calculate with `POST /admin/revenue-periods/:id/calculate`. The endpoint
+writes the Stripe net onto the period and writes one share row per book
+that has completed reads. Recalculating is allowed and appends another
+audit record each successful time.
+
+Refreshing stored reading time and closing a period are separate
+operations and are not revenue-calculation audit events.
 
 # **8. Anti-Piracy & Security System**
 
@@ -1087,7 +1094,7 @@ required, never `null`, never omitted:
 | `totalBooks` | integer ≥ 0 | count | `BookService.listBooks` with `ownerId =` principal, no status filter. Same as `GET /author/books` `total` |
 | `publishedBooks` | integer ≥ 0 | count | Catalog visibility (§3) and `ownerId =` principal. Not `approved` alone |
 | `pendingReviewBooks` | integer ≥ 0 | count | `publishingStatus = in_review` and `ownerId =` principal. Same as `GET /author/books?publishingStatus=in_review` |
-| `totalReadingMinutes` | number ≥ 0 | minutes | Same formula as `GET /author/analytics` `totalReadingMinutes`: (`sum(activeReadingMs)` + `sum(activeSpreadMs)`) / 60000 from stored `BookEngagement` rows for books owned by the principal, all periods, engagement and book `deletedAt` null. Idle time is not stored on those columns. `visualSceneTimeMs` and `weightedEngagement` are excluded. No extra rounding. Live unread-calculated sessions are not included |
+| `totalReadingMinutes` | number ≥ 0 | minutes | Same formula as `GET /author/analytics` `totalReadingMinutes`: (`sum(activeReadingMs)` + `sum(activeSpreadMs)`) / 60000 from stored `BookEngagement` rows for books owned by the principal, all periods, engagement and book `deletedAt` null. Idle time is not stored on those columns. `visualSceneTimeMs` is excluded. Reading minutes do not allocate author revenue (§7). No extra rounding. Live sessions that have not been aggregated are not included |
 | `authorCents` | integer ≥ 0 | integer cents | Sum of `BookRevenue.authorCents` for `ownerId =` principal across all periods (`BookRevenue.deletedAt` null, book not soft-deleted). Same cents as `GET /author/earnings` `authorCents`, rolled up. Uncalculated periods contribute `0`. Subscription refunds do not rewrite this unless the period is recalculated. Do not invent a live payout from engagement |
 
 `GET /author/analytics` and `GET /author/earnings` remain
@@ -1107,9 +1114,9 @@ new currency type.
 - Top performing books
 
 Top performing books are the author’s books in a revenue period ranked
-by weighted engagement, highest first. Equal weights are ordered by
-book id. Sort is not client-controlled. There is no separate Top-N
-endpoint.
+by active reading time, then active spread time, then book id. Sort is
+not client-controlled. There is no separate Top-N endpoint. This ranking
+is a reading-time order. Earnings use completed reads (§7).
 
 ## **12.2 Earnings**
 

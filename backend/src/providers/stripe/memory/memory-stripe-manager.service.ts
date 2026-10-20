@@ -8,6 +8,7 @@ import {
   RefundPaidSubscriptionInput,
   CancelPaidSubscriptionInput,
   RetrieveStripePriceInput,
+  SummarizeSubscriptionNetCentsInput,
   StripeCheckoutSession,
   StripeCustomer,
   StripePrice,
@@ -85,6 +86,12 @@ export class MemoryStripeManagerService {
 
   cancelPaidSubscription(_input: CancelPaidSubscriptionInput): Promise<void> {
     return Promise.resolve();
+  }
+
+  summarizeSubscriptionNetCents(
+    _input: SummarizeSubscriptionNetCentsInput,
+  ): Promise<number | null> {
+    return Promise.resolve(null);
   }
 
   private enrichCheckoutPeriods(event: StripeWebhookEvent): StripeWebhookEvent {

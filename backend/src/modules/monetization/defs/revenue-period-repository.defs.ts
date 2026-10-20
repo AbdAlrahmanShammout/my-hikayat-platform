@@ -5,14 +5,12 @@ export type CreateRevenuePeriodRepoInput = {
   readonly startsAt: Date;
   readonly endsAt: Date;
   readonly status: RevenuePeriodStatus;
-  readonly platformCutPercent: number;
   readonly poolAmountCents: number | null;
 };
 
 export type UpdateRevenuePeriodRepoInput = {
   readonly id: number;
   readonly status?: RevenuePeriodStatus;
-  readonly platformCutPercent?: number;
   readonly poolAmountCents?: number | null;
 };
 

@@ -23,6 +23,8 @@ import { resolveCatalogBookAttribution } from '@/features/catalog/lib/resolve-ca
 import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-catalog-cover-presentation';
 import type { SearchCatalogField } from '@/features/search/api/search-catalog-books';
 import { useSearchCatalogBooks } from '@/features/search/hooks/use-search-catalog-books';
+import { useReadingCompletionStatuses } from '@/features/reading-completion/hooks/use-reading-completion-statuses';
+import { formatReadingStatusLabel } from '@/features/reading-completion/lib/format-reading-status-label';
 import { buildSearchCatalogQuery } from '@/features/search/lib/build-search-catalog-query';
 import {
   readSearchRecents,
@@ -103,6 +105,8 @@ export function CatalogSearchScreen(): JSX.Element {
   const categoryTotal: number = categoryBrowseQuery.data?.pages[0]?.total ?? 0;
   const categoryHasNextPage: boolean = categoryBrowseQuery.hasNextPage === true;
   const isBrowsingCategory: boolean = !hasSubmitted && selectedCategoryId !== null;
+  const visibleBookIds: number[] = (isBrowsingCategory ? categoryBooks : books).map((book) => book.id);
+  const statuses = useReadingCompletionStatuses(visibleBookIds);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right', 'bottom']} testID="search-screen">
@@ -227,6 +231,7 @@ export function CatalogSearchScreen(): JSX.Element {
               renderItem={({ item }) => (
                 <SearchBookRow
                   book={item}
+                  statusLabel={formatReadingStatusLabel(statuses.byBookId.get(item.id))}
                   onPress={() => {
                     router.push(`/(app)/books/${item.id}`);
                   }}
@@ -302,6 +307,7 @@ export function CatalogSearchScreen(): JSX.Element {
               renderItem={({ item }) => (
                 <SearchBookRow
                   book={item}
+                  statusLabel={formatReadingStatusLabel(statuses.byBookId.get(item.id))}
                   onPress={() => {
                     router.push(`/(app)/books/${item.id}`);
                   }}
@@ -427,6 +433,7 @@ function SearchIdleCategories(input: {
 
 function SearchBookRow(input: {
   readonly book: CatalogBook;
+  readonly statusLabel: string | null;
   readonly onPress: () => void;
 }): JSX.Element {
   const attribution = resolveCatalogBookAttribution(input.book);
@@ -437,6 +444,7 @@ function SearchBookRow(input: {
       authorName={attribution.authorLine}
       publisherName={attribution.publisherLine}
       showChevron
+      statusLabel={input.statusLabel}
       coverUri={cover.kind === 'image' ? cover.url : null}
       variant="row"
       onPress={input.onPress}

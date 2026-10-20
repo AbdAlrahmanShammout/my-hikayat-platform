@@ -21,7 +21,6 @@ function createSamplePeriod(): RevenuePeriodEntity {
     startsAt: new Date('2026-08-01T00:00:00.000Z'),
     endsAt: new Date('2026-09-01T00:00:00.000Z'),
     status: RevenuePeriodStatus.OPEN,
-    platformCutPercent: 30,
     poolAmountCents: 10000,
   });
 }

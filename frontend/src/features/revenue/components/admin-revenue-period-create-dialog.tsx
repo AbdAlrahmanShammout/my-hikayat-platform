@@ -32,7 +32,7 @@ import {
 } from '@/features/revenue/schemas/admin-create-revenue-period-form.schema';
 
 /**
- * POST /admin/revenue-periods dialog. Pool is optional integer cents, not Stripe-derived.
+ * POST /admin/revenue-periods dialog. The admin picks a UTC calendar month.
  */
 export function AdminRevenuePeriodCreateDialog(): JSX.Element {
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -46,7 +46,7 @@ export function AdminRevenuePeriodCreateDialog(): JSX.Element {
           <DialogHeader>
             <DialogTitle>New period</DialogTitle>
             <DialogDescription>
-              startsAt is inclusive UTC. endsAt is exclusive UTC. Pool is admin-set cents.
+              The period is that whole UTC month, from the first instant through the last.
             </DialogDescription>
           </DialogHeader>
           {isOpen ? <AdminRevenuePeriodCreateForm onCancel={() => setIsOpen(false)} /> : null}
@@ -68,10 +68,7 @@ function AdminRevenuePeriodCreateForm({
   const form = useForm<AdminCreateRevenuePeriodFormValues>({
     resolver: zodResolver(adminCreateRevenuePeriodFormSchema),
     defaultValues: {
-      startsAt: '',
-      endsAt: '',
-      platformCutPercent: '',
-      poolAmountCents: '',
+      month: currentUtcMonthValue(),
     },
   });
   const rootMessage: string | undefined = form.formState.errors.root?.message;
@@ -98,82 +95,14 @@ function AdminRevenuePeriodCreateForm({
         ) : null}
         <FormField
           control={form.control}
-          name="startsAt"
+          name="month"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>startsAt</FormLabel>
+            <FormItem className="md:col-span-2">
+              <FormLabel>Month</FormLabel>
               <FormControl>
-                <Input
-                  placeholder="2026-08-01T00:00:00.000Z"
-                  disabled={createMutation.isPending}
-                  {...field}
-                  value={String(field.value)}
-                />
+                <Input type="month" disabled={createMutation.isPending} {...field} />
               </FormControl>
-              <FormDescription>Inclusive UTC start.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="endsAt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>endsAt</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="2026-09-01T00:00:00.000Z"
-                  disabled={createMutation.isPending}
-                  {...field}
-                  value={String(field.value)}
-                />
-              </FormControl>
-              <FormDescription>Exclusive UTC end. Must be later than startsAt.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="platformCutPercent"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>platformCutPercent</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  step="any"
-                  inputMode="decimal"
-                  placeholder="Uses server config if empty"
-                  disabled={createMutation.isPending}
-                  {...field}
-                  value={field.value === undefined ? '' : String(field.value)}
-                />
-              </FormControl>
-              <FormDescription>Optional. 0 through 100.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="poolAmountCents"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>poolAmountCents</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  step="1"
-                  inputMode="numeric"
-                  placeholder="Leave empty to set later"
-                  disabled={createMutation.isPending}
-                  {...field}
-                  value={field.value === undefined ? '' : String(field.value)}
-                />
-              </FormControl>
-              <FormDescription>Optional integer cents. Not derived from Stripe.</FormDescription>
+              <FormDescription>UTC calendar month.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -196,6 +125,11 @@ function AdminRevenuePeriodCreateForm({
   );
 }
 
+function currentUtcMonthValue(now: Date = new Date()): string {
+  const monthNumber: string = String(now.getUTCMonth() + 1).padStart(2, '0');
+  return `${String(now.getUTCFullYear())}-${monthNumber}`;
+}
+
 async function submitCreateRevenuePeriod(
   values: AdminCreateRevenuePeriodFormValues,
   mutateAsync: ReturnType<typeof useCreateAdminRevenuePeriod>['mutateAsync'],
@@ -206,11 +140,6 @@ async function submitCreateRevenuePeriod(
     const created = await mutateAsync(buildCreateAdminRevenuePeriodBody(values));
     onCreated(created.id);
   } catch (error: unknown) {
-    applyAdminFormApiError(error, setError, [
-      'startsAt',
-      'endsAt',
-      'platformCutPercent',
-      'poolAmountCents',
-    ]);
+    applyAdminFormApiError(error, setError, ['month']);
   }
 }

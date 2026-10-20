@@ -10,6 +10,7 @@ import {
   RefundPaidSubscriptionInput,
   CancelPaidSubscriptionInput,
   RetrieveStripePriceInput,
+  SummarizeSubscriptionNetCentsInput,
   StripeCheckoutSession,
   StripeCustomer,
   StripePrice,
@@ -22,6 +23,11 @@ import { StripeInvalidWebhookException } from '@/providers/stripe/exceptions/str
 import { StripeNotInitializedException } from '@/providers/stripe/exceptions/stripe-not-initialized.exception';
 import { StripeEventHandlers } from '@/providers/stripe/interfaces/stripe-event-handlers.interface';
 import { mapStripeWebhookEvent } from '@/providers/stripe/map-stripe-webhook-event.helper';
+import {
+  SubscriptionChargeNetInput,
+  SubscriptionInvoiceTaxInput,
+  sumSubscriptionNetCents,
+} from '@/providers/stripe/sum-subscription-net-cents.helper';
 
 @Injectable()
 export class StripeManagerService {
@@ -182,6 +188,67 @@ export class StripeManagerService {
     return paymentIntentId;
   }
 
+  /**
+   * Net cash received in the window: unrefunded charge principal, minus Stripe fees and collected tax.
+   * Returns null only when the caller is using the in-memory provider.
+   */
+  async summarizeSubscriptionNetCents(
+    input: SummarizeSubscriptionNetCentsInput,
+  ): Promise<number | null> {
+    try {
+      const created = {
+        gte: Math.floor(input.startsAt.getTime() / 1000),
+        lt: Math.floor(input.endsAt.getTime() / 1000),
+      };
+      const charges: Stripe.Charge[] = await this.listCharges(created);
+      const invoices: Stripe.Invoice[] = await this.listPaidInvoices(created);
+      return sumSubscriptionNetCents({
+        charges: charges.flatMap(mapChargeNet),
+        invoiceTaxes: invoices.map(mapInvoiceTax),
+      });
+    } catch (err: unknown) {
+      throw this.translateRequestError(err);
+    }
+  }
+
+  private async listCharges(created: { gte: number; lt: number }): Promise<Stripe.Charge[]> {
+    const charges: Stripe.Charge[] = [];
+    let startingAfter: string | undefined;
+    let hasMore = true;
+    while (hasMore) {
+      const page = await this.stripe.charges.list({
+        created,
+        limit: STRIPE.listPageSize,
+        starting_after: startingAfter,
+        expand: ['data.balance_transaction'],
+      });
+      charges.push(...page.data);
+      const lastId: string | undefined = page.data.at(-1)?.id;
+      hasMore = page.has_more && lastId !== undefined;
+      startingAfter = lastId;
+    }
+    return charges;
+  }
+
+  private async listPaidInvoices(created: { gte: number; lt: number }): Promise<Stripe.Invoice[]> {
+    const invoices: Stripe.Invoice[] = [];
+    let startingAfter: string | undefined;
+    let hasMore = true;
+    while (hasMore) {
+      const page = await this.stripe.invoices.list({
+        status: 'paid',
+        created,
+        limit: STRIPE.listPageSize,
+        starting_after: startingAfter,
+      });
+      invoices.push(...page.data);
+      const lastId: string | undefined = page.data.at(-1)?.id;
+      hasMore = page.has_more && lastId !== undefined;
+      startingAfter = lastId;
+    }
+    return invoices;
+  }
+
   private static mapStripePrice(price: Stripe.Price): StripePrice {
     if (price.unit_amount === null) {
       throw new StripeFailureException('Stripe price is missing a unit amount');
@@ -237,4 +304,33 @@ export class StripeManagerService {
     }
     return 'Stripe request failed';
   }
+}
+
+function mapChargeNet(charge: Stripe.Charge): SubscriptionChargeNetInput[] {
+  if (charge.status !== 'succeeded' || charge.amount <= 0) {
+    return [];
+  }
+  return [
+    {
+      amountCents: charge.amount,
+      amountRefundedCents: charge.amount_refunded,
+      feeCents: readChargeFeeCents(charge.balance_transaction),
+    },
+  ];
+}
+
+function readChargeFeeCents(balance: Stripe.Charge['balance_transaction']): number {
+  if (typeof balance === 'object' && balance !== null) {
+    return balance.fee;
+  }
+  return 0;
+}
+
+function mapInvoiceTax(invoice: Stripe.Invoice): SubscriptionInvoiceTaxInput {
+  const taxCents: number = (invoice.total_taxes ?? []).reduce((sum, tax) => sum + tax.amount, 0);
+  return {
+    amountPaidCents: invoice.amount_paid,
+    creditNoteCents: invoice.post_payment_credit_notes_amount,
+    taxCents,
+  };
 }

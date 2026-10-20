@@ -30,15 +30,26 @@ export class PlatformSettingsResponse {
   })
   authCoverMediaUrl: string | null;
 
+  @ApiProperty({
+    description:
+      'Average words on one reflowable page. Reading completion uses this to build virtual pages.',
+    example: 150,
+    minimum: 1,
+    maximum: 2000,
+  })
+  wordsPerPage: number;
+
   constructor(settings: {
     readonly privacyPolicyUrl: string | null;
     readonly termsOfServiceUrl: string | null;
     readonly aboutMission: string | null;
     readonly authCoverMediaUrl: string | null;
+    readonly wordsPerPage: number;
   }) {
     this.privacyPolicyUrl = settings.privacyPolicyUrl;
     this.termsOfServiceUrl = settings.termsOfServiceUrl;
     this.aboutMission = settings.aboutMission;
     this.authCoverMediaUrl = settings.authCoverMediaUrl;
+    this.wordsPerPage = settings.wordsPerPage;
   }
 }

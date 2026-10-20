@@ -2,7 +2,7 @@ import { BookOpen, CreditCard, Download, Trash2 } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState, type JSX } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError } from '@/api/api-error';
@@ -18,6 +18,9 @@ import { OfflineLeaseExpiryLabel } from '@/features/offline/components/offline-l
 import { RemoveOfflineDownloadSheet } from '@/features/offline/components/remove-offline-download-sheet';
 import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book-actions';
 import { useOfflinePackage } from '@/features/offline/hooks/use-offline-packages';
+import { useReadingCompletionStatuses } from '@/features/reading-completion/hooks/use-reading-completion-statuses';
+import { useStartReadingOver } from '@/features/reading-completion/hooks/use-start-reading-over';
+import { formatReadingStatusLabel } from '@/features/reading-completion/lib/format-reading-status-label';
 import { findReadingProgress } from '@/features/reader/lib/find-reading-progress';
 import { resolveBookDetailProgressPresentation } from '@/features/reader/lib/resolve-book-detail-progress-presentation';
 import { useConnectivity } from '@/native/connectivity/use-connectivity';
@@ -44,6 +47,10 @@ export function BookDetailScreen(): JSX.Element {
   const { isOnline } = useConnectivity();
   const [offlineMessage, setOfflineMessage] = useState<string | null>(null);
   const [isRemoveConfirmVisible, setIsRemoveConfirmVisible] = useState<boolean>(false);
+  const completion = useReadingCompletionStatuses(bookId === null ? [] : [bookId]);
+  const startOver = useStartReadingOver(bookId);
+  const readingStatus = bookId === null ? undefined : completion.byBookId.get(bookId);
+  const readingStatusLabel: string | null = formatReadingStatusLabel(readingStatus);
   const progressQuery = useQuery({
     queryKey: ['reader', 'progress', bookId],
     queryFn: async () => {
@@ -131,6 +138,11 @@ export function BookDetailScreen(): JSX.Element {
             {attribution.authorLine}
           </Text>
         ) : null}
+        {readingStatusLabel !== null ? (
+          <Text style={styles.readingStatus} testID="book-detail-reading-status">
+            {readingStatusLabel}
+          </Text>
+        ) : null}
         {attribution.publisherLine !== null ? (
           <Text style={styles.publisher} testID="book-detail-publisher">
             {attribution.publisherLine}
@@ -173,6 +185,25 @@ export function BookDetailScreen(): JSX.Element {
           accessibilityLabel={entryCta.label}
           testID="book-detail-read-button"
         />
+        {readingStatus === 'completed' ? (
+          <Button
+            label="ابدأ من جديد · Start over"
+            variant="secondary"
+            isLoading={startOver.isPending}
+            onPress={() => {
+              confirmStartOver(() => {
+                startOver.mutate();
+              });
+            }}
+            accessibilityLabel="ابدأ من جديد. Start over"
+            testID="book-detail-start-over-button"
+          />
+        ) : null}
+        {startOver.isError ? (
+          <Text style={styles.startOverError} testID="book-detail-start-over-error">
+            Could not start this book again. Try once more.
+          </Text>
+        ) : null}
         {entryCta.secondaryCtas.map((cta) => (
           <Button
             key={cta.kind}
@@ -291,6 +322,17 @@ export function BookDetailScreen(): JSX.Element {
         }}
       />
     </SafeAreaView>
+  );
+}
+
+function confirmStartOver(onConfirm: () => void): void {
+  Alert.alert(
+    'ابدأ من جديد',
+    'تبدأ القراءة من الصفحة الأولى. العلامات المرجعية تبقى كما هي.\nReading starts again from the first page. Bookmarks stay.',
+    [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Start over', style: 'destructive', onPress: onConfirm },
+    ],
   );
 }
 
@@ -426,6 +468,16 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     textAlign: 'center',
     lineHeight: 30,
+  },
+  readingStatus: {
+    ...theme.typography.label,
+    color: theme.colors.primary,
+    textAlign: 'center',
+  },
+  startOverError: {
+    ...theme.typography.label,
+    color: theme.colors.error,
+    textAlign: 'center',
   },
   author: {
     ...theme.typography.body,

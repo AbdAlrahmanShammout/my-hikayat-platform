@@ -36,7 +36,6 @@ describe('AuthorDashboardSummaryService', () => {
       totalActiveReadingMs: 0,
       totalActiveSpreadMs: 0,
       totalVisualSceneTimeMs: 0,
-      totalWeightedEngagement: 0,
     });
     mockBookRevenueService.sumAuthorCents.mockResolvedValue(0);
     const actualSummary = await authorDashboardSummaryService.getAuthorDashboardSummary({
@@ -63,7 +62,6 @@ describe('AuthorDashboardSummaryService', () => {
       totalActiveReadingMs: 90_000,
       totalActiveSpreadMs: 0,
       totalVisualSceneTimeMs: 45_000,
-      totalWeightedEngagement: 9,
     });
     mockBookRevenueService.sumAuthorCents.mockResolvedValue(7000);
     const actualSummary = await authorDashboardSummaryService.getAuthorDashboardSummary({

@@ -45,7 +45,6 @@ describe('AdminDashboardSummaryService', () => {
       totalActiveReadingMs: 0,
       totalActiveSpreadMs: 0,
       totalVisualSceneTimeMs: 0,
-      totalWeightedEngagement: 0,
     });
     const actualSummary = await adminDashboardSummaryService.getAdminDashboardSummary();
     expect(actualSummary).toEqual({
@@ -76,7 +75,6 @@ describe('AdminDashboardSummaryService', () => {
       totalActiveReadingMs: 60_000,
       totalActiveSpreadMs: 30_000,
       totalVisualSceneTimeMs: 999_000,
-      totalWeightedEngagement: 12,
     });
     const actualSummary = await adminDashboardSummaryService.getAdminDashboardSummary();
     expect(mockUserService.listUsers).toHaveBeenCalledWith({ limit: DASHBOARD_COUNT_PAGE_SIZE });
@@ -106,7 +104,6 @@ describe('AdminDashboardSummaryService', () => {
       totalActiveReadingMs: 120_000,
       totalActiveSpreadMs: 60_000,
       totalVisualSceneTimeMs: 999_000,
-      totalWeightedEngagement: 1,
     });
     mockBookEngagementService.listPaidReadingByBook.mockResolvedValue([
       { bookId: 8, activeReadingMs: 120_000, activeSpreadMs: 0 },

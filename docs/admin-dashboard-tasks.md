@@ -318,7 +318,7 @@ revenue period is recalculated (STEP 9).
 **Written:** list + inline `categoryWeight` edit at `/admin/categories` (`limit`/`offset`).
 PATCH is limited to `categoryWeight` greater than 0. Name and slug are read-only; there is
 no create, rename, or delete. Unchanged weights are not sent. The screen states that a
-weight change does not rewrite historical payouts until a period is recalculated. 422
+weight change is stored on the category and does not change publisher earnings. 422
 from the API still surfaces.
 
 ---
@@ -332,20 +332,17 @@ from the API still surfaces.
 - `GET /admin/revenue-periods`, `GET /admin/revenue-periods/:id`
 - `POST /admin/revenue-periods`
 - `POST /admin/revenue-periods/current` — open current UTC month if missing
-- `PATCH /admin/revenue-periods/:id` — `poolAmountCents`, `platformCutPercent`
-  (cut cannot change when status is `closed`)
 - `POST /admin/revenue-periods/:id/close`
 
-Pool is admin-set integer cents. Display money from cents. Do not derive the pool
-from Stripe in the UI.
+The net pool is written when the period is calculated from Stripe. Publishers receive
+40 percent of that net. The admin does not enter a pool amount or a platform percent.
 
 **Routes:** `/admin/revenue`, `/admin/revenue/:id`
 
 **Written:** list + create + “open current UTC month” at `/admin/revenue`, detail at
-`/admin/revenue/:revenuePeriodId`. Pool is displayed from integer cents and is not
-derived from Stripe. PATCH is limited to `poolAmountCents` and, while open,
-`platformCutPercent`. Cut is disabled after close; pool can still be set. Unchanged
-values are not sent. Close is confirmed and idempotent. Calculate, earnings, analytics,
+`/admin/revenue/:revenuePeriodId`. Create asks for a UTC calendar month and sends
+that month as `startsAt` / `endsAt`. The net pool is displayed from integer cents after
+calculation. Close is confirmed and idempotent. Calculate, earnings, analytics,
 and heatmap stay on STEP 9.
 
 ---
@@ -356,18 +353,18 @@ and heatmap stay on STEP 9.
 
 **APIs**
 
-- `POST /admin/revenue-periods/:id/engagements` — refresh weighted engagement
+- `POST /admin/revenue-periods/:id/engagements` — refresh stored reading time
   (not a calculate-audit event)
-- `POST /admin/revenue-periods/:id/calculate` — requires `poolAmountCents`; refreshes
-  engagement; writes shares; appends `REVENUE_CALCULATED`
+- `POST /admin/revenue-periods/:id/calculate` — reads the Stripe net, writes shares
+  from completed reads, and appends `REVENUE_CALCULATED`
 - `GET /admin/revenue-periods/:id/earnings`
 - `GET /admin/revenue-periods/:id/analytics`
 - `GET /admin/revenue-periods/:id/books/:bookId/heatmap`
 
 **UI rules**
 
-- Show backend `authorCents`, `platformCutCents`, `weightedEngagement`,
-  `totalReadingMinutes`. Do not recompute category-weight averages or pool splits.
+- Show backend `authorCents`, `platformCutCents`, `completedReadCount`,
+  `totalReadingMinutes`. Do not recompute pool splits in the browser.
 - Heatmap is layout-aware from the API `layoutType`: `spreads` for
   `fixed_layout`, `chapters` for `reflowable`. Do not choose the heatmap
   shape from `bookType`.
@@ -810,7 +807,7 @@ categories.
 ## STEP 25 — Author analytics
 
 **Goal:** An author can read engagement totals and per-book rows for one revenue
-period. The UI displays backend values. It does not recompute weighted engagement.
+period. The UI displays backend values. It does not recompute reading minutes.
 
 **APIs**
 

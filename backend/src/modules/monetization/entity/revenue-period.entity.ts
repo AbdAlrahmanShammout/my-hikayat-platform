@@ -6,7 +6,6 @@ export class RevenuePeriodEntity extends BaseEntity {
   startsAt!: Date;
   endsAt!: Date;
   status!: RevenuePeriodStatus;
-  platformCutPercent!: number;
   poolAmountCents!: number | null;
 
   constructor(data: RevenuePeriodZodType) {

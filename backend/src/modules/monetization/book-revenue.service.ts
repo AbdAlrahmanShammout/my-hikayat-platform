@@ -20,13 +20,19 @@ import {
   ListBookRevenuesServiceInput,
   SumAuthorCentsServiceInput,
 } from '@/modules/monetization/defs/book-revenue-service.defs';
-import { BookEngagementEntity } from '@/modules/monetization/entity/book-engagement.entity';
 import { BookRevenueEntity } from '@/modules/monetization/entity/book-revenue.entity';
 import { RevenuePeriodEntity } from '@/modules/monetization/entity/revenue-period.entity';
-import { RevenuePeriodPoolAmountMissingException } from '@/modules/monetization/exceptions/revenue-period-pool-amount-missing.exception';
-import { computePlatformCutCents } from '@/modules/monetization/platform-cut-cents.helper';
+import { RevenuePeriodCalculationTooEarlyException } from '@/modules/monetization/exceptions/revenue-period-calculation-too-early.exception';
+import {
+  PUBLISHERS_SHARE_PERCENT,
+  REVENUE_CALCULATION_DELAY_MS,
+} from '@/modules/monetization/consts/publishers-share-percent.constant';
+import { PERCENT_SCALE } from '@/modules/monetization/consts/percent-scale.constant';
 import { BookRevenueRepository } from '@/modules/monetization/repository/book-revenue.repository';
 import { RevenuePeriodService } from '@/modules/monetization/revenue-period.service';
+import { BookReadingCycleService } from '@/modules/reading-completion/book-reading-cycle.service';
+import { CompletedReadCountRow } from '@/modules/reading-completion/repository/book-reading-cycle.repository';
+import { StripeManagerService } from '@/providers/stripe/stripe-manager.service';
 
 @Injectable()
 export class BookRevenueService {
@@ -34,9 +40,11 @@ export class BookRevenueService {
     private readonly bookRevenueRepository: BookRevenueRepository,
     private readonly revenuePeriodService: RevenuePeriodService,
     private readonly bookEngagementService: BookEngagementService,
+    private readonly bookReadingCycleService: BookReadingCycleService,
     private readonly bookService: BookService,
     private readonly auditLogService: AuditLogService,
     private readonly transactionRunner: TransactionRunner,
+    private readonly stripeManagerService: StripeManagerService,
   ) {}
 
   async calculatePeriodRevenue(
@@ -45,17 +53,24 @@ export class BookRevenueService {
     const period: RevenuePeriodEntity = await this.revenuePeriodService.getRevenuePeriodById(
       input.revenuePeriodId,
     );
-    const poolAmountCents: number = BookRevenueService.requirePoolAmount(period.poolAmountCents);
+    BookRevenueService.assertCalculationWindow(period, input.calculatedAt ?? new Date());
+    const stripeNetCents: number | null = await this.stripeManagerService.summarizeSubscriptionNetCents({
+      startsAt: period.startsAt,
+      endsAt: period.endsAt,
+    });
+    const poolAmountCents: number = stripeNetCents ?? 0;
+    await this.revenuePeriodService.updateRevenuePeriod({
+      id: period.id,
+      poolAmountCents,
+    });
     await this.bookEngagementService.aggregatePeriodEngagement({
       revenuePeriodId: period.id,
     });
-    const engagements: BookEngagementEntity[] =
-      await this.bookEngagementService.listAllBookEngagementsForPeriod(period.id);
-    const rows: UpsertBookRevenueRepoInput[] = await this.buildRows(
-      period,
-      poolAmountCents,
-      engagements,
-    );
+    const counts: CompletedReadCountRow[] = await this.bookReadingCycleService.listCompletedReadCounts({
+      startsAt: period.startsAt,
+      endsAt: period.endsAt,
+    });
+    const rows: UpsertBookRevenueRepoInput[] = await this.buildRows(period.id, poolAmountCents, counts);
     return this.transactionRunner.run(async (context: TransactionContext) => {
       const created: BookRevenueEntity[] = await this.bookRevenueRepository.replaceForPeriod(
         {
@@ -72,7 +87,8 @@ export class BookRevenueService {
           subjectId: period.id,
           metadata: {
             poolAmountCents,
-            platformCutPercent: period.platformCutPercent,
+            poolSource: 'stripe',
+            publishersSharePercent: PUBLISHERS_SHARE_PERCENT,
             bookCount: rows.length,
           },
         },
@@ -140,40 +156,40 @@ export class BookRevenueService {
   }
 
   private async buildRows(
-    period: RevenuePeriodEntity,
+    revenuePeriodId: number,
     poolAmountCents: number,
-    engagements: BookEngagementEntity[],
+    counts: readonly CompletedReadCountRow[],
   ): Promise<UpsertBookRevenueRepoInput[]> {
-    const weights: number[] = engagements.map((row) => row.weightedEngagement);
-    const platformCutTotalCents: number = computePlatformCutCents({
-      poolAmountCents,
-      platformCutPercent: period.platformCutPercent,
-    });
+    const weights: number[] = counts.map((row) => row.completedReadCount);
+    const publishersPoolCents: number = Math.round(
+      (poolAmountCents * PUBLISHERS_SHARE_PERCENT) / PERCENT_SCALE,
+    );
+    const platformCutTotalCents: number = poolAmountCents - publishersPoolCents;
     const authorCents: number[] = allocateCentsByWeights({
       weights,
-      totalCents: poolAmountCents - platformCutTotalCents,
+      totalCents: publishersPoolCents,
     });
     const platformCutCents: number[] = allocateCentsByWeights({
       weights,
       totalCents: platformCutTotalCents,
     });
-    return this.mapRows(period.id, engagements, authorCents, platformCutCents);
+    return this.mapRows(revenuePeriodId, counts, authorCents, platformCutCents);
   }
 
   private async mapRows(
     revenuePeriodId: number,
-    engagements: BookEngagementEntity[],
+    counts: readonly CompletedReadCountRow[],
     authorCents: number[],
     platformCutCents: number[],
   ): Promise<UpsertBookRevenueRepoInput[]> {
     const rows: UpsertBookRevenueRepoInput[] = [];
-    for (let i = 0; i < engagements.length; i += 1) {
-      const book: BookEntity = await this.bookService.getBookById(engagements[i].bookId);
+    for (let i = 0; i < counts.length; i += 1) {
+      const book: BookEntity = await this.bookService.getBookById(counts[i].bookId);
       rows.push({
         revenuePeriodId,
         bookId: book.id,
         ownerId: book.ownerId,
-        weightedEngagement: engagements[i].weightedEngagement,
+        completedReadCount: counts[i].completedReadCount,
         authorCents: authorCents[i],
         platformCutCents: platformCutCents[i],
         poolShareCents: authorCents[i] + platformCutCents[i],
@@ -182,10 +198,11 @@ export class BookRevenueService {
     return rows;
   }
 
-  private static requirePoolAmount(poolAmountCents: number | null): number {
-    if (poolAmountCents === null) {
-      throw new RevenuePeriodPoolAmountMissingException();
+  private static assertCalculationWindow(period: RevenuePeriodEntity, calculatedAt: Date): void {
+    const earliest: number = period.endsAt.getTime() + REVENUE_CALCULATION_DELAY_MS;
+    if (calculatedAt.getTime() < earliest) {
+      throw new RevenuePeriodCalculationTooEarlyException();
     }
-    return poolAmountCents;
   }
+
 }

@@ -32,8 +32,8 @@ export function AdminCategoriesPanel(): JSX.Element {
     <div className="space-y-6">
       <Alert>
         <AlertDescription>
-          Changing a weight does not rewrite historical payouts until a revenue period is
-          recalculated. Rename does not change weight. Delete is not available.
+          Category weight is stored on the category. Rename keeps the same weight. Delete is not
+          available.
         </AlertDescription>
       </Alert>
       {renderCategoriesPanelBody(categoriesQuery, listSearch, replaceSearch)}

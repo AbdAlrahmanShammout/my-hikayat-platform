@@ -32,8 +32,6 @@ export function AuthorAnalyticsTable({ bookEngagements }: AuthorAnalyticsTablePr
           <TableHead>activeReadingMs</TableHead>
           <TableHead>activeSpreadMs</TableHead>
           <TableHead>visualSceneTimeMs</TableHead>
-          <TableHead>categoryWeight</TableHead>
-          <TableHead>weightedEngagement</TableHead>
           <TableHead className="text-right">Heatmap</TableHead>
         </TableRow>
       </TableHeader>
@@ -55,8 +53,6 @@ export function AuthorAnalyticsTable({ bookEngagements }: AuthorAnalyticsTablePr
               <span>{formatDurationMs(row.visualSceneTimeMs)}</span>
               <span className="ml-2 text-xs text-muted-foreground">Not paid</span>
             </TableCell>
-            <TableCell>{String(row.categoryWeight)}</TableCell>
-            <TableCell>{String(row.weightedEngagement)}</TableCell>
             <TableCell className="text-right">
               <Button asChild variant="outline" size="sm">
                 <Link

@@ -104,6 +104,7 @@ export class ReadingIntelligenceReaderController {
         scrollOffset: body.scrollOffset,
         spreadIndex: body.spreadIndex,
         pageNumber: body.pageNumber,
+        contentHeight: body.contentHeight,
       });
     return new ReadingSessionResponse(entity);
   }

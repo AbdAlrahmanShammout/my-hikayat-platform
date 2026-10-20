@@ -33,8 +33,7 @@ export function AdminRevenuePeriodsTable({
           <TableHead>startsAt</TableHead>
           <TableHead>endsAt</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead>platformCutPercent</TableHead>
-          <TableHead>Pool</TableHead>
+          <TableHead>Net pool</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -48,7 +47,6 @@ export function AdminRevenuePeriodsTable({
                 {formatRevenuePeriodStatus(period.status)}
               </Badge>
             </TableCell>
-            <TableCell>{String(period.platformCutPercent)}</TableCell>
             <TableCell>{formatPoolAmountLabel(period.poolAmountCents)}</TableCell>
             <TableCell className="text-right">
               <Button asChild variant="outline" size="sm">

@@ -21,7 +21,7 @@ type AdminPeriodAnalyticsTableProps = {
 };
 
 /**
- * Weighted book engagement. Visual scene time is shown and is not paid.
+ * Reading time stored for the period. Visual scene time is shown beside paid reading time.
  */
 export function AdminPeriodAnalyticsTable({
   revenuePeriodId,
@@ -36,8 +36,6 @@ export function AdminPeriodAnalyticsTable({
           <TableHead>activeReadingMs</TableHead>
           <TableHead>activeSpreadMs</TableHead>
           <TableHead>visualSceneTimeMs</TableHead>
-          <TableHead>categoryWeight</TableHead>
-          <TableHead>weightedEngagement</TableHead>
           <TableHead className="text-right">Heatmap</TableHead>
         </TableRow>
       </TableHeader>
@@ -59,8 +57,6 @@ export function AdminPeriodAnalyticsTable({
               <span>{formatDurationMs(row.visualSceneTimeMs)}</span>
               <span className="ml-2 text-xs text-muted-foreground">Not paid</span>
             </TableCell>
-            <TableCell>{String(row.categoryWeight)}</TableCell>
-            <TableCell>{String(row.weightedEngagement)}</TableCell>
             <TableCell className="text-right">
               <Button asChild variant="outline" size="sm">
                 <Link to={`/admin/revenue/${revenuePeriodId}/books/${row.bookId}/heatmap`}>

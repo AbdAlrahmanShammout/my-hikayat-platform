@@ -32,7 +32,6 @@ process.env.OFFLINE_LEASE_PRIVATE_KEY =
 process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? 'sk_test_not_for_production';
 process.env.STRIPE_WEBHOOK_SECRET =
   process.env.STRIPE_WEBHOOK_SECRET ?? 'whsec_test_not_for_production';
-process.env.PLATFORM_CUT_PERCENT = process.env.PLATFORM_CUT_PERCENT ?? '30';
 process.env.MAIL_FROM = process.env.MAIL_FROM ?? 'noreply@example.com';
 process.env.MAIL_SMTP_HOST = process.env.MAIL_SMTP_HOST ?? 'localhost';
 process.env.MAIL_SMTP_PORT = process.env.MAIL_SMTP_PORT ?? '1025';

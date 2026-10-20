@@ -119,6 +119,7 @@ describe('ReadingIntelligenceService', () => {
       mockReadingSessionTotalsService as unknown as ReadingSessionTotalsService,
       mockReadingVisualEngagementService as unknown as ReadingVisualEngagementService,
       mockReadingChapterEngagementService as unknown as ReadingChapterEngagementService,
+      { recordPageDwell: jest.fn().mockResolvedValue(null) } as never,
       mockTransactionRunner,
     );
   });

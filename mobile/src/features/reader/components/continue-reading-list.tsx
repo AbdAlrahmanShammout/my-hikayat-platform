@@ -7,6 +7,8 @@ import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-
 import type { ReadingProgress } from '@/features/reader/api/get-reading-progress';
 import { useContinueReading } from '@/features/reader/hooks/use-continue-reading';
 import { formatContinueReadingLabel } from '@/features/reader/lib/continue-reading';
+import { useReadingCompletionStatuses } from '@/features/reading-completion/hooks/use-reading-completion-statuses';
+import { formatReadingStatusLabel } from '@/features/reading-completion/lib/format-reading-status-label';
 import { theme } from '@/theme/theme';
 import { ErrorState } from '@/ui/feedback/error-state';
 import { BookCard } from '@/ui/primitives/book-card';
@@ -21,6 +23,7 @@ type ContinueReadingListProps = {
  */
 export function ContinueReadingList({ onContinue }: ContinueReadingListProps): JSX.Element {
   const continueQuery = useContinueReading();
+  const statuses = useReadingCompletionStatuses(continueQuery.items.map((item) => item.bookId));
   const titleQueries = useQueries({
     queries: continueQuery.items.map((item) => ({
       queryKey: ['catalog', 'book', item.bookId],
@@ -78,6 +81,7 @@ export function ContinueReadingList({ onContinue }: ContinueReadingListProps): J
             authorName={book?.authorName}
             coverUri={cover.kind === 'image' ? cover.url : null}
             progressLabel={formatContinueReadingLabel(item)}
+            statusLabel={formatReadingStatusLabel(statuses.byBookId.get(item.bookId))}
             onPress={() => {
               onContinue(item.bookId);
             }}

@@ -8,8 +8,6 @@ export type UpsertBookEngagementRepoInput = {
   readonly activeReadingMs: number;
   readonly activeSpreadMs: number;
   readonly visualSceneTimeMs: number;
-  readonly categoryWeight: number;
-  readonly weightedEngagement: number;
 };
 
 export type ReplaceBookEngagementsForPeriodRepoInput = {
@@ -48,5 +46,4 @@ export type OwnerBookEngagementSummary = {
   readonly totalActiveReadingMs: number;
   readonly totalActiveSpreadMs: number;
   readonly totalVisualSceneTimeMs: number;
-  readonly totalWeightedEngagement: number;
 };

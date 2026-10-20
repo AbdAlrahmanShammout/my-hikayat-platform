@@ -12,6 +12,8 @@ import { useOfflineBookActions } from '@/features/offline/hooks/use-offline-book
 import { useOfflineDownloadProgress } from '@/features/offline/hooks/use-offline-download-progress';
 import { useOfflinePackages } from '@/features/offline/hooks/use-offline-packages';
 import type { OfflineBookManifest } from '@/features/offline/types/offline-book-manifest';
+import { useReadingCompletionStatuses } from '@/features/reading-completion/hooks/use-reading-completion-statuses';
+import { formatReadingStatusLabel } from '@/features/reading-completion/lib/format-reading-status-label';
 import { OpenedBooksSection } from '@/features/reader/components/opened-books-section';
 import { useReadingProgressList } from '@/features/reader/hooks/use-reading-progress-list';
 import { excludeDownloadedProgress } from '@/features/reader/lib/exclude-downloaded-progress';
@@ -37,6 +39,7 @@ export function LibraryScreen(): JSX.Element {
   const downloadProgress = useOfflineDownloadProgress();
   const actions = useOfflineBookActions(removeTarget?.bookId ?? null);
   const packageCount: number = offline.packages.length;
+  const statuses = useReadingCompletionStatuses(offline.packages.map((entry) => entry.bookId));
   const downloadedBookIds: ReadonlySet<number> = new Set(
     offline.packages.map((entry) => entry.bookId),
   );
@@ -122,6 +125,7 @@ export function LibraryScreen(): JSX.Element {
                 onOpen={() => {
                   router.push(`/(app)/books/read/${entry.bookId}` as Href);
                 }}
+                statusLabel={formatReadingStatusLabel(statuses.byBookId.get(entry.bookId))}
                 onRequestRemove={() => {
                   setRemoveError(null);
                   setRemoveTarget(entry);

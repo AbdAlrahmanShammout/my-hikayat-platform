@@ -17,9 +17,6 @@ import jwtConfigs from './jwt/jwt-configs';
 import { mailConfigSchema } from './mail/mail-config.schema';
 import { MailConfigService } from './mail/mail-config.service';
 import mailConfigs from './mail/mail-configs';
-import { monetizationConfigSchema } from './monetization/monetization-config.schema';
-import { MonetizationConfigService } from './monetization/monetization-config.service';
-import monetizationConfigs from './monetization/monetization-configs';
 import { offlineLeaseConfigSchema } from './offline-lease/offline-lease-config.schema';
 import { OfflineLeaseConfigService } from './offline-lease/offline-lease-config.service';
 import offlineLeaseConfigs from './offline-lease/offline-lease-configs';
@@ -44,7 +41,6 @@ import stripeConfigs from './stripe/stripe-configs';
         ...storageConfigs,
         ...encryptionConfigs,
         ...stripeConfigs,
-        ...monetizationConfigs,
         ...mailConfigs,
         ...offlineLeaseConfigs,
       ],
@@ -55,7 +51,6 @@ import stripeConfigs from './stripe/stripe-configs';
         ...storageConfigSchema,
         ...encryptionConfigSchema,
         ...stripeConfigSchema,
-        ...monetizationConfigSchema,
         ...mailConfigSchema,
         ...offlineLeaseConfigSchema,
       }),
@@ -74,7 +69,6 @@ import stripeConfigs from './stripe/stripe-configs';
     StorageConfigService,
     EncryptionConfigService,
     StripeConfigService,
-    MonetizationConfigService,
     MailConfigService,
     OfflineLeaseConfigService,
   ],
@@ -85,7 +79,6 @@ import stripeConfigs from './stripe/stripe-configs';
     StorageConfigService,
     EncryptionConfigService,
     StripeConfigService,
-    MonetizationConfigService,
     MailConfigService,
     OfflineLeaseConfigService,
   ],

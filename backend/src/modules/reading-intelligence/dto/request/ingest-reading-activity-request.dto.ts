@@ -77,4 +77,15 @@ export class IngestReadingActivityRequestDto {
   @Min(1)
   @Transform(({ value }: { value: unknown }) => parseOptionalInt(value))
   pageNumber?: number;
+
+  @ApiPropertyOptional({
+    description: 'Reflowable content height in pixels, used to place the dwell on a virtual page',
+    example: 2400,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Transform(({ value }: { value: unknown }) => parseOptionalInt(value))
+  contentHeight?: number;
 }

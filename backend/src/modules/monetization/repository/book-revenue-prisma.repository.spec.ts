@@ -1,5 +1,3 @@
-import { Prisma } from '@prisma/client';
-
 import { BookRevenueMapper } from '@/modules/monetization/mapper/book-revenue.mapper';
 import { PrismaProviderService } from '@/providers/database/prisma/prisma-provider.service';
 
@@ -15,7 +13,7 @@ describe('BookRevenuePrismaRepository', () => {
     revenuePeriodId: 4,
     bookId: 8,
     ownerId: 3,
-    weightedEngagement: new Prisma.Decimal('2.50000000'),
+    completedReadCount: 2,
     poolShareCents: 3571,
     platformCutCents: 1071,
     authorCents: 2500,

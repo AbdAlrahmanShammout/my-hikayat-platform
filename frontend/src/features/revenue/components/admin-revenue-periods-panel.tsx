@@ -32,7 +32,8 @@ export function AdminRevenuePeriodsPanel(): JSX.Element {
     <div className="space-y-6">
       <Alert>
         <AlertDescription>
-          Pool amount is admin-set integer cents. This screen does not derive the pool from Stripe.
+          The net pool is written when the period is calculated from Stripe. Publishers receive 40
+          percent of that net.
         </AlertDescription>
       </Alert>
       {renderRevenuePeriodsPanelBody(periodsQuery, listSearch, replaceSearch)}

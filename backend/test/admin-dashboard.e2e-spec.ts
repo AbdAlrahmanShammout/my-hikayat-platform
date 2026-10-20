@@ -209,8 +209,6 @@ describe('Admin dashboard summary (e2e)', () => {
         activeReadingMs: 90_000,
         activeSpreadMs: 0,
         visualSceneTimeMs: 45_000,
-        categoryWeight: 1,
-        weightedEngagement: 1.5,
       },
     });
     const seededResponse = await request(getServer())

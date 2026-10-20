@@ -9,7 +9,6 @@ import { PageSkeleton } from '@/components/page-skeleton';
 import { Button } from '@/components/ui/button';
 import { AdminRevenuePeriodActions } from '@/features/revenue/components/admin-revenue-period-actions';
 import { AdminRevenuePeriodDetailSummary } from '@/features/revenue/components/admin-revenue-period-detail-summary';
-import { AdminRevenuePeriodPoolForm } from '@/features/revenue/components/admin-revenue-period-pool-form';
 import { AdminRevenuePeriodResults } from '@/features/revenue/components/admin-revenue-period-results';
 import { AdminRevenuePeriodShareActions } from '@/features/revenue/components/admin-revenue-period-share-actions';
 import { useAdminRevenuePeriod } from '@/features/revenue/hooks/use-admin-revenue-period';
@@ -27,7 +26,7 @@ export function AdminRevenueDetailPage(): JSX.Element {
       <>
         <PageHeader
           title="Revenue period"
-          description="Pool amount is admin-set cents. Platform cut belongs to the period."
+          description="Net pool is written when the period is calculated."
         />
         <ErrorState
           title="Invalid revenue period id"
@@ -50,7 +49,7 @@ function AdminRevenueDetailContent({
       <>
         <PageHeader
           title="Revenue period"
-          description="Pool amount is admin-set cents. Platform cut belongs to the period."
+          description="Net pool is written when the period is calculated."
         />
         <PageSkeleton />
       </>
@@ -61,7 +60,7 @@ function AdminRevenueDetailContent({
       <>
         <PageHeader
           title="Revenue period"
-          description="Pool amount is admin-set cents. Platform cut belongs to the period."
+          description="Net pool is written when the period is calculated."
           actions={backToRevenueAction()}
         />
         <ErrorState
@@ -78,16 +77,12 @@ function AdminRevenueDetailContent({
     <>
       <PageHeader
         title={`${formatWireInstant(period.startsAt)} – ${formatWireInstant(period.endsAt)}`}
-        description="Pool amount is admin-set cents. Calculate writes shares from backend totals."
+        description="Net pool comes from Stripe when the period is calculated. Publishers receive 40 percent of that net."
         actions={backToRevenueAction()}
       />
       <div className="space-y-6">
         <AdminRevenuePeriodShareActions period={period} />
         <AdminRevenuePeriodActions period={period} />
-        <AdminRevenuePeriodPoolForm
-          key={`${period.id}-${period.updatedAt}-${period.status}`}
-          period={period}
-        />
         <AdminRevenuePeriodDetailSummary period={period} />
         <AdminRevenuePeriodResults revenuePeriodId={period.id} />
       </div>

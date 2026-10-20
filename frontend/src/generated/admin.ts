@@ -300,13 +300,6 @@ export interface paths {
         "200": { content: { 'application/json': components['schemas']['RevenuePeriodResponse'] } };
       };
     };
-    patch: {
-      parameters: { path: { id: number } };
-      requestBody: { content: { 'application/json': components['schemas']['UpdateRevenuePeriodRequestDto'] } };
-      responses: {
-        "200": { content: { 'application/json': components['schemas']['RevenuePeriodResponse'] } };
-      };
-    };
   };
   "/admin/revenue-periods/{id}/close": {
     post: {
@@ -615,19 +608,18 @@ export interface components {
     GetAdminDashboardSummaryResponseDto: { totalUsers: number; totalPublishers: number; totalBooks: number; publishedBooks: number; pendingReviewBooks: number; totalReadingMinutes: number };
     AdminDashboardReadingBookResponse: { bookId: number; title: string; ownerId: number; activeReadingMs: number; activeSpreadMs: number; readingMinutes: number };
     GetAdminDashboardReadingResponseDto: { totalReadingMinutes: number; bookEngagements: Array<components['schemas']['AdminDashboardReadingBookResponse']>; total: number };
-    RevenuePeriodResponse: { id: number; createdAt: string; updatedAt: string; startsAt: string; endsAt: string; status: "open" | "closed"; platformCutPercent: number; poolAmountCents?: number | null };
+    RevenuePeriodResponse: { id: number; createdAt: string; updatedAt: string; startsAt: string; endsAt: string; status: "open" | "closed"; poolAmountCents?: number | null };
     GetRevenuePeriodsResponseDto: { revenuePeriods: Array<components['schemas']['RevenuePeriodResponse']>; total: number };
-    CreateRevenuePeriodRequestDto: { startsAt: string; endsAt: string; platformCutPercent?: number; poolAmountCents?: number };
-    UpdateRevenuePeriodRequestDto: { platformCutPercent?: number; poolAmountCents?: number };
-    BookEngagementResponse: { id: number; createdAt: string; updatedAt: string; revenuePeriodId: number; bookId: number; layoutType: "reflowable" | "fixed_layout"; activeReadingMs: number; activeSpreadMs: number; visualSceneTimeMs: number; categoryWeight: number; weightedEngagement: number; book?: components['schemas']['BookResponse'] };
-    GetAdminPeriodAnalyticsResponseDto: { period: components['schemas']['RevenuePeriodResponse']; bookEngagements: Array<components['schemas']['BookEngagementResponse']>; total: number; totalActiveReadingMs: number; totalActiveSpreadMs: number; totalVisualSceneTimeMs: number; totalWeightedEngagement: number; totalReadingMinutes: number };
-    BookRevenueResponse: { id: number; createdAt: string; updatedAt: string; revenuePeriodId: number; bookId: number; ownerId: number; weightedEngagement: number; poolShareCents: number; platformCutCents: number; authorCents: number; book?: components['schemas']['BookResponse']; owner?: components['schemas']['UserResponse'] };
+    CreateRevenuePeriodRequestDto: { startsAt: string; endsAt: string };
+    BookEngagementResponse: { id: number; createdAt: string; updatedAt: string; revenuePeriodId: number; bookId: number; layoutType: "reflowable" | "fixed_layout"; activeReadingMs: number; activeSpreadMs: number; visualSceneTimeMs: number; book?: components['schemas']['BookResponse'] };
+    GetAdminPeriodAnalyticsResponseDto: { period: components['schemas']['RevenuePeriodResponse']; bookEngagements: Array<components['schemas']['BookEngagementResponse']>; total: number; totalActiveReadingMs: number; totalActiveSpreadMs: number; totalVisualSceneTimeMs: number; totalReadingMinutes: number };
+    BookRevenueResponse: { id: number; createdAt: string; updatedAt: string; revenuePeriodId: number; bookId: number; ownerId: number; completedReadCount: number; poolShareCents: number; platformCutCents: number; authorCents: number; book?: components['schemas']['BookResponse']; owner?: components['schemas']['UserResponse'] };
     GetAdminPeriodEarningsResponseDto: { period: components['schemas']['RevenuePeriodResponse']; bookRevenues: Array<components['schemas']['BookRevenueResponse']>; total: number; authorCents: number; platformCutCents?: number | null };
     AuthorBookHeatmapCellResponse: { spreadIndex: number; pageNumber: number; activeDurationMs: number; visualSceneTimeMs: number };
     AuthorBookChapterHeatmapCellResponse: { spineIndex: number; title?: string | null; activeDurationMs: number };
     GetAdminPeriodBookHeatmapResponseDto: { bookId: number; bookTitle: string; revenuePeriodId: number; layoutType: "reflowable" | "fixed_layout" | null; spreads: Array<components['schemas']['AuthorBookHeatmapCellResponse']>; chapters: Array<components['schemas']['AuthorBookChapterHeatmapCellResponse']> };
-    PlatformSettingsResponse: { privacyPolicyUrl: string | null; termsOfServiceUrl: string | null; aboutMission: string | null; authCoverMediaUrl: string | null };
-    UpdatePlatformSettingsRequestDto: { privacyPolicyUrl?: string | null; termsOfServiceUrl?: string | null; aboutMission?: string | null; authCoverMediaUrl?: string | null };
+    PlatformSettingsResponse: { privacyPolicyUrl: string | null; termsOfServiceUrl: string | null; aboutMission: string | null; authCoverMediaUrl: string | null; wordsPerPage: number };
+    UpdatePlatformSettingsRequestDto: { privacyPolicyUrl?: string | null; termsOfServiceUrl?: string | null; aboutMission?: string | null; authCoverMediaUrl?: string | null; wordsPerPage?: number | null };
     CreatePlanRequestDto: { name: string; description: string; kind: "free" | "monthly_paid"; slug?: string; stripePriceId?: string };
     PlanResponse: { id: number; createdAt: string; updatedAt: string; slug: string; name: string; description: string; kind: "free" | "monthly_paid"; interval: "month" | null; stripePriceId?: string | null; amountCents: number | null; currency: string | null };
     GetPlansResponseDto: { plans: Array<components['schemas']['PlanResponse']>; total: number };

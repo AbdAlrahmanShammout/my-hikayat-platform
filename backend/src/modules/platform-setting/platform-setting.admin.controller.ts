@@ -28,7 +28,7 @@ export class PlatformSettingAdminController {
   @Patch()
   @ApiOperation({
     summary:
-      'Update Privacy, Terms, About mission, and Sign in/up cover media. Omitted fields are unchanged.',
+      'Update Privacy, Terms, About mission, Sign in/up cover media, and words per page. Omitted fields are unchanged.',
   })
   @ApiBody({ type: UpdatePlatformSettingsRequestDto })
   @ApiResponse({ status: 200, type: PlatformSettingsResponse })
@@ -40,6 +40,7 @@ export class PlatformSettingAdminController {
       termsOfServiceUrl: body.termsOfServiceUrl,
       aboutMission: body.aboutMission,
       authCoverMediaUrl: body.authCoverMediaUrl,
+      wordsPerPage: body.wordsPerPage,
     });
     return new PlatformSettingsResponse(settings);
   }

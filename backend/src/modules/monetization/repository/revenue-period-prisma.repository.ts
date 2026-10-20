@@ -29,7 +29,6 @@ export class RevenuePeriodPrismaRepository implements RevenuePeriodRepository {
         startsAt: input.startsAt,
         endsAt: input.endsAt,
         status: input.status,
-        platformCutPercent: input.platformCutPercent,
         poolAmountCents: input.poolAmountCents,
       },
     });
@@ -44,9 +43,6 @@ export class RevenuePeriodPrismaRepository implements RevenuePeriodRepository {
     const data: Prisma.RevenuePeriodUncheckedUpdateInput = {};
     if (input.status !== undefined) {
       data.status = input.status;
-    }
-    if (input.platformCutPercent !== undefined) {
-      data.platformCutPercent = input.platformCutPercent;
     }
     if (input.poolAmountCents !== undefined) {
       data.poolAmountCents = input.poolAmountCents;

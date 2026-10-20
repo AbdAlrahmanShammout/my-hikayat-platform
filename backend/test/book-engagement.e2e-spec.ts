@@ -196,12 +196,8 @@ describe('Book engagement aggregation (e2e)', () => {
     const reflowable = aggregated.find((row) => row.bookId === reflowableBook.id);
     const fixed = aggregated.find((row) => row.bookId === fixedBook.id);
     expect(reflowable?.activeReadingMs).toBe(120000);
-    expect(reflowable?.categoryWeight).toBe(1.25);
-    expect(reflowable?.weightedEngagement).toBe(2.5);
     expect(fixed?.activeSpreadMs).toBe(180000);
     expect(fixed?.visualSceneTimeMs).toBe(90000);
-    expect(fixed?.categoryWeight).toBe(1.5);
-    expect(fixed?.weightedEngagement).toBe(4.5);
     const listed = await bookEngagementService.listBookEngagements({
       revenuePeriodId: period.id,
     });

@@ -49,10 +49,9 @@ export function AdminPeriodAnalyticsPanel({
     <div className="space-y-4">
       <AdminPeriodMetricsCard
         title="Engagement totals"
-        description="weightedEngagement and totalReadingMinutes come from the API. Visual scene time is not paid."
+        description="totalReadingMinutes comes from the API. Visual scene time is stored separately."
         metrics={[
           { label: 'totalReadingMinutes', value: String(analytics.totalReadingMinutes) },
-          { label: 'totalWeightedEngagement', value: String(analytics.totalWeightedEngagement) },
           { label: 'totalActiveReadingMs', value: formatDurationMs(analytics.totalActiveReadingMs) },
           { label: 'totalActiveSpreadMs', value: formatDurationMs(analytics.totalActiveSpreadMs) },
           {

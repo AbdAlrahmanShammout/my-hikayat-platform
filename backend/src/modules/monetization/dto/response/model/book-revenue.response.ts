@@ -16,10 +16,10 @@ export class BookRevenueResponse extends BaseModelResponseDto {
   ownerId: number;
 
   @ApiProperty({
-    description: 'Weighted engagement minutes used to allocate the pool',
-    example: 2.5,
+    description: 'Completed reads used to allocate the pool. One completed read has equal weight.',
+    example: 50,
   })
-  weightedEngagement: number;
+  completedReadCount: number;
 
   @ApiProperty({
     description: 'Book share of the period pool in cents, including the platform cut',
@@ -56,7 +56,7 @@ export class BookRevenueResponse extends BaseModelResponseDto {
     this.revenuePeriodId = entity.revenuePeriodId;
     this.bookId = entity.bookId;
     this.ownerId = entity.ownerId;
-    this.weightedEngagement = entity.weightedEngagement;
+    this.completedReadCount = entity.completedReadCount;
     this.poolShareCents = entity.poolShareCents;
     this.platformCutCents = entity.platformCutCents;
     this.authorCents = entity.authorCents;

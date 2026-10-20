@@ -32,22 +32,10 @@ export class BookEngagementResponse extends BaseModelResponseDto {
   activeSpreadMs: number;
 
   @ApiProperty({
-    description: 'Stored visual scene time in milliseconds; not added into weighted engagement',
+    description: 'Stored visual scene time in milliseconds',
     example: 0,
   })
   visualSceneTimeMs: number;
-
-  @ApiProperty({
-    description: 'Category weight snapshotted for the period',
-    example: 1.25,
-  })
-  categoryWeight: number;
-
-  @ApiProperty({
-    description: 'Weighted engagement minutes after applying category weight',
-    example: 2.5,
-  })
-  weightedEngagement: number;
 
   @ApiPropertyOptional({
     description: 'Book projection when loaded',
@@ -63,8 +51,6 @@ export class BookEngagementResponse extends BaseModelResponseDto {
     this.activeReadingMs = entity.activeReadingMs;
     this.activeSpreadMs = entity.activeSpreadMs;
     this.visualSceneTimeMs = entity.visualSceneTimeMs;
-    this.categoryWeight = entity.categoryWeight;
-    this.weightedEngagement = entity.weightedEngagement;
     this.book = entity.book === undefined ? undefined : new BookResponse(entity.book);
   }
 }

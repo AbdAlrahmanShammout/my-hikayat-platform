@@ -1,17 +1,12 @@
 import { DEFAULT_PAGE_OFFSET, DEFAULT_PAGE_SIZE } from '@/common/constants/pagination.constant';
 import { ResourceNotFoundException } from '@/common/exceptions/resource-not-found.exception';
-import { MonetizationConfigService } from '@/config/monetization/monetization-config.service';
 import { RevenuePeriodEntity } from '@/modules/monetization/entity/revenue-period.entity';
 import { RevenuePeriodStatus } from '@/modules/monetization/enum/general.enum';
-import { PlatformCutPercentInvalidException } from '@/modules/monetization/exceptions/platform-cut-percent-invalid.exception';
-import { RevenuePeriodAlreadyClosedException } from '@/modules/monetization/exceptions/revenue-period-already-closed.exception';
 import { RevenuePeriodPoolAmountInvalidException } from '@/modules/monetization/exceptions/revenue-period-pool-amount-invalid.exception';
 import { RevenuePeriodRangeInvalidException } from '@/modules/monetization/exceptions/revenue-period-range-invalid.exception';
 import { RevenuePeriodStartsAtConflictException } from '@/modules/monetization/exceptions/revenue-period-starts-at-conflict.exception';
 
 import { RevenuePeriodService } from './revenue-period.service';
-
-const CONFIGURED_PLATFORM_CUT_PERCENT = 25;
 
 function createSamplePeriod(
   overrides: Partial<ConstructorParameters<typeof RevenuePeriodEntity>[0]> = {},
@@ -23,7 +18,6 @@ function createSamplePeriod(
     startsAt: new Date('2026-08-01T00:00:00.000Z'),
     endsAt: new Date('2026-09-01T00:00:00.000Z'),
     status: RevenuePeriodStatus.OPEN,
-    platformCutPercent: CONFIGURED_PLATFORM_CUT_PERCENT,
     poolAmountCents: null,
     ...overrides,
   });
@@ -39,7 +33,6 @@ describe('RevenuePeriodService', () => {
     findOpenElapsed: jest.Mock;
     list: jest.Mock;
   };
-  let mockMonetizationConfigService: { platformCutPercent: number };
   let revenuePeriodService: RevenuePeriodService;
 
   beforeEach(() => {
@@ -52,15 +45,11 @@ describe('RevenuePeriodService', () => {
       findOpenElapsed: jest.fn(),
       list: jest.fn(),
     };
-    mockMonetizationConfigService = { platformCutPercent: CONFIGURED_PLATFORM_CUT_PERCENT };
-    revenuePeriodService = new RevenuePeriodService(
-      mockRevenuePeriodRepository,
-      mockMonetizationConfigService as unknown as MonetizationConfigService,
-    );
+    revenuePeriodService = new RevenuePeriodService(mockRevenuePeriodRepository);
   });
 
   describe('createRevenuePeriod', () => {
-    it('snapshots the configured platform cut when none is provided', async () => {
+    it('creates an open period with an empty calculated pool', async () => {
       const expectedPeriod = createSamplePeriod();
       mockRevenuePeriodRepository.findByStartsAt.mockResolvedValue(null);
       mockRevenuePeriodRepository.create.mockResolvedValue(expectedPeriod);
@@ -72,33 +61,9 @@ describe('RevenuePeriodService', () => {
         startsAt: expectedPeriod.startsAt,
         endsAt: expectedPeriod.endsAt,
         status: RevenuePeriodStatus.OPEN,
-        platformCutPercent: CONFIGURED_PLATFORM_CUT_PERCENT,
         poolAmountCents: null,
       });
       expect(actualPeriod).toBe(expectedPeriod);
-    });
-
-    it('rounds an explicit platform cut to two decimal places', async () => {
-      mockRevenuePeriodRepository.findByStartsAt.mockResolvedValue(null);
-      mockRevenuePeriodRepository.create.mockResolvedValue(createSamplePeriod());
-      await revenuePeriodService.createRevenuePeriod({
-        startsAt: new Date('2026-08-01T00:00:00.000Z'),
-        endsAt: new Date('2026-09-01T00:00:00.000Z'),
-        platformCutPercent: 12.345,
-      });
-      expect(mockRevenuePeriodRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ platformCutPercent: 12.35 }),
-      );
-    });
-
-    it('rejects a platform cut outside zero through one hundred', async () => {
-      await expect(
-        revenuePeriodService.createRevenuePeriod({
-          startsAt: new Date('2026-08-01T00:00:00.000Z'),
-          endsAt: new Date('2026-09-01T00:00:00.000Z'),
-          platformCutPercent: 101,
-        }),
-      ).rejects.toBeInstanceOf(PlatformCutPercentInvalidException);
     });
 
     it('rejects a range whose end is not later than its start', async () => {
@@ -119,20 +84,10 @@ describe('RevenuePeriodService', () => {
         }),
       ).rejects.toBeInstanceOf(RevenuePeriodStartsAtConflictException);
     });
-
-    it('rejects a negative pool amount', async () => {
-      await expect(
-        revenuePeriodService.createRevenuePeriod({
-          startsAt: new Date('2026-08-01T00:00:00.000Z'),
-          endsAt: new Date('2026-09-01T00:00:00.000Z'),
-          poolAmountCents: -1,
-        }),
-      ).rejects.toBeInstanceOf(RevenuePeriodPoolAmountInvalidException);
-    });
   });
 
   describe('updateRevenuePeriod', () => {
-    it('updates the pool amount on an open period', async () => {
+    it('stores the calculated net pool', async () => {
       const currentPeriod = createSamplePeriod();
       const expectedPeriod = createSamplePeriod({ poolAmountCents: 5000 });
       mockRevenuePeriodRepository.findById.mockResolvedValue(currentPeriod);
@@ -143,33 +98,16 @@ describe('RevenuePeriodService', () => {
       });
       expect(mockRevenuePeriodRepository.update).toHaveBeenCalledWith({
         id: currentPeriod.id,
-        platformCutPercent: CONFIGURED_PLATFORM_CUT_PERCENT,
         poolAmountCents: 5000,
       });
       expect(actualPeriod).toBe(expectedPeriod);
     });
 
-    it('rejects changing the platform cut on a closed period', async () => {
-      mockRevenuePeriodRepository.findById.mockResolvedValue(
-        createSamplePeriod({ status: RevenuePeriodStatus.CLOSED }),
-      );
+    it('rejects a negative pool amount', async () => {
+      mockRevenuePeriodRepository.findById.mockResolvedValue(createSamplePeriod());
       await expect(
-        revenuePeriodService.updateRevenuePeriod({ id: 1, platformCutPercent: 10 }),
-      ).rejects.toBeInstanceOf(RevenuePeriodAlreadyClosedException);
-    });
-
-    it('allows setting the pool amount on a closed period', async () => {
-      const currentPeriod = createSamplePeriod({ status: RevenuePeriodStatus.CLOSED });
-      mockRevenuePeriodRepository.findById.mockResolvedValue(currentPeriod);
-      mockRevenuePeriodRepository.update.mockResolvedValue(
-        createSamplePeriod({ status: RevenuePeriodStatus.CLOSED, poolAmountCents: 900 }),
-      );
-      await revenuePeriodService.updateRevenuePeriod({ id: 1, poolAmountCents: 900 });
-      expect(mockRevenuePeriodRepository.update).toHaveBeenCalledWith({
-        id: 1,
-        platformCutPercent: CONFIGURED_PLATFORM_CUT_PERCENT,
-        poolAmountCents: 900,
-      });
+        revenuePeriodService.updateRevenuePeriod({ id: 1, poolAmountCents: -1 }),
+      ).rejects.toBeInstanceOf(RevenuePeriodPoolAmountInvalidException);
     });
   });
 
@@ -193,7 +131,7 @@ describe('RevenuePeriodService', () => {
   });
 
   describe('ensureCurrentPeriod', () => {
-    it('opens the UTC month and snapshots the configured cut', async () => {
+    it('opens the current UTC month', async () => {
       const expectedPeriod = createSamplePeriod();
       mockRevenuePeriodRepository.findOpenElapsed.mockResolvedValue([]);
       mockRevenuePeriodRepository.findByStartsAt.mockResolvedValue(null);
@@ -205,21 +143,20 @@ describe('RevenuePeriodService', () => {
         startsAt: new Date('2026-08-01T00:00:00.000Z'),
         endsAt: new Date('2026-09-01T00:00:00.000Z'),
         status: RevenuePeriodStatus.OPEN,
-        platformCutPercent: CONFIGURED_PLATFORM_CUT_PERCENT,
         poolAmountCents: null,
       });
       expect(actualPeriod).toBe(expectedPeriod);
     });
 
-    it('returns an existing period for the same month without rewriting the cut', async () => {
-      const existingPeriod = createSamplePeriod({ platformCutPercent: 12 });
+    it('returns an existing period for the same month', async () => {
+      const existingPeriod = createSamplePeriod();
       mockRevenuePeriodRepository.findOpenElapsed.mockResolvedValue([]);
       mockRevenuePeriodRepository.findByStartsAt.mockResolvedValue(existingPeriod);
       const actualPeriod = await revenuePeriodService.ensureCurrentPeriod(
         new Date('2026-08-15T12:00:00.000Z'),
       );
       expect(mockRevenuePeriodRepository.create).not.toHaveBeenCalled();
-      expect(actualPeriod.platformCutPercent).toBe(12);
+      expect(actualPeriod).toBe(existingPeriod);
     });
 
     it('closes elapsed open periods before opening the current month', async () => {

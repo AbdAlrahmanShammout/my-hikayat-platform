@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
-  Patch,
   Post,
   Query,
   UseGuards,
@@ -34,7 +33,6 @@ import { RevenuePeriodPage } from '@/modules/monetization/defs/revenue-period-re
 import { CreateRevenuePeriodRequestDto } from '@/modules/monetization/dto/request/create-revenue-period-request.dto';
 import { ListAdminPeriodRowsRequestDto } from '@/modules/monetization/dto/request/list-admin-period-rows-request.dto';
 import { ListRevenuePeriodsRequestDto } from '@/modules/monetization/dto/request/list-revenue-periods-request.dto';
-import { UpdateRevenuePeriodRequestDto } from '@/modules/monetization/dto/request/update-revenue-period-request.dto';
 import { GetAdminPeriodAnalyticsResponseDto } from '@/modules/monetization/dto/response/get-admin-period-analytics-response.dto';
 import { GetAdminPeriodBookHeatmapResponseDto } from '@/modules/monetization/dto/response/get-admin-period-book-heatmap-response.dto';
 import { GetAdminPeriodEarningsResponseDto } from '@/modules/monetization/dto/response/get-admin-period-earnings-response.dto';
@@ -79,7 +77,7 @@ export class MonetizationAdminController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create a revenue period with an optional pool amount' })
+  @ApiOperation({ summary: 'Create a revenue period for a UTC range' })
   @ApiBody({ type: CreateRevenuePeriodRequestDto })
   @ApiResponse({ status: 201, type: RevenuePeriodResponse })
   async createRevenuePeriod(
@@ -88,8 +86,6 @@ export class MonetizationAdminController {
     const entity: RevenuePeriodEntity = await this.revenuePeriodService.createRevenuePeriod({
       startsAt: body.startsAt,
       endsAt: body.endsAt,
-      platformCutPercent: body.platformCutPercent,
-      poolAmountCents: body.poolAmountCents,
     });
     return new RevenuePeriodResponse(entity);
   }
@@ -100,23 +96,6 @@ export class MonetizationAdminController {
   @ApiResponse({ status: 200, type: RevenuePeriodResponse })
   async getRevenuePeriod(@Param('id', ParseIntPipe) id: number): Promise<RevenuePeriodResponse> {
     const entity: RevenuePeriodEntity = await this.revenuePeriodService.getRevenuePeriodById(id);
-    return new RevenuePeriodResponse(entity);
-  }
-
-  @Patch(':id')
-  @ApiOperation({ summary: 'Update the pool amount or open-period platform cut' })
-  @ApiParam({ name: 'id', type: Number })
-  @ApiBody({ type: UpdateRevenuePeriodRequestDto })
-  @ApiResponse({ status: 200, type: RevenuePeriodResponse })
-  async updateRevenuePeriod(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: UpdateRevenuePeriodRequestDto,
-  ): Promise<RevenuePeriodResponse> {
-    const entity: RevenuePeriodEntity = await this.revenuePeriodService.updateRevenuePeriod({
-      id,
-      platformCutPercent: body.platformCutPercent,
-      poolAmountCents: body.poolAmountCents,
-    });
     return new RevenuePeriodResponse(entity);
   }
 
@@ -132,7 +111,7 @@ export class MonetizationAdminController {
 
   @Post(':id/engagements')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Refresh weighted book engagement for a revenue period' })
+  @ApiOperation({ summary: 'Refresh stored reading time for a revenue period' })
   @ApiParam({ name: 'id', type: Number })
   @ApiResponse({ status: 200, type: GetAdminPeriodAnalyticsResponseDto })
   async aggregatePeriodEngagement(

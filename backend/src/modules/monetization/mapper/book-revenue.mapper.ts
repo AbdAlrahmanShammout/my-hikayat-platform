@@ -13,7 +13,7 @@ export class BookRevenueMapper {
       revenuePeriodId: schema.revenuePeriodId,
       bookId: schema.bookId,
       ownerId: schema.ownerId,
-      weightedEngagement: Number(schema.weightedEngagement),
+      completedReadCount: schema.completedReadCount,
       poolShareCents: schema.poolShareCents,
       platformCutCents: schema.platformCutCents,
       authorCents: schema.authorCents,

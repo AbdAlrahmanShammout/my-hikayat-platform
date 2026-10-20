@@ -18,6 +18,8 @@ import { OfflineDownloadReaderController } from '@/modules/offline-download/offl
 import { PlatformSettingModule } from '@/modules/platform-setting/platform-setting.module';
 import { PlatformSettingReaderController } from '@/modules/platform-setting/platform-setting.reader.controller';
 import { ReadingIntelligenceModule } from '@/modules/reading-intelligence/reading-intelligence.module';
+import { ReadingCompletionModule } from '@/modules/reading-completion/reading-completion.module';
+import { ReadingCompletionReaderController } from '@/modules/reading-completion/reading-completion.reader.controller';
 import { ReadingIntelligenceReaderController } from '@/modules/reading-intelligence/reading-intelligence.reader.controller';
 import { ReadingModule } from '@/modules/reading/reading.module';
 import { ReadingProgressPresentationModule } from '@/modules/reading/reading-progress-presentation.module';
@@ -42,6 +44,7 @@ import { UserReaderController } from '@/modules/user/user.reader.controller';
     OfflineDownloadModule,
     PlatformSettingModule,
     ReadingIntelligenceModule,
+    ReadingCompletionModule,
     ReadingModule,
     ReadingProgressPresentationModule,
     SearchModule,
@@ -56,6 +59,7 @@ import { UserReaderController } from '@/modules/user/user.reader.controller';
     OfflineDownloadReaderController,
     PlatformSettingReaderController,
     ReadingIntelligenceReaderController,
+    ReadingCompletionReaderController,
     ReadingSyncReaderController,
     ReadingReaderController,
     SearchReaderController,

@@ -13,7 +13,7 @@ type AuthorAnalyticsMetricsCardProps = {
 };
 
 /**
- * Displays GET /author/analytics totals. It does not recompute weighted engagement.
+ * Displays GET /author/analytics totals.
  */
 export function AuthorAnalyticsMetricsCard({
   metrics,
@@ -23,8 +23,7 @@ export function AuthorAnalyticsMetricsCard({
       <CardHeader>
         <CardTitle>Engagement totals</CardTitle>
         <CardDescription>
-          totalReadingMinutes and totalWeightedEngagement come from the API. Visual scene time is
-          not paid.
+          totalReadingMinutes comes from the API. Visual scene time is stored separately.
         </CardDescription>
       </CardHeader>
       <CardContent>

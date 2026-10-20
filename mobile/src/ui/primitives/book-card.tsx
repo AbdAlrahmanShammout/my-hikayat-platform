@@ -15,6 +15,7 @@ type BookCardProps = {
   readonly publisherName?: string | null;
   readonly coverUri?: string | null;
   readonly progressLabel?: string;
+  readonly statusLabel?: string | null;
   readonly showCoverProgress?: boolean;
   readonly progressFraction?: number;
   readonly isLocked?: boolean;
@@ -37,6 +38,7 @@ export function BookCard({
   publisherName,
   coverUri,
   progressLabel,
+  statusLabel,
   showCoverProgress = false,
   progressFraction,
   isLocked = false,
@@ -50,12 +52,16 @@ export function BookCard({
   const isRow = variant === 'row';
   const coverSize = resolveCoverSize(variant);
   const allowProgress = isContinue && showCoverProgress;
+  const spokenLabel: string =
+    statusLabel !== null && statusLabel !== undefined && statusLabel !== ''
+      ? `${accessibilityLabel ?? title}, ${statusLabel}`
+      : (accessibilityLabel ?? title);
   return (
     <Pressable
       onPress={onPress}
       testID={testID}
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityLabel={spokenLabel}
       style={[
         variant === 'compact' ? styles.compact : null,
         variant === 'grid' ? styles.grid : null,
@@ -90,6 +96,11 @@ export function BookCard({
         {isContinue && progressLabel !== undefined ? (
           <Text style={styles.progressLabel} numberOfLines={1}>
             {progressLabel}
+          </Text>
+        ) : null}
+        {statusLabel !== null && statusLabel !== undefined && statusLabel !== '' ? (
+          <Text style={styles.statusLabel} numberOfLines={1}>
+            {statusLabel}
           </Text>
         ) : null}
       </View>
@@ -188,6 +199,10 @@ const styles = StyleSheet.create({
   progressLabel: {
     ...theme.typography.label,
     color: theme.colors.textMuted,
+  },
+  statusLabel: {
+    ...theme.typography.label,
+    color: theme.colors.primary,
   },
   play: {
     width: theme.spacing.xxl,

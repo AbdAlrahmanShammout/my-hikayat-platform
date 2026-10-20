@@ -252,7 +252,8 @@ design proposal — but nothing in the project defines it, so it must not be pre
   book's title fetched from the catalog.
 - **Rules.** Sorted by last reading session, newest first. Limited to **5** items. Each entry
   conveys the book cover (or placeholder), title, and a coarse position — chapter number for
-  reflowable books, spread number for fixed-layout books.
+  reflowable books, spread number for fixed-layout books. Completed books remain eligible for the
+  shelf and carry the "Completed" marker (§6.6).
 - **After use.** Tapping an entry opens the reader directly, skipping book detail, and resumes at
   the saved position.
 - **Empty state meaning.** The user has never opened a book.
@@ -411,9 +412,9 @@ Covered in depth in [§5](#5-reader-experience-specification). Summary of featur
 - **When it saves.** Every ~15 seconds while reading, and once more when the reader is closed.
 - **Position saved.** For reflowable books: which chapter, and how far scrolled within it. For
   fixed-layout books: which spread, and which page.
-- **Rules.** Resume is **automatic and unavoidable** — there is no "start from the beginning"
-  option anywhere. Progress saves are best-effort: if a save fails, reading continues silently and
-  the user is not told.
+- **Rules.** Resume is **automatic**. The only way to begin again from the start is the planned
+  explicit "Start over" action, offered on book detail for a **completed** book only (§5.4). Progress
+  saves are best-effort: if a save fails, reading continues silently and the user is not told.
 - **Important limitation.** **Cross-device Smart Resume does not work offline.** Offline opens
   restore **device-local** progress for the signed-in user when available (**MG-5**); that progress
   is not uploaded until **MG-7**. Online opens still use server progress only.
@@ -892,6 +893,8 @@ listed so the design can propose them deliberately rather than assume them.
 | Billing history / payment method | **NOT AVAILABLE** | No record of what was charged |
 | Cross-book bookmark library | **PLANNED** (explicitly out of scope) | Bookmarks are only reachable inside each book |
 | Reading statistics | **NOT AVAILABLE** | Engagement data is collected but never shown |
+| Reading status markers on books | **PLANNED** | Plain "Completed" / "In progress" marker beside a book from its stored status; no numbers (§6.6) |
+| Start over (completed books) | **PLANNED** | Explicit action on book detail for a completed book; begins a new reading cycle from the first chapter or spread (§5.4) |
 | Storage / download management | **PARTIALLY** — count + My books link in Settings; no byte-level storage UI | Downloads managed on My books |
 | Notification center | **NOT AVAILABLE** | No push inbox; in-app expiry banners are on Home/Me (**MG-14**) |
 | In-reader table of contents | **NOT AVAILABLE** | Chapter navigation is sequential only |
@@ -1269,9 +1272,13 @@ closed, no flush occurs and the session is never ended. The resume point is the 
 ## 5.4 Resuming vs starting over
 
 - Resume is **automatic**. Opening a book with saved progress always continues from that position.
-- There is **no "start from the beginning" action anywhere in the product.** A user who wants to
-  reread a book from page one has no supported way to do it, short of navigating manually back to
-  the first chapter or spread.
+- **Start over (planned).** Book detail offers an explicit "Start over" action for a book whose
+  stored status is `COMPLETED`. It begins a new reading cycle: the saved position returns to the
+  first chapter or spread, the status leaves `COMPLETED`, and the reading counters for the new cycle
+  begin at zero. The action requires an explicit confirmation before it runs. Bookmarks are not
+  affected. Books that are not completed have no start-over action; their resume stays automatic.
+  Opening a completed book without using "Start over" still resumes from the saved position and
+  leaves the status unchanged.
 - Book detail signals the distinction through its primary action ("Read" vs "Continue reading") and
   a matching hint, but offers no choice.
 - **Offline opens restore device-local progress** when available (**MG-5**). That position is not
@@ -1520,9 +1527,27 @@ Progress information is available in exactly two places:
 1. **Continue reading on Home** — the book plus a coarse chapter or spread number.
 2. **Book detail** — indirectly, via the primary action label and resume hint.
 
-Catalog rows, search results, and collection contents carry **no** reading status. Nothing anywhere
-distinguishes unread, in-progress, and finished books, and there is no concept of "finished" in the
-product at all.
+Catalog rows, search results, and collection contents carry **no** reading status other than the
+status markers below. An unread book shows no marker.
+
+**Reading status markers (planned).** Wherever a book appears (Home, catalog rows, search results,
+collection contents, book detail), the signed-in reader sees a simple status marker beside it,
+derived from that reader's stored reading status for the book:
+
+| Stored status | Marker |
+| --- | --- |
+| `COMPLETED` | "Completed" (label text is copy; final wording is a design decision) |
+| `IN_PROGRESS` | "In progress" (label text is copy; final wording is a design decision) |
+| none (never opened) | No marker |
+
+- The marker is tied directly to the stored status. The client reads it from the backend and never
+  computes it from pages, time, or progress.
+- It is a plain indicator with no numbers: no percentage, no pages, no minutes, no counts, and no
+  streaks.
+- When a completed book is started over (§5.4), its status leaves `COMPLETED`, the "Completed"
+  marker disappears, and the "In progress" marker appears. "Completed" returns only when the book
+  is completed again.
+- Only these two markers are added. No other reading statistics are shown.
 
 ## 6.7 Library behavior
 
@@ -2298,7 +2323,7 @@ technically within reach but is not a supported product feature today.
 | R-R4 | Fixed-layout books must not offer typography or theme controls. |
 | R-R5 | Fixed-layout content must be scaled uniformly and never cropped or distorted; letterboxing is expected. |
 | R-R6 | Fixed-layout zoom is stepped from 1× to 3× and resets on spread change. Pinch zoom is disabled. |
-| R-R7 | Resume is automatic; there is no start-from-the-beginning action. |
+| R-R7 | Resume is automatic. The only start-from-the-beginning action is "Start over" on a completed book's detail (planned, §5.4). |
 | R-R8 | Progress saves are best-effort and fail silently. |
 | R-R9 | Bookmarks are per-book, in-reader only, and not user-nameable. |
 | R-R10 | An already-open session is recovered silently rather than surfaced as a conflict. |
@@ -2559,7 +2584,8 @@ light/dark theme (session-local).
 letterboxing and no cropping or distortion.
 
 **Deliberately absent:** pinch zoom; RTL; table of contents; in-book search; text selection,
-highlights, or notes; page numbers or percentage for reflowable; start-from-the-beginning;
+highlights, or notes; page numbers or percentage for reflowable; start-from-the-beginning for books
+that are not completed (planned only for completed books);
 persisted preferences; reading statistics.
 
 ## 15.12 Offline capabilities to support
@@ -2833,7 +2859,7 @@ Revalidated against code on **2026-09-03**. Implementation order and full task s
 | “My books” label vs downloads shelf | IA/copy decision; address when touching Library/Settings |
 | Parental gate / age gate / parental consent | Legal/product decision; insufficient evidence to implement in this track |
 | Full onboarding tour | Partially addressed by MG-3/MG-4; dedicated onboarding still optional |
-| Start-from-beginning control | Still absent; raise if product wants it after Smart Resume work |
+| Start-from-beginning control | Planned for completed books only ("Start over", §5.4); absent for other books |
 | Reading statistics UI | Data collected; surface later if product wants it |
 | Screenshot blocking / watermarking | Not specified; do not invent |
 | RTL / pinch-zoom / PDF / in-book search / preference sync | FR-1…FR-6 backlog; not part of this remediation track |

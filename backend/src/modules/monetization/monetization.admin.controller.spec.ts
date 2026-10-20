@@ -33,7 +33,6 @@ function createSamplePeriod(): RevenuePeriodEntity {
     startsAt: new Date('2026-08-01T00:00:00.000Z'),
     endsAt: new Date('2026-09-01T00:00:00.000Z'),
     status: RevenuePeriodStatus.OPEN,
-    platformCutPercent: 30,
     poolAmountCents: 10000,
   });
 }
@@ -45,7 +44,6 @@ describe('MonetizationAdminController', () => {
     ensureCurrentPeriod: jest.Mock;
     createRevenuePeriod: jest.Mock;
     getRevenuePeriodById: jest.Mock;
-    updateRevenuePeriod: jest.Mock;
     closeRevenuePeriod: jest.Mock;
   };
   let mockAdminAnalyticsService: {
@@ -62,7 +60,6 @@ describe('MonetizationAdminController', () => {
       ensureCurrentPeriod: jest.fn(),
       createRevenuePeriod: jest.fn(),
       getRevenuePeriodById: jest.fn(),
-      updateRevenuePeriod: jest.fn(),
       closeRevenuePeriod: jest.fn(),
     };
     mockAdminAnalyticsService = {
@@ -83,21 +80,6 @@ describe('MonetizationAdminController', () => {
       ],
     }).compile();
     monetizationAdminController = moduleRef.get(MonetizationAdminController);
-  });
-
-  describe('updateRevenuePeriod', () => {
-    it('maps the period id and pool onto the revenue period service', async () => {
-      mockRevenuePeriodService.updateRevenuePeriod.mockResolvedValue(createSamplePeriod());
-      const actualResponse = await monetizationAdminController.updateRevenuePeriod(4, {
-        poolAmountCents: 10000,
-      });
-      expect(mockRevenuePeriodService.updateRevenuePeriod).toHaveBeenCalledWith({
-        id: 4,
-        platformCutPercent: undefined,
-        poolAmountCents: 10000,
-      });
-      expect(actualResponse.poolAmountCents).toBe(10000);
-    });
   });
 
   describe('calculatePeriodRevenue', () => {

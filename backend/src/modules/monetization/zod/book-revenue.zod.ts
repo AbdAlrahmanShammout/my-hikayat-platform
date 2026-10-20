@@ -10,7 +10,7 @@ export const BookRevenueZodSchema = BaseZodSchema.extend({
   revenuePeriodId: ZodNumber,
   bookId: ZodNumber,
   ownerId: ZodNumber,
-  weightedEngagement: ZodNumber,
+  completedReadCount: ZodNumber,
   poolShareCents: ZodNumber,
   platformCutCents: ZodNumber,
   authorCents: ZodNumber,

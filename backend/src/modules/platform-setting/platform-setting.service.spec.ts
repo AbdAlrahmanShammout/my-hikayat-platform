@@ -1,6 +1,7 @@
 import { PlatformSettingEntity } from '@/modules/platform-setting/entity/platform-setting.entity';
 import { PlatformSettingInvalidAboutMissionException } from '@/modules/platform-setting/exceptions/platform-setting-invalid-about-mission.exception';
 import { PlatformSettingInvalidUrlException } from '@/modules/platform-setting/exceptions/platform-setting-invalid-url.exception';
+import { PlatformSettingInvalidWordsPerPageException } from '@/modules/platform-setting/exceptions/platform-setting-invalid-words-per-page.exception';
 
 import { PlatformSettingService } from './platform-setting.service';
 
@@ -23,6 +24,7 @@ const emptySnapshot = {
   termsOfServiceUrl: null,
   aboutMission: null,
   authCoverMediaUrl: null,
+  wordsPerPage: 150,
 };
 
 describe('PlatformSettingService', () => {
@@ -69,7 +71,16 @@ describe('PlatformSettingService', () => {
         termsOfServiceUrl: 'https://example.com/terms',
         aboutMission: 'Read together.',
         authCoverMediaUrl: 'https://example.com/cover.gif',
+        wordsPerPage: 150,
       });
+    });
+
+    it('returns a stored words-per-page value', async () => {
+      mockPlatformSettingRepository.findByKeys.mockResolvedValue([
+        createSampleSetting('words_per_page', '180', 5),
+      ]);
+      const actualSettings = await platformSettingService.getPlatformSettings();
+      expect(actualSettings.wordsPerPage).toBe(180);
     });
   });
 
@@ -119,6 +130,24 @@ describe('PlatformSettingService', () => {
           authCoverMediaUrl: 'javascript:alert(1)',
         }),
       ).rejects.toBeInstanceOf(PlatformSettingInvalidUrlException);
+      expect(mockPlatformSettingRepository.upsert).not.toHaveBeenCalled();
+    });
+
+    it('persists words per page and resets null to the default', async () => {
+      mockPlatformSettingRepository.findByKeys.mockResolvedValue([
+        createSampleSetting('words_per_page', '150', 5),
+      ]);
+      await platformSettingService.updatePlatformSettings({ wordsPerPage: null });
+      expect(mockPlatformSettingRepository.upsert).toHaveBeenCalledWith(
+        { key: 'words_per_page', value: '150' },
+        {},
+      );
+    });
+
+    it('rejects a words-per-page value outside the allowed range', async () => {
+      await expect(
+        platformSettingService.updatePlatformSettings({ wordsPerPage: 0 }),
+      ).rejects.toBeInstanceOf(PlatformSettingInvalidWordsPerPageException);
       expect(mockPlatformSettingRepository.upsert).not.toHaveBeenCalled();
     });
 

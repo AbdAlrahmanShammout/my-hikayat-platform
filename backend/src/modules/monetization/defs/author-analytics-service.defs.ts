@@ -49,7 +49,6 @@ export type AuthorAnalyticsPage = {
   readonly totalActiveReadingMs: number;
   readonly totalActiveSpreadMs: number;
   readonly totalVisualSceneTimeMs: number;
-  readonly totalWeightedEngagement: number;
   readonly totalReadingMinutes: number;
 };
 

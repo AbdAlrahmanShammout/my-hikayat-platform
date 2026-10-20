@@ -4,7 +4,7 @@ import { formatCents } from '@/lib/format-cents';
 const UNSET_POOL_LABEL = 'Not set';
 
 /**
- * Displays the admin-set pool. Shows both USD and the integer cents from the API.
+ * Displays the calculated net pool. Shows both USD and the integer cents from the API.
  */
 export function formatPoolAmountLabel(value: unknown): string {
   const cents: number | null = parseWireCents(value);

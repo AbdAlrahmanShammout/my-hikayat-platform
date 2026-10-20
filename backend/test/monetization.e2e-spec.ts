@@ -1,6 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
 
-import { MonetizationConfigService } from '@/config/monetization/monetization-config.service';
 import { RevenuePeriodStatus } from '@/modules/monetization/enum/general.enum';
 import { RevenuePeriodStartsAtConflictException } from '@/modules/monetization/exceptions/revenue-period-starts-at-conflict.exception';
 import { RevenuePeriodService } from '@/modules/monetization/revenue-period.service';
@@ -36,10 +35,8 @@ describe('Monetization domain (e2e)', () => {
     return app;
   }
 
-  it('Given no current period, When the current month is ensured, Then the configured platform cut is snapshotted', async () => {
+  it('Given no current period, When the current month is ensured, Then the month is opened with an empty pool', async () => {
     const revenuePeriodService: RevenuePeriodService = getRunningApp().get(RevenuePeriodService);
-    const monetizationConfigService: MonetizationConfigService =
-      getRunningApp().get(MonetizationConfigService);
     const created = await revenuePeriodService.ensureCurrentPeriod(
       new Date('2026-08-15T12:00:00.000Z'),
     );
@@ -47,18 +44,15 @@ describe('Monetization domain (e2e)', () => {
     expect(created.startsAt.toISOString()).toBe('2026-08-01T00:00:00.000Z');
     expect(created.endsAt.toISOString()).toBe('2026-09-01T00:00:00.000Z');
     expect(created.status).toBe(RevenuePeriodStatus.OPEN);
-    expect(created.platformCutPercent).toBe(monetizationConfigService.platformCutPercent);
     expect(created.poolAmountCents).toBeNull();
     const ensuredAgain = await revenuePeriodService.ensureCurrentPeriod(
       new Date('2026-08-20T00:00:00.000Z'),
     );
     expect(ensuredAgain.id).toBe(created.id);
-    expect(ensuredAgain.platformCutPercent).toBe(created.platformCutPercent);
     await expect(
       revenuePeriodService.createRevenuePeriod({
         startsAt: created.startsAt,
         endsAt: created.endsAt,
-        platformCutPercent: 10,
       }),
     ).rejects.toBeInstanceOf(RevenuePeriodStartsAtConflictException);
     const closed = await revenuePeriodService.closeRevenuePeriod(created.id);
@@ -68,7 +62,6 @@ describe('Monetization domain (e2e)', () => {
       poolAmountCents: 1500,
     });
     expect(withPool.poolAmountCents).toBe(1500);
-    expect(withPool.platformCutPercent).toBe(created.platformCutPercent);
   });
 
   it('Given an elapsed open period, When the next month is ensured, Then the elapsed period is closed', async () => {
@@ -76,7 +69,6 @@ describe('Monetization domain (e2e)', () => {
     const elapsed = await revenuePeriodService.createRevenuePeriod({
       startsAt: new Date('2026-07-01T00:00:00.000Z'),
       endsAt: new Date('2026-08-01T00:00:00.000Z'),
-      platformCutPercent: 12,
     });
     createdPeriodIds.push(elapsed.id);
     const current = await revenuePeriodService.ensureCurrentPeriod(
@@ -85,7 +77,6 @@ describe('Monetization domain (e2e)', () => {
     createdPeriodIds.push(current.id);
     const closedElapsed = await revenuePeriodService.getRevenuePeriodById(elapsed.id);
     expect(closedElapsed.status).toBe(RevenuePeriodStatus.CLOSED);
-    expect(closedElapsed.platformCutPercent).toBe(12);
     expect(current.startsAt.toISOString()).toBe('2026-08-01T00:00:00.000Z');
   });
 });

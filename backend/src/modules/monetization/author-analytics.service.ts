@@ -83,7 +83,6 @@ export class AuthorAnalyticsService {
       totalActiveReadingMs: summary.totalActiveReadingMs,
       totalActiveSpreadMs: summary.totalActiveSpreadMs,
       totalVisualSceneTimeMs: summary.totalVisualSceneTimeMs,
-      totalWeightedEngagement: summary.totalWeightedEngagement,
       totalReadingMinutes: toReadingMinutes(summary),
     };
   }

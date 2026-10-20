@@ -29,6 +29,13 @@ export const adminPlatformSettingsFormSchema = z.object({
       (value) => value.length === 0 || /^https?:\/\//i.test(value),
       'Enter an http or https URL, or leave blank to clear',
     ),
+  wordsPerPage: z
+    .string()
+    .trim()
+    .refine(
+      (value) => /^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 2000,
+      'Enter a whole number from 1 to 2000',
+    ),
 });
 
 export type AdminPlatformSettingsFormValues = z.infer<typeof adminPlatformSettingsFormSchema>;

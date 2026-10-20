@@ -15,6 +15,7 @@ type OfflineLibraryBookRowProps = {
   readonly isRemoving: boolean;
   readonly onOpen: () => void;
   readonly onRequestRemove: () => void;
+  readonly statusLabel?: string | null;
 };
 
 const COVER_WIDTH = 52;
@@ -29,6 +30,7 @@ export function OfflineLibraryBookRow({
   isRemoving,
   onOpen,
   onRequestRemove,
+  statusLabel,
 }: OfflineLibraryBookRowProps): JSX.Element {
   const presentation = useOfflineLeaseExpiryPresentation(manifest.offlineLease?.expiresAt);
   const isLocked: boolean =
@@ -59,6 +61,11 @@ export function OfflineLibraryBookRow({
         {authorName !== null ? (
           <Text style={styles.author} numberOfLines={1} testID={`library-offline-author-${manifest.bookId}`}>
             {authorName}
+          </Text>
+        ) : null}
+        {statusLabel !== null && statusLabel !== undefined && statusLabel !== '' ? (
+          <Text style={styles.completion} numberOfLines={1}>
+            {statusLabel}
           </Text>
         ) : null}
         <OfflineLeaseExpiryLabel
@@ -134,6 +141,10 @@ const styles = StyleSheet.create({
   author: {
     ...theme.typography.label,
     color: theme.colors.textMuted,
+  },
+  completion: {
+    ...theme.typography.label,
+    color: theme.colors.primary,
   },
   actions: {
     gap: theme.spacing.sm,

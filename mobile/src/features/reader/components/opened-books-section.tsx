@@ -9,6 +9,8 @@ import type { ReadingProgress } from '@/features/reader/api/get-reading-progress
 import { useReadingProgressList } from '@/features/reader/hooks/use-reading-progress-list';
 import { excludeDownloadedProgress } from '@/features/reader/lib/exclude-downloaded-progress';
 import { resolveOpenedBookStatus } from '@/features/reader/lib/resolve-opened-book-status';
+import { useReadingCompletionStatuses } from '@/features/reading-completion/hooks/use-reading-completion-statuses';
+import { formatReadingStatusLabel } from '@/features/reading-completion/lib/format-reading-status-label';
 import { theme } from '@/theme/theme';
 import { ErrorState } from '@/ui/feedback/error-state';
 import { BookCover } from '@/ui/primitives/book-cover';
@@ -33,6 +35,7 @@ export function OpenedBooksSection({
     progress.items,
     downloadedBookIds,
   );
+  const statuses = useReadingCompletionStatuses(items.map((item) => item.bookId));
   const titleQueries = useQueries({
     queries: items.map((item) => ({
       queryKey: queryKeys.catalog.book(item.bookId),
@@ -68,6 +71,7 @@ export function OpenedBooksSection({
         const title: string = book?.title ?? `Book ${item.bookId}`;
         const cover = resolveCatalogCoverPresentation(book?.cover);
         const authorName: string | null = coerceAuthorName(book?.authorName);
+        const statusLabel: string | null = formatReadingStatusLabel(statuses.byBookId.get(item.bookId));
         return (
           <View key={item.id} style={styles.row} testID={`library-opened-book-${item.bookId}`}>
             <BookCover
@@ -82,6 +86,11 @@ export function OpenedBooksSection({
               {authorName !== null ? (
                 <Text style={styles.author} numberOfLines={1}>
                   {authorName}
+                </Text>
+              ) : null}
+              {statusLabel !== null ? (
+                <Text style={styles.completion} numberOfLines={1}>
+                  {statusLabel}
                 </Text>
               ) : null}
               <Text style={styles.status} numberOfLines={1}>
@@ -151,6 +160,10 @@ const styles = StyleSheet.create({
   author: {
     ...theme.typography.label,
     color: theme.colors.textMuted,
+  },
+  completion: {
+    ...theme.typography.label,
+    color: theme.colors.primary,
   },
   status: {
     ...theme.typography.label,

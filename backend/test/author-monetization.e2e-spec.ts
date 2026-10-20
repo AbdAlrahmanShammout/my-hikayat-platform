@@ -209,12 +209,15 @@ describe('Author monetization APIs (e2e)', () => {
     const period = await revenuePeriodService.createRevenuePeriod({
       startsAt: periodStartsAt,
       endsAt: new Date('2098-07-01T00:00:00.000Z'),
-      poolAmountCents: 10000,
     });
     createdPeriodIds.push(period.id);
     await getRunningApp()
       .get(BookRevenueService)
-      .calculatePeriodRevenue({ revenuePeriodId: period.id, actorUserId: owner.userId });
+      .calculatePeriodRevenue({
+        revenuePeriodId: period.id,
+        actorUserId: owner.userId,
+        calculatedAt: new Date('2098-07-08T00:00:00.000Z'),
+      });
     const forbiddenResponse = await request(getServer())
       .get('/author/earnings')
       .query({ revenuePeriodId: period.id })
@@ -225,8 +228,8 @@ describe('Author monetization APIs (e2e)', () => {
       .query({ revenuePeriodId: period.id })
       .set('Authorization', `Bearer ${owner.accessToken}`);
     expect(earningsResponse.status).toBe(HttpStatus.OK);
-    expect(earningsResponse.body.authorCents).toBe(7000);
-    expect(earningsResponse.body.total).toBe(2);
+    expect(earningsResponse.body.authorCents).toBe(0);
+    expect(earningsResponse.body.total).toBe(0);
     const analyticsResponse = await request(getServer())
       .get('/author/analytics')
       .query({ revenuePeriodId: period.id })
@@ -235,12 +238,10 @@ describe('Author monetization APIs (e2e)', () => {
     expect(analyticsResponse.body.totalReadingMinutes).toBe(5);
     const analyticsBooks = analyticsResponse.body.bookEngagements as {
       bookId: number;
-      weightedEngagement: number;
+      activeReadingMs: number;
     }[];
-    expect(analyticsBooks.map((row) => row.bookId)).toEqual([fixedBook.id, reflowableBook.id]);
-    expect(analyticsBooks[0].weightedEngagement).toBeGreaterThan(
-      analyticsBooks[1].weightedEngagement,
-    );
+    expect(analyticsBooks.map((row) => row.bookId)).toEqual([reflowableBook.id, fixedBook.id]);
+    expect(analyticsBooks[0].activeReadingMs).toBe(120000);
     await readingIntelligenceService.ingestReadingActivity({
       userId: readerId,
       bookId: reflowableBook.id,
@@ -298,6 +299,6 @@ describe('Author monetization APIs (e2e)', () => {
     const periodPoint = (
       trendResponse.body.points as { revenuePeriodId: number; authorCents: number }[]
     ).find((point) => point.revenuePeriodId === period.id);
-    expect(periodPoint?.authorCents).toBe(7000);
+    expect(periodPoint?.authorCents).toBe(0);
   });
 });

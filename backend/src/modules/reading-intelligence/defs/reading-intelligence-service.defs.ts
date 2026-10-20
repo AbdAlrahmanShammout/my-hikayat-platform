@@ -19,6 +19,7 @@ export type IngestReadingActivityServiceInput = {
   readonly scrollOffset?: number | null;
   readonly spreadIndex?: number | null;
   readonly pageNumber?: number | null;
+  readonly contentHeight?: number | null;
 };
 
 export type EndReadingIntelligenceSessionServiceInput = {

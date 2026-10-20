@@ -3,6 +3,7 @@ export type PlatformSettingsSnapshot = {
   readonly termsOfServiceUrl: string | null;
   readonly aboutMission: string | null;
   readonly authCoverMediaUrl: string | null;
+  readonly wordsPerPage: number;
 };
 
 export type UpdatePlatformSettingsServiceInput = {
@@ -10,4 +11,5 @@ export type UpdatePlatformSettingsServiceInput = {
   readonly termsOfServiceUrl?: string | null;
   readonly aboutMission?: string | null;
   readonly authCoverMediaUrl?: string | null;
+  readonly wordsPerPage?: number | null;
 };

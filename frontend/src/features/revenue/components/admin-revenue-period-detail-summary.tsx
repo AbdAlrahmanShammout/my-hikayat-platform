@@ -22,7 +22,7 @@ export function AdminRevenuePeriodDetailSummary({
       <CardHeader>
         <CardTitle>Period</CardTitle>
         <CardDescription>
-          Dates are displayed as returned by the API. Pool is admin-set cents.
+          Dates and the calculated net pool are displayed as returned by the API.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -34,8 +34,7 @@ export function AdminRevenuePeriodDetailSummary({
           </SummaryItem>
           <SummaryItem label="startsAt">{formatWireInstant(period.startsAt)}</SummaryItem>
           <SummaryItem label="endsAt">{formatWireInstant(period.endsAt)}</SummaryItem>
-          <SummaryItem label="platformCutPercent">{String(period.platformCutPercent)}</SummaryItem>
-          <SummaryItem label="Pool">{formatPoolAmountLabel(period.poolAmountCents)}</SummaryItem>
+          <SummaryItem label="Net pool">{formatPoolAmountLabel(period.poolAmountCents)}</SummaryItem>
           <SummaryItem label="Period id">{String(period.id)}</SummaryItem>
         </dl>
       </CardContent>

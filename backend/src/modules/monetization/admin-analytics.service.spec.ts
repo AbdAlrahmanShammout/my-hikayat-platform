@@ -26,7 +26,6 @@ function createSamplePeriod(
     startsAt: new Date('2026-08-01T00:00:00.000Z'),
     endsAt: new Date('2026-09-01T00:00:00.000Z'),
     status: RevenuePeriodStatus.OPEN,
-    platformCutPercent: 30,
     poolAmountCents: 10000,
     ...overrides,
   });
@@ -56,7 +55,7 @@ function createSampleRevenue(): BookRevenueEntity {
     revenuePeriodId: 4,
     bookId: 8,
     ownerId: 3,
-    weightedEngagement: 2.5,
+    completedReadCount: 2,
     poolShareCents: 3571,
     platformCutCents: 1071,
     authorCents: 2500,
@@ -74,8 +73,6 @@ function createSampleEngagement(): BookEngagementEntity {
     activeReadingMs: 120000,
     activeSpreadMs: 0,
     visualSceneTimeMs: 0,
-    categoryWeight: 1.25,
-    weightedEngagement: 2.5,
   });
 }
 
@@ -119,7 +116,7 @@ describe('AdminAnalyticsService', () => {
   });
 
   describe('listPeriodEarnings', () => {
-    it('returns platform-wide author cents and the snapshotted platform cut', async () => {
+    it('returns publisher cents and the 60 percent platform share', async () => {
       mockRevenuePeriodService.getRevenuePeriodById.mockResolvedValue(createSamplePeriod());
       mockBookRevenueService.listBookRevenues.mockResolvedValue({
         entities: [createSampleRevenue()],
@@ -134,7 +131,7 @@ describe('AdminAnalyticsService', () => {
         ownerId: undefined,
       });
       expect(actualResult.authorCents).toBe(7000);
-      expect(actualResult.platformCutCents).toBe(3000);
+      expect(actualResult.platformCutCents).toBe(6000);
     });
 
     it('leaves the platform cut null when the pool has not been set', async () => {
@@ -161,13 +158,11 @@ describe('AdminAnalyticsService', () => {
         totalActiveReadingMs: 120000,
         totalActiveSpreadMs: 180000,
         totalVisualSceneTimeMs: 90000,
-        totalWeightedEngagement: 7,
       });
       const actualResult = await adminAnalyticsService.listPeriodAnalytics({
         revenuePeriodId: 4,
       });
       expect(actualResult.totalReadingMinutes).toBe(5);
-      expect(actualResult.totalWeightedEngagement).toBe(7);
     });
   });
 
@@ -231,7 +226,6 @@ describe('AdminAnalyticsService', () => {
         totalActiveReadingMs: 120000,
         totalActiveSpreadMs: 180000,
         totalVisualSceneTimeMs: 90000,
-        totalWeightedEngagement: 7,
       });
       const actualResult = await adminAnalyticsService.aggregatePeriodEngagement({
         revenuePeriodId: 4,

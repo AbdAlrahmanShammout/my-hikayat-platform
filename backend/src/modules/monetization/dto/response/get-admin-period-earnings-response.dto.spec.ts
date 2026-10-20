@@ -12,7 +12,6 @@ describe('GetAdminPeriodEarningsResponseDto', () => {
       startsAt: new Date('2026-08-01T00:00:00.000Z'),
       endsAt: new Date('2026-09-01T00:00:00.000Z'),
       status: RevenuePeriodStatus.OPEN,
-      platformCutPercent: 30,
       poolAmountCents: 10000,
     });
     const inputRevenue = new BookRevenueEntity({
@@ -22,7 +21,7 @@ describe('GetAdminPeriodEarningsResponseDto', () => {
       revenuePeriodId: 4,
       bookId: 8,
       ownerId: 3,
-      weightedEngagement: 2.5,
+      completedReadCount: 2.5,
       poolShareCents: 3571,
       platformCutCents: 1071,
       authorCents: 2500,

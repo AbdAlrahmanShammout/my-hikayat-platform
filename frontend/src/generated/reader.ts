@@ -350,7 +350,7 @@ export interface components {
     CollectionDiscoveryResponse: { id: number; createdAt: string; updatedAt: string; title: string; description: string | null; cover?: (components['schemas']['CollectionCoverResponse']) | null; books: Array<components['schemas']['BookResponse']> };
     GetDiscoveryCollectionsResponseDto: { collections: Array<components['schemas']['CollectionDiscoveryResponse']>; total: number };
     OfflineDownloadResponse: { id: number; createdAt: string; updatedAt: string; userId: number; bookId: number };
-    PlatformSettingsResponse: { privacyPolicyUrl: string | null; termsOfServiceUrl: string | null; aboutMission: string | null; authCoverMediaUrl: string | null };
+    PlatformSettingsResponse: { privacyPolicyUrl: string | null; termsOfServiceUrl: string | null; aboutMission: string | null; authCoverMediaUrl: string | null; wordsPerPage: number };
     StartReadingSessionRequestDto: { spineIndex?: number; scrollOffset?: number; spreadIndex?: number; pageNumber?: number };
     ReadingSessionResponse: { id: number; createdAt: string; updatedAt: string; userId: number; bookId: number; layoutType: "reflowable" | "fixed_layout"; startedAt: string; endedAt?: string | null; activeDurationMs: number; idleDurationMs: number; spineIndex?: number | null; scrollOffset?: number | null; spreadIndex?: number | null; pageNumber?: number | null };
     IngestReadingActivityRequestDto: { activeDurationMs: number; idleDurationMs: number; spineIndex?: number; scrollOffset?: number; spreadIndex?: number; pageNumber?: number };

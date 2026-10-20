@@ -39,4 +39,7 @@ export const queryKeys = {
   platformSettings: {
     detail: () => ['reader', 'platform-settings'] as const,
   },
+  readingCompletions: {
+    books: (bookIds: readonly number[]) => ['reader', 'reading-completions', bookIds] as const,
+  },
 } as const;

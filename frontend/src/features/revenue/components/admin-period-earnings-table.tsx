@@ -33,7 +33,7 @@ export function AdminPeriodEarningsTable({
         <TableRow>
           <TableHead>Book</TableHead>
           <TableHead>Owner</TableHead>
-          <TableHead>weightedEngagement</TableHead>
+          <TableHead>completedReads</TableHead>
           <TableHead>poolShareCents</TableHead>
           <TableHead>platformCutCents</TableHead>
           <TableHead>authorCents</TableHead>
@@ -59,7 +59,7 @@ export function AdminPeriodEarningsTable({
                 {formatUserEmailLabel({ userId: row.ownerId, user: row.owner })}
               </Link>
             </TableCell>
-            <TableCell>{String(row.weightedEngagement)}</TableCell>
+            <TableCell>{String(row.completedReadCount)}</TableCell>
             <TableCell>{formatPoolAmountLabel(row.poolShareCents)}</TableCell>
             <TableCell>{formatPoolAmountLabel(row.platformCutCents)}</TableCell>
             <TableCell>{formatPoolAmountLabel(row.authorCents)}</TableCell>

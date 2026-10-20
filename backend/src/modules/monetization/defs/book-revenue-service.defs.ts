@@ -1,6 +1,7 @@
 export type CalculatePeriodRevenueServiceInput = {
   readonly revenuePeriodId: number;
   readonly actorUserId: number;
+  readonly calculatedAt?: Date;
 };
 
 export type ListBookRevenuesServiceInput = {

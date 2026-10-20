@@ -127,7 +127,6 @@ function AuthorAnalyticsPeriodBody({
       <AuthorAnalyticsMetricsCard
         metrics={[
           { label: 'totalReadingMinutes', value: String(analytics.totalReadingMinutes) },
-          { label: 'totalWeightedEngagement', value: String(analytics.totalWeightedEngagement) },
           { label: 'totalActiveReadingMs', value: formatDurationMs(analytics.totalActiveReadingMs) },
           { label: 'totalActiveSpreadMs', value: formatDurationMs(analytics.totalActiveSpreadMs) },
           {

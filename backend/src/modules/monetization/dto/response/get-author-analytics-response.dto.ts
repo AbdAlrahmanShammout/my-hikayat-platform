@@ -32,12 +32,6 @@ export class GetAuthorAnalyticsResponseDto {
   totalVisualSceneTimeMs: number;
 
   @ApiProperty({
-    description: 'Total weighted engagement minutes across the owner books',
-    example: 7,
-  })
-  totalWeightedEngagement: number;
-
-  @ApiProperty({
     description: 'Total active reading plus spread time converted to minutes',
     example: 5,
   })
@@ -49,7 +43,6 @@ export class GetAuthorAnalyticsResponseDto {
     this.totalActiveReadingMs = result.totalActiveReadingMs;
     this.totalActiveSpreadMs = result.totalActiveSpreadMs;
     this.totalVisualSceneTimeMs = result.totalVisualSceneTimeMs;
-    this.totalWeightedEngagement = result.totalWeightedEngagement;
     this.totalReadingMinutes = result.totalReadingMinutes;
   }
 }

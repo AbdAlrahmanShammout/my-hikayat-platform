@@ -13,7 +13,5 @@ export const BookEngagementZodSchema = BaseZodSchema.extend({
   activeReadingMs: ZodNumber,
   activeSpreadMs: ZodNumber,
   visualSceneTimeMs: ZodNumber,
-  categoryWeight: ZodNumber,
-  weightedEngagement: ZodNumber,
   book: (z.any().nullish() as z.ZodType<BookZodType | null | undefined>).optional(),
 });

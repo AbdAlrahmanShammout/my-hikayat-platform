@@ -16,8 +16,6 @@ export class BookEngagementMapper {
       activeReadingMs: schema.activeReadingMs,
       activeSpreadMs: schema.activeSpreadMs,
       visualSceneTimeMs: schema.visualSceneTimeMs,
-      categoryWeight: Number(schema.categoryWeight),
-      weightedEngagement: Number(schema.weightedEngagement),
       book:
         schema.book === undefined
           ? undefined

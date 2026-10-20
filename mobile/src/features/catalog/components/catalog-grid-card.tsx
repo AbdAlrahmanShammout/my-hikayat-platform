@@ -8,12 +8,13 @@ import { BookCard } from '@/ui/primitives/book-card';
 type CatalogGridCardProps = {
   readonly book: CatalogBook;
   readonly onPress: (bookId: number) => void;
+  readonly statusLabel?: string | null;
 };
 
 /**
  * Two-column catalog card used on Home New, Browse, and Newest.
  */
-export function CatalogGridCard({ book, onPress }: CatalogGridCardProps): JSX.Element {
+export function CatalogGridCard({ book, onPress, statusLabel }: CatalogGridCardProps): JSX.Element {
   const attribution = resolveCatalogBookAttribution(book);
   const cover = resolveCatalogCoverPresentation(book.cover);
   return (
@@ -22,6 +23,7 @@ export function CatalogGridCard({ book, onPress }: CatalogGridCardProps): JSX.El
       authorName={attribution.authorLine}
       coverUri={cover.kind === 'image' ? cover.url : null}
       variant="grid"
+      statusLabel={statusLabel}
       onPress={() => {
         onPress(book.id);
       }}

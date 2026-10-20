@@ -6,14 +6,14 @@ import { AdminRevenuePeriodCreateDialog } from '@/features/revenue/components/ad
 import { AdminRevenuePeriodsPanel } from '@/features/revenue/components/admin-revenue-periods-panel';
 
 /**
- * Admin revenue-period list. Create, open the current UTC month, then edit pool on detail.
+ * Admin revenue-period list. Create a period or open the current UTC month.
  */
 export function AdminRevenuePage(): JSX.Element {
   return (
     <>
       <PageHeader
         title="Revenue periods"
-        description="Pool amount is admin-set cents. Platform cut belongs to the period."
+        description="Net pool is written when a period is calculated. Publishers receive 40 percent of that net."
         actions={
           <>
             <AdminEnsureCurrentRevenuePeriod />

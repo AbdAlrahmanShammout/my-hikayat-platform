@@ -6,10 +6,14 @@ import {
   ABOUT_MISSION_KEY,
   ABOUT_MISSION_MAX_LENGTH,
   AUTH_COVER_MEDIA_URL_KEY,
+  DEFAULT_WORDS_PER_PAGE,
   PLATFORM_SETTING_KEYS,
   PLATFORM_SETTING_URL_MAX_LENGTH,
   PRIVACY_POLICY_URL_KEY,
   TERMS_OF_SERVICE_URL_KEY,
+  WORDS_PER_PAGE_KEY,
+  WORDS_PER_PAGE_MAX,
+  WORDS_PER_PAGE_MIN,
 } from '@/modules/platform-setting/consts/platform-setting.constant';
 import {
   PlatformSettingsSnapshot,
@@ -18,6 +22,7 @@ import {
 import { PlatformSettingEntity } from '@/modules/platform-setting/entity/platform-setting.entity';
 import { PlatformSettingInvalidAboutMissionException } from '@/modules/platform-setting/exceptions/platform-setting-invalid-about-mission.exception';
 import { PlatformSettingInvalidUrlException } from '@/modules/platform-setting/exceptions/platform-setting-invalid-url.exception';
+import { PlatformSettingInvalidWordsPerPageException } from '@/modules/platform-setting/exceptions/platform-setting-invalid-words-per-page.exception';
 import { PlatformSettingRepository } from '@/modules/platform-setting/repository/platform-setting.repository';
 
 @Injectable()
@@ -77,6 +82,15 @@ export class PlatformSettingService {
           context,
         );
       }
+      if (input.wordsPerPage !== undefined) {
+        await this.platformSettingRepository.upsert(
+          {
+            key: WORDS_PER_PAGE_KEY,
+            value: PlatformSettingService.normalizeWordsPerPage(input.wordsPerPage),
+          },
+          context,
+        );
+      }
       const settings: PlatformSettingEntity[] = await this.platformSettingRepository.findByKeys(
         PLATFORM_SETTING_KEYS,
         context,
@@ -90,7 +104,8 @@ export class PlatformSettingService {
       input.privacyPolicyUrl !== undefined ||
       input.termsOfServiceUrl !== undefined ||
       input.aboutMission !== undefined ||
-      input.authCoverMediaUrl !== undefined
+      input.authCoverMediaUrl !== undefined ||
+      input.wordsPerPage !== undefined
     );
   }
 
@@ -100,6 +115,7 @@ export class PlatformSettingService {
       termsOfServiceUrl: PlatformSettingService.readValue(settings, TERMS_OF_SERVICE_URL_KEY),
       aboutMission: PlatformSettingService.readValue(settings, ABOUT_MISSION_KEY),
       authCoverMediaUrl: PlatformSettingService.readValue(settings, AUTH_COVER_MEDIA_URL_KEY),
+      wordsPerPage: PlatformSettingService.readWordsPerPage(settings),
     };
   }
 
@@ -122,6 +138,28 @@ export class PlatformSettingService {
       throw new PlatformSettingInvalidAboutMissionException();
     }
     return normalized;
+  }
+
+  private static readWordsPerPage(settings: readonly PlatformSettingEntity[]): number {
+    const raw: string | null = PlatformSettingService.readValue(settings, WORDS_PER_PAGE_KEY);
+    if (raw === null) {
+      return DEFAULT_WORDS_PER_PAGE;
+    }
+    const parsed: number = Number.parseInt(raw, 10);
+    if (!Number.isInteger(parsed) || parsed < WORDS_PER_PAGE_MIN || parsed > WORDS_PER_PAGE_MAX) {
+      return DEFAULT_WORDS_PER_PAGE;
+    }
+    return parsed;
+  }
+
+  private static normalizeWordsPerPage(value: number | null): string {
+    if (value === null) {
+      return String(DEFAULT_WORDS_PER_PAGE);
+    }
+    if (!Number.isInteger(value) || value < WORDS_PER_PAGE_MIN || value > WORDS_PER_PAGE_MAX) {
+      throw new PlatformSettingInvalidWordsPerPageException();
+    }
+    return String(value);
   }
 
   private static normalizeUrl(value: string | null): string | null {

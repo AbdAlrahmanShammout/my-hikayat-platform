@@ -4,8 +4,10 @@ import { AuditModule } from '@/modules/audit/audit.module';
 import { BookModule } from '@/modules/book/book.module';
 import { BookProcessingModule } from '@/modules/book-processing/book-processing.module';
 import { ReadingIntelligenceModule } from '@/modules/reading-intelligence/reading-intelligence.module';
+import { ReadingCompletionModule } from '@/modules/reading-completion/reading-completion.module';
 import { UserModule } from '@/modules/user/user.module';
 import { DatabaseProviderModule } from '@/providers/database/database-provider.module';
+import { StripeProviderModule } from '@/providers/stripe/stripe-provider.module';
 
 import { AdminAnalyticsService } from './admin-analytics.service';
 import { AdminDashboardSummaryService } from './admin-dashboard-summary.service';
@@ -28,8 +30,10 @@ import { RevenuePeriodService } from './revenue-period.service';
     BookModule,
     BookProcessingModule,
     ReadingIntelligenceModule,
+    ReadingCompletionModule,
     AuditModule,
     UserModule,
+    StripeProviderModule,
   ],
   providers: [
     RevenuePeriodService,

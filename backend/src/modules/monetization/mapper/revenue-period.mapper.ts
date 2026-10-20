@@ -12,7 +12,6 @@ export class RevenuePeriodMapper {
       startsAt: schema.startsAt,
       endsAt: schema.endsAt,
       status: schema.status as RevenuePeriodStatus,
-      platformCutPercent: Number(schema.platformCutPercent),
       poolAmountCents: schema.poolAmountCents,
     });
   }

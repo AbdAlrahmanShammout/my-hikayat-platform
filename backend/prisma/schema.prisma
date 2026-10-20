@@ -37,6 +37,7 @@ model User {
   adminExports             AdminExport[]
   authRefreshTokens        AuthRefreshToken[]
   offlineDownloads         OfflineDownload[]
+  bookReadingCycles        BookReadingCycle[]
 
   @@index([email(ops: raw("gin_trgm_ops"))], type: Gin, map: "User_email_trgm_idx")
   @@index([displayName(ops: raw("gin_trgm_ops"))], type: Gin, map: "User_displayName_trgm_idx")
@@ -156,6 +157,7 @@ model Book {
   bookEngagements          BookEngagement[]
   bookRevenues             BookRevenue[]
   offlineDownloads           OfflineDownload[]
+  bookReadingCycles          BookReadingCycle[]
 
   @@index([publishingStatus])
   @@index([processingStatus])
@@ -551,7 +553,6 @@ model RevenuePeriod {
   startsAt             DateTime
   endsAt               DateTime
   status               RevenuePeriodStatus  @default(open)
-  platformCutPercent   Decimal              @db.Decimal(5, 2)
   poolAmountCents      Int?
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
@@ -572,8 +573,6 @@ model BookEngagement {
   activeReadingMs      Int             @default(0)
   activeSpreadMs       Int             @default(0)
   visualSceneTimeMs    Int             @default(0)
-  categoryWeight       Decimal         @db.Decimal(10, 4)
-  weightedEngagement   Decimal         @db.Decimal(20, 8)
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
   deletedAt            DateTime?
@@ -586,12 +585,56 @@ model BookEngagement {
   @@index([deletedAt])
 }
 
+enum ReadingCompletionStatus {
+  in_progress
+  completed
+}
+
+model BookReadingCycle {
+  id                   Int                      @id @default(autoincrement())
+  userId               Int
+  bookId               Int
+  cycleNumber          Int
+  status               ReadingCompletionStatus  @default(in_progress)
+  layoutType           BookLayoutType
+  lastPageRead         Int?
+  activeTimeMs         Int                      @default(0)
+  qualifyingPageCount  Int                      @default(0)
+  lastPageReached      Boolean                  @default(false)
+  completedAt          DateTime?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  deletedAt            DateTime?
+  user                 User                     @relation(fields: [userId], references: [id])
+  book                 Book                     @relation(fields: [bookId], references: [id])
+  pages                BookReadingCyclePage[]
+
+  @@unique([userId, bookId, cycleNumber])
+  @@index([userId, bookId])
+  @@index([bookId, status, completedAt])
+  @@index([deletedAt])
+}
+
+model BookReadingCyclePage {
+  id                Int              @id @default(autoincrement())
+  cycleId           Int
+  pageIndex         Int
+  activeDurationMs  Int              @default(0)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  deletedAt         DateTime?
+  cycle             BookReadingCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@unique([cycleId, pageIndex])
+  @@index([cycleId])
+}
+
 model BookRevenue {
   id                   Int             @id @default(autoincrement())
   revenuePeriodId      Int
   bookId               Int
   ownerId              Int
-  weightedEngagement   Decimal         @db.Decimal(20, 8)
+  completedReadCount   Int
   poolShareCents       Int
   platformCutCents     Int
   authorCents          Int

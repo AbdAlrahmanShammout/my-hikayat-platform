@@ -1,5 +1,3 @@
-import { Prisma } from '@prisma/client';
-
 import { BookRevenueType } from '@/modules/monetization/types/book-revenue-details-schema.type';
 
 import { BookRevenueMapper } from './book-revenue.mapper';
@@ -16,13 +14,13 @@ describe('BookRevenueMapper', () => {
       revenuePeriodId: 2,
       bookId: 8,
       ownerId: 3,
-      weightedEngagement: new Prisma.Decimal('2.50000000'),
+      completedReadCount: 2,
       poolShareCents: 3571,
       platformCutCents: 1071,
       authorCents: 2500,
     };
     const actualEntity = BookRevenueMapper.toEntity(inputSchema);
-    expect(actualEntity.weightedEngagement).toBe(2.5);
+    expect(actualEntity.completedReadCount).toBe(2);
     expect(actualEntity.authorCents).toBe(2500);
     expect(actualEntity.ownerId).toBe(3);
   });

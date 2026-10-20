@@ -7,7 +7,7 @@ export class BookRevenueEntity extends BaseEntity {
   revenuePeriodId!: number;
   bookId!: number;
   ownerId!: number;
-  weightedEngagement!: number;
+  completedReadCount!: number;
   poolShareCents!: number;
   platformCutCents!: number;
   authorCents!: number;

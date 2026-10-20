@@ -7,6 +7,8 @@ import { CatalogGridCard } from '@/features/catalog/components/catalog-grid-card
 import { HOME_NEW_BOOK_LIMIT } from '@/features/catalog/consts/home-catalog.constant';
 import { useCatalogBooks } from '@/features/catalog/hooks/use-catalog-books';
 import { flattenCatalogBookPages } from '@/features/catalog/lib/catalog-pagination';
+import { useReadingCompletionStatuses } from '@/features/reading-completion/hooks/use-reading-completion-statuses';
+import { formatReadingStatusLabel } from '@/features/reading-completion/lib/format-reading-status-label';
 import { resolveHomeNewGridLayout } from '@/features/catalog/lib/resolve-home-new-grid-layout';
 import { theme } from '@/theme/theme';
 import { Skeleton } from '@/ui/primitives/skeleton';
@@ -39,6 +41,7 @@ export function HomeNewBooksSection({ onOpenBook }: HomeNewBooksSectionProps): J
     HOME_NEW_BOOK_LIMIT,
   );
   const total: number = booksQuery.data?.pages[0]?.total ?? 0;
+  const statuses = useReadingCompletionStatuses(books.map((book) => book.id));
   if (booksQuery.isLoading) {
     return (
       <View style={styles.section} accessibilityLabel="Loading new books">
@@ -65,7 +68,11 @@ export function HomeNewBooksSection({ onOpenBook }: HomeNewBooksSectionProps): J
       <View style={styles.grid} onLayout={handleGridLayout}>
         {books.map((book) => (
           <View key={book.id} style={[styles.gridItem, { width: grid.itemWidth }]}>
-            <CatalogGridCard book={book} onPress={onOpenBook} />
+            <CatalogGridCard
+              book={book}
+              statusLabel={formatReadingStatusLabel(statuses.byBookId.get(book.id))}
+              onPress={onOpenBook}
+            />
           </View>
         ))}
       </View>

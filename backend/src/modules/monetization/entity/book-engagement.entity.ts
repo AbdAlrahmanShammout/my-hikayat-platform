@@ -10,8 +10,6 @@ export class BookEngagementEntity extends BaseEntity {
   activeReadingMs!: number;
   activeSpreadMs!: number;
   visualSceneTimeMs!: number;
-  categoryWeight!: number;
-  weightedEngagement!: number;
   book?: BookEntity;
 
   constructor(data: BookEngagementZodType) {

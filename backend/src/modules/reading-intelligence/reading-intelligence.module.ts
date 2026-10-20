@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { ReadingModule } from '@/modules/reading/reading.module';
+import { ReadingCompletionModule } from '@/modules/reading-completion/reading-completion.module';
 import { DatabaseProviderModule } from '@/providers/database/database-provider.module';
 
 import { ReadingChapterEngagementService } from './reading-chapter-engagement.service';
@@ -12,7 +13,7 @@ import { ReadingVisualEngagementPrismaRepository } from './repository/reading-vi
 import { ReadingVisualEngagementRepository } from './repository/reading-visual-engagement.repository';
 
 @Module({
-  imports: [DatabaseProviderModule, ReadingModule],
+  imports: [DatabaseProviderModule, ReadingModule, ReadingCompletionModule],
   providers: [
     ReadingIntelligenceService,
     ReadingVisualEngagementService,

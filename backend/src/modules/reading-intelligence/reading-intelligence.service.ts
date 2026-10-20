@@ -28,6 +28,7 @@ import { resolveReadingChapterSpineIndex } from '@/modules/reading-intelligence/
 import { ReadingSessionEntity } from '@/modules/reading/entity/reading-session.entity';
 import { ReadingSessionTotalsService } from '@/modules/reading/reading-session-totals.service';
 import { ReadingSessionService } from '@/modules/reading/reading-session.service';
+import { BookReadingCycleService } from '@/modules/reading-completion/book-reading-cycle.service';
 
 type RecordReflowableChapterEngagementInput = {
   readonly session: ReadingSessionEntity;
@@ -43,6 +44,7 @@ export class ReadingIntelligenceService {
     private readonly readingSessionTotalsService: ReadingSessionTotalsService,
     private readonly readingVisualEngagementService: ReadingVisualEngagementService,
     private readonly readingChapterEngagementService: ReadingChapterEngagementService,
+    private readonly bookReadingCycleService: BookReadingCycleService,
     private readonly transactionRunner: TransactionRunner,
   ) {}
 
@@ -83,6 +85,15 @@ export class ReadingIntelligenceService {
         payloadSpineIndex: input.spineIndex,
         activeDurationMs: input.activeDurationMs,
         context,
+      });
+      await this.bookReadingCycleService.recordPageDwell({
+        userId: input.userId,
+        bookId: input.bookId,
+        activeDurationMs: input.activeDurationMs,
+        pageNumber: input.pageNumber ?? undefined,
+        spineIndex: input.spineIndex ?? undefined,
+        scrollOffset: input.scrollOffset ?? undefined,
+        contentHeight: input.contentHeight ?? undefined,
       });
       return session;
     });
@@ -135,7 +146,7 @@ export class ReadingIntelligenceService {
         bookId: input.bookId,
       });
     ReadingIntelligenceService.assertFixedLayout(session);
-    return this.readingVisualEngagementService.recordReadingVisualEngagement({
+    const recorded = await this.readingVisualEngagementService.recordReadingVisualEngagement({
       userId: session.userId,
       bookId: session.bookId,
       sessionId: session.id,
@@ -144,6 +155,13 @@ export class ReadingIntelligenceService {
       activeDurationMs: input.activeDurationMs,
       visualSceneTimeMs: input.visualSceneTimeMs,
     });
+    await this.bookReadingCycleService.recordPageDwell({
+      userId: session.userId,
+      bookId: session.bookId,
+      activeDurationMs: input.activeDurationMs,
+      pageNumber: input.pageNumber,
+    });
+    return recorded;
   }
 
   async listVisualEngagements(

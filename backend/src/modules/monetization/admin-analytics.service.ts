@@ -78,7 +78,6 @@ export class AdminAnalyticsService {
       totalActiveReadingMs: summary.totalActiveReadingMs,
       totalActiveSpreadMs: summary.totalActiveSpreadMs,
       totalVisualSceneTimeMs: summary.totalVisualSceneTimeMs,
-      totalWeightedEngagement: summary.totalWeightedEngagement,
       totalReadingMinutes: toReadingMinutes(summary),
     };
   }
@@ -116,9 +115,6 @@ export class AdminAnalyticsService {
     if (period.poolAmountCents === null) {
       return null;
     }
-    return computePlatformCutCents({
-      poolAmountCents: period.poolAmountCents,
-      platformCutPercent: period.platformCutPercent,
-    });
+    return computePlatformCutCents(period.poolAmountCents);
   }
 }

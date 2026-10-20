@@ -1,10 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsOptional, IsString, IsUrl, MaxLength, ValidateIf } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsUrl, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 
 import {
   ABOUT_MISSION_MAX_LENGTH,
   PLATFORM_SETTING_URL_MAX_LENGTH,
+  WORDS_PER_PAGE_MAX,
+  WORDS_PER_PAGE_MIN,
 } from '@/modules/platform-setting/consts/platform-setting.constant';
 
 function parseOptionalUrl(value: unknown): unknown {
@@ -16,6 +18,23 @@ function parseOptionalUrl(value: unknown): unknown {
   }
   const normalized: string = value.trim();
   return normalized.length === 0 ? null : normalized;
+}
+
+function parseOptionalWordsPerPage(value: unknown): unknown {
+  if (value === undefined || value === null) {
+    return value;
+  }
+  if (typeof value === 'number') {
+    return value;
+  }
+  if (typeof value !== 'string') {
+    return value;
+  }
+  const normalized: string = value.trim();
+  if (normalized.length === 0) {
+    return null;
+  }
+  return Number(normalized);
 }
 
 function parseOptionalText(value: unknown): unknown {
@@ -81,4 +100,20 @@ export class UpdatePlatformSettingsRequestDto {
   @MaxLength(PLATFORM_SETTING_URL_MAX_LENGTH)
   @Transform(({ value }: { value: unknown }) => parseOptionalUrl(value))
   authCoverMediaUrl?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Average words on one reflowable page. Null resets the value to 150. Omitted leaves it unchanged.',
+    example: 150,
+    nullable: true,
+    minimum: WORDS_PER_PAGE_MIN,
+    maximum: WORDS_PER_PAGE_MAX,
+  })
+  @IsOptional()
+  @ValidateIf((_, value: unknown) => value !== null)
+  @IsInt()
+  @Min(WORDS_PER_PAGE_MIN)
+  @Max(WORDS_PER_PAGE_MAX)
+  @Transform(({ value }: { value: unknown }) => parseOptionalWordsPerPage(value))
+  wordsPerPage?: number | null;
 }

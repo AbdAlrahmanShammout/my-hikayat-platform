@@ -25,7 +25,6 @@ function createSamplePeriod(): RevenuePeriodEntity {
     startsAt: new Date('2026-08-01T00:00:00.000Z'),
     endsAt: new Date('2026-09-01T00:00:00.000Z'),
     status: RevenuePeriodStatus.OPEN,
-    platformCutPercent: 25,
     poolAmountCents: null,
   });
 }
@@ -70,8 +69,6 @@ function createSampleEngagement(
     activeReadingMs: 120000,
     activeSpreadMs: 0,
     visualSceneTimeMs: 0,
-    categoryWeight: 1.25,
-    weightedEngagement: 2.5,
     ...overrides,
   });
 }
@@ -143,63 +140,10 @@ describe('BookEngagementService', () => {
             activeReadingMs: 120000,
             activeSpreadMs: 0,
             visualSceneTimeMs: 0,
-            categoryWeight: 1.25,
-            weightedEngagement: 2.5,
           },
         ],
       });
       expect(actualEntities).toEqual([expectedEngagement]);
-    });
-
-    it('uses the arithmetic mean of assigned category weights', async () => {
-      mockRevenuePeriodService.getRevenuePeriodById.mockResolvedValue(createSamplePeriod());
-      mockReadingIntelligenceService.listBookEngagementSignalsInRange.mockResolvedValue([
-        {
-          bookId: 8,
-          layoutType: BookLayoutType.REFLOWABLE,
-          activeDurationMs: 120000,
-          visualSceneTimeMs: 0,
-        },
-      ]);
-      mockBookService.getBookById.mockResolvedValue(
-        createSampleBook({
-          categories: [
-            new CategoryEntity({
-              id: 2,
-              createdAt: new Date('2026-01-01T00:00:00.000Z'),
-              updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-              name: 'Fiction',
-              slug: 'fiction',
-              categoryWeight: 1,
-            }),
-            new CategoryEntity({
-              id: 3,
-              createdAt: new Date('2026-01-01T00:00:00.000Z'),
-              updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-              name: 'History',
-              slug: 'history',
-              categoryWeight: 2,
-            }),
-          ],
-        }),
-      );
-      mockBookEngagementRepository.replaceForPeriod.mockResolvedValue([]);
-      await bookEngagementService.aggregatePeriodEngagement({ revenuePeriodId: 4 });
-      expect(mockBookEngagementRepository.replaceForPeriod).toHaveBeenCalledWith({
-        revenuePeriodId: 4,
-        rows: [
-          {
-            revenuePeriodId: 4,
-            bookId: 8,
-            layoutType: BookLayoutType.REFLOWABLE,
-            activeReadingMs: 120000,
-            activeSpreadMs: 0,
-            visualSceneTimeMs: 0,
-            categoryWeight: 1.5,
-            weightedEngagement: 3,
-          },
-        ],
-      });
     });
 
     it('weights fixed-layout spread time and stores visual scene time separately', async () => {
@@ -241,8 +185,6 @@ describe('BookEngagementService', () => {
             activeReadingMs: 0,
             activeSpreadMs: 180000,
             visualSceneTimeMs: 90000,
-            categoryWeight: 1.5,
-            weightedEngagement: 4.5,
           },
         ],
       });
@@ -305,7 +247,6 @@ describe('BookEngagementService', () => {
         totalActiveReadingMs: 120000,
         totalActiveSpreadMs: 180000,
         totalVisualSceneTimeMs: 90000,
-        totalWeightedEngagement: 7,
       });
       const actualSummary = await bookEngagementService.summarizeOwnerEngagementForPeriod({
         revenuePeriodId: 4,
@@ -315,7 +256,6 @@ describe('BookEngagementService', () => {
         revenuePeriodId: 4,
         ownerId: 3,
       });
-      expect(actualSummary.totalWeightedEngagement).toBe(7);
     });
   });
 
@@ -325,7 +265,6 @@ describe('BookEngagementService', () => {
         totalActiveReadingMs: 90000,
         totalActiveSpreadMs: 0,
         totalVisualSceneTimeMs: 45000,
-        totalWeightedEngagement: 1.5,
       });
       const actualSummary = await bookEngagementService.summarizeOwnerEngagement({
         ownerId: 3,

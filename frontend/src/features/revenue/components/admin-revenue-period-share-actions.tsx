@@ -6,10 +6,8 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tooltip } from '@/components/ui/tooltip';
 import { useAggregateAdminPeriodEngagement } from '@/features/revenue/hooks/use-aggregate-admin-period-engagement';
 import { useCalculateAdminPeriodRevenue } from '@/features/revenue/hooks/use-calculate-admin-period-revenue';
-import { getAdminRevenueCalculateAvailability } from '@/features/revenue/lib/get-admin-revenue-calculate-availability';
 import type { components } from '@/generated/admin';
 
 type AdminRevenuePeriodShareActionsProps = {
@@ -25,11 +23,10 @@ export function AdminRevenuePeriodShareActions({
   const [isCalculateOpen, setIsCalculateOpen] = useState<boolean>(false);
   const calculateMutation = useCalculateAdminPeriodRevenue();
   const engagementMutation = useAggregateAdminPeriodEngagement();
-  const availability = getAdminRevenueCalculateAvailability(period);
   const calculateButton = (
     <Button
       type="button"
-      disabled={!availability.canCalculate || calculateMutation.isPending}
+      disabled={calculateMutation.isPending}
       onClick={() => {
         calculateMutation.reset();
         setIsCalculateOpen(true);
@@ -47,8 +44,8 @@ export function AdminRevenuePeriodShareActions({
       <CardHeader>
         <CardTitle>Shares and engagement</CardTitle>
         <CardDescription>
-          Calculate requires poolAmountCents, refreshes engagement, writes shares, and appends
-          REVENUE_CALCULATED. Refresh engagement does not write that audit event.
+          Calculate reads the Stripe net for this month, writes each book share from completed
+          reads, and appends REVENUE_CALCULATED. Refresh engagement stores reading time.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -59,15 +56,11 @@ export function AdminRevenuePeriodShareActions({
         ) : null}
         {engagementMutation.isSuccess ? (
           <Alert>
-            <AlertDescription>Weighted engagement refreshed.</AlertDescription>
+            <AlertDescription>Reading time refreshed.</AlertDescription>
           </Alert>
         ) : null}
         <div className="flex flex-wrap gap-2">
-          {availability.calculateDisabledReason === null || availability.canCalculate ? (
-            calculateButton
-          ) : (
-            <Tooltip label={availability.calculateDisabledReason}>{calculateButton}</Tooltip>
-          )}
+          {calculateButton}
           <Button
             type="button"
             variant="outline"
@@ -83,7 +76,7 @@ export function AdminRevenuePeriodShareActions({
         <ConfirmDialog
           open={isCalculateOpen}
           title="Calculate author shares?"
-          description="This refreshes engagement, writes shares, and appends a REVENUE_CALCULATED audit row. Recalculating is allowed and creates another audit row. Totals are not recomputed in the browser."
+          description="This reads the Stripe net, writes shares from completed reads, and appends a REVENUE_CALCULATED audit row. Recalculating is allowed and creates another audit row."
           confirmLabel="Calculate shares"
           isPending={calculateMutation.isPending}
           errorMessage={

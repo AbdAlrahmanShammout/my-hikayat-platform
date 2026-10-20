@@ -46,7 +46,7 @@ export class BookEngagementPrismaRepository implements BookEngagementRepository 
       this.prismaProviderService.bookEngagement.findMany({
         where,
         include: bookEngagementDetailsInclude,
-        orderBy: [{ weightedEngagement: 'desc' }, { bookId: 'asc' }],
+        orderBy: [{ activeReadingMs: 'desc' }, { activeSpreadMs: 'desc' }, { bookId: 'asc' }],
         take: input.limit,
         skip: input.offset,
       }),
@@ -61,7 +61,7 @@ export class BookEngagementPrismaRepository implements BookEngagementRepository 
   async listAllByPeriod(input: ListAllBookEngagementsRepoInput): Promise<BookEngagementEntity[]> {
     const rows = await this.prismaProviderService.bookEngagement.findMany({
       where: { revenuePeriodId: input.revenuePeriodId, deletedAt: null },
-      orderBy: [{ weightedEngagement: 'desc' }, { bookId: 'asc' }],
+      orderBy: [{ activeReadingMs: 'desc' }, { activeSpreadMs: 'desc' }, { bookId: 'asc' }],
     });
     return rows.map((row) => BookEngagementMapper.toEntity(row));
   }
@@ -98,14 +98,12 @@ export class BookEngagementPrismaRepository implements BookEngagementRepository 
         activeReadingMs: true,
         activeSpreadMs: true,
         visualSceneTimeMs: true,
-        weightedEngagement: true,
       },
     });
     return {
       totalActiveReadingMs: result._sum.activeReadingMs ?? 0,
       totalActiveSpreadMs: result._sum.activeSpreadMs ?? 0,
       totalVisualSceneTimeMs: result._sum.visualSceneTimeMs ?? 0,
-      totalWeightedEngagement: Number(result._sum.weightedEngagement ?? 0),
     };
   }
 
@@ -169,7 +167,7 @@ export class BookEngagementPrismaRepository implements BookEngagementRepository 
     });
     const rows = await client.bookEngagement.findMany({
       where: { revenuePeriodId: input.revenuePeriodId, deletedAt: null },
-      orderBy: [{ weightedEngagement: 'desc' }, { bookId: 'asc' }],
+      orderBy: [{ activeReadingMs: 'desc' }, { activeSpreadMs: 'desc' }, { bookId: 'asc' }],
     });
     return rows.map((row) => BookEngagementMapper.toEntity(row));
   }
@@ -192,8 +190,6 @@ export class BookEngagementPrismaRepository implements BookEngagementRepository 
         activeReadingMs: row.activeReadingMs,
         activeSpreadMs: row.activeSpreadMs,
         visualSceneTimeMs: row.visualSceneTimeMs,
-        categoryWeight: row.categoryWeight,
-        weightedEngagement: row.weightedEngagement,
         deletedAt: null,
       },
       update: {
@@ -201,8 +197,6 @@ export class BookEngagementPrismaRepository implements BookEngagementRepository 
         activeReadingMs: row.activeReadingMs,
         activeSpreadMs: row.activeSpreadMs,
         visualSceneTimeMs: row.visualSceneTimeMs,
-        categoryWeight: row.categoryWeight,
-        weightedEngagement: row.weightedEngagement,
         deletedAt: null,
       },
     });

@@ -2,7 +2,7 @@ import { requestJson } from '@/api/request-json';
 import type { components } from '@/generated/admin';
 
 /**
- * Creates a revenue period with an optional pool and platform cut.
+ * Creates a revenue period. The net pool is written later, when the period is calculated.
  */
 export async function createAdminRevenuePeriod(
   body: components['schemas']['CreateRevenuePeriodRequestDto'],

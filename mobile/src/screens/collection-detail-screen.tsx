@@ -9,6 +9,8 @@ import { resolveCatalogBookAttribution } from '@/features/catalog/lib/resolve-ca
 import { resolveCatalogCoverPresentation } from '@/features/catalog/lib/resolve-catalog-cover-presentation';
 import { useDiscoveryCollection } from '@/features/collections/hooks/use-discovery-collection';
 import { parseCollectionIdParam } from '@/features/collections/lib/parse-collection-id-param';
+import { useReadingCompletionStatuses } from '@/features/reading-completion/hooks/use-reading-completion-statuses';
+import { formatReadingStatusLabel } from '@/features/reading-completion/lib/format-reading-status-label';
 import { theme } from '@/theme/theme';
 import { EmptyState } from '@/ui/feedback/empty-state';
 import { ErrorState } from '@/ui/feedback/error-state';
@@ -23,6 +25,9 @@ export function CollectionDetailScreen(): JSX.Element {
   const params = useLocalSearchParams<{ collectionId: string }>();
   const collectionId: number | null = parseCollectionIdParam(params.collectionId);
   const collectionQuery = useDiscoveryCollection(collectionId);
+  const statuses = useReadingCompletionStatuses(
+    (collectionQuery.data?.books ?? []).map((book) => book.id),
+  );
 
   if (collectionId === null) {
     return (
@@ -123,6 +128,7 @@ export function CollectionDetailScreen(): JSX.Element {
           <View style={styles.gridItem}>
             <CollectionBookCard
               book={item}
+              statusLabel={formatReadingStatusLabel(statuses.byBookId.get(item.id))}
               onPress={() => {
                 router.push(`/(app)/books/${item.id}`);
               }}
@@ -155,6 +161,7 @@ function coerceOptionalText(value: string | null | undefined): string | null {
 
 function CollectionBookCard(input: {
   readonly book: CatalogBook;
+  readonly statusLabel: string | null;
   readonly onPress: () => void;
 }): JSX.Element {
   const attribution = resolveCatalogBookAttribution(input.book);
@@ -165,6 +172,7 @@ function CollectionBookCard(input: {
       authorName={attribution.authorLine}
       coverUri={cover.kind === 'image' ? cover.url : null}
       variant="grid"
+      statusLabel={input.statusLabel}
       onPress={input.onPress}
       accessibilityLabel={`Open ${input.book.title}`}
     />

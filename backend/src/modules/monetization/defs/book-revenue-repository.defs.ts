@@ -4,7 +4,7 @@ export type UpsertBookRevenueRepoInput = {
   readonly revenuePeriodId: number;
   readonly bookId: number;
   readonly ownerId: number;
-  readonly weightedEngagement: number;
+  readonly completedReadCount: number;
   readonly poolShareCents: number;
   readonly platformCutCents: number;
   readonly authorCents: number;

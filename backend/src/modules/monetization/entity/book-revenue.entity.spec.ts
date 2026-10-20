@@ -9,7 +9,7 @@ describe('BookRevenueEntity', () => {
       revenuePeriodId: 4,
       bookId: 8,
       ownerId: 3,
-      weightedEngagement: 2.5,
+      completedReadCount: 2.5,
       poolShareCents: 3571,
       platformCutCents: 1071,
       authorCents: 2500,

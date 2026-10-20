@@ -140,7 +140,7 @@ export class BookRevenuePrismaRepository implements BookRevenueRepository {
         revenuePeriodId: row.revenuePeriodId,
         bookId: row.bookId,
         ownerId: row.ownerId,
-        weightedEngagement: row.weightedEngagement,
+        completedReadCount: row.completedReadCount,
         poolShareCents: row.poolShareCents,
         platformCutCents: row.platformCutCents,
         authorCents: row.authorCents,
@@ -148,7 +148,7 @@ export class BookRevenuePrismaRepository implements BookRevenueRepository {
       },
       update: {
         ownerId: row.ownerId,
-        weightedEngagement: row.weightedEngagement,
+        completedReadCount: row.completedReadCount,
         poolShareCents: row.poolShareCents,
         platformCutCents: row.platformCutCents,
         authorCents: row.authorCents,

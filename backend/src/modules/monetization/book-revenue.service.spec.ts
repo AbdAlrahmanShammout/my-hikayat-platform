@@ -10,11 +10,11 @@ import {
   BookType,
 } from '@/modules/book/enum/general.enum';
 import { BookEngagementService } from '@/modules/monetization/book-engagement.service';
-import { BookEngagementEntity } from '@/modules/monetization/entity/book-engagement.entity';
 import { RevenuePeriodEntity } from '@/modules/monetization/entity/revenue-period.entity';
 import { RevenuePeriodStatus } from '@/modules/monetization/enum/general.enum';
-import { RevenuePeriodPoolAmountMissingException } from '@/modules/monetization/exceptions/revenue-period-pool-amount-missing.exception';
 import { RevenuePeriodService } from '@/modules/monetization/revenue-period.service';
+import { BookReadingCycleService } from '@/modules/reading-completion/book-reading-cycle.service';
+import { StripeManagerService } from '@/providers/stripe/stripe-manager.service';
 
 import { BookRevenueService } from './book-revenue.service';
 
@@ -30,7 +30,6 @@ function createSamplePeriod(
     startsAt: new Date('2026-08-01T00:00:00.000Z'),
     endsAt: new Date('2026-09-01T00:00:00.000Z'),
     status: RevenuePeriodStatus.OPEN,
-    platformCutPercent: 30,
     poolAmountCents: 10000,
     ...overrides,
   });
@@ -52,25 +51,6 @@ function createSampleBook(id: number, ownerId: number): BookEntity {
   });
 }
 
-function createSampleEngagement(
-  overrides: Partial<ConstructorParameters<typeof BookEngagementEntity>[0]>,
-): BookEngagementEntity {
-  return new BookEngagementEntity({
-    id: 1,
-    createdAt: new Date('2026-08-01T00:00:00.000Z'),
-    updatedAt: new Date('2026-08-01T00:00:00.000Z'),
-    revenuePeriodId: 4,
-    bookId: 8,
-    layoutType: BookLayoutType.REFLOWABLE,
-    activeReadingMs: 120000,
-    activeSpreadMs: 0,
-    visualSceneTimeMs: 0,
-    categoryWeight: 1,
-    weightedEngagement: 2.5,
-    ...overrides,
-  });
-}
-
 describe('BookRevenueService', () => {
   let mockBookRevenueRepository: {
     replaceForPeriod: jest.Mock;
@@ -79,14 +59,19 @@ describe('BookRevenueService', () => {
     findByPeriodAndBook: jest.Mock;
     sumAuthorCents: jest.Mock;
   };
-  let mockRevenuePeriodService: { getRevenuePeriodById: jest.Mock };
+  let mockRevenuePeriodService: {
+    getRevenuePeriodById: jest.Mock;
+    updateRevenuePeriod: jest.Mock;
+  };
   let mockBookEngagementService: {
     aggregatePeriodEngagement: jest.Mock;
     listAllBookEngagementsForPeriod: jest.Mock;
   };
+  let mockBookReadingCycleService: { listCompletedReadCounts: jest.Mock };
   let mockBookService: { getBookById: jest.Mock };
   let mockAuditLogService: { append: jest.Mock };
   let mockTransactionRunner: { run: jest.Mock };
+  let mockStripeManagerService: { summarizeSubscriptionNetCents: jest.Mock };
   let bookRevenueService: BookRevenueService;
 
   beforeEach(() => {
@@ -97,11 +82,16 @@ describe('BookRevenueService', () => {
       findByPeriodAndBook: jest.fn(),
       sumAuthorCents: jest.fn(),
     };
-    mockRevenuePeriodService = { getRevenuePeriodById: jest.fn() };
+    mockRevenuePeriodService = {
+      getRevenuePeriodById: jest.fn(),
+      updateRevenuePeriod: jest.fn(),
+    };
+    mockStripeManagerService = { summarizeSubscriptionNetCents: jest.fn() };
     mockBookEngagementService = {
       aggregatePeriodEngagement: jest.fn(),
       listAllBookEngagementsForPeriod: jest.fn(),
     };
+    mockBookReadingCycleService = { listCompletedReadCounts: jest.fn() };
     mockBookService = { getBookById: jest.fn() };
     mockAuditLogService = { append: jest.fn() };
     mockTransactionRunner = {
@@ -111,26 +101,23 @@ describe('BookRevenueService', () => {
       mockBookRevenueRepository,
       mockRevenuePeriodService as unknown as RevenuePeriodService,
       mockBookEngagementService as unknown as BookEngagementService,
+      mockBookReadingCycleService as unknown as BookReadingCycleService,
       mockBookService as unknown as BookService,
       mockAuditLogService as unknown as AuditLogService,
       mockTransactionRunner,
+      mockStripeManagerService as unknown as StripeManagerService,
     );
   });
 
   describe('calculatePeriodRevenue', () => {
-    it('splits the pool by weighted engagement after the snapshotted platform cut', async () => {
+    it('splits the pool by completed reads with a 40 percent publisher share', async () => {
       mockRevenuePeriodService.getRevenuePeriodById.mockResolvedValue(createSamplePeriod());
+      mockStripeManagerService.summarizeSubscriptionNetCents.mockResolvedValue(10000);
+      mockRevenuePeriodService.updateRevenuePeriod.mockResolvedValue(createSamplePeriod());
       mockBookEngagementService.aggregatePeriodEngagement.mockResolvedValue([]);
-      mockBookEngagementService.listAllBookEngagementsForPeriod.mockResolvedValue([
-        createSampleEngagement({ id: 1, bookId: 8, weightedEngagement: 2.5 }),
-        createSampleEngagement({
-          id: 2,
-          bookId: 10,
-          weightedEngagement: 4.5,
-          activeReadingMs: 0,
-          activeSpreadMs: 180000,
-          layoutType: BookLayoutType.FIXED_LAYOUT,
-        }),
+      mockBookReadingCycleService.listCompletedReadCounts.mockResolvedValue([
+        { bookId: 8, completedReadCount: 1 },
+        { bookId: 10, completedReadCount: 3 },
       ]);
       mockBookService.getBookById.mockImplementation((id: number) => {
         if (id === 8) {
@@ -139,7 +126,11 @@ describe('BookRevenueService', () => {
         return Promise.resolve(createSampleBook(10, 5));
       });
       mockBookRevenueRepository.replaceForPeriod.mockResolvedValue([]);
-      await bookRevenueService.calculatePeriodRevenue({ revenuePeriodId: 4, actorUserId });
+      await bookRevenueService.calculatePeriodRevenue({
+        revenuePeriodId: 4,
+        actorUserId,
+        calculatedAt: new Date('2026-10-20T00:00:00.000Z'),
+      });
       expect(mockBookEngagementService.aggregatePeriodEngagement).toHaveBeenCalledWith({
         revenuePeriodId: 4,
       });
@@ -151,19 +142,19 @@ describe('BookRevenueService', () => {
               revenuePeriodId: 4,
               bookId: 8,
               ownerId: 3,
-              weightedEngagement: 2.5,
-              authorCents: 2500,
-              platformCutCents: 1071,
-              poolShareCents: 3571,
+              completedReadCount: 1,
+              authorCents: 1000,
+              platformCutCents: 1500,
+              poolShareCents: 2500,
             },
             {
               revenuePeriodId: 4,
               bookId: 10,
               ownerId: 5,
-              weightedEngagement: 4.5,
-              authorCents: 4500,
-              platformCutCents: 1929,
-              poolShareCents: 6429,
+              completedReadCount: 3,
+              authorCents: 3000,
+              platformCutCents: 4500,
+              poolShareCents: 7500,
             },
           ],
         },
@@ -177,7 +168,8 @@ describe('BookRevenueService', () => {
           subjectId: 4,
           metadata: {
             poolAmountCents: 10000,
-            platformCutPercent: 30,
+            poolSource: 'stripe',
+            publishersSharePercent: 40,
             bookCount: 2,
           },
         },
@@ -185,16 +177,30 @@ describe('BookRevenueService', () => {
       );
     });
 
-    it('rejects a period whose pool amount has not been set', async () => {
+    it('stores a zero pool when Stripe reports no subscription net', async () => {
       mockRevenuePeriodService.getRevenuePeriodById.mockResolvedValue(
         createSamplePeriod({ poolAmountCents: null }),
       );
-      await expect(
-        bookRevenueService.calculatePeriodRevenue({ revenuePeriodId: 4, actorUserId }),
-      ).rejects.toBeInstanceOf(RevenuePeriodPoolAmountMissingException);
-      expect(mockBookEngagementService.aggregatePeriodEngagement).not.toHaveBeenCalled();
-      expect(mockBookRevenueRepository.replaceForPeriod).not.toHaveBeenCalled();
-      expect(mockAuditLogService.append).not.toHaveBeenCalled();
+      mockStripeManagerService.summarizeSubscriptionNetCents.mockResolvedValue(null);
+      mockRevenuePeriodService.updateRevenuePeriod.mockResolvedValue(
+        createSamplePeriod({ poolAmountCents: 0 }),
+      );
+      mockBookEngagementService.aggregatePeriodEngagement.mockResolvedValue([]);
+      mockBookReadingCycleService.listCompletedReadCounts.mockResolvedValue([]);
+      mockBookRevenueRepository.replaceForPeriod.mockResolvedValue([]);
+      await bookRevenueService.calculatePeriodRevenue({
+        revenuePeriodId: 4,
+        actorUserId,
+        calculatedAt: new Date('2026-10-20T00:00:00.000Z'),
+      });
+      expect(mockRevenuePeriodService.updateRevenuePeriod).toHaveBeenCalledWith({
+        id: 4,
+        poolAmountCents: 0,
+      });
+      expect(mockBookRevenueRepository.replaceForPeriod).toHaveBeenCalledWith(
+        { revenuePeriodId: 4, rows: [] },
+        undefined,
+      );
     });
   });
 

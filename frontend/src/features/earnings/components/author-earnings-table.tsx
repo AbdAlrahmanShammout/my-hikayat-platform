@@ -26,7 +26,7 @@ export function AuthorEarningsTable({ bookRevenues }: AuthorEarningsTableProps):
       <TableHeader>
         <TableRow>
           <TableHead>Book</TableHead>
-          <TableHead>weightedEngagement</TableHead>
+          <TableHead>completedReads</TableHead>
           <TableHead>poolShareCents</TableHead>
           <TableHead>platformCutCents</TableHead>
           <TableHead>authorCents</TableHead>
@@ -43,7 +43,7 @@ export function AuthorEarningsTable({ bookRevenues }: AuthorEarningsTableProps):
                 {formatBookTitleLabel({ bookId: row.bookId, book: row.book })}
               </Link>
             </TableCell>
-            <TableCell>{String(row.weightedEngagement)}</TableCell>
+            <TableCell>{String(row.completedReadCount)}</TableCell>
             <TableCell>{formatAuthorCentsLabel(row.poolShareCents)}</TableCell>
             <TableCell>{formatAuthorCentsLabel(row.platformCutCents)}</TableCell>
             <TableCell>{formatAuthorCentsLabel(row.authorCents)}</TableCell>

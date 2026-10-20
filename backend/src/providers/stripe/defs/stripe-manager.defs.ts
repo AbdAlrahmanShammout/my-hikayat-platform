@@ -100,3 +100,8 @@ export type CancelPaidSubscriptionInput = {
 export type StripeRefund = {
   readonly refundId: string;
 };
+
+export type SummarizeSubscriptionNetCentsInput = {
+  readonly startsAt: Date;
+  readonly endsAt: Date;
+};

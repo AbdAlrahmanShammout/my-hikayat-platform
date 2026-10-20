@@ -44,6 +44,7 @@ export function AdminPlatformSettingsForm({
       termsOfServiceUrl: settings.termsOfServiceUrl ?? '',
       aboutMission: settings.aboutMission ?? '',
       authCoverMediaUrl: settings.authCoverMediaUrl ?? '',
+      wordsPerPage: String(settings.wordsPerPage ?? 150),
     },
   });
   const rootMessage: string | undefined = form.formState.errors.root?.message;
@@ -153,6 +154,31 @@ export function AdminPlatformSettingsForm({
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="wordsPerPage"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Words per reflowable page</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={2000}
+                      step={1}
+                      inputMode="numeric"
+                      disabled={updateMutation.isPending}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Average words on one page of a reflowable book. Reading completion uses this to
+                    split chapter books into virtual pages. 150 is the starting value.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <Button type="submit" disabled={updateMutation.isPending}>
               {updateMutation.isPending ? 'Saving…' : 'Save settings'}
             </Button>
@@ -174,6 +200,7 @@ async function submitPlatformSettings(
       termsOfServiceUrl: values.termsOfServiceUrl.length === 0 ? null : values.termsOfServiceUrl,
       aboutMission: values.aboutMission.length === 0 ? null : values.aboutMission,
       authCoverMediaUrl: values.authCoverMediaUrl.length === 0 ? null : values.authCoverMediaUrl,
+      wordsPerPage: Number(values.wordsPerPage),
     });
   } catch (error: unknown) {
     if (error instanceof ApiError) {
@@ -183,7 +210,8 @@ async function submitPlatformSettings(
           fieldName !== 'privacyPolicyUrl' &&
           fieldName !== 'termsOfServiceUrl' &&
           fieldName !== 'aboutMission' &&
-          fieldName !== 'authCoverMediaUrl'
+          fieldName !== 'authCoverMediaUrl' &&
+          fieldName !== 'wordsPerPage'
         ) {
           continue;
         }

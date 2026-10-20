@@ -86,7 +86,7 @@ describe('Book revenue calculation (e2e)', () => {
     return getRunningApp().getHttpServer() as Server;
   }
 
-  it('Given weighted engagement and a pool, When revenue is calculated, Then authors receive the remainder after the snapshotted platform cut', async () => {
+  it('Given reading time and no completed reads, When revenue is calculated, Then the Stripe net is stored and no book shares are written', async () => {
     const ownerRegister = await request(getServer()).post('/auth/register').send({
       email: ownerEmail,
       password,
@@ -168,28 +168,21 @@ describe('Book revenue calculation (e2e)', () => {
     const period = await revenuePeriodService.createRevenuePeriod({
       startsAt: new Date('2099-01-01T00:00:00.000Z'),
       endsAt: new Date('2099-02-01T00:00:00.000Z'),
-      poolAmountCents: 10000,
     });
     createdPeriodIds.push(period.id);
     const bookRevenueService: BookRevenueService = getRunningApp().get(BookRevenueService);
     const calculated = await bookRevenueService.calculatePeriodRevenue({
       revenuePeriodId: period.id,
       actorUserId: ownerId,
+      calculatedAt: new Date('2099-02-08T00:00:00.000Z'),
     });
-    const reflowable = calculated.find((row) => row.bookId === reflowableBook.id);
-    const fixed = calculated.find((row) => row.bookId === fixedBook.id);
-    expect(reflowable?.ownerId).toBe(ownerId);
-    expect(reflowable?.authorCents).toBe(2500);
-    expect(reflowable?.platformCutCents).toBe(1071);
-    expect(reflowable?.poolShareCents).toBe(3571);
-    expect(fixed?.authorCents).toBe(4500);
-    expect(fixed?.platformCutCents).toBe(1929);
-    expect(fixed?.poolShareCents).toBe(6429);
+    expect(calculated).toEqual([]);
+    const storedPeriod = await revenuePeriodService.getRevenuePeriodById(period.id);
+    expect(storedPeriod.poolAmountCents).toBe(0);
     const authorTotal = await bookRevenueService.sumAuthorCentsForPeriod({
       revenuePeriodId: period.id,
       ownerId,
     });
-    expect(authorTotal).toBe(7000);
-    expect(period.platformCutPercent).toBe(30);
+    expect(authorTotal).toBe(0);
   });
 });

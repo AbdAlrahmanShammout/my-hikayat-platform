@@ -12,6 +12,7 @@ const sampleSettings = {
   termsOfServiceUrl: 'https://example.com/terms',
   aboutMission: 'Read together.',
   authCoverMediaUrl: 'https://example.com/cover.gif',
+  wordsPerPage: 150,
 };
 
 describe('PlatformSettingAdminController', () => {
@@ -58,6 +59,7 @@ describe('PlatformSettingAdminController', () => {
         termsOfServiceUrl: 'https://example.com/terms',
         aboutMission: undefined,
         authCoverMediaUrl: undefined,
+        wordsPerPage: undefined,
       });
       expect(actualResponse.termsOfServiceUrl).toBe('https://example.com/terms');
     });

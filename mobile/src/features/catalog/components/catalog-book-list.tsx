@@ -11,6 +11,8 @@ import {
   flattenCatalogBookPages,
   formatCatalogResultCountLabel,
 } from '@/features/catalog/lib/catalog-pagination';
+import { useReadingCompletionStatuses } from '@/features/reading-completion/hooks/use-reading-completion-statuses';
+import { formatReadingStatusLabel } from '@/features/reading-completion/lib/format-reading-status-label';
 import { theme } from '@/theme/theme';
 import { EmptyState } from '@/ui/feedback/empty-state';
 import { ErrorState } from '@/ui/feedback/error-state';
@@ -39,6 +41,8 @@ export function CatalogBookList({
     categoryId: variant === 'newest' ? undefined : categoryId,
   });
   const catalogHeading: string = variant === 'newest' ? 'Newest stories' : 'Browse Stories';
+  const books = flattenCatalogBookPages(booksQuery.data?.pages ?? []);
+  const statuses = useReadingCompletionStatuses(books.map((book) => book.id));
 
   if (booksQuery.isLoading) {
     return (
@@ -72,7 +76,6 @@ export function CatalogBookList({
     );
   }
 
-  const books = flattenCatalogBookPages(booksQuery.data?.pages ?? []);
   const total: number = booksQuery.data?.pages[0]?.total ?? 0;
   const hasNextPage: boolean = booksQuery.hasNextPage === true;
   const countLabel: string = formatCatalogResultCountLabel({
@@ -90,7 +93,11 @@ export function CatalogBookList({
       columnWrapperStyle={styles.column}
       renderItem={({ item }) => (
         <View style={styles.gridItem}>
-      <CatalogGridCard book={item} onPress={onOpenBook} />
+          <CatalogGridCard
+            book={item}
+            statusLabel={formatReadingStatusLabel(statuses.byBookId.get(item.id))}
+            onPress={onOpenBook}
+          />
         </View>
       )}
       contentContainerStyle={books.length === 0 ? styles.emptyContent : styles.listContent}

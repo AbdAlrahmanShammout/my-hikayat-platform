@@ -10,4 +10,5 @@ export const STRIPE = {
     invoicePaymentFailed: 'invoice.payment_failed',
   },
   canceledStatuses: ['canceled', 'unpaid', 'incomplete_expired'],
+  listPageSize: 100,
 } as const;
